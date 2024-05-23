@@ -16,8 +16,8 @@ export class SoporteModel{
         // 'SELECT * FROM `tbl2_almacen` WHERE `name` = "Page" AND `age` > 45'
         'SELECT * FROM `tbl2_almacen`'
       );
-      console.log(results); // results contains rows returned by server
-      console.log(fields); // fields contains extra meta data about results, if available
+      // console.log(results);
+      // console.log(fields);
       return results
     } catch (err) {
       console.log(err);

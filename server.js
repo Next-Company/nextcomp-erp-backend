@@ -1,7 +1,6 @@
 import express,{json} from "express";
 import { soporteRouter } from "./Soporte/Routers/soporte.js";
 import cors from 'cors'
-
 const PORT_DEFAULT = 4000
 const app = express()
 
