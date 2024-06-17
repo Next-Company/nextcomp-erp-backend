@@ -1,0 +1,8 @@
+import mysql from "mysql2/promise";
+export const connection = await mysql.createConnection({
+  host: '172.29.160.1',
+  port: '3306',
+  user: 'ubuntu',
+  password: '',
+  database: 'bd_next',
+});
