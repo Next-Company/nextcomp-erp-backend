@@ -42,4 +42,20 @@ export class DirectorioController{
       console.error('No se pudo listar el directorio:', err);
     }
   }
+  static getPath = async (req,resp)=>{
+    const hex = req.params.path.toString();//force conversion
+    let str = '';
+    for (var i = 0; i < hex.length; i += 2)
+        str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+    console.log(str)
+    // resp.json([]);
+    try {
+      const info = await getDirectoryInfo(str)
+      resp.json(info)
+    } catch (err) {
+      console.error('No se pudo listar el directorio:', err);
+    }
+    // console.log(req.params)
+    // return []
+  }
 }
