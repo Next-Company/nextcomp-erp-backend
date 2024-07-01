@@ -26,7 +26,7 @@ app.use((req,resp,next)=>{
   const token = req.cookies.access_token
   let data = null
   // req?.session?.user = data
-  console.log(req)
+  // console.log(req)
   try {
     data = jwt.verify(token,SECRET_JWT_KEY)
     // req.session.user = data
