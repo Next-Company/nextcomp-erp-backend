@@ -42,6 +42,10 @@ export class DirectorioController{
       console.error('No se pudo listar el directorio:', err);
     }
   }
+  static postFile = async (req,resp)=>{
+    console.log(req.body)
+    resp.json({message:'nada'})
+  }
   static getPath = async (req,resp)=>{
     const hex = req.params.path.toString();//force conversion
     let str = '';
