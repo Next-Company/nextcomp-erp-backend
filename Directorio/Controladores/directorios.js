@@ -42,9 +42,39 @@ export class DirectorioController{
       console.error('No se pudo listar el directorio:', err);
     }
   }
-  static postFile = async (req,resp)=>{
-    console.log(req.body)
-    resp.json({message:'nada'})
+  static uploadFile = async (req,resp)=>{
+    const hex = req.params.path.toString();//force conversion
+    let str = '';
+    for (var i = 0; i < hex.length; i += 2)
+        str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+    try {
+      const oldPath = req.file.path;
+      const newPath = path.join(str,req.file.originalname);
+      console.log(oldPath,'-',newPath)
+      await fs.rename(oldPath, newPath);
+      resp.json({message:'Archivo subido de forma satisfactoria'})
+    } catch (error) {
+      resp.json(error)
+    }
+  }
+  static deleteFile = async (req,resp)=>{
+    const hex = req.params.file.toString();//force conversion
+    let str = '';
+    for (var i = 0; i < hex.length; i += 2)
+        str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+    // const file_ = req.params.file
+    // const filePath = path.join(__dirname, 'uploads', req.params);
+    // const filePath = path.join(file_);
+    const filePath = str;
+
+    fs.unlink(filePath, (err) => {
+      if (err) {
+        console.error(err);
+        return resp.status(500).send('Error al eliminar el archivo');
+      }
+      resp.send('Archivo eliminado con éxito');
+    });
+    // resp.json({message:'Archivo eliminado'})
   }
   static getPath = async (req,resp)=>{
     const hex = req.params.path.toString();//force conversion

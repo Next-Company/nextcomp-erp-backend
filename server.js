@@ -20,7 +20,7 @@ app.use(cors({
 }))
 app.use(cookieParser())
 // app.use(multer().none())
-app.use(multer())
+app.use(multer({dest:'uploads/'}).single('filenext'))
 app.disable('x-powered-by')
 
 app.use((req,resp,next)=>{
