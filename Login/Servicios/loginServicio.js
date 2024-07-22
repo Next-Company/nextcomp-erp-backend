@@ -10,6 +10,9 @@ export class LoginModel{
       resp.ok = true
       resp.message = 'Credenciales correctas'
       resp.datos = results[0]
+    }else{
+      resp.ok = false
+      resp.message = 'Credenciales incorrectas'
     }
     return resp
   }

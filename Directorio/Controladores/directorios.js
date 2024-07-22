@@ -72,7 +72,7 @@ export class DirectorioController{
         console.error(err);
         return resp.status(500).send('Error al eliminar el archivo');
       }
-      resp.send('Archivo eliminado con éxito');
+      resp.json({message:'Archivo eliminado con éxito'});
     });
     // resp.json({message:'Archivo eliminado'})
   }

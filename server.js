@@ -2,15 +2,16 @@ import fs from 'node:fs/promises'
 import path from 'node:path';
 import { fileURLToPath } from 'url';
 
-import express,{json} from "express";
+import express, { json } from "express";
 import cookieParser from "cookie-parser";
 import { soporteRouter } from "./Soporte/Routers/soporte.js";
 import { directorioRouter } from "./Directorio/Routers/directorios.js";
 import { loginRouter } from './Login/Routers/loginRouter.js';
 import cors from 'cors'
 import multer from 'multer';
-import { PORT_DEFAULT, SECRET_JWT_KEY } from './Main/config.js';
+import { PORT_DEFAULT, SECRET_JWT_KEY, SECRET_JWT_KEY2 } from './Main/config.js';
 import { jwt } from './Main/utils.js';
+import { homeRouter } from './Home/Routers/home.js';
 const app = express()
 
 app.use(json())
@@ -19,26 +20,54 @@ app.use(cors({
   credentials: true
 }))
 app.use(cookieParser())
-// app.use(multer().none())
-app.use(multer({dest:'uploads/'}).single('filenext'))
+app.use(multer({ dest: 'uploads/' }).single('filenext'))
 app.disable('x-powered-by')
 
-app.use((req,resp,next)=>{
+app.use((req, resp, next) => {
   const token = req.cookies.access_token
-  let data = null
-  // req?.session?.user = data
-  // console.log(req)
-  try {
-    data = jwt.verify(token,SECRET_JWT_KEY)
-    // req.session.user = data
-  } catch (error) {}
-  next()
+  const token2 = req.cookies.refresh_token
+  req.session = { user: null }
+  console.log(token2)
+  if (req.url !== '/login') {
+    console.log("success")
+    try {
+      const data = jwt.verify(token, SECRET_JWT_KEY)
+      const data2 = jwt.verify(token2, SECRET_JWT_KEY2)
+      // req.session.user = data
+      console.log(data)
+      const new_token = jwt.sign(
+        { id: data.id, username: data.name },
+        SECRET_JWT_KEY,
+        {
+          expiresIn: '30m'
+        }
+      )
+      resp.cookie('access_token', new_token, {
+        httpOnly: true,
+        sameSite: 'strict',
+        maxAge: 1000 * 60 * 30
+      })
+      next()
+    } catch (error) {
+      console.log("Error:" + error)
+      let info = {
+        ok: false,
+        message: 'Expiro el token de session.'
+      }
+      // resp.status(401).send(JSON.stringify(info))
+      resp.status(401).send(info)
+    }
+  } else {
+    next()
+  }
+
 })
 
-app.use('/login',loginRouter)
-app.use('/soporte',soporteRouter)
-app.use('/directorio',directorioRouter)
+app.use('/login', loginRouter)
+app.use('/home', homeRouter)
+app.use('/soporte', soporteRouter)
+app.use('/directorio', directorioRouter)
 
-app.listen(PORT_DEFAULT,()=>{
+app.listen(PORT_DEFAULT, () => {
   console.log('Servidor corriendo en el puerto 4000')
 })
