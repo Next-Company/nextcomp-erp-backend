@@ -1,22 +1,23 @@
-import fs from 'node:fs/promises'
-import path from 'node:path';
-import { fileURLToPath } from 'url';
+// import fs from 'node:fs/promises'
+// import path from 'node:path';
+// import { fileURLToPath } from 'url';
 
 import express, { json } from "express";
 import cookieParser from "cookie-parser";
 import { soporteRouter } from "./Soporte/Routers/soporte.js";
 import { directorioRouter } from "./Directorio/Routers/directorios.js";
 import { loginRouter } from './Login/Routers/loginRouter.js';
+import { homeRouter } from './Home/Routers/home.js';
 import cors from 'cors'
 import multer from 'multer';
 import { PORT_DEFAULT, SECRET_JWT_KEY, SECRET_JWT_KEY2 } from './Main/config.js';
 import { jwt } from './Main/utils.js';
-import { homeRouter } from './Home/Routers/home.js';
 const app = express()
 
 app.use(json())
 app.use(cors({
-  origin: 'http://localhost:5173', // Cambia esto al dominio de tu frontend
+  origin: ['http://localhost:5173','http://192.168.18.20:5173'],
+  // origin: '*',
   credentials: true
 }))
 app.use(cookieParser())
@@ -29,11 +30,10 @@ app.use((req, resp, next) => {
   req.session = { user: null }
   console.log(token2)
   if (req.url !== '/login') {
-    console.log("success")
+    console.log("success",req.url)
     try {
       const data = jwt.verify(token, SECRET_JWT_KEY)
       const data2 = jwt.verify(token2, SECRET_JWT_KEY2)
-      // req.session.user = data
       console.log(data)
       const new_token = jwt.sign(
         { id: data.id, username: data.name },
@@ -44,6 +44,8 @@ app.use((req, resp, next) => {
       )
       resp.cookie('access_token', new_token, {
         httpOnly: true,
+        // sameSite: 'None',
+        // secure:true,
         sameSite: 'strict',
         maxAge: 1000 * 60 * 30
       })
@@ -54,7 +56,6 @@ app.use((req, resp, next) => {
         ok: false,
         message: 'Expiro el token de session.'
       }
-      // resp.status(401).send(JSON.stringify(info))
       resp.status(401).send(info)
     }
   } else {

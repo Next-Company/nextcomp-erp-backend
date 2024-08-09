@@ -1,10 +1,11 @@
 import fs from 'node:fs/promises'
 import path from 'node:path';
-import { fileURLToPath } from 'url';
+// import { fileURLToPath } from 'node:url';
 
-const __filename = fileURLToPath(import.meta.url);
+// const __filename = fileURLToPath(import.meta.url);
 // const __dirname = path.dirname(__filename);
-const __dirname = '/home/juanv/compartido';
+// const __dirname = '/home/juanv/compartido';
+const __dirname = '/home/juanjhonv/compartido';
 
 async function getDirectoryInfo(dirPath) {
   try {
@@ -85,6 +86,7 @@ export class DirectorioController{
     // resp.json([]);
     try {
       const info = await getDirectoryInfo(str)
+      console.log(info)
       resp.json(info)
     } catch (err) {
       console.error('No se pudo listar el directorio:', err);

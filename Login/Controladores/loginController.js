@@ -11,7 +11,6 @@ export class LoginController {
           { id: info.datos.idx, username: info.datos.nom },
           SECRET_JWT_KEY,
           {
-            // expiresIn: '5m'
             expiresIn: '30m'
           }
         )
@@ -25,12 +24,18 @@ export class LoginController {
         resp
           .cookie('access_token', token, {
             httpOnly: true,
+            // sameSite: 'None',
+            // secure:true,
             sameSite: 'strict',
+            // domain: 'http:192.168.18.20:5173',
             maxAge: 1000 * 60 * 30
           })
           .cookie('refresh_token', token2, {
             httpOnly: true,
+            // sameSite: 'None',
+            // secure:true,
             sameSite: 'strict',
+            // domain: 'http:192.168.18.20:5173',
             maxAge: 1000 * 60 * 60 * 24
           })
           .send(info)
