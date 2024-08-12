@@ -10,15 +10,13 @@ import { loginRouter } from './Login/Routers/loginRouter.js';
 import { homeRouter } from './Home/Routers/home.js';
 import cors from 'cors'
 import multer from 'multer';
-import { PORT_DEFAULT, SECRET_JWT_KEY, SECRET_JWT_KEY2 } from './Main/config.js';
+import { PORT_DEFAULT, SECRET_JWT_KEY, SECRET_JWT_KEY2, ORIGINS } from './Main/config.js';
 import { jwt } from './Main/utils.js';
 const app = express()
 
 app.use(json())
 app.use(cors({
-  // origin: ['http://localhost:5173','http://192.168.18.20:5173'],
-  origin: ['http://localhost:5173', 'http://192.168.0.171:5173'],
-  // origin: '*',
+  origin: ORIGINS,
   credentials: true
 }))
 app.use(cookieParser())
