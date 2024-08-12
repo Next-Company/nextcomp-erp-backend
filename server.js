@@ -16,7 +16,8 @@ const app = express()
 
 app.use(json())
 app.use(cors({
-  origin: ['http://localhost:5173','http://192.168.18.20:5173'],
+  // origin: ['http://localhost:5173','http://192.168.18.20:5173'],
+  origin: ['http://localhost:5173', 'http://192.168.0.171:5173'],
   // origin: '*',
   credentials: true
 }))
@@ -28,9 +29,10 @@ app.use((req, resp, next) => {
   const token = req.cookies.access_token
   const token2 = req.cookies.refresh_token
   req.session = { user: null }
-  console.log(token2)
+  // console.log(token2)
+  console.log(req.url)
   if (req.url !== '/login') {
-    console.log("success",req.url)
+    console.log("success", req.url)
     try {
       const data = jwt.verify(token, SECRET_JWT_KEY)
       const data2 = jwt.verify(token2, SECRET_JWT_KEY2)

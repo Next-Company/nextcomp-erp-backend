@@ -1,6 +1,6 @@
 import { connection } from "../../Main/utils.js";
-export class SoporteModel{
-  static async getAll(){
+export class SoporteModel {
+  static async getAll() {
     try {
       const [results, fields] = await connection.query(
         // 'SELECT * FROM `tbl2_almacen` WHERE `name` = "Page" AND `age` > 45'
@@ -13,18 +13,25 @@ export class SoporteModel{
       console.log(err);
     }
   }
-  static async pushItems(info){
+  static async pushItems(info) {
     try {
-      const [results, fields] = await connection.query(
-        'INSERT INTO `tbl2_soportes_cab`(`usuario`,`asunto`,`descripcion`,`fec_programado`,`prioridad`) VALUES(?,?,?,?,?)',['Juan',info.asunto,info.descripcion,'2024-06-07',info.prioridad]
-      );
-      return [{ok:true,mensaje:'Guardado con exito'}]
+      if (info.idx == '') {
+        const [results, fields] = await connection.query(
+          'INSERT INTO `tbl2_soportes_cab`(`usuario`,`asunto`,`descripcion`,`fec_programado`,`prioridad`) VALUES(?,?,?,?,?)', ['Juan', info.asunto, info.descripcion, '2024-06-07', info.prioridad]
+        );
+      } else {
+        const [results, fields] = await connection.query(
+          'UPDATE `tbl2_soportes_cab` SET `asunto` = ?, `descripcion` = ? WHERE idx = ?', [info.asunto, info.descripcion, info.idx]
+        );
+      }
+
+      return [{ ok: true, mensaje: 'Guardado con exito' }]
     } catch (err) {
       // return [{ok:false,mensaje:'Guardado con exito'}]
       return [err]
     }
   }
-  static async updateItems(){
+  static async updateItems() {
     try {
       const [results, fields] = await connection.query(
         // 'SELECT * FROM `tbl2_almacen` WHERE `name` = "Page" AND `age` > 45'
@@ -39,22 +46,22 @@ export class SoporteModel{
       // console.log(results);
       // console.log(fields);
       // const [{ok:true,mensaje:'Guardado con exito'}]
-      return [{ok:true,mensaje:'Guardado con exito'}]
+      return [{ ok: true, mensaje: 'Guardado con exito' }]
     } catch (err) {
       // return [{ok:false,mensaje:'Guardado con exito'}]
       return [err]
     }
   }
-  static async deleteItems(id){
+  static async deleteItems(id) {
     try {
       const [results, fields] = await connection.query(
         // 'SELECT * FROM `tbl2_almacen` WHERE `name` = "Page" AND `age` > 45'
-        'DELETE FROM `tbl2_soportes_cab` WHERE `idx` = "'+id+'"'
+        'DELETE FROM `tbl2_soportes_cab` WHERE `idx` = "' + id + '"'
       );
       // console.log(results);
       // console.log(fields);
       // const [{ok:true,mensaje:'Guardado con exito'}]
-      return [{ok:true,mensaje:'Registro Eliminado con exito'}]
+      return [{ ok: true, mensaje: 'Registro Eliminado con exito' }]
     } catch (err) {
       // return [{ok:false,mensaje:'Guardado con exito'}]
       return [err]
