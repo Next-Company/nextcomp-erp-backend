@@ -1,10 +1,10 @@
 import { connection } from "../../Main/utils.js";
 export class SoporteModel {
-  static async getAll() {
+  static async getAll(user_data) {
     try {
       const [results, fields] = await connection.query(
         // 'SELECT * FROM `tbl2_almacen` WHERE `name` = "Page" AND `age` > 45'
-        'SELECT * FROM `tbl2_soportes_cab` order by created_at desc'
+        'SELECT * FROM `tbl2_soportes_cab` WHERE usuario = ? order by created_at desc',[user_data.id]
       );
       // console.log(results);
       // console.log(fields);
@@ -13,11 +13,11 @@ export class SoporteModel {
       console.log(err);
     }
   }
-  static async pushItems(info) {
+  static async pushItems(info,user_data) {
     try {
       if (info.idx == '') {
         const [results, fields] = await connection.query(
-          'INSERT INTO `tbl2_soportes_cab`(`usuario`,`asunto`,`descripcion`,`fec_programado`,`prioridad`) VALUES(?,?,?,?,?)', ['Juan', info.asunto, info.descripcion, '2024-06-07', info.prioridad]
+          'INSERT INTO `tbl2_soportes_cab`(`usuario`,`asunto`,`descripcion`,`fec_programado`,`prioridad`) VALUES(?,?,?,?,?)', [user_data.id, info.asunto, info.descripcion, '2024-06-07', info.prioridad]
         );
       } else {
         const [results, fields] = await connection.query(

@@ -35,6 +35,7 @@ app.use((req, resp, next) => {
       const data = jwt.verify(token, SECRET_JWT_KEY)
       const data2 = jwt.verify(token2, SECRET_JWT_KEY2)
       console.log(data)
+      req.session = { id: data.id, username: data.name }
       const new_token = jwt.sign(
         { id: data.id, username: data.name },
         SECRET_JWT_KEY,

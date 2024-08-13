@@ -2,15 +2,17 @@ import { SoporteModel } from "../Servicios/soporte.js";
 
 export class SoporteController {
   static async getAll(req, resp) {
-    const data = await SoporteModel.getAll()
-    console.log(data)
+    const user_data = req.session
+    const data = await SoporteModel.getAll(user_data)
+    // console.log(data)
     // console.log(resp)
     resp.json(data)
   }
   static async pushItems(req, resp) {
     const info = req.body
+    const user_data = req.session
     // console.log(info.asunto)
-    const data = await SoporteModel.pushItems(info)
+    const data = await SoporteModel.pushItems(info, user_data)
     // console.log(resp)
     // resp.json({resppp:info})
     resp.json(data)
