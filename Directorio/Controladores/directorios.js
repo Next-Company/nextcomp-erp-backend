@@ -5,8 +5,8 @@ import path from 'node:path';
 
 // const __filename = fileURLToPath(import.meta.url);
 // const __dirname = path.dirname(__filename);
-const __dirname = '/home/juanv/compartido';
-// const __dirname = '/home/juanjhonv/compartido';
+// const __dirname = '/home/juanv/compartido';
+const __dirname = '/home/juanjhonv/compartido';
 
 async function getDirectoryInfo(dirPath) {
   try {

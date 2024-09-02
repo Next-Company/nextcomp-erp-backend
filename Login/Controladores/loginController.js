@@ -8,7 +8,7 @@ export class LoginController {
       const info = await LoginModel.validarLogin({ usu: req.body.email, paz: req.body.password })
       if (info.ok) {
         const token = jwt.sign(
-          { id: info.datos.idx, username: info.datos.nom },
+          { id: info.datos.idx, username: info.datos.usu, niv: info.datos.niv },
           SECRET_JWT_KEY,
           {
             expiresIn: '30m'

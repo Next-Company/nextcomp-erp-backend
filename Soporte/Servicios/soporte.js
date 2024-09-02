@@ -1,10 +1,11 @@
 import { connection } from "../../Main/utils.js";
 export class SoporteModel {
   static async getAll(user_data) {
+    console.log(user_data)
     try {
       const [results, fields] = await connection.query(
         // 'SELECT * FROM `tbl2_almacen` WHERE `name` = "Page" AND `age` > 45'
-        'SELECT * FROM `tbl2_soportes_cab` WHERE usuario = ? order by created_at desc',[user_data.id]
+        'SELECT * FROM `tbl2_soportes_cab` ' + `${user_data.niv !== 1 ? 'WHERE usuario = ?' : 'WHERE usuario = ? or usuario <> ?'}` + ' order by created_at desc',[user_data.id,user_data.id]
       );
       // console.log(results);
       // console.log(fields);

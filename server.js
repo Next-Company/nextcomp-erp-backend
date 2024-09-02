@@ -34,10 +34,10 @@ app.use((req, resp, next) => {
     try {
       const data = jwt.verify(token, SECRET_JWT_KEY)
       const data2 = jwt.verify(token2, SECRET_JWT_KEY2)
-      console.log(data)
-      req.session = { id: data.id, username: data.name }
+      // console.log(data)
+      req.session = { id: data.id, username: data.username, niv: data.niv }
       const new_token = jwt.sign(
-        { id: data.id, username: data.name },
+        { id: data.id, username: data.username, niv: data.niv },
         SECRET_JWT_KEY,
         {
           expiresIn: '30m'
