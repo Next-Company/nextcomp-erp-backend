@@ -1,11 +1,12 @@
+import { mkdir, rmdir } from 'node:fs';
 import fs from 'node:fs/promises'
 import path from 'node:path';
 // import { fileURLToPath } from 'node:url';
 
 // const __filename = fileURLToPath(import.meta.url);
 // const __dirname = path.dirname(__filename);
-// const __dirname = '/home/juanv/compartido';
-const __dirname = '/home/juanjhonv/compartido';
+const __dirname = '/home/juanv/compartido';
+// const __dirname = '/home/juanjhonv/compartido';
 
 async function getDirectoryInfo(dirPath) {
   try {
@@ -58,6 +59,35 @@ export class DirectorioController {
       resp.json(error)
     }
   }
+  static removeElement = async (req, resp) => {
+    const hex = req.params.file.toString();
+    let str = '';
+    for (var i = 0; i < hex.length; i += 2)
+      str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+    const filePath = str;
+    let isDirectory = req.body.tipo
+    console.log('Aca estamod:', filePath, isDirectory)
+    if (parseInt(isDirectory)) {
+      rmdir(filePath,
+        (err) => {
+          if (err) {
+            return console.error(err);
+          }
+          resp.json({ ok: true, message: 'Carpeta eliminada correctamente' })
+        }
+      )
+      // resp.json({ ok: true, message: 'Carpeta eliminada correctamente' })
+    } else {
+      // fs.unlink(filePath, (err) => {
+      //   if (err) {
+      //     console.error(err);
+      //     return resp.status(500).send('Error al eliminar el archivo');
+      //   }
+      // });
+      resp.json({ message: 'Archivo eliminado con éxito' });
+    }
+    // resp.json({message:'Archivo eliminado'})
+  }
   static deleteFile = async (req, resp) => {
     const hex = req.params.file.toString();//force conversion
     let str = '';
@@ -93,5 +123,41 @@ export class DirectorioController {
     }
     // console.log(req.params)
     // return []
+  }
+  static createFolder = async (req, resp) => {
+    const nombre = req.body.name
+    const ruta = req.body.path
+    let str = '';
+    // const path = ''
+    // console.log(path.join(__dirname, 'Juegos'))
+    if (ruta !== '/') {
+      // console.log('hola')
+      const hex = ruta.toString();
+      for (var i = 0; i < hex.length; i += 2)
+        str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+    } else {
+      // console.log('adios')
+      str = __dirname
+    }
+    // console.log('Otro datos de creacion :', nombre, path.join(str, nombre))
+
+    mkdir(path.join(__dirname, nombre),
+      (err) => {
+        if (err) {
+          return console.error(err);
+        }
+        resp.json({ ok: true, message: 'Carpeta creada correctamente' })
+      });
+
+    // const hex = req.params.path.toString();
+    // let str = '';
+    // for (var i = 0; i < hex.length; i += 2)
+    //   str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+    // console.log(str)
+    // try {
+    //   resp.json({ ok: true, message: 'Carpeta creada correctamente' })
+    // } catch (err) {
+    //   console.error('No se pudo listar el directorio:', err);
+    // }
   }
 }

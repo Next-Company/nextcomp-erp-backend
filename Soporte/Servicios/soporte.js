@@ -15,13 +15,14 @@ export class SoporteModel {
   }
   static async pushItems(info,user_data) {
     try {
+      console.log(info)
       if (info.idx == '') {
         const [results, fields] = await connection.query(
           'INSERT INTO `tbl2_soportes_cab`(`usuario`,`asunto`,`descripcion`,`fec_programado`,`prioridad`) VALUES(?,?,?,?,?)', [user_data.id, info.asunto, info.descripcion, '2024-06-07', info.prioridad]
         );
       } else {
         const [results, fields] = await connection.query(
-          'UPDATE `tbl2_soportes_cab` SET `asunto` = ?, `descripcion` = ? WHERE idx = ?', [info.asunto, info.descripcion, info.idx]
+          'UPDATE `tbl2_soportes_cab` SET `asunto` = ?, `descripcion` = ?,`prioridad` = ?,`estado` = ?  WHERE idx = ?', [info.asunto, info.descripcion, info.prioridad, info.estado, info.idx]
         );
       }
 
