@@ -4,8 +4,7 @@ export class SoporteModel {
     console.log(user_data)
     try {
       const [results, fields] = await connection.query(
-        // 'SELECT * FROM `tbl2_almacen` WHERE `name` = "Page" AND `age` > 45'
-        'SELECT * FROM `tbl2_soportes_cab` ' + `${user_data.niv !== 1 ? 'WHERE usuario = ?' : 'WHERE usuario = ? or usuario <> ?'}` + ' order by created_at desc',[user_data.id,user_data.id]
+        'SELECT tb1.*,CASE WHEN tb1.categoria = "IMPL" THEN "Implementaciones" WHEN tb1.categoria = "SOPT" THEN "Soportes" ELSE "Proyectos" END categoria_nom,tb2.nom FROM `tbl2_soportes_cab` tb1 INNER JOIN `tbl_user` tb2 ON tb1.usuario = tb2.idx ' + `${user_data.niv !== 1 ? 'WHERE tb1.usuario = ?' : 'WHERE tb1.usuario = ? or tb1.usuario <> ?'}` + ' ORDER BY tb1.created_at DESC',[user_data.id,user_data.id]
       );
       // console.log(results);
       // console.log(fields);
@@ -16,20 +15,21 @@ export class SoporteModel {
   }
   static async pushItems(info,user_data) {
     try {
-      console.log(info)
       if (info.idx == '') {
         const [results, fields] = await connection.query(
-          'INSERT INTO `tbl2_soportes_cab`(`usuario`,`asunto`,`descripcion`,`fec_programado`,`prioridad`) VALUES(?,?,?,?,?)', [user_data.id, info.asunto, info.descripcion, '2024-06-07', info.prioridad]
+          'INSERT INTO `tbl2_soportes_cab`(`usuario`,`asunto`,`descripcion`,`fec_programado`,`prioridad`,`categoria`) VALUES(?,?,?,?,?,?)', [user_data.id, info.asunto, info.descripcion, '2024-06-07', info.prioridad, info.categoria]
         );
       } else {
+        console.log(info)
         const [results, fields] = await connection.query(
-          'UPDATE `tbl2_soportes_cab` SET `asunto` = ?, `descripcion` = ?,`prioridad` = ?,`estado` = ?  WHERE idx = ?', [info.asunto, info.descripcion, info.prioridad, info.estado, info.idx]
+          'UPDATE `tbl2_soportes_cab` SET `asunto` = ?, `descripcion` = ?,`prioridad` = ?,`estado` = ?,`categoria` = ?  WHERE idx = ?', [info.asunto, info.descripcion, info.prioridad, info.estado, info.categoria, info.idx
+          ]
         );
       }
 
       return [{ ok: true, mensaje: 'Guardado con exito' }]
     } catch (err) {
-      // return [{ok:false,mensaje:'Guardado con exito'}]
+      // return [{ok:false,mensaje:'Guardado con xito'}]
       return [err]
     }
   }

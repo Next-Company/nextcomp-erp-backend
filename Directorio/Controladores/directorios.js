@@ -76,15 +76,16 @@ export class DirectorioController {
           resp.json({ ok: true, message: 'Carpeta eliminada correctamente' })
         }
       )
-      // resp.json({ ok: true, message: 'Carpeta eliminada correctamente' })
+      // resp.json({ ok: true, message: 'Carpeta eliminada correctamentes' })
     } else {
-      // fs.unlink(filePath, (err) => {
-      //   if (err) {
-      //     console.error(err);
-      //     return resp.status(500).send('Error al eliminar el archivo');
-      //   }
-      // });
-      resp.json({ message: 'Archivo eliminado con éxito' });
+      fs.unlink(filePath, (err) => {
+        if (err) {
+          console.error(err);
+          return resp.status(500).send('Error al eliminar el archivo');
+        }
+        console.log("Archivo eliminado")
+        resp.json({ message: 'Archivo eliminado con éxito' });
+      });
     }
     // resp.json({message:'Archivo eliminado'})
   }
