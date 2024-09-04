@@ -1,12 +1,12 @@
-import { mkdir, rmdir } from 'node:fs';
+import { mkdir, rm } from 'node:fs';
 import fs from 'node:fs/promises'
 import path from 'node:path';
 // import { fileURLToPath } from 'node:url';
 
 // const __filename = fileURLToPath(import.meta.url);
 // const __dirname = path.dirname(__filename);
-const __dirname = '/home/juanv/compartido';
-// const __dirname = '/home/juanjhonv/compartido';
+// const __dirname = '/home/juanv/compartido';
+const __dirname = '/home/juanjhonv/compartido';
 
 async function getDirectoryInfo(dirPath) {
   try {
@@ -69,7 +69,7 @@ export class DirectorioController {
     let isDirectory = req.body.tipo
     // console.log('Aca estamod:', filePath, isDirectory)
     if (parseInt(isDirectory)) {
-      rmdir(filePath,
+      rm(filePath,{recursive:true},
         (err) => {
           if (err) {
             return console.error(err);
@@ -86,34 +86,7 @@ export class DirectorioController {
         .catch((err) => {
           resp.json({ ok: false, message: 'Error al eliminar el archivo' })
         })
-      // fs.unlink(filePath, (err) => {
-      //   if (err) {
-      //     console.error(err);
-      //     return resp.status(500).send('Error al eliminar el archivo');
-      //   }
-      //   console.log("Archivo eliminado")
-      // });
     }
-    // resp.json({ message: 'Archivo eliminado con exito' })
-  }
-  static deleteFile = async (req, resp) => {
-    const hex = req.params.file.toString();//force conversion
-    let str = '';
-    for (var i = 0; i < hex.length; i += 2)
-      str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
-    // const file_ = req.params.file
-    // const filePath = path.join(__dirname, 'uploads', req.params);
-    // const filePath = path.join(file_);
-    const filePath = str;
-
-    fs.unlink(filePath, (err) => {
-      if (err) {
-        console.error(err);
-        return resp.status(500).send('Error al eliminar el archivo');
-      }
-      resp.json({ message: 'Archivo eliminado con éxito' });
-    });
-    // resp.json({message:'Archivo eliminado'})
   }
   static getPath = async (req, resp) => {
     const hex = req.params.path.toString();//force conversion
@@ -168,4 +141,19 @@ export class DirectorioController {
     //   console.error('No se pudo listar el directorio:', err);
     // }
   }
+  // static deleteFile = async (req, resp) => {
+  //   const hex = req.params.file.toString();//force conversion
+  //   let str = '';
+  //   for (var i = 0; i < hex.length; i += 2)
+  //     str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+  //   const filePath = str;
+
+  //   fs.unlink(filePath, (err) => {
+  //     if (err) {
+  //       console.error(err);
+  //       return resp.status(500).send('Error al eliminar el archivo');
+  //     }
+  //     resp.json({ message: 'Archivo eliminado con éxito' });
+  //   });
+  // }
 }
