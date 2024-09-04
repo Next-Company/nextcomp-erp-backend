@@ -5,8 +5,8 @@ import path from 'node:path';
 
 // const __filename = fileURLToPath(import.meta.url);
 // const __dirname = path.dirname(__filename);
-// const __dirname = '/home/juanv/compartido';
-const __dirname = '/home/juanjhonv/compartido';
+const __dirname = '/home/juanv/compartido';
+// const __dirname = '/home/juanjhonv/compartido';
 
 async function getDirectoryInfo(dirPath) {
   try {
@@ -19,6 +19,7 @@ async function getDirectoryInfo(dirPath) {
       const stats = await fs.stat(filePath);
       return {
         name: file,
+        dirpath: dirPath,
         path: filePath,
         isFile: stats.isFile(),
         isDirectory: stats.isDirectory(),
@@ -66,7 +67,7 @@ export class DirectorioController {
       str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
     const filePath = str;
     let isDirectory = req.body.tipo
-    console.log('Aca estamod:', filePath, isDirectory)
+    // console.log('Aca estamod:', filePath, isDirectory)
     if (parseInt(isDirectory)) {
       rmdir(filePath,
         (err) => {
@@ -78,16 +79,22 @@ export class DirectorioController {
       )
       // resp.json({ ok: true, message: 'Carpeta eliminada correctamentes' })
     } else {
-      fs.unlink(filePath, (err) => {
-        if (err) {
-          console.error(err);
-          return resp.status(500).send('Error al eliminar el archivo');
-        }
-        console.log("Archivo eliminado")
-        resp.json({ message: 'Archivo eliminado con éxito' });
-      });
+      fs.unlink(filePath)
+        .then(() => {
+          resp.json({ ok: true, message: 'Archivo eliminado con exito' })
+        })
+        .catch((err) => {
+          resp.json({ ok: false, message: 'Error al eliminar el archivo' })
+        })
+      // fs.unlink(filePath, (err) => {
+      //   if (err) {
+      //     console.error(err);
+      //     return resp.status(500).send('Error al eliminar el archivo');
+      //   }
+      //   console.log("Archivo eliminado")
+      // });
     }
-    // resp.json({message:'Archivo eliminado'})
+    // resp.json({ message: 'Archivo eliminado con exito' })
   }
   static deleteFile = async (req, resp) => {
     const hex = req.params.file.toString();//force conversion
