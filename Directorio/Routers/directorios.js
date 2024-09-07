@@ -1,9 +1,11 @@
 import { Router } from "express";
 import { DirectorioController } from "../Controladores/directorios.js";
 export const directorioRouter = Router()
-directorioRouter.get('/', DirectorioController.getAll)
+// directorioRouter.post('/upload/:path', DirectorioController.uploadFile)
+directorioRouter.post('/upload/', DirectorioController.uploadFile)
 directorioRouter.post('/create/', DirectorioController.createFolder)
+directorioRouter.get('/download/:info', DirectorioController.downloadFile)
 directorioRouter.post('/:path', DirectorioController.getPath)
-directorioRouter.post('/upload/:path', DirectorioController.uploadFile)
 directorioRouter.delete('/:file', DirectorioController.removeElement)
-// directorioRouter.post('/delete/:file', DirectorioController.deleteFile)
+directorioRouter.get('/', DirectorioController.getAll)
+// directorioRouter.post('/delete/:file', DirectorioController.deleteFile);
