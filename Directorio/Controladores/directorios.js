@@ -5,8 +5,8 @@ import path from 'node:path';
 
 // const __filename = fileURLToPath(import.meta.url);
 // const __dirname = path.dirname(__filename);
-// const __dirname = '/home/juanv/compartido';
-const __dirname = '/home/juanjhonv/compartido';
+const __dirname = '/home/juanv/compartido';
+// const __dirname = '/home/juanjhonv/compartido';
 
 async function getDirectoryInfo(dirPath) {
   try {
@@ -47,55 +47,75 @@ export class DirectorioController {
   }
   static downloadFile = async (req, resp) => {
     let info = req.params.info;
-    // console.log(req.params.info)
-    // console.log("hola download")
     let str = ''
     for (var i = 0; i < info.length; i += 2)
       str += String.fromCharCode(parseInt(info.substr(i, 2), 16));
-    // console.log(str)
     let otro = JSON.parse(str)
-    // console.log(JSON.parse(str))
-    // const filename = info.dir
-    // const filePath = info.path
-    // const str = ''
-
-    // const hex = filename.toString();
-    // for (var i = 0; i < hex.length; i += 2)
-    //   str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
-
-    // console.log('ALVARO URIBE:',filename,'-',filePath,'-',str)
-    // resp.download(path.join(__dirname, 'gorro_new.jpg'), 'gorro_new.jpg', (err) => {
-
     resp.download(otro.path, otro.name, (err) => {
-        if (err) {
-            console.error('Error al descargar el archivo:', err);
-            resp.status(500).send('No se pudo descargar el archivo.');
-        }
+      if (err) {
+        console.error('Error al descargar el archivo:', err);
+        resp.status(500).send('No se pudo descargar el archivo.');
+      }
     });
     // console.log(ppp)
   }
-  static uploadFile = async (req, resp) => {
+  static uploadFile = (req, resp) => {
     let str = '';
     const ruta = req.body.path
-    if(ruta !== '/' && ruta !== ''){
+    console.log(req.files)
+    if (ruta !== '/' && ruta !== '') {
       const hex = req.body.path.toString();
       for (var i = 0; i < hex.length; i += 2)
         str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
-    }else{
+    } else {
       str = __dirname
     }
     try {
-      const oldPath = req.file.path;
-      const newPath = path.join(str, req.file.originalname);
-      await fs.rename(oldPath, newPath)
+      // const oldPath = req.file.path;
+      // const newPath = path.join(str, req.file.originalname);
+      // await fs.rename(oldPath, newPath)
+      req.files.forEach(async element => {
+        const oldPath = element.path;
+        const newPath = path.join(str, element.originalname);
+        await fs.rename(oldPath, newPath)
+      });
       resp.json({ message: 'Archivo subido de forma satisfactoria' })
+    } catch (error) {
+      resp.json(error)
+    }
+  }
+  static renameFile = async (req, resp) => {
+    let str = '', oldPath = '', newPath = '';
+    const ruta = req.body.path
+    const name = req.body.name
+    const new_name = req.body.new_name
+    const tipo = req.body.tipo
+    if (ruta !== '/' && ruta !== '') {
+      const hex = req.body.path.toString();
+      for (var i = 0; i < hex.length; i += 2)
+        str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+    } else {
+      str = __dirname
+    }
+    try {
+      // console.log('Aca estamos :', name, new_name, str, tipo)
+      if (parseInt(tipo)) {
+        oldPath = str + '/' + name
+        newPath = str + '/' + new_name
+      } else {
+        const extension = name.split('.')
+        oldPath = str + '/' + name
+        newPath = str + '/' + new_name + '.' + extension.at(-1)
+      }
+      await fs.rename(oldPath, newPath)
+      resp.json({ message: 'Edición completa' })
     } catch (error) {
       resp.json(error)
     }
   }
   static removeElement = async (req, resp) => {
     let str = '';
-    const ruta = req.params.file 
+    const ruta = req.params.file
     if (ruta !== '/' && ruta !== '') {
       const hex = req.params.file.toString();
       for (var i = 0; i < hex.length; i += 2)
@@ -106,7 +126,7 @@ export class DirectorioController {
     // console.log('Estamos eliminando info:',filePath)
     console.log('Aca estamod:', filePath, isDirectory)
     if (parseInt(isDirectory)) {
-      rm(filePath,{recursive:true},
+      rm(filePath, { recursive: true },
         (err) => {
           if (err) {
             return console.error(err);
@@ -133,7 +153,7 @@ export class DirectorioController {
     console.log(str)
     // resp.json([]);
     try {
-      console.log('PEPE MUJICA:',str)
+      console.log('PEPE MUJICA:', str)
       const info = await getDirectoryInfo(str)
       console.log(info)
       resp.json(info)
