@@ -12,6 +12,7 @@ import cors from 'cors'
 import multer from 'multer';
 import { PORT_DEFAULT, SECRET_JWT_KEY, SECRET_JWT_KEY2, ORIGINS } from './Main/config.js';
 import { jwt } from './Main/utils.js';
+import { produccionRouter } from "./Produccion/Routers/produccion.js";
 const app = express()
 
 app.use(json())
@@ -64,13 +65,13 @@ app.use((req, resp, next) => {
   } else {
     next()
   }
-
 })
 
 app.use('/login', loginRouter)
 app.use('/home', homeRouter)
 app.use('/soporte', soporteRouter)
 app.use('/directorio', directorioRouter)
+app.use('/produccion', produccionRouter)
 
 app.listen(PORT_DEFAULT, () => {
   console.log('Servidor corriendo en el puerto 4000')
