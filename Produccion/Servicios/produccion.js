@@ -3,7 +3,7 @@ export class ProduccionModel {
   static async getOrdenes(user_data) {
     try {
       const [results, fields] = await connection.query(
-        'SELECT * FROM `tbl2_ordenes_produccion`'
+        'SELECT * FROM `tbl2_ordenes_produccion` order by idx desc'
       );
       return results
     } catch (err) {
@@ -12,9 +12,11 @@ export class ProduccionModel {
   }
   static async pushItems(info,user_data) {
     try {
+      console.log(info)
       if (info.idx == '') {
         const [results, fields] = await connection.query(
-          'INSERT INTO `tbl2_ordenes_produccion`(`cliente`,`fec_emitida`,`fec_entrega`,`marca`,`producto`,`base`,`modelos`) VALUES(?,?,?,?,?,?,?)', [user_data.cliente, info.fec_emitida, info.fec_entregada, info.marca, info.producto, info.base, info.modelos]
+          'INSERT INTO `tbl2_ordenes_produccion`(`oc`,`cliente`,`fec_emitida`,`fec_entrega`,`marca`,`producto`,`base`,`modelos`) VALUES(?,?,?,?,?,?,?,?)', [info.oc, info.cliente, info.fec_emitida, info.fec_entrega, info.marca, info.producto, info.base, info.modelos]
+          // sa
         );
       } else {
         console.log(info)
