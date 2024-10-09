@@ -3,21 +3,69 @@ export class ProduccionModel {
   static async getOrdenes(user_data) {
     try {
       const [results, fields] = await connection.query(
-        'SELECT * FROM `tbl2_ordenes_produccion` order by idx desc'
+        'SELECT * FROM `tbl2_fases_prod_ordenes` order by idx desc'
       );
+      const info_form = {
+        oc:32434,
+        cliente:'Ramirez Mendiola',
+        color:'violeta'
+      }
+      // const lista_fields = fields.map(row=>row.name)
+
+      const values = Object.keys(info_form).reduce((carry,current)=>{
+        fields.map(row=>row.name).includes(current) && carry.push(info_form[current])
+        return carry
+      },[])
+      const campos = JSON.stringify(Object.keys(info_form).reduce((carry,current)=>{
+        fields.map(row=>row.name).includes(current) && carry.push(current)
+        return carry
+      },[])).substring(1).replace(']','')
+
+
+      console.log(values,campos)
+      // console.log("Consultando datos")
       return results
     } catch (err) {
       console.log(err);
     }
   }
+
+// const lista_fields = JSON.stringify(Object.keys(lista)).substring(1).replace(']','')
+
+
   static async pushItems(info,user_data) {
     try {
-      console.log(info)
+      // console.log(info)
       if (info.idx == '') {
-        const [results, fields] = await connection.query(
-          'INSERT INTO `tbl2_ordenes_produccion`(`oc`,`cliente`,`fec_emitida`,`fec_entrega`,`marca`,`producto`,`base`,`modelos`) VALUES(?,?,?,?,?,?,?,?)', [info.oc, info.cliente, info.fec_emitida, info.fec_entrega, info.marca, info.producto, info.base, info.modelos]
-          // sa
-        );
+        const [results, fields] = await connection.query('SELECT *FROM `tbl2_fases_prod_ordenes` LIMIT 1');
+
+        console.log(info)
+
+        const values = Object.keys(info).reduce((carry,current)=>{
+          fields.map(row=>row.name).includes(current) && carry.push(info[current])
+          return carry
+        },[])
+        const campos = Object.keys(info).reduce((carry,current)=>{
+          fields.map(row=>row.name).includes(current) && carry.push(current)
+          return carry
+        },[])
+        const sql = 'INSERT INTO `tbl2_fases_prod_ordenes`('+ campos.toString() +') VALUES ('+ campos.map(row=>"NULLIF(?, '')").toString() +')';
+
+        // console.log(values,campos,sql)
+        const [results2] = await connection.execute(sql,values)
+
+        // const [results2] = await connection.query(
+        //   'INSERT INTO `tbl2_fases_prod_ordenes`('+ campos.toString +') VALUES('+ campos.map(row=>'?').toString() +')', values
+        // );
+
+        // const fields = JSON.stringify(Object.keys(fields)).substring(1).replace(']','')
+
+        // const [results2] = await connection.query(
+        //   'INSERT INTO `tbl2_fases_prod_ordenes`(`oc`,`cliente`,`fec_emitida`,`fec_entrega`,`marca`,`producto`,`base`,`modelos`) VALUES(?,?,?,?,?,?,?,?)', [info.oc, info.cliente, info.fec_emitida, info.fec_entrega, info.marca, info.producto, info.base, info.modelos]
+        // );
+        // const [results2] = await connection.query(
+        //   'INSERT INTO `tbl2_fases_prod_ordenes`(`oc`,`cliente`,`fec_emitida`,`fec_entrega`,`marca`,`producto`,`base`,`modelos`) VALUES(?,?,?,?,?,?,?,?)', [info.oc, info.cliente, info.fec_emitida, info.fec_entrega, info.marca, info.producto, info.base, info.modelos]
+        // );
       } else {
         console.log(info)
         const [results, fields] = await connection.query(
@@ -66,11 +114,11 @@ export class ProduccionModel {
       return [err]
     }
   }
-  static async deleteItems(id) {
+  static async deleteOrden(id) {
     try {
       const [results, fields] = await connection.query(
         // 'SELECT * FROM `tbl2_almacen` WHERE `name` = "Page" AND `age` > 45'
-        'DELETE FROM `tbl2_soportes_cab` WHERE `idx` = "' + id + '"'
+        'DELETE FROM `tbl2_fases_prod_ordenes` WHERE `idx` = "' + id + '"'
       );
       // console.log(results);
       // console.log(fields);

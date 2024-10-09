@@ -6,7 +6,7 @@ export class SoporteModel {
       const [results, fields] = await connection.query(
         'SELECT tb1.*,CASE WHEN tb1.categoria = "IMPL" THEN "Implementaciones" WHEN tb1.categoria = "SOPT" THEN "Soportes" ELSE "Proyectos" END categoria_nom,tb2.nom FROM `tbl2_soportes_cab` tb1 INNER JOIN `tbl_user` tb2 ON tb1.usuario = tb2.idx ' + `${user_data.niv !== 1 ? 'WHERE tb1.usuario = ?' : 'WHERE tb1.usuario = ? or tb1.usuario <> ?'}` + ' ORDER BY tb1.created_at DESC',[user_data.id,user_data.id]
       );
-      // console.log(results);
+      console.log(results);
       // console.log(fields);
       return results
     } catch (err) {

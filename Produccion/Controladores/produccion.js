@@ -30,9 +30,9 @@ export class ProduccionController {
     // resp.json(data)
     // console.log(resp)
   }
-  static async deleteItems(req, resp) {
+  static async deleteOrden(req, resp) {
     let id = req.params.id
-    const data = await ProduccionModel.deleteItems(id)
+    const data = await ProduccionModel.deleteOrden(id)
     resp.json(data)
     // console.log(req)
     // resp.json([{resp:id}])
