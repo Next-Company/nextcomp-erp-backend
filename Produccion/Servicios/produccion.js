@@ -2,8 +2,9 @@ import { connection } from "../../Main/utils.js";
 export class ProduccionModel {
   static async getOrdenes(user_data) {
     try {
-      console.log("esta es otra consulta")
-      const sql = "SELECT idx, oc, cliente, fec_emitida, if(isnull(fec_entrega),'',fec_entrega) as fec_entrega, marca, producto, base, precio, modelos, combo1_orden, combo2_orden, combo3_orden, combo4_orden, combo5_orden, combo6_orden, combo7_orden, combo8_orden, combo9_orden, combo10_orden, combo11_orden, combo12_orden, combo13_orden, combo14_orden, orden_pedido, fec_pedido, proveedor, tela, articulo, guia_ingreso, estado_telas, responsable, molde, muestra, lavado, cliente_corte, tizado, estado_molde, numero_corte, combo1_corte, combo2_corte, combo3_corte, combo4_corte, combo5_corte, combo6_corte, combo7_corte, combo8_corte, combo9_corte, combo10_corte, combo11_corte, combo12_corte, combo13_corte, combo14_corte, estado_corte, responsable_confeccion, precio_confeccion, fec_salida_confeccion,guia_salida_confeccion, cantidad_salida_confeccion, fec_ingreso_confeccion, guia_ingreso_confeccion, cantidad_ingreso_confeccion, fec_termino_confeccion, fallas_confeccion, fallas_tela_confeccion, piezas_incomp_confeccion, auditoria_confeccion, estado_confeccion, responsable_hojalboton, precio_hojalboton, fec_salida_hojalboton, guia_salida_hojalboton, cantidad_salida_hojalboton, fec_ingreso_hojalboton, guia_ingreso_hojalboton, cantidad_ingreso_hojalboton, fec_termino_hojalboton, fallas_hojalboton, fallas_tela_hojalboton, piezas_incomp_hojalboton, auditoria_hojalboton, estado_hojalboton, responsable_estampado, precio_estampado, fec_salida_estampado, guia_salida_estampado, cantidad_salida_estampado, fec_ingreso_estampado, guia_ingreso_estampado, cantidad_ingreso_estampado, fec_termino_estampado, fallas_estampado, fallas_tela_estampado, piezas_incomp_estampado, auditoria_estampado, estado_estampado, responsable_lavanderia, precio_lavanderia, fec_salida_lavanderia, guia_salida_lavanderia, cantidad_salida_lavanderia, fec_ingreso_lavanderia, guia_ingreso_lavanderia,cantidad_ingreso_lavanderia, fec_termino_lavanderia, fallas_lavanderia, fallas_tela_lavanderia, piezas_incomp_lavanderia, auditoria_lavanderia, estado_lavanderia, responsable_bordado, precio_bordado, fec_salida_bordado, guia_salida_bordado, cantidad_salida_bordado, fec_ingreso_bordado, guia_ingreso_bordado, cantidad_ingreso_bordado, fec_termino_bordado, fallas_bordado, fallas_tela_bordado, piezas_incomp_bordado, auditoria_bordado, estado_bordado, responsable_acabados, precio_acabados, fec_salida_acabados, guia_salida_acabados, cantidad_salida_acabados, fec_ingreso_acabados, guia_ingreso_acabados, cantidad_ingreso_acabados, fec_termino_acabados, fallas_acabados, fallas_tela_acabados, piezas_incomp_acabados, auditoria_acabados, estado_acabados FROM `view_ProduccionOrdenes` order by idx desc";
+      // console.log("esta es otra consulta")
+      // 
+      const sql = "select * from view_ProduccionOrdenes"
       const [results, fields] = await connection.query(sql);
 
       // , fec_ingreso_acabados, guia_ingreso_acabados, cantidad_ingreso_acabados, fec_termino_acabados, fallas_acabados, fallas_tela_acabados, piezas_incomp_acabados, auditoria_acabados, estado_acabados
@@ -22,6 +23,32 @@ export class ProduccionModel {
         'SELECT * FROM `view_ProduccionOrdenes` where idx = '+ info.id +' order by idx desc'
       );
       return results
+    } catch (err) {
+      console.log(err);
+    }
+  }
+  static async testMultiSelect(info) {
+    try {
+      const results = [{ ok: true, mensaje: 'Guardado con exito' }]
+      const otro = "'["+info.frutas.map(ele=>'"'+ele+'"')+"]'"
+      console.log("Volviendo en texto :" + otro)
+      console.log("Informacion enviadad del fronted :",info.frutas,info.frutas.toString())
+      // const otro = "["+info.frutas+"]"
+      // const valor = "" info.frutas.toString()
+      const sql = "INSERT INTO `tbl2_testmulti`(ruta_proceso) VALUES ("+ otro +")"
+      console.log("Mi consulta : ",sql)
+      const [result] = await connection.query("INSERT INTO `tbl2_testmulti`(ruta_proceso) VALUES ("+ otro +")")
+
+      return results
+    } catch (err) {
+      console.log(err);
+    }
+  }
+  static async traerMultiSelect() {
+    try {
+      const [result] = await connection.query("select *from tbl2_testmulti")
+      console.log(result)
+      return result
     } catch (err) {
       console.log(err);
     }
@@ -67,6 +94,7 @@ export class ProduccionModel {
           sql = 'INSERT INTO `' + table +'`(id_cab_orden,'+ campos.toString() +') VALUES ('+ id + ',' + campos.map(row=>"NULLIF(?, '')").toString() +')';
         }
         const [result] = await connection.execute(sql,values)
+        // console.log(sql)
       }
       return [{ ok: true, mensaje: 'Guardado con exito' }]
     } catch (err) {

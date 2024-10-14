@@ -26,6 +26,15 @@ export class ProduccionController {
     // resp.json({resppp:info})
     resp.json(data)
   }
+  static async testMultiSelect(req, resp) {
+    const info = req.body
+    const data = await ProduccionModel.testMultiSelect(info)
+    resp.json(data)
+  }
+  static async traerMultiSelect(req, resp) {
+    const data = await ProduccionModel.traerMultiSelect()
+    resp.json(data)
+  }
   static async getAll(req, resp) {
     const user_data = req.session
     const data = await ProduccionModel.getAll(user_data)
