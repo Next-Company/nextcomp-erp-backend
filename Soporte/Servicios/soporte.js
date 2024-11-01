@@ -22,7 +22,7 @@ export class SoporteModel {
       } else {
         console.log(info)
         const [results, fields] = await connection.query(
-          'UPDATE `tbl2_soportes_cab` SET `asunto` = ?, `descripcion` = ?,`prioridad` = ?,`estado` = ?,`categoria` = ?  WHERE idx = ?', [info.asunto, info.descripcion, info.prioridad, info.estado, info.categoria, info.idx
+          'UPDATE `tbl2_soportes_cab` SET `asunto` = ?, `descripcion` = ?,`prioridad` = ?,`estado` = ?,`categoria` = ?,`avance` = ?  WHERE idx = ?', [info.asunto, info.descripcion, info.prioridad, info.estado, info.categoria, info.avance, info.idx
           ]
         );
       }
