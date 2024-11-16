@@ -3,6 +3,7 @@ import { ProduccionController } from "../Controladores/produccion.js";
 
 export const produccionRouter = Router()
 produccionRouter.get('/',ProduccionController.getOrdenes)
+produccionRouter.post('/busqueda',ProduccionController.getOrdenesByParams)
 produccionRouter.get('/:id',ProduccionController.getOrdenesById)
 produccionRouter.get('/traer',ProduccionController.traerMultiSelect)
 produccionRouter.post('/multi',ProduccionController.testMultiSelect)

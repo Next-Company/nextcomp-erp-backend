@@ -11,7 +11,7 @@ export class LoginController {
           { id: info.datos.idx, username: info.datos.usu, niv: info.datos.niv },
           SECRET_JWT_KEY,
           {
-            expiresIn: '30m'
+            expiresIn: '1h'
           }
         )
         const token2 = jwt.sign(

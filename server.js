@@ -31,7 +31,7 @@ app.use((req, resp, next) => {
   const token2 = req.cookies.refresh_token
   req.session = { user: null }
   // console.log(token2)
-  console.log(req.url)
+  console.log("Iniciando validacion :",req.url)
   if (req.url !== '/login') {
     console.log("success", req.url)
     try {
@@ -43,7 +43,7 @@ app.use((req, resp, next) => {
         { id: data.id, username: data.username, niv: data.niv },
         SECRET_JWT_KEY,
         {
-          expiresIn: '30m'
+          expiresIn: '1h'
         }
       )
       resp.cookie('access_token', new_token, {

@@ -8,6 +8,13 @@ export class ProduccionController {
     reply.json(data)
     // reply.send(JSON.stringify({"nombre":'juan'}))
   }
+  static async getOrdenesByParams(req, reply) {
+    const info = req.body
+    const data = await ProduccionModel.getOrdenesByParams(info.params)
+    // console.log(data)
+    reply.json(data)
+    // reply.send(JSON.stringify({"nombre":'juan'}))
+  }
   static async getOrdenesById(req, reply) {
     const info = req.params
     const data = await ProduccionModel.getOrdenesById(info)
