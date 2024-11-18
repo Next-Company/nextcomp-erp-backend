@@ -3,8 +3,8 @@ import jwt_ from 'jsonwebtoken';
 
 export const configs = [
   {
-    // host: '192.168.18.20',
-    host: '192.168.0.171',
+    host: '192.168.18.20',
+    // host: '192.168.0.171',
     port: '3306',
     user: 'ubuntu',
     password: '',
@@ -32,13 +32,13 @@ export const configs = [
     user: 'facturador_seguro',
     password: 'JSJ@1984+-+',
     database: 'BD_FACTURADOR',
-    waitForConnections: true,
-    connectionLimit: 10,
-    maxIdle: 10, // max idle connections, the default value is the same as `connectionLimit`
-    idleTimeout: 60000, // idle connections timeout, in milliseconds, the default value 60000
-    queueLimit: 0,
-    enableKeepAlive: true,
-    keepAliveInitialDelay: 0,
+    // waitForConnections: true,
+    // connectionLimit: 10,
+    // maxIdle: 10,
+    // idleTimeout: 60000,
+    // queueLimit: 0,
+    // enableKeepAlive: false,
+    // keepAliveInitialDelay: 0,
   }
 ]
 // export const connection = await mysql.createConnection({
@@ -51,5 +51,5 @@ export const configs = [
 //   database: 'bd_next',
 // });
 export const connection = mysql.createPool(configs[0]);
-export const conn_jsjfact = mysql.createPool(configs[1]);
+// export const conn_jsjfact = mysql.createPool(configs[1]);
 export const jwt = jwt_

@@ -1,4 +1,4 @@
-import { conn_jsjfact, configs } from "../../Main/utils.js";
+import { configs } from "../../Main/utils.js";
 import mysql from "mysql2/promise";
 export class ProduccionModel {
   static async getOrdenes(user_data) {
@@ -30,7 +30,8 @@ export class ProduccionModel {
     let conn
     let query = ''
     try {
-      conn = await conn_jsjfact.getConnection()
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
       console.log("Esta es mi connectoin control:", conn)
       if (info == '') {
         query = 'SELECT * FROM `viewProduccionOrdenes`'
@@ -43,6 +44,7 @@ export class ProduccionModel {
       console.log(query)
       const [results, fields] = await conn.query(query)
       console.log("Respuesta busqueda por param :", results)
+      await conn.end();
       return results
     } catch (err) {
       console.log(err);
@@ -71,7 +73,8 @@ export class ProduccionModel {
   static async testMultiSelect(info) {
     let conn
     try {
-      conn = await conn_jsjfact.getConnection()
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
       const results = [{ ok: true, mensaje: 'Guardado con exito' }]
       const otro = "'[" + info.frutas.map(ele => '"' + ele + '"') + "]'"
       console.log("Volviendo en texto :" + otro)
@@ -79,32 +82,35 @@ export class ProduccionModel {
       const sql = "INSERT INTO `tbl2_testmulti`(ruta_proceso) VALUES (" + otro + ")"
       console.log("Mi consulta : ", sql)
       const [result] = await conn.query("INSERT INTO `tbl2_testmulti`(ruta_proceso) VALUES (" + otro + ")")
-
+      await conn.end();
       return results
     } catch (err) {
       console.log(err);
     } finally {
-      if (conn) conn.release()
+      if (conn) await conn.end();
     }
   }
   static async traerMultiSelect() {
     let conn
     try {
-      conn = await conn_jsjfact.getConnection()
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
       const [result] = await conn.query("select *from tbl2_testmulti")
       console.log(result)
+      await conn.end();
       return result
     } catch (err) {
       console.log(err);
     } finally {
-      if (conn) conn.release()
+      if (conn) await conn.end();
     }
   }
 
   static async pushItems_back(info, user_data) {
     let conn
     try {
-      conn = await conn_jsjfact.getConnection()
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
       console.log("La conexion creada :", conn)
       let sql = ''
       const table = info.table
@@ -146,6 +152,7 @@ export class ProduccionModel {
         const [result] = await conn.execute(sql, values)
         // console.log(sql)
       }
+      await conn.end();
       return [{ ok: true, mensaje: 'Guardado con exito' }]
     } catch (err) {
       // return [{ok:false,mensaje:'Guardado con xito'}]
@@ -153,7 +160,7 @@ export class ProduccionModel {
     } finally {
       if (conn) {
         console.log("Cerrando session")
-        conn.release()
+        await conn.end();
       }
     }
   }
@@ -198,6 +205,7 @@ export class ProduccionModel {
         } else {
           sql = 'INSERT INTO `' + table + '`(id_cab_orden,' + campos.toString() + ') VALUES (' + id + ',' + campos.map(row => "NULLIF(?, '')").toString() + ')';
         }
+        console.log(sql)
         const [result] = await conn.execute(sql, values)
         // console.log(sql)
       }
@@ -209,7 +217,7 @@ export class ProduccionModel {
     } finally {
       if (conn) {
         // console.log("Cerrando session")
-        // conn.release()
+        // await conn.end();
         await conn.end();
       }
     }
@@ -227,7 +235,7 @@ export class ProduccionModel {
     } finally {
       if (conn) {
         // console.log("Cerrando session")
-        // conn.release()
+        // await conn.end();
         await conn.end();
       }
     }
@@ -235,7 +243,8 @@ export class ProduccionModel {
   static async updateItems() {
     let conn
     try {
-      conn = await conn_jsjfact.getConnection()
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
       const [results, fields] = await conn.query(
         // 'SELECT * FROM `tbl2_almacen` WHERE `name` = "Page" AND `age` > 45'
         'INSERT INTO `tbl2_soportes_cab`(`usuario`,`descripcion`,`fec_programado`,`prioridad`) VALUES("Juan","Avanzar con campo vendedor en modulo de ventas","2024-06-15","ALTA")'
@@ -249,6 +258,7 @@ export class ProduccionModel {
       // console.log(results);
       // console.log(fields);
       // const [{ok:true,mensaje:'Guardado con exito'}]
+      await conn.end();
       return [{ ok: true, mensaje: 'Guardado con exito' }]
     } catch (err) {
       // return [{ok:false,mensaje:'Guardado con exito'}]
@@ -256,7 +266,7 @@ export class ProduccionModel {
     } finally {
       if (conn) {
         console.log("Cerrando session")
-        conn.release()
+        await conn.end();
       }
     }
   }
@@ -274,7 +284,7 @@ export class ProduccionModel {
     } finally {
       if (conn) {
         // console.log("Cerrando session")
-        // conn.release()
+        // await conn.end();
         await conn.end();
       }
     }
