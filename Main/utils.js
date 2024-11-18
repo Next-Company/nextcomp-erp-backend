@@ -1,10 +1,10 @@
 import mysql from "mysql2/promise";
 import jwt_ from 'jsonwebtoken';
 
-const configs = [
+export const configs = [
   {
-    host: '192.168.18.20',
-    // host: '192.168.0.171',
+    // host: '192.168.18.20',
+    host: '192.168.0.171',
     port: '3306',
     user: 'ubuntu',
     password: '',
@@ -17,15 +17,28 @@ const configs = [
     // user: 'ubuntu',
     // password: '',
     // database: 'bd_next',
+    // host: 'jsjfact.com',
+    // port: '3306',
+    // user: 'facturador_seguro',
+    // password: 'JSJ@1984+-+',
+    // database: 'BD_FACTURADOR',
+    // connectionLimit: 30,
+    // waitForConnections: true, 
+    // queueLimit: 0, 
+    // enableKeepAlive: true
+
     host: 'jsjfact.com',
     port: '3306',
     user: 'facturador_seguro',
     password: 'JSJ@1984+-+',
     database: 'BD_FACTURADOR',
-    connectionLimit: 30,
-    // waitForConnections: false,
-    setTimeout: 10000
-    // queueLimit: 0
+    waitForConnections: true,
+    connectionLimit: 10,
+    maxIdle: 10, // max idle connections, the default value is the same as `connectionLimit`
+    idleTimeout: 60000, // idle connections timeout, in milliseconds, the default value 60000
+    queueLimit: 0,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 0,
   }
 ]
 // export const connection = await mysql.createConnection({
@@ -39,6 +52,4 @@ const configs = [
 // });
 export const connection = mysql.createPool(configs[0]);
 export const conn_jsjfact = mysql.createPool(configs[1]);
-
-
 export const jwt = jwt_
