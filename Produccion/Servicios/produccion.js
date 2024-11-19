@@ -6,7 +6,8 @@ export class ProduccionModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      const [results, fields] = await conn.query("select * from viewProduccionOrdenes");
+      console.log(conn)
+      const [results, fields] = await conn.query("select * from viewProduccionOrdenes order by idx desc");
       await conn.end();
       // conn = await conn_jsjfact.getConnection()
       // console.log("Mostrando connect de busqueda ordens total:",conn)
@@ -149,6 +150,7 @@ export class ProduccionModel {
         } else {
           sql = 'INSERT INTO `' + table + '`(id_cab_orden,' + campos.toString() + ') VALUES (' + id + ',' + campos.map(row => "NULLIF(?, '')").toString() + ')';
         }
+        console.log(sql)
         const [result] = await conn.execute(sql, values)
         // console.log(sql)
       }
@@ -190,6 +192,7 @@ export class ProduccionModel {
         }, [])
         const values = campos.map(row => info[row])
         sql = 'INSERT INTO `' + table + '`(' + campos.toString() + ') VALUES (' + campos.map(row => "NULLIF(?, '')").toString() + ')';
+        console.log(sql,values)
         const [result] = await conn.execute(sql, values)
 
       } else {
@@ -205,7 +208,7 @@ export class ProduccionModel {
         } else {
           sql = 'INSERT INTO `' + table + '`(id_cab_orden,' + campos.toString() + ') VALUES (' + id + ',' + campos.map(row => "NULLIF(?, '')").toString() + ')';
         }
-        console.log(sql)
+        console.log("Consulta de insertado:",sql)
         const [result] = await conn.execute(sql, values)
         // console.log(sql)
       }
