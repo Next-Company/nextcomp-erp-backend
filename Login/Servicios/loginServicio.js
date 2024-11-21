@@ -3,7 +3,7 @@ export class LoginModel{
   static async validarLogin({usu,paz}){
     const resp = {ok:false,message:'Credenciales incorrectas'}
     const [results,fields] = await connection.query(
-      "SELECT *FROM tbl_user WHERE usu = ? AND paz = ?",
+      "SELECT tu.*, now() as current FROM tbl_user tu WHERE tu.usu = ? AND tu.paz = ?",
       [usu,paz]
     )
     if(results.length > 0){
