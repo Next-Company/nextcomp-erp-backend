@@ -21,7 +21,7 @@ export class ProduccionModel {
       return { 'msg': err }
     } finally {
       if (conn) {
-        // console.log("Cerrando session")
+        // console.log("Cerrando sessio")
         // conn.release()
         await conn.end();
       }

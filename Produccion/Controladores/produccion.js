@@ -1,6 +1,7 @@
 import { ProduccionModel } from "../Servicios/produccion.js";
 import PDFDocument from "pdfkit"
-import fs from "node:fs"
+import fs from "node:fs/promises"
+import puppeteer from 'puppeteer';
 // import PDFDocument from "pdfkit";
 
 export class ProduccionController {
@@ -10,6 +11,48 @@ export class ProduccionController {
     // console.log(data)
     reply.json(data)
     // reply.send(JSON.stringify({"nombre":'juan'}))
+  }
+  static async exportPedido(req,resp){
+    console.log("Iniciando el exportado:")
+    const BINARY_CHUNKS = await fs.readFile('public/images/firma_jefferson.png')
+    const BINARY_CHUNKS2 = await fs.readFile('public/images/logo_next-02.jpg')
+    // resp.render('compra',{ BINARY_CHUNKS:BINARY_CHUNKS.toString('base64'),BINARY_CHUNKS2:BINARY_CHUNKS2.toString('base64') })
+
+    resp.render('compra',{BINARY_CHUNKS:BINARY_CHUNKS.toString('base64'),BINARY_CHUNKS2:BINARY_CHUNKS2.toString('base64')},async (err,html)=>{
+      try {
+        console.log("Dentro del renderizado")
+        const browser = await puppeteer.launch();
+        const page = await browser.newPage();
+        await page.setContent(html);
+    
+        // Configurar las opciones del PDF (tamaño y orientación)
+        const pdfOptions = {
+          format: 'A4',        // Puedes usar 'A4', 'Letter' o un tamaño personalizado como { width: '210mm', height: '297mm' }
+          landscape: false,    // Para orientación horizontal (landscape) usa `true`
+          printBackground: true // Incluir el fondo en el PDF
+        };
+    
+        const pdfBuffer = await page.pdf(pdfOptions);
+        await browser.close();
+    
+        // console.log(pdfBuffer)
+        // await fs.writeFile('public/css/info.pdf', pdfBuffer);
+        // Enviar el PDF como respuesta
+        // resp.contentType('application/pdf');
+      
+        // resp.download('public/css/info.pdf','info',(err)=>{
+        //   if (err) {
+        //     console.error('Error al descargar el archivo:', err);
+        //     resp.status(500).send('No se pudo descargar el archivo.');
+        //   }
+        // })
+        resp.send({data:pdfBuffer.toString('base64')})
+      } catch (error) {
+        resp.status(500).send('Error al generar el PDF');
+      }
+    });
+
+    
   }
   static async printOrdenes(req, resp) {
     // const user_data = req.session
