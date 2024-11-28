@@ -161,11 +161,11 @@
                                                   <tr>
                                                     <td style="height:20px;width:100px;font-weight:bolder;" valing="middle">Numero de orden</td>
                                                     <td style="height:20px;width:45px;font-weight:bolder">AL.</td>
-                                                    <td style="height:20px;width:130px;" contenteditable="true"></td>
+                                                    <td style="height:20px;width:130px;" contenteditable="true">{{datos.nro_orden}}</td>
                                                   </tr>
                                                   <tr>
                                                     <td style="height:20px;width:80px;font-weight:bolder">Fecha</td>
-                                                    <td colspan="2" contenteditable="true"></td>
+                                                    <td colspan="2" contenteditable="true">{{datos.fecha}}</td>
                                                   </tr>
                                                 </table>
                                               </td>
@@ -187,15 +187,15 @@
               <tr>
                   <td style="width: 67px;"><strong style="font-size:12px;">PROVEEDOR</strong></td>
                   <td style="width: 6px;">:</td>
-                  <td style="width: 220px;" contenteditable="true"></td>
+                  <td style="width: 220px;" contenteditable="true">{{datos.proveedor}}</td>
                   <td style="width: 68px;"><strong>RE</strong></td>
                   <td style="width: 6px;">:</td>
-                  <td style="width: 165px;" contenteditable="true"></td>
+                  <td style="width: 165px;" contenteditable="true">{{datos.re}}</td>
               </tr>
               <tr>
                   <td style="width: 67px;"><strong>RUC</strong></td>
                   <td style="width: 6px;">:</td>
-                  <td style="width: 220px;" contenteditable="true"></td>
+                  <td style="width: 220px;" contenteditable="true">{{datos.ruc}}</td>
                   <td style="width: 68px;"></td>
                   <td style="width: 6px;"></td>
                   <td style="width: 165px;" contenteditable="true"></td>
@@ -203,18 +203,18 @@
               <tr>
                   <td style="width: 67px;"><strong>DIRIGIDO A</strong></td>
                   <td style="width: 6px;">:</td>
-                  <td style="width: 220px;" contenteditable="true"></td>
+                  <td style="width: 220px;" contenteditable="true">{{datos.dirigido}}</td>
                   <td style="width: 68px;"><strong>GIRADO POR</strong></td>
                   <td style="width: 6px;">:</td>
-                  <td style="width: 165px;" contenteditable="true">VANESSA</td>
+                  <td style="width: 165px;" contenteditable="true">{{datos.girado}}</td>
               </tr>
               <tr>
                   <td style="width: 67px;"><strong>TELEFONO</strong></td>
                   <td style="width: 6px;">:</td>
-                  <td style="width: 220px;" contenteditable="true"></td>
+                  <td style="width: 220px;" contenteditable="true">{{datos.telefono}}</td>
                   <td style="width: 68px;"><strong>A CUENTA</strong></td>
                   <td style="width: 6px;">:</td>
-                  <td style="width: 165px;" contenteditable="true"></td>
+                  <td style="width: 165px;" contenteditable="true">{{datos.acuenta}}</td>
               </tr>
               <tr>
                   <td style="width: 67px;"></td>
@@ -222,7 +222,7 @@
                   <td style="width: 220px;" contenteditable="true"></td>
                   <td style="width: 80px;"><strong>FECHA DE ENTREGA</strong></td>
                   <td style="width: 6px;">:</td>
-                  <td style="width: 165px;" contenteditable="true"></td>
+                  <td style="width: 165px;" contenteditable="true">{{datos.entrega}}</td>
               </tr>
             </table>
 
@@ -244,12 +244,24 @@
             </tr>
         </thead>
         <tbody>
+          {{#each detalle}}
+            <tr>
+              <td style="width: 35px;text-align: center;" contenteditable="true">{{@index}}</td> 
+              <td style="width: 60px;text-align: right;" contenteditable="true">{{this.[0]}}</td> 
+              <td style="width: 240px; text-align:justify;" contenteditable="true">{{this.[1]}}</td>
+              <td style="width: 62px;text-align: center;" contenteditable="true">{{this.[2]}}</td>
+              <td style="width: 35px; text-align: right; vertical-align: middle;" contenteditable="true">{{this.[3]}}</td>
+              <td style="width: 60px; text-align: right; vertical-align: middle;" contenteditable="true">{{this.[4]}}</td>
+              <td style="width: 70px; text-align: right; vertical-align: baseline ; height: auto" valign="middle" contenteditable="true">{{this.[5]}}</td>
+            </tr>
+          {{/each}}
+
             <tr nobr="true">
               <td style="width: 35px;text-align: center;" contenteditable="true"></td> 
               <td style="width: 60px;text-align: right;" contenteditable="true"></td> 
               <td style="width: 240px; text-align:justify;" contenteditable="true"></td>
               <td style="width: 62px;text-align: center;" contenteditable="true"></td>
-              <td style="width: 35px; text-align: right; vertical-align: middle;" contenteditable="true">UND</td>
+              <td style="width: 35px; text-align: right; vertical-align: middle;" contenteditable="true"></td>
               <td style="width: 60px; text-align: right; vertical-align: middle;" contenteditable="true"></td>
               <td style="width: 70px; text-align: right; vertical-align: baseline ; height: auto" valign="middle" contenteditable="true"></td>
             </tr>
@@ -483,6 +495,41 @@
             </tr>
       </tbody>
     </table>
+    <p>{{foo}}</p>
+
+    <table class="contenido" style="width:100%;">
+      <thead>
+          <tr nobr="true">
+              <th style="width:35px">ITEMS</th>
+              <th style="width:60px">COLOR</th>
+              <th style="width:240px ;">DESCRIPCI&Oacute;N</th>
+              <th style="width:62px">CANTIDAD PEDIDA</th>
+              <th style="width:35px">UNIDAD</th>
+              <th style="width:60px">PRECIO X MILLAR</th>
+              <th style="width:70px">IMPORTE</th>
+          </tr>
+      </thead>
+      <tbody>
+        {{#foo detalle}}
+          {{!-- {{this}} --}}
+        {{/foo}}
+        {{!-- {{#each detalle}}
+          <tr>
+            <td style="width: 35px;text-align: center;" contenteditable="true">{{@index}}</td> 
+            <td style="width: 60px;text-align: right;" contenteditable="true">{{this.[0]}}</td> 
+            <td style="width: 240px; text-align:justify;" contenteditable="true">{{this.[1]}}</td>
+            <td style="width: 62px;text-align: center;" contenteditable="true">{{this.[2]}}</td>
+            <td style="width: 35px; text-align: right; vertical-align: middle;" contenteditable="true">{{this.[3]}}</td>
+            <td style="width: 60px; text-align: right; vertical-align: middle;" contenteditable="true">{{this.[4]}}</td>
+            <td style="width: 70px; text-align: right; vertical-align: baseline ; height: auto" valign="middle" contenteditable="true">{{this.[5]}}</td>
+          </tr>
+        {{/each}} --}}
+      </tbody>
+    </table>
+    
+    {{!-- {{#each foo}}
+      {{this}}
+    {{/each}} --}}
     <div style="position: absolute;bottom:150px;right:50px;">
       {{!-- <img src="images/firma_jefferson.png" style="width:120px;" /> --}}
       <img src="data:image/png;base64,{{this.BINARY_CHUNKS}}" class="logo" style="width:140px;">

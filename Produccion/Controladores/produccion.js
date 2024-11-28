@@ -14,11 +14,74 @@ export class ProduccionController {
   }
   static async exportPedido(req,resp){
     console.log("Iniciando el exportado:")
+    console.log(req.body)
     const BINARY_CHUNKS = await fs.readFile('public/images/firma_jefferson.png')
     const BINARY_CHUNKS2 = await fs.readFile('public/images/logo_next-02.jpg')
     // resp.render('compra',{ BINARY_CHUNKS:BINARY_CHUNKS.toString('base64'),BINARY_CHUNKS2:BINARY_CHUNKS2.toString('base64') })
 
-    resp.render('compra',{BINARY_CHUNKS:BINARY_CHUNKS.toString('base64'),BINARY_CHUNKS2:BINARY_CHUNKS2.toString('base64')},async (err,html)=>{
+    // {{#list people}}
+    //   {{firstname}} {{lastname}}
+    // {{/list}}
+
+    // Handlebars.registerHelper("list", function(items, options) {
+    //   const itemsAsHtml = items.map(item => "<li>" + options.fn(item) + "</li>");
+    //   return "<ul>\n" + itemsAsHtml.join("\n") + "\n</ul>";
+    // });
+    
+    // {
+    //   people: [
+    //     {
+    //       firstname: "Yehuda",
+    //       lastname: "Katz",
+    //     },
+    //     {
+    //       firstname: "Carl",
+    //       lastname: "Lerche",
+    //     },
+    //     {
+    //       firstname: "Alan",
+    //       lastname: "Johnson",
+    //     },
+    //   ],
+    // }
+    
+
+    resp.render(
+    'compra',{
+      BINARY_CHUNKS:BINARY_CHUNKS.toString('base64'),
+      BINARY_CHUNKS2:BINARY_CHUNKS2.toString('base64'),
+      datos:req.body,
+      detalle:JSON.parse(req.body.detalle),
+      helpers: {
+        // foo() { return JSON.parse(req.body.detalle).map(row=>'<a href="">sdf</a>'); }
+        foo(items,options) { 
+          // <tr>
+          //   <td style="width: 35px;text-align: center;" contenteditable="true">{{@index}}</td> 
+          //   <td style="width: 60px;text-align: right;" contenteditable="true">{{this.[0]}}</td> 
+          //   <td style="width: 240px; text-align:justify;" contenteditable="true">{{this.[1]}}</td>
+          //   <td style="width: 62px;text-align: center;" contenteditable="true">{{this.[2]}}</td>
+          //   <td style="width: 35px; text-align: right; vertical-align: middle;" contenteditable="true">{{this.[3]}}</td>
+          //   <td style="width: 60px; text-align: right; vertical-align: middle;" contenteditable="true">{{this.[4]}}</td>
+          //   <td style="width: 70px; text-align: right; vertical-align: baseline ; height: auto" valign="middle" contenteditable="true">{{this.[5]}}</td>
+          // </tr>
+          // console.log(items)
+          // const itemsAsHtml = items.map(item => `<td style="width: 35px;text-align: center;" contenteditable="true">0</td><td style="width: 60px;text-align: right;" contenteditable="true">`+item+`</td><td style="width: 60px;text-align: right;" contenteditable="true">`+item+`</td><td style="width: 60px;text-align: right;" contenteditable="true">`+item+`</td><td style="width: 60px;text-align: right;" contenteditable="true">`+item+`</td><td style="width: 60px;text-align: right;" contenteditable="true">`+item+`</td><td style="width: 60px;text-align: right;" contenteditable="true">`+item+`</td>`)
+          // return "<tr>"+itemsAsHtml.join("\n")+"</tr>" 
+
+          // console.log(items.data.root.detalle[0][0])
+          // console.log(options)
+
+          // const itemsAsHtml = `<td style="width: 35px;text-align: center;" contenteditable="true">0</td><td style="width: 60px;text-align: right;" contenteditable="true">`+(items[0])[0]+`</td><td style="width: 60px;text-align: right;" contenteditable="true">`+items[1]+`</td><td style="width: 60px;text-align: right;" contenteditable="true">`+items+`</td><td style="width: 60px;text-align: right;" contenteditable="true">`+items+`</td><td style="width: 60px;text-align: right;" contenteditable="true">`+items+`</td><td style="width: 60px;text-align: right;" contenteditable="true">`+items+`</td>`
+
+          const itemsAsHtml = items[0].map(element => {
+            return `<td>`+ element +`</td>`
+          });
+          
+          return "<tr>"+itemsAsHtml.join("")+"</tr>" 
+        }
+      }
+    }
+    ,async (err,html)=>{
       try {
         console.log("Dentro del renderizado")
         const browser = await puppeteer.launch();

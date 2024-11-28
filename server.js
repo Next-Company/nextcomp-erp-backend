@@ -4,7 +4,8 @@
 
 import express, { json } from "express";
 import cookieParser from "cookie-parser";
-import { engine } from 'express-handlebars';
+import { engine, create, ExpressHandlebars } from 'express-handlebars';
+// import ExpressHandlebars from "express-handlebars";
 import { soporteRouter } from "./Soporte/Routers/soporte.js";
 import { directorioRouter } from "./Directorio/Routers/directorios.js";
 import { loginRouter } from './Login/Routers/loginRouter.js';
@@ -16,10 +17,23 @@ import { jwt } from './Main/utils.js';
 import { produccionRouter } from "./Produccion/Routers/produccion.js";
 const app = express()
 
-app.engine('handlebars', engine());
+
+
+const hbs = create({
+    helpers: {
+        foo() { return 'FOO!'; },
+        bar() { return 'BAR!'; }
+    }
+});
+
+// app.engine('handlebars', engine());
+app.engine('handlebars', hbs.engine);
 app.set('view engine', 'handlebars');
 app.set('views', './views');
 app.use(express.static('public'));
+
+
+
 
 app.use(json())
 app.use(cors({
