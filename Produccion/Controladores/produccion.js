@@ -12,7 +12,7 @@ export class ProduccionController {
     reply.json(data)
     // reply.send(JSON.stringify({"nombre":'juan'}))
   }
-  static async exportPedido(req,resp){
+  static async exportPedidoAvios(req,resp){
     console.log("Iniciando el exportado:")
     console.log(req.body)
     const BINARY_CHUNKS = await fs.readFile('public/images/firma_jefferson.png')
@@ -47,7 +47,7 @@ export class ProduccionController {
     
 
     resp.render(
-    'compra',{
+    'avios',{
       BINARY_CHUNKS:BINARY_CHUNKS.toString('base64'),
       BINARY_CHUNKS2:BINARY_CHUNKS2.toString('base64'),
       datos:req.body,
@@ -65,19 +65,28 @@ export class ProduccionController {
           //   <td style="width: 70px; text-align: right; vertical-align: baseline ; height: auto" valign="middle" contenteditable="true">{{this.[5]}}</td>
           // </tr>
           // console.log(items)
-          // const itemsAsHtml = items.map(item => `<td style="width: 35px;text-align: center;" contenteditable="true">0</td><td style="width: 60px;text-align: right;" contenteditable="true">`+item+`</td><td style="width: 60px;text-align: right;" contenteditable="true">`+item+`</td><td style="width: 60px;text-align: right;" contenteditable="true">`+item+`</td><td style="width: 60px;text-align: right;" contenteditable="true">`+item+`</td><td style="width: 60px;text-align: right;" contenteditable="true">`+item+`</td><td style="width: 60px;text-align: right;" contenteditable="true">`+item+`</td>`)
-          // return "<tr>"+itemsAsHtml.join("\n")+"</tr>" 
+
+          let extra = 22 - items.length
+          for(let i=0; i < extra; i++){
+            items.push(['','','','','','',''])
+          }
+
+          const itemsAsHtml = items.map((item,key) => `<tr><td style="width: 35px;text-align: center;" contenteditable="true">${key + 1}</td><td style="width: 60px;text-align: center;" contenteditable="true">`+item[0]+`</td><td style="width: 60px;text-align: left;" contenteditable="true">`+item[1]+`</td><td style="width: 60px;text-align: center;" contenteditable="true">`+item[2]+`</td><td style="width: 60px;text-align: center;" contenteditable="true">`+item[3]+`</td><td style="width: 60px;text-align: center;" contenteditable="true">`+item[4]+`</td><td style="width: 60px;text-align: center;" contenteditable="true">`+item[5]+`</td></tr>`)
+
+          // const rellenoAsHtml = items.map(item => `<tr><td style="width: 35px;text-align: center;" contenteditable="true">0</td><td style="width: 60px;text-align: right;" contenteditable="true"></td><td style="width: 60px;text-align: right;" contenteditable="true"></td><td style="width: 60px;text-align: right;" contenteditable="true"></td><td style="width: 60px;text-align: right;" contenteditable="true"></td><td style="width: 60px;text-align: right;" contenteditable="true"></td><td style="width: 60px;text-align: right;" contenteditable="true"></td></tr>`)
+          return itemsAsHtml.join("\n")
 
           // console.log(items.data.root.detalle[0][0])
           // console.log(options)
 
           // const itemsAsHtml = `<td style="width: 35px;text-align: center;" contenteditable="true">0</td><td style="width: 60px;text-align: right;" contenteditable="true">`+(items[0])[0]+`</td><td style="width: 60px;text-align: right;" contenteditable="true">`+items[1]+`</td><td style="width: 60px;text-align: right;" contenteditable="true">`+items+`</td><td style="width: 60px;text-align: right;" contenteditable="true">`+items+`</td><td style="width: 60px;text-align: right;" contenteditable="true">`+items+`</td><td style="width: 60px;text-align: right;" contenteditable="true">`+items+`</td>`
 
-          const itemsAsHtml = items[0].map(element => {
-            return `<td>`+ element +`</td>`
-          });
+          // const itemsAsHtml = items[0].map(element => {
+          //   return `<td>`+ element +`</td>`
+          // });
           
-          return "<tr>"+itemsAsHtml.join("")+"</tr>" 
+          // return "<tr>"+itemsAsHtml.join("")+"</tr>" 
+          // return "<tr><td>asdfasdfasdf</td></tr>" 
         }
       }
     }
@@ -116,6 +125,49 @@ export class ProduccionController {
     });
 
     
+  }
+  static async exportPedidoTelas(req,resp){
+    console.log("Iniciando el exportado:")
+    console.log(req.body)
+    const BINARY_CHUNKS = await fs.readFile('public/images/firma_jefferson.png')
+    const BINARY_CHUNKS2 = await fs.readFile('public/images/logo_next-02.jpg')
+    
+    resp.render(
+    'telas',{
+      BINARY_CHUNKS:BINARY_CHUNKS.toString('base64'),
+      BINARY_CHUNKS2:BINARY_CHUNKS2.toString('base64'),
+      datos:req.body,
+      detalle:JSON.parse(req.body.detalle),
+      helpers: {
+        foo(items,options) { 
+          let extra = 22 - items.length
+          for(let i=0; i < extra; i++){
+            items.push(['','','','','','',''])
+          }
+          const itemsAsHtml = items.map((item,key) => `<tr><td style="width: 35px;text-align: center;" contenteditable="true">${key + 1}</td><td style="width: 60px;text-align: left;" contenteditable="true">`+item[0]+`</td><td style="width: 60px;text-align: center;" contenteditable="true">`+item[1]+`</td><td style="width: 60px;text-align: center;" contenteditable="true">`+item[2]+`</td><td style="width: 60px;text-align: center;" contenteditable="true">`+item[3]+`</td><td style="width: 60px;text-align: center;" contenteditable="true">`+item[4]+`</td><td style="width: 60px;text-align: center;" contenteditable="true">`+item[5]+`</td></tr>`)
+          return itemsAsHtml.join("\n")
+        }
+      }
+    }
+    ,async (err,html)=>{
+      try {
+        console.log("Dentro del renderizado")
+        const browser = await puppeteer.launch();
+        const page = await browser.newPage();
+        await page.setContent(html);
+    
+        const pdfOptions = {
+          format: 'A4',        // Puedes usar 'A4', 'Letter' o un tamaño personalizado como { width: '210mm', height: '297mm' }
+          landscape: false,    // Para orientación horizontal (landscape) usa `true`
+          printBackground: true // Incluir el fondo en el PDF
+        };
+        const pdfBuffer = await page.pdf(pdfOptions);
+        await browser.close();
+        resp.send({data:pdfBuffer.toString('base64')})
+      } catch (error) {
+        resp.status(500).send('Error al generar el PDF');
+      }
+    });
   }
   static async printOrdenes(req, resp) {
     // const user_data = req.session
