@@ -51,9 +51,9 @@ app.use((req, resp, next) => {
   const token2 = req.cookies.refresh_token
   req.session = { user: null }
   // console.log(token2)
-  console.log("Iniciando validacion :",req.url)
+  // console.log("Iniciando validacion :",req.url)
   if (req.url !== '/login') {
-    console.log("success", req.url)
+    // console.log("success", req.url)
     try {
       const data = jwt.verify(token, SECRET_JWT_KEY)
       const data2 = jwt.verify(token2, SECRET_JWT_KEY2)

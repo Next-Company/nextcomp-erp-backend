@@ -33,7 +33,7 @@ export class ProduccionModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      console.log("Esta es mi connectoin control:", conn)
+      // console.log("Esta es mi connectoin control:", conn)
       if (info == '') {
         query = 'SELECT * FROM `viewProduccionOrdenes`'
       } else {
@@ -42,7 +42,7 @@ export class ProduccionModel {
         }).join(' and ')
         query = 'SELECT * FROM `viewProduccionOrdenes` where ' + formateo
       }
-      console.log(query)
+      console.log('Busqueda de ordenes produccion :',query)
       const [results, fields] = await conn.query(query)
       console.log("Respuesta busqueda por param :", results)
       await conn.end();
