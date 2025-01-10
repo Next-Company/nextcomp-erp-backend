@@ -10,6 +10,7 @@ produccionRouter.post('/exporttelas',ProduccionController.exportPedidoTelas)
 produccionRouter.get('/getListaEstampados',ProduccionController.getListaEstampados)
 produccionRouter.get('/estampado/:id',ProduccionController.getInfoEstampado)
 produccionRouter.put('/guardarestampado',ProduccionController.saveInfoEstampado)
+produccionRouter.delete('/borrarestampado/:id',ProduccionController.eliminarInfoEstampado)
 
 produccionRouter.post('/busqueda',ProduccionController.getOrdenesByParams)
 produccionRouter.get('/:id',ProduccionController.getOrdenesById)

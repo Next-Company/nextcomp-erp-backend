@@ -336,7 +336,7 @@ export class ProduccionController {
   static async getInfoEstampado(req, res){
     const id = req.params.id
     const data = await ProduccionModel.getInfoEstampado(id)
-    console.log("Consulta estampado :",data)
+    // console.log("Consulta estampado :",data)
     res.json(data)
   }
   static async saveInfoEstampado(req, res){
@@ -344,6 +344,11 @@ export class ProduccionController {
     console.log("Datos del body:",info)
     const data = await ProduccionModel.saveInfoEstampado(info)
     console.log("Consulta estampado :",data)
+    res.json(data)
+  }
+  static async eliminarInfoEstampado(req, res){
+    const id = req.params.id
+    const data = await ProduccionModel.eliminarInfoEstampado(id)
     res.json(data)
   }
 }

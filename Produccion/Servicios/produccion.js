@@ -297,11 +297,8 @@ export class ProduccionModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      const [results, fields] = await conn.query('SELECT *FROM tbl2_seguimiento_estampado');
+      const [results, fields] = await conn.query('SELECT *FROM tbl2_seguimiento_estampado ORDER BY created_at DESC');
       await conn.end();
-
-      console.log(results)
-      
       return results
     } catch (err) {
       return [err]
@@ -338,11 +335,29 @@ export class ProduccionModel {
       await conn.connect();
 
       if(info.idx){
+        console.log("Existe id estampado")
         const [results, fields] = await conn.query('UPDATE tbl2_seguimiento_estampado SET op = ?,nro_corte = ?,modelo = ?,nro_polos = ?,nro_paquetes = ?,nro_personal = ?,fec_inicio = ?,fec_termino = ?,tipo_estampado = ?,estado = ?,observaciones = ? WHERE idx = ?',[info.op,info.nro_corte,info.modelo,info.nro_polos,info.nro_paquetes,info.nro_personal,info.fec_inicio,info.fec_termino,info.tipo_estampado,info.estado,info.observaciones,info.idx]);
       }else{
-        const [results, fields] = await conn.query('INSERT INTO tbl2_seguimiento_estampado(op,nro_corte,modelo,nro_polos,nro_paquetes,nro_personal,fec_inicio,fec_termino,tipo_estampado,estado,observaciones) VALUES(?,?,?,?,?,?,?,?,?,?,?,)',[info.op,info.nro_corte,info.modelo,info.nro_polos,info.nro_paquetes,info.nro_personal,info.fec_inicio,info.fec_termino,info.tipo_estampado,info.estado,info.observaciones]);
+        console.log("No existe id estampado")
+        const [results, fields] = await conn.query('INSERT INTO tbl2_seguimiento_estampado(op,nro_corte,modelo,nro_polos,nro_paquetes,nro_personal,fec_inicio,fec_termino,tipo_estampado,estado,observaciones) VALUES(?,?,?,?,?,?,?,?,?,?,?)',[info.op,info.nro_corte,info.modelo,info.nro_polos,info.nro_paquetes,info.nro_personal,info.fec_inicio,info.fec_termino,info.tipo_estampado,info.estado,info.observaciones]);
       }
 
+      await conn.end();
+      return results
+    } catch (err) {
+      return [err]
+    } finally {
+      if (conn) {
+        await conn.end();
+      }
+    }
+  }
+  static async eliminarInfoEstampado(id){
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      const [results, fields] = await conn.query('DELETE FROM `tbl2_seguimiento_estampado` WHERE `idx` = "' + id + '"');
       await conn.end();
       return results
     } catch (err) {
