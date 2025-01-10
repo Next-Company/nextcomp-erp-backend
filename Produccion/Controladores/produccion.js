@@ -329,4 +329,21 @@ export class ProduccionController {
     // console.log(req)
     // resp.json([{resp:id}])
   }
+  static async getListaEstampados(req, res){
+    const data = await ProduccionModel.getListaEstampados()
+    res.json(data)
+  }
+  static async getInfoEstampado(req, res){
+    const id = req.params.id
+    const data = await ProduccionModel.getInfoEstampado(id)
+    console.log("Consulta estampado :",data)
+    res.json(data)
+  }
+  static async saveInfoEstampado(req, res){
+    const info = req.body
+    console.log("Datos del body:",info)
+    const data = await ProduccionModel.saveInfoEstampado(info)
+    console.log("Consulta estampado :",data)
+    res.json(data)
+  }
 }

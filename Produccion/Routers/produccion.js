@@ -6,6 +6,11 @@ produccionRouter.get('/',ProduccionController.getOrdenes)
 produccionRouter.get('/print',ProduccionController.printOrdenes)
 produccionRouter.post('/exportavios',ProduccionController.exportPedidoAvios)
 produccionRouter.post('/exporttelas',ProduccionController.exportPedidoTelas)
+
+produccionRouter.get('/getListaEstampados',ProduccionController.getListaEstampados)
+produccionRouter.get('/estampado/:id',ProduccionController.getInfoEstampado)
+produccionRouter.put('/guardarestampado',ProduccionController.saveInfoEstampado)
+
 produccionRouter.post('/busqueda',ProduccionController.getOrdenesByParams)
 produccionRouter.get('/:id',ProduccionController.getOrdenesById)
 produccionRouter.get('/traer',ProduccionController.traerMultiSelect)

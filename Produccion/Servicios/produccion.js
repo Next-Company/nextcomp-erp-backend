@@ -292,4 +292,65 @@ export class ProduccionModel {
       }
     }
   }
+  static async getListaEstampados(){
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      const [results, fields] = await conn.query('SELECT *FROM tbl2_seguimiento_estampado');
+      await conn.end();
+
+      console.log(results)
+      
+      return results
+    } catch (err) {
+      return [err]
+    } finally {
+      if (conn) {
+        // console.log("Cerrando session")
+        // await conn.end();
+        await conn.end();
+      }
+    }
+  }
+  static async getInfoEstampado(id){
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      const [results, fields] = await conn.query('SELECT *FROM tbl2_seguimiento_estampado where idx = ?',[id]);
+      await conn.end();
+      
+      return results
+    } catch (err) {
+      return [err]
+    } finally {
+      if (conn) {
+        await conn.end();
+      }
+    }
+  }
+  static async saveInfoEstampado(info){
+    let conn
+    console.log(info)
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+
+      if(info.idx){
+        const [results, fields] = await conn.query('UPDATE tbl2_seguimiento_estampado SET op = ?,nro_corte = ?,modelo = ?,nro_polos = ?,nro_paquetes = ?,nro_personal = ?,fec_inicio = ?,fec_termino = ?,tipo_estampado = ?,estado = ?,observaciones = ? WHERE idx = ?',[info.op,info.nro_corte,info.modelo,info.nro_polos,info.nro_paquetes,info.nro_personal,info.fec_inicio,info.fec_termino,info.tipo_estampado,info.estado,info.observaciones,info.idx]);
+      }else{
+        const [results, fields] = await conn.query('INSERT INTO tbl2_seguimiento_estampado(op,nro_corte,modelo,nro_polos,nro_paquetes,nro_personal,fec_inicio,fec_termino,tipo_estampado,estado,observaciones) VALUES(?,?,?,?,?,?,?,?,?,?,?,)',[info.op,info.nro_corte,info.modelo,info.nro_polos,info.nro_paquetes,info.nro_personal,info.fec_inicio,info.fec_termino,info.tipo_estampado,info.estado,info.observaciones]);
+      }
+
+      await conn.end();
+      return results
+    } catch (err) {
+      return [err]
+    } finally {
+      if (conn) {
+        await conn.end();
+      }
+    }
+  }
 }
