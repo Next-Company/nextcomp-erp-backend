@@ -297,7 +297,7 @@ export class ProduccionModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      const [results, fields] = await conn.query('SELECT *FROM tbl2_seguimiento_estampado ORDER BY created_at DESC');
+      const [results, fields] = await conn.query('SELECT *FROM tbl2_seguimiento_estampado_cab ORDER BY created_at DESC');
       await conn.end();
       return results
     } catch (err) {
@@ -315,7 +315,7 @@ export class ProduccionModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      const [results, fields] = await conn.query('SELECT *FROM tbl2_seguimiento_estampado where idx = ?',[id]);
+      const [results, fields] = await conn.query('SELECT *FROM tbl2_seguimiento_estampado_det where id_seguimiento_cab = ?',[id]);
       await conn.end();
       
       return results
@@ -327,23 +327,73 @@ export class ProduccionModel {
       }
     }
   }
-  static async saveInfoEstampado(info){
+  static async saveInfoEstampado(data){
     let conn
-    console.log(info)
+    // console.log(info)
+    const results = {ok:true,message:'test'}
+    const detalle = JSON.parse(data.info)
+    console.log('Detalle multiple:',detalle)
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
 
-      if(info.idx){
-        console.log("Existe id estampado")
-        const [results, fields] = await conn.query('UPDATE tbl2_seguimiento_estampado SET op = ?,nro_corte = ?,modelo = ?,nro_polos = ?,nro_paquetes = ?,nro_personal = ?,fec_inicio = ?,fec_termino = ?,tipo_estampado = ?,estado = ?,observaciones = ? WHERE idx = ?',[info.op,info.nro_corte,info.modelo,info.nro_polos,info.nro_paquetes,info.nro_personal,info.fec_inicio,info.fec_termino,info.tipo_estampado,info.estado,info.observaciones,info.idx]);
+      if(data.idx){
+        const [res,fld] = await conn.query("select *from tbl2_seguimiento_estampado_det where id_seguimiento_cab = "+ parseInt(data.idx))
+        const ids_delete = detalle.filter(row=> row.idx !== '' && !res.map(fila=>parseInt(fila.idx)).includes(parseInt(row.idx)) )
+
+        // const insert = async ()=>{
+        //   const fila = detalle.shift()
+        //   if(fila){
+        //     if(fila.idx == ''){
+        //       const [results, fields] = await conn.query('INSERT INTO tbl2_seguimiento_estampado_det(id_seguimiento_cab,op,nro_corte,modelo,nro_polos,nro_paquetes,nro_personal,tipo_estampado,estado,avance,observaciones) VALUES(?,?,?,?,?,?,?,?,?,?,?)',[data.idx,fila.op,fila.nro_corte,fila.modelo,fila.nro_polos,fila.nro_paquetes,fila.nro_personal,fila.tipo_estampado,fila.estado,fila.avance,fila.observaciones]);
+        //     }else{
+        //       const [results, fields] = await conn.query('UPDATE tbl2_seguimiento_estampado_det SET op=?,nro_corte=?,modelo=?,nro_polos=?,nro_paquetes=?,nro_personal=?,tipo_estampado=?,estado=?,avance=?,observaciones=? WHERE idx = ? and id_seguimiento_cab = ?',[fila.op,fila.nro_corte,fila.modelo,fila.nro_polos,fila.nro_paquetes,fila.nro_personal,fila.tipo_estampado,fila.estado,fila.avance,fila.observaciones,fila.idx,fila.id_seguimiento_cab]);
+        //     }
+        //     insert()
+        //   }else{
+        //     return Promise.resolve('')
+        //   }
+        // }
+        // await insert()
+
+        // const eliminar = async ()=>{
+        //   const fila = ids_delete.shift()
+        //   if(fila){
+        //     await conn.query('DELETE FROM `tbl2_seguimiento_estampado_det` WHERE `id_seguimiento_cab` = ? and `idx` = ?',[parseInt(fila.id_seguimiento_cab),parseInt(fila.idx)])
+        //     eliminar()
+        //   }else{
+        //     return Promise.resolve('')
+        //   }
+        // }
+        // await eliminar()
+        await conn.end();
+        return results
       }else{
-        console.log("No existe id estampado")
-        const [results, fields] = await conn.query('INSERT INTO tbl2_seguimiento_estampado(op,nro_corte,modelo,nro_polos,nro_paquetes,nro_personal,fec_inicio,fec_termino,tipo_estampado,estado,observaciones) VALUES(?,?,?,?,?,?,?,?,?,?,?)',[info.op,info.nro_corte,info.modelo,info.nro_polos,info.nro_paquetes,info.nro_personal,info.fec_inicio,info.fec_termino,info.tipo_estampado,info.estado,info.observaciones]);
+        // const [res,fld] = await conn.query("insert into tbl2_seguimiento_estampado_cab(observaciones) values('OTRAS OBSERVACIONES')")
+
+        // const insert = async ()=>{
+        //   const fila = detalle.shift()
+        //   if(fila){
+        //     const [results, fields] = await conn.query('INSERT INTO tbl2_seguimiento_estampado_det(id_seguimiento_cab,op,nro_corte,modelo,nro_polos,nro_paquetes,nro_personal,tipo_estampado,estado,avance,observaciones) VALUES(?,?,?,?,?,?,?,?,?,?,?)',[res.insertId,fila.op,fila.nro_corte,fila.modelo,fila.nro_polos,fila.nro_paquetes,fila.nro_personal,fila.tipo_estampado,fila.estado,fila.avance,fila.observaciones]);            
+        //     insert()
+        //   }else{
+        //     return Promise.resolve('')
+        //   }
+        // }
+        // await insert()
+        await conn.end();
+        return results
       }
 
-      await conn.end();
-      return results
+      // if(info.idx){
+      //   console.log("Existe id estampado")
+      //   const [results, fields] = await conn.query('UPDATE tbl2_seguimiento_estampado SET op = ?,nro_corte = ?,modelo = ?,nro_polos = ?,nro_paquetes = ?,nro_personal = ?,fec_inicio = ?,fec_termino = ?,tipo_estampado = ?,estado = ?,observaciones = ? WHERE idx = ?',[info.op,info.nro_corte,info.modelo,info.nro_polos,info.nro_paquetes,info.nro_personal,info.fec_inicio,info.fec_termino,info.tipo_estampado,info.estado,info.observaciones,info.idx]);
+      // }else{
+      //   console.log("No existe id estampado")
+      //   const [results, fields] = await conn.query('INSERT INTO tbl2_seguimiento_estampado(op,nro_corte,modelo,nro_polos,nro_paquetes,nro_personal,fec_inicio,fec_termino,tipo_estampado,estado,observaciones) VALUES(?,?,?,?,?,?,?,?,?,?,?)',[info.op,info.nro_corte,info.modelo,info.nro_polos,info.nro_paquetes,info.nro_personal,info.fec_inicio,info.fec_termino,info.tipo_estampado,info.estado,info.observaciones]);
+      // }
+
+      
     } catch (err) {
       return [err]
     } finally {
