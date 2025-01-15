@@ -12,6 +12,41 @@ export class ProduccionController {
     reply.json(data)
     // reply.send(JSON.stringify({"nombre":'juan'}))
   }
+  static async exportInfoEstampado(req,resp){
+    const params = req.params
+    const data = await ProduccionModel.getInfoEstampado(params.id)
+    const data2 = await ProduccionModel.getInfoEstampadoCab(params.id)
+    console.log("Info cabecera:",data2)
+    console.log("Fecha:",new Date(Date.parse(data2[0].created_at)).toLocaleDateString())
+    resp.render(
+    'estampado',
+    {
+      info:params,
+      detalle:data,
+      fecha:new Date(Date.parse(data2[0].created_at)).toLocaleDateString()
+    },
+    async (err,html)=>{
+      try {
+        const browser = await puppeteer.launch();
+        const page = await browser.newPage();
+        await page.setContent(html);
+    
+        const pdfOptions = {
+          format: 'A4',        // Puedes usar 'A4', 'Letter' o un tamaño personalizado como { width: '210mm', height: '297mm' }
+          landscape: false,    // Para orientación horizontal (landscape) usa `true`
+          printBackground: true // Incluir el fondo en el PDF
+        };
+    
+        const pdfBuffer = await page.pdf(pdfOptions);
+        await browser.close();
+        resp.send({data:pdfBuffer.toString('base64')})
+      } catch (error) {
+        resp.status(500).send('Error al generar el PDF');
+      }
+    });
+
+    
+  }
   static async exportPedidoAvios(req,resp){
     console.log("Iniciando el exportado:")
     console.log(req.body)

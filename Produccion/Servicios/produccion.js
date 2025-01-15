@@ -297,7 +297,16 @@ export class ProduccionModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      const [results, fields] = await conn.query('SELECT *FROM tbl2_seguimiento_estampado_cab ORDER BY created_at DESC');
+      const [results, fields] = await conn.query('SELECT *,if(date(now()) = date(created_at),1,0) as enabled FROM tbl2_seguimiento_estampado_cab ORDER BY created_at DESC');
+
+
+
+      results.forEach(row=>{
+        const fecha = new Date(Date.now()).toLocaleDateString()
+      })
+
+
+
       await conn.end();
       return results
     } catch (err) {
@@ -316,6 +325,23 @@ export class ProduccionModel {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
       const [results, fields] = await conn.query('SELECT *FROM tbl2_seguimiento_estampado_det where id_seguimiento_cab = ?',[id]);
+      await conn.end();
+      
+      return results
+    } catch (err) {
+      return [err]
+    } finally {
+      if (conn) {
+        await conn.end();
+      }
+    }
+  }
+  static async getInfoEstampadoCab(id){
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      const [results, fields] = await conn.query('SELECT *FROM tbl2_seguimiento_estampado_cab where idx = ?',[id]);
       await conn.end();
       
       return results
@@ -349,11 +375,11 @@ export class ProduccionModel {
           if(fila){
             if(fila.idx == ''){
               console.log("Dentro de insertado")
-              const [results, fields] = await conn.query('INSERT INTO tbl2_seguimiento_estampado_det(id_seguimiento_cab,op,nro_corte,modelo,nro_polos,nro_paquetes,nro_personal,tipo_estampado,estado,avance,observaciones) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',[data.id,fila.op,fila.nro_corte,fila.modelo,fila.nro_polos,fila.nro_paquetes,fila.nro_personal,fila.tipo_estampado,fila.estado,fila.avance,fila.observaciones]);
+              const [results, fields] = await conn.query('INSERT INTO tbl2_seguimiento_estampado_det(id_seguimiento_cab,op,nro_corte,modelo,nro_polos,nro_paquetes,nro_personal,tipo_estampado,estado,avance,observaciones,cliente,nro_fallados) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',[data.id,fila.op,fila.nro_corte,fila.modelo,fila.nro_polos,fila.nro_paquetes,fila.nro_personal,fila.tipo_estampado,fila.estado,fila.avance,fila.observaciones,,fila.cliente,fila.nro_fallados]);
               // insert()
             }else{
               console.log("Dentro de actualizados")
-              const [results, fields] = await conn.query('UPDATE tbl2_seguimiento_estampado_det SET op=NULLIF(?, ""),nro_corte=NULLIF(?, ""),modelo=NULLIF(?, ""),nro_polos=NULLIF(?, ""),nro_paquetes=NULLIF(?, ""),nro_personal=NULLIF(?, ""),tipo_estampado=NULLIF(?, ""),estado=NULLIF(?, ""),avance=NULLIF(?, ""),observaciones=NULLIF(?, "") WHERE idx = ? and id_seguimiento_cab = ?',[fila.op,fila.nro_corte,fila.modelo,fila.nro_polos,fila.nro_paquetes,fila.nro_personal,fila.tipo_estampado,fila.estado,fila.avance,fila.observaciones,fila.idx,data.id]);
+              const [results, fields] = await conn.query('UPDATE tbl2_seguimiento_estampado_det SET op=NULLIF(?, ""),nro_corte=NULLIF(?, ""),modelo=NULLIF(?, ""),nro_polos=NULLIF(?, ""),nro_paquetes=NULLIF(?, ""),nro_personal=NULLIF(?, ""),tipo_estampado=NULLIF(?, ""),estado=NULLIF(?, ""),avance=NULLIF(?, ""),observaciones=NULLIF(?, ""),cliente=NULLIF(?, ""),nro_fallados=NULLIF(?, "") WHERE idx = ? and id_seguimiento_cab = ?',[fila.op,fila.nro_corte,fila.modelo,fila.nro_polos,fila.nro_paquetes,fila.nro_personal,fila.tipo_estampado,fila.estado,fila.avance,fila.observaciones,fila.cliente,fila.nro_fallados,fila.idx,data.id]);
               // insert()
             }
             await insert()
