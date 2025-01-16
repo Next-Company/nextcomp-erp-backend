@@ -388,4 +388,26 @@ export class ProduccionController {
     const data = await ProduccionModel.eliminarInfoEstampado(id)
     res.json(data)
   }
+  static async ShowInforme(req, res){
+    console.log("Mostrando informe seguimiento estampado 12")
+    const params = req.params
+    const data = await ProduccionModel.getInfoEstampado(params.id)
+    const data2 = await ProduccionModel.getInfoEstampadoCab(params.id)
+    res.render('estampado',{
+      info:params,
+      detalle:data,
+      fecha:new Date(Date.parse(data2[0].created_at)).toLocaleDateString()  
+    })
+    // res.render(
+    // 'estampado',
+    // {
+    //   info:params,
+    //   detalle:data,
+    //   fecha:new Date(Date.parse(data2[0].created_at)).toLocaleDateString()
+    // },
+    // async (err,html)=>{
+    //   console.log(html)
+    //   res.send(html)
+    // });
+  }
 }

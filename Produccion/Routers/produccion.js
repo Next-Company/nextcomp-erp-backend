@@ -20,3 +20,5 @@ produccionRouter.post('/multi',ProduccionController.testMultiSelect)
 produccionRouter.post('/',ProduccionController.pushItems)
 produccionRouter.put('/:id/:data',ProduccionController.updateItems)
 produccionRouter.delete('/:id',ProduccionController.deleteOrden)
+
+produccionRouter.get('/informe/:id',ProduccionController.ShowInforme)
