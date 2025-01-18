@@ -28,9 +28,12 @@ export class ProduccionController {
     async (err,html)=>{
       try {
         const browser = await puppeteer.launch();
+
+        const version = await browser.version();
+        console.log(`Versión de Chrome: ${version}`);
         const page = await browser.newPage();
         await page.setContent(html);
-    
+
         const pdfOptions = {
           format: 'A4',        // Puedes usar 'A4', 'Letter' o un tamaño personalizado como { width: '210mm', height: '297mm' }
           landscape: false,    // Para orientación horizontal (landscape) usa `true`

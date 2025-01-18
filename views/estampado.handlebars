@@ -13,7 +13,7 @@
     position: relative;
   }
   .main_informe{
-    padding:20px;
+    padding:1cm;
     width: 21cm;
     height: 20.7cm;
   }
@@ -29,9 +29,21 @@
     width: 25px;
     height: 25px;
     left: -15px;
-    top: -5px;
+    top: -10px;
     background-color: white;
     border: 0.2px solid black;
+  }
+  .cuerpo_estampado .indicador span{
+    font-size: .8rem;
+  }
+  .cuerpo_estampado .indicador div{
+    padding: 5px;
+  }
+  .indicador{
+    flex:1;
+  }
+  .nowrap_space{
+    white-space: nowrap;
   }
 </style>
 <div class="main_informe">
@@ -41,22 +53,52 @@
     <div class="cuerpo_estampado">
       <div class="indice_estampado">{{@index}}</div>
       <div style="padding:10px;">
-        <span style="font-size: .8rem;font-weight:600;">Modelo:{{modelo}}</span>
-        <br/>
-        <br/>
-        <div style="display:flex;gap:10px;">
-          <div>
-            <div><strong>NroPolos: </strong>{{nro_polos}}</div>
-            <div><strong>NroPaquetes: </strong>{{nro_paquetes}}</div>
-            <div><strong>NroPersonal: </strong>{{nro_personal}}</div>
-            <div><strong>TipoEstampado: </strong>{{tipo_estampado}}</div>  
-            <div><strong>Cliente: </strong>{{cliente}}</div>
-            <div><strong>Estado: </strong>{{estado}}</div>
-            <div><strong>Avance: </strong>{{estado}}</div>
-            <div><strong>Observaciones: </strong>{{observaciones}}</div>
+        {{!-- <span style="font-size: .8rem;font-weight:600;">Modelo:{{modelo}}</span> --}}
+        {{!-- <br/> --}}
+        <div >
+          <div style="display: flex;gap:10px;">
+            <div class="indicador">
+              <span><strong>Modelo: </strong></span>
+              <div class="nowrap_space">{{modelo}}</div>
+            </div>
+            <div class="indicador">
+              <span><strong>Marca: </strong></span>
+              <div class="nowrap_space">{{marca}}</div>
+            </div>
+            <div class="indicador">
+              <span><strong>NroPaquetes: </strong></span>
+              <div>{{nro_paquetes}}</div>
+            </div>
+            <div class="indicador">
+              <span><strong>NroPolos: </strong></span>
+              <div>{{nro_polos}}</div>
+            </div>
+            <div class="indicador">
+              <span><strong>NroPersonal: </strong></span>
+              <div>{{nro_personal}}</div>
+            </div>
+            <div class="indicador">
+              <span><strong>TipoEstampado: </strong></span>
+              <div class="nowrap_space">{{tipo_estampado}}</div>
+            </div>
+            <div class="indicador">
+              <span><strong>Cliente: </strong></span>
+              <div class="nowrap_space">{{cliente}}</div>
+            </div>
+            <div class="indicador">
+              <span><strong>Estado: </strong></span>
+              <div>
+                {{estado}}
+              </div>
+            </div>
+            <div class="indicador">
+              <span><strong>Avance: </strong></span>
+              <div>{{avance}}</div>
+            </div>
           </div>
-          <div>
-            
+          <div class="indicador">
+            <span><strong>Observaciones: </strong></span>
+            <div>{{observaciones}}</div>
           </div>
         </div>
       </div>
