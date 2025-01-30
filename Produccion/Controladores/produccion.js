@@ -413,4 +413,25 @@ export class ProduccionController {
     //   res.send(html)
     // });
   }
+  //////////////////////////////
+  // Seccion registro de guias //
+  //////////////////////////////
+  static async getListaGuias(req, res){
+    const data = await ProduccionModel.getListaGuias()
+    res.json(data)
+  }
+  static async getInfoGuias(req, res){
+    const id = req.params.id
+    const data = await ProduccionModel.getInfoGuias(id)
+    res.json(data)
+  }
+  static async saveInfoGuias(req, res){
+    const data = await ProduccionModel.saveInfoGuias(req.body)
+    res.json({ok:true,message:'datos guardados'})
+  }
+  static async eliminarInfoGuias(req, res){
+    const id = req.params.id
+    const data = await ProduccionModel.eliminarInfoGuias(id)
+    res.json(data)
+  }
 }

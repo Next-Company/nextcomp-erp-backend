@@ -450,4 +450,158 @@ export class ProduccionModel {
       }
     }
   }
+
+  //////////////////////////////////
+  //seccion guias traslado interno
+  //////////////////////////////////
+  static async getListaGuias(){
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      const [results, fields] = await conn.query("select oc,origen,destino,responsable,fec_emision,fec_retorno,fec_recepcion,costo,(COALESCE(date(fec_retorno),0) - COALESCE(date(fec_emision),0)) as tiempo_produccion,if((COALESCE(date(fec_retorno),0) - COALESCE(date(fec_emision),0)) >= 0 ,'hola','adios') as dias_pendientes from tbl2_guias_traslado_cab");
+      results.forEach(row=>{
+        const fecha = new Date(Date.now()).toLocaleDateString()
+      })
+      await conn.end();
+      return results
+    } catch (err) {
+      return [err]
+    } finally {
+      if (conn) {
+        // console.log("Cerrando session")
+        // await conn.end();
+        await conn.end();
+      }
+    }
+  }
+  static async getInfoGuias(id){
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      const [results, fields] = await conn.query('SELECT *FROM tbl2_seguimiento_estampado_det where id_seguimiento_cab = ?',[id]);
+      await conn.end();
+      
+      return results
+    } catch (err) {
+      return [err]
+    } finally {
+      if (conn) {
+        await conn.end();
+      }
+    }
+  }
+  static async getInfoGuiaCab(id){
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      const [results, fields] = await conn.query('SELECT *FROM tbl2_seguimiento_estampado_cab where idx = ?',[id]);
+      await conn.end();
+      
+      return results
+    } catch (err) {
+      return [err]
+    } finally {
+      if (conn) {
+        await conn.end();
+      }
+    }
+  }
+  static async saveInfoGuias(data){
+    let conn
+    // console.log(info)-
+    const results = {ok:true,message:'test'}
+    const detalle = JSON.parse(data.info)
+    console.log('Detalle multiple:',detalle)
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+
+      if(data.id){
+        const [res,fld] = await conn.query("select *from tbl2_seguimiento_estampado_det where id_seguimiento_cab = "+ parseInt(data.id))
+        // const ids_delete = detalle.filter(row=> row.idx !== ''  && !res.map(fila=>parseInt(fila.idx)).includes(parseInt(row.idx)) ) 
+        const ids_delete = res.filter(row=> row.idx !== ''  && !detalle.map(fila=>parseInt(fila.idx)).includes(parseInt(row.idx)) ) 
+        console.log("Filas a eliminar:",ids_delete)
+
+        console.log("Actualizando")
+        const insert = async ()=>{
+          const fila = detalle.shift()
+          if(fila){
+            if(fila.idx == ''){
+              console.log("Dentro de insertado")
+              const [results, fields] = await conn.query('INSERT INTO tbl2_seguimiento_estampado_det(id_seguimiento_cab,op,nro_corte,modelo,nro_polos,nro_paquetes,nro_personal,tipo_estampado,estado,avance,observaciones,cliente,nro_fallados,marca) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',[data.id,fila.op,fila.nro_corte,fila.modelo,fila.nro_polos,fila.nro_paquetes,fila.nro_personal,fila.tipo_estampado,fila.estado,fila.avance,fila.observaciones,fila.cliente,fila.nro_fallados,fila.marca]);
+              // insert()
+            }else{
+              console.log("Dentro de actualizados")
+              const [results, fields] = await conn.query('UPDATE tbl2_seguimiento_estampado_det SET op=NULLIF(?, ""),nro_corte=NULLIF(?, ""),modelo=NULLIF(?, ""),nro_polos=NULLIF(?, ""),nro_paquetes=NULLIF(?, ""),nro_personal=NULLIF(?, ""),tipo_estampado=NULLIF(?, ""),estado=NULLIF(?, ""),avance=NULLIF(?, ""),observaciones=NULLIF(?, ""),cliente=NULLIF(?, ""),nro_fallados=NULLIF(?, ""),marca=NULLIF(?, "") WHERE idx = ? and id_seguimiento_cab = ?',[fila.op,fila.nro_corte,fila.modelo,fila.nro_polos,fila.nro_paquetes,fila.nro_personal,fila.tipo_estampado,fila.estado,fila.avance,fila.observaciones,fila.cliente,fila.nro_fallados,fila.marca,fila.idx,data.id]);
+              // insert()
+            }
+            await insert()
+          }else{
+            console.log("Devolviendo resolve")
+            return Promise.resolve('')
+          }
+        }
+        await insert()
+
+        const eliminar = async ()=>{
+          const fila = ids_delete.shift()
+          if(fila){
+            await conn.query('DELETE FROM `tbl2_seguimiento_estampado_det` WHERE `id_seguimiento_cab` = ? and `idx` = ?',[parseInt(data.id),parseInt(fila.idx)])
+            await eliminar()
+          }else{
+            return Promise.resolve('')
+          }
+        }
+        await eliminar()
+        
+        console.log("Continua proceso")
+        return results
+      }else{
+        console.log("Creando")
+        const [res,fld] = await conn.query("insert into tbl2_seguimiento_estampado_cab(observaciones) values('OTRAS OBSERVACIONES')")
+
+        const insert = async ()=>{
+          const fila = detalle.shift()
+          console.log("Nueva fila detalle juan :",fila)
+          if(fila){
+            const [results,fields] = await conn.query('INSERT INTO tbl2_seguimiento_estampado_det(id_seguimiento_cab,op,nro_corte,modelo,nro_polos,nro_paquetes,nro_personal,tipo_estampado,estado,avance,observaciones,marca,cliente) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',[res.insertId,fila.op,fila.nro_corte,fila.modelo,fila.nro_polos,fila.nro_paquetes,fila.nro_personal,fila.tipo_estampado,fila.estado,fila.avance,fila.observaciones,fila.marca,fila.cliente]);
+            await insert()
+          }else{
+            return Promise.resolve('')
+          }
+        }
+        await insert()
+        await conn.end();
+        return results
+      }
+
+    } catch (err) {
+      return [err]
+    } finally {
+      if (conn) {
+        console.log("Terminando consultas")
+        await conn.end();
+      }
+    }
+  }
+  static async eliminarInfoGuias(id){
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      await conn.query('DELETE FROM `tbl2_seguimiento_estampado_cab` WHERE `idx` = "' + id + '"');
+      await conn.query('DELETE FROM `tbl2_seguimiento_estampado_det` WHERE `id_seguimiento_cab` = "' + id + '"');
+      await conn.end();
+      return results
+    } catch (err) {
+      return [err]
+    } finally {
+      if (conn) {
+        await conn.end();
+      }
+    }
+  }
 }

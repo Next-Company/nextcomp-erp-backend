@@ -8,6 +8,11 @@ produccionRouter.post('/exportavios',ProduccionController.exportPedidoAvios)
 produccionRouter.post('/exporttelas',ProduccionController.exportPedidoTelas)
 produccionRouter.post('/exportestampado/:id',ProduccionController.exportInfoEstampado)
 
+produccionRouter.get('/getListaGuias',ProduccionController.getListaGuias)
+produccionRouter.get('/guia/:id',ProduccionController.getInfoGuias)
+produccionRouter.put('/guardarguia',ProduccionController.saveInfoGuias)
+produccionRouter.delete('/borrarguia/:id',ProduccionController.eliminarInfoGuias)
+
 produccionRouter.get('/getListaEstampados',ProduccionController.getListaEstampados)
 produccionRouter.get('/estampado/:id',ProduccionController.getInfoEstampado)
 produccionRouter.put('/guardarestampado',ProduccionController.saveInfoEstampado)
