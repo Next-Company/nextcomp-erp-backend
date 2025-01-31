@@ -455,17 +455,22 @@ export class ProduccionModel {
   //seccion guias traslado interno
   //////////////////////////////////
   static async getListaGuias(){
+    console.log("Obteniendo listado de guais de traslado")
     let conn
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      const [results, fields] = await conn.query("select oc,origen,destino,responsable,fec_emision,fec_retorno,fec_recepcion,costo,(COALESCE(date(fec_retorno),0) - COALESCE(date(fec_emision),0)) as tiempo_produccion,if((COALESCE(date(fec_retorno),0) - COALESCE(date(fec_emision),0)) >= 0 ,'hola','adios') as dias_pendientes from tbl2_guias_traslado_cab");
-      results.forEach(row=>{
-        const fecha = new Date(Date.now()).toLocaleDateString()
-      })
+      const [results, fields] = await conn.query("SELECT idx,orden_ref,tipo,servicio,proveedor,fec_emision,fec_retorno,fec_recepcion,costo,COALESCE(DATEDIFF(fec_retorno,fec_emision),'') as tiempo_produccion,if(COALESCE(DATEDIFF(fec_retorno,fec_emision),'') >= 0 ,'hola','adios') as dias_pendientes FROM tbl2_guias_traslado_cab");
+
+      console.log("Resultado busqueda:",results)
+
+      // results.forEach(row=>{
+      //   const fecha = new Date(Date.now()).toLocaleDateString()
+      // })
       await conn.end();
       return results
     } catch (err) {
+      console.log(err)
       return [err]
     } finally {
       if (conn) {
@@ -475,12 +480,30 @@ export class ProduccionModel {
       }
     }
   }
-  static async getInfoGuias(id){
+  // static async getInfoGuias(id){
+  //   let conn
+  //   try {
+  //     conn = await mysql.createConnection(configs[1])
+  //     await conn.connect();
+  //     const [results, fields] = await conn.query('SELECT *FROM tbl2_seguimiento_estampado_det where id_seguimiento_cab = ?',[id]);
+  //     await conn.end();
+      
+  //     return results
+  //   } catch (err) {
+  //     return [err]
+  //   } finally {
+  //     if (conn) {
+  //       await conn.end();
+  //     }
+  //   }
+  // }
+  static async getInfoGuiaCab(id){
     let conn
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      const [results, fields] = await conn.query('SELECT *FROM tbl2_seguimiento_estampado_det where id_seguimiento_cab = ?',[id]);
+      const [results, fields] = await conn.query('SELECT *FROM tbl2_guias_traslado_cab where idx = ?',[id]);
+      console.log(results)
       await conn.end();
       
       return results
@@ -492,12 +515,13 @@ export class ProduccionModel {
       }
     }
   }
-  static async getInfoGuiaCab(id){
+  static async getInfoGuiaDet(id){
     let conn
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      const [results, fields] = await conn.query('SELECT *FROM tbl2_seguimiento_estampado_cab where idx = ?',[id]);
+      const [results, fields] = await conn.query('SELECT *FROM tbl2_guias_traslado_det where id_guia_CAB = ?',[id]);
+      console.log(results)
       await conn.end();
       
       return results
@@ -511,31 +535,33 @@ export class ProduccionModel {
   }
   static async saveInfoGuias(data){
     let conn
-    // console.log(info)-
+    console.log("Info del formulario:",data)
     const results = {ok:true,message:'test'}
-    const detalle = JSON.parse(data.info)
-    console.log('Detalle multiple:',detalle)
+    const cabecera = JSON.parse(data.info)
+    const articulos = JSON.parse(data.detalle)
+    console.log('Detalle multiple:',cabecera)
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
 
       if(data.id){
-        const [res,fld] = await conn.query("select *from tbl2_seguimiento_estampado_det where id_seguimiento_cab = "+ parseInt(data.id))
-        // const ids_delete = detalle.filter(row=> row.idx !== ''  && !res.map(fila=>parseInt(fila.idx)).includes(parseInt(row.idx)) ) 
-        const ids_delete = res.filter(row=> row.idx !== ''  && !detalle.map(fila=>parseInt(fila.idx)).includes(parseInt(row.idx)) ) 
-        console.log("Filas a eliminar:",ids_delete)
+        console.log("Actualizado")
+        console.log("Datos cabecera :", cabecera)
+        console.log("Datos articulos :", articulos)
 
-        console.log("Actualizando")
+        await conn.query('UPDATE tbl2_guias_traslado_cab SET orden_ref=NULLIF(?, ""),tipo=NULLIF(?, ""),proveedor=NULLIF(?, ""),servicio=NULLIF(?, ""),fec_emision=NULLIF(?, ""),fec_retorno=NULLIF(?, ""),fec_recepcion=NULLIF(?, ""),costo=NULLIF(?, ""),observaciones=NULLIF(?, "") WHERE idx = ?',[cabecera.orden_ref,cabecera.tipo,cabecera.proveedor,cabecera.servicio,cabecera.fec_emision,cabecera.fec_retorno,cabecera.fec_recepcion,cabecera.costo,cabecera.observaciones,parseInt(data.id)])
+
+        const [res,fld] = await conn.query("SELECT *FROM tbl2_guias_traslado_det WHERE id_guia_CAB = "+ parseInt(data.id))
+        const ids_delete = res.filter(row=> row.idx !== ''  && !articulos.map(fila=>parseInt(fila.idx)).includes(parseInt(row.idx)) ) 
+
         const insert = async ()=>{
-          const fila = detalle.shift()
+          const fila = articulos.shift()
           if(fila){
-            if(fila.idx == ''){
-              console.log("Dentro de insertado")
-              const [results, fields] = await conn.query('INSERT INTO tbl2_seguimiento_estampado_det(id_seguimiento_cab,op,nro_corte,modelo,nro_polos,nro_paquetes,nro_personal,tipo_estampado,estado,avance,observaciones,cliente,nro_fallados,marca) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',[data.id,fila.op,fila.nro_corte,fila.modelo,fila.nro_polos,fila.nro_paquetes,fila.nro_personal,fila.tipo_estampado,fila.estado,fila.avance,fila.observaciones,fila.cliente,fila.nro_fallados,fila.marca]);
+            if(fila.idx && fila.idx !== ''){
+              const [results, fields] = await conn.query('UPDATE tbl2_guias_traslado_det SET articulo=NULLIF(?, ""),cantidad=NULLIF(?, "") WHERE idx = ? and id_guia_CAB = ?',[fila.articulo,fila.cantidad,fila.idx,parseInt(data.id)]);
               // insert()
             }else{
-              console.log("Dentro de actualizados")
-              const [results, fields] = await conn.query('UPDATE tbl2_seguimiento_estampado_det SET op=NULLIF(?, ""),nro_corte=NULLIF(?, ""),modelo=NULLIF(?, ""),nro_polos=NULLIF(?, ""),nro_paquetes=NULLIF(?, ""),nro_personal=NULLIF(?, ""),tipo_estampado=NULLIF(?, ""),estado=NULLIF(?, ""),avance=NULLIF(?, ""),observaciones=NULLIF(?, ""),cliente=NULLIF(?, ""),nro_fallados=NULLIF(?, ""),marca=NULLIF(?, "") WHERE idx = ? and id_seguimiento_cab = ?',[fila.op,fila.nro_corte,fila.modelo,fila.nro_polos,fila.nro_paquetes,fila.nro_personal,fila.tipo_estampado,fila.estado,fila.avance,fila.observaciones,fila.cliente,fila.nro_fallados,fila.marca,fila.idx,data.id]);
+              const [results, fields] = await conn.query('INSERT INTO tbl2_guias_traslado_det(id_guia_CAB,articulo,cantidad) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',[parseInt(data.id),fila.articulo,fila.cantidad]);
               // insert()
             }
             await insert()
@@ -549,7 +575,7 @@ export class ProduccionModel {
         const eliminar = async ()=>{
           const fila = ids_delete.shift()
           if(fila){
-            await conn.query('DELETE FROM `tbl2_seguimiento_estampado_det` WHERE `id_seguimiento_cab` = ? and `idx` = ?',[parseInt(data.id),parseInt(fila.idx)])
+            await conn.query('DELETE FROM `tbl2_guias_traslado_det` WHERE `id_guia_CAB` = ? and `idx` = ?',[parseInt(data.id),parseInt(fila.idx)])
             await eliminar()
           }else{
             return Promise.resolve('')
@@ -557,23 +583,30 @@ export class ProduccionModel {
         }
         await eliminar()
         
-        console.log("Continua proceso")
-        return results
+        // console.log("Continua proceso")
+        // return results
       }else{
-        console.log("Creando")
-        const [res,fld] = await conn.query("insert into tbl2_seguimiento_estampado_cab(observaciones) values('OTRAS OBSERVACIONES')")
+        console.log("Creandsssso")
+        try{
+          const [res,fields] = await conn.query('INSERT INTO tbl2_guias_traslado_cab(orden_ref,tipo,proveedor,servicio,fec_emision,fec_retorno,costo,observaciones) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',[cabecera.orden_ref,cabecera.tipo,cabecera.proveedor,cabecera.servicio,cabecera.fec_emision,cabecera.fec_retorno,cabecera.costo,cabecera.observaciones])
 
-        const insert = async ()=>{
-          const fila = detalle.shift()
-          console.log("Nueva fila detalle juan :",fila)
-          if(fila){
-            const [results,fields] = await conn.query('INSERT INTO tbl2_seguimiento_estampado_det(id_seguimiento_cab,op,nro_corte,modelo,nro_polos,nro_paquetes,nro_personal,tipo_estampado,estado,avance,observaciones,marca,cliente) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',[res.insertId,fila.op,fila.nro_corte,fila.modelo,fila.nro_polos,fila.nro_paquetes,fila.nro_personal,fila.tipo_estampado,fila.estado,fila.avance,fila.observaciones,fila.marca,fila.cliente]);
-            await insert()
-          }else{
-            return Promise.resolve('')
+          const insert = async ()=>{
+            const fila = articulos.shift()
+            console.log("Nueva fila detalle juan :",fila)
+            if(fila){  
+              const [results,fields] = await conn.query('INSERT INTO tbl2_guias_traslado_det(id_guia_CAB,articulo,cantidad) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',[res.insertId,fila.articulo,fila.cantidad]);
+              await insert()
+            }else{
+              return Promise.resolve('')
+            }
           }
+          await insert()
+
+        }catch(err){
+          console.log("error en la consulta",err)
         }
-        await insert()
+      
+        // console.log("filas afectadas :",res)
         await conn.end();
         return results
       }

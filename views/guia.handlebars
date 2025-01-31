@@ -1,0 +1,445 @@
+<style>
+  :root{
+    font-size: 10px;
+    font-family: Arial, Helvetica, sans-serif;
+  }
+  .cuerpo_estampado{
+    width: 100%;
+    /*height: 200px;*/
+    border:1px solid gray;
+    border-radius: 10px;
+    background-color: rgba(241, 241, 241, 0.5);
+    margin-bottom: 10px;
+    position: relative;
+  }
+  .main_informe{
+    padding:0.2cm;
+    display: flex;
+    flex-direction: row;
+    {{!-- border:1px solid orange; --}}
+  }
+  .main_informe h2{
+    font-size: 1.2rem;
+  }
+  .indice_estampado{
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    left: -15px;
+    top: -10px;
+    background-color: white;
+    border: 0.2px solid black;
+  }
+  .cuerpo_estampado .indicador span{
+    font-size: .8rem;
+  }
+  .cuerpo_estampado .indicador div{
+    padding: 5px;
+  }
+  .indicador{
+    flex:1;
+  }
+  .nowrap_space{
+    white-space: nowrap;
+  }
+</style>
+<div class="main_informe">  
+  {{!-- <div style="flex:1;padding:5px;border:1px solid green;"> --}}
+  <div style="flex:1;padding:5px">
+    <br/>
+    <br/>
+    <br/>
+    <br/>
+    <br/>
+    <br/>
+    <p style="font-size: 1.2rem;font-weight:bolder;text-align:center;">
+      NEXT COMPANY S.A.C<br/>
+      NEXT
+    </p>
+    <section style="font-size:.8rem;border-bottom:.5px dashed black;">
+      <p>
+        DOMICILIO FISCAL: CAL.FELIPE SANTIAGO CRESPO NRO. 581 LIMA - LIMA - SAN LUIS<br/>
+        RUC: 20522094120<br/>
+        ALMACEN/NAVE: 023 - ALMACEN DE PRODUCTOS TERMINADOS - SAN LUIS<br/>
+        COD. ESTABLECIMIENTO SUNA: 344<br/>
+      </p>
+    </section>
+    <p style="font-size: 1.2rem;font-weight:bolder;text-align:center;">
+      GUIA DE REMISION ELECTRONICA - REMITENTE<br/>
+      T100-00000391
+    </p>
+    {{!-- <h2>GUIA DE REMISION ELECTRONICA - REMITENTE</h2>
+    <h2>T100-00000391</h2> --}}
+    <section style="display: flex;justify-content:space-between;border-bottom:.5px dashed black;padding-bottom: 10px;">
+      <div style="font-size: 1.2rem;text-align:center;">
+        <strong>FECHA DE EMISION:</strong> {{date}}
+      </div>
+      <div style="font-size: 1.2rem;text-align:center;">
+        <strong>HORA DE EMISION:</strong> {{time}}
+      </div>
+      {{!-- <div>
+        <h2>HORA DE EMISION: 17:40:27</h2>
+      </div> --}}
+    </section>
+    {{!-- <h2>DATOS DEL DESTINATARIO</h2> --}}
+    <p style="font-size: 1.2rem;font-weight:bolder;">
+      DATOS DEL DESTINATARIO<br/>
+    </p>
+    <section style="border-bottom:.5px dashed black;font-size:.9rem;padding-bottom: 10px;">
+      <table>
+        <tbody>
+          <tr>
+            <td>Seño(es):</td>
+            <td>NEXT COMPANY SAC</td>
+          </tr>
+          <tr>
+            <td>RUC:</td>
+            <td>20522094120</td>
+          </tr>
+          <tr>
+            <td>Punto de Partida :</td>
+            <td>AV LURIGANCHO 1349 URB.IND ZARATE</td>
+          </tr>
+          <tr>
+            <td>Destino: </td>
+            <td>P17672 - NEXT COMPANY SAC</td>
+          </tr>
+          <tr>
+            <td>Punto de Llegada :</td>
+            <td>CAL FELIPE SANTIAGO CRESPO NRO. 581 LIMA-SAN LUIS LIMA</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+    <p style="font-size: 1.2rem;font-weight:bolder;">
+      DATOS DEL TRANSPORTE<br/>
+    </p>
+    <section style="display: flex;justify-content:space-between;border-bottom:.5px dashed black;">
+      <div>
+        Fecha de inicio del traslado: 23/01/2025
+      </div>
+      <div>
+        Modalidad: Transporte Privado
+      </div>
+    </section>
+    <h2>TIPO Y MOTIVO DE TRASLADO</h2>
+    <section style="border-bottom:.5px dashed black;">
+      <div>
+        Tipo de Traslado: TRASLADO DE MUESTRAS A PROVEEDOR
+      </div>
+      <div>
+        Motivo de Traslado: PROVEEDOR P17672 - NEXT COMPANY SAC
+      </div>
+    </section>
+    <h2>DATOS ADICIONALES</h2><section style="border-bottom:.5px dashed black;">
+      <div>
+        Solicitante: LOJA VADILLO, KELLY NICOLE
+      </div>
+      <div>
+        Cliente: 20522094120 - NEXT COMPANY SAC
+      </div>
+    </section>
+    <h2>DATOS DE BIENES A TRANSPORTAR</h2>
+    <section style="border-bottom:.5px dashed black;">
+      <table>
+        <thead>
+          <tr>
+            <th>Codigo</th>
+            <th>Descripcion</th>
+            <th>OP</th>
+            <th>UM</th>
+            <th>Cantidad</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>7980107295</td>
+            <td>CASACA REVERSIBLE CABALLERO MODELO CIHAN</td>
+            <td>2410565</td>
+            <td>NIU</td>
+            <td>6</td>
+          </tr>
+          <tr>
+            <td>7980107295</td>
+            <td>CASACA CABALLERO MODELO MURATH</td>
+            <td>2410565</td>
+            <td>NIU</td>
+            <td>2</td>
+          </tr>
+          <tr>
+            <td>7980107295</td>
+            <td>CASACA REVERSIBLE CABALLERO MODELO CIHAN</td>
+            <td>2410565</td>
+            <td>NIU</td>
+            <td>6</td>
+          </tr>
+          <tr>
+            <td>7980107295</td>
+            <td>CASACA REVERSIBLE CABALLERO MODELO CIHAN</td>
+            <td>2410565</td>
+            <td>NIU</td>
+            <td>6</td>
+          </tr>
+          <tr>
+            <td>7980107295</td>
+            <td>CASACA REVERSIBLE CABALLERO MODELO CIHAN</td>
+            <td>2410565</td>
+            <td>NIU</td>
+            <td>6</td>
+          </tr>
+          <tr>
+            <td>7980107295</td>
+            <td>CASACA REVERSIBLE CABALLERO MODELO CIHAN</td>
+            <td>2410565</td>
+            <td>NIU</td>
+            <td>6</td>
+          </tr>
+          <tr>
+            <td>7980107295</td>
+            <td>CASACA REVERSIBLE CABALLERO MODELO CIHAN</td>
+            <td>2410565</td>
+            <td>NIU</td>
+            <td>6</td>
+          </tr>
+          <tr>
+            <td>7980107295</td>
+            <td>CASACA REVERSIBLE CABALLERO MODELO CIHAN</td>
+            <td>2410565</td>
+            <td>NIU</td>
+            <td>6</td>
+          </tr>
+          <tr>
+            <td>7980107295</td>
+            <td>CASACA REVERSIBLE CABALLERO MODELO CIHAN</td>
+            <td>2410565</td>
+            <td>NIU</td>
+            <td>6</td>
+          </tr>
+          <tr>
+            <td>7980107295</td>
+            <td>CASACA CABALLERO MODELO MURATH</td>
+            <td>2410565</td>
+            <td>NIU</td>
+            <td>2</td>
+          </tr>
+          <tr>
+            <td>7980107295</td>
+            <td>CASACA CABALLERO MODELO MURATH</td>
+            <td>2410565</td>
+            <td>NIU</td>
+            <td>2</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+    Total unidades : 2
+    <section style="padding-top:50px;">
+      <strong>Observaciones:</strong> DEVOLUCION DE MUESTAS A PROVEEDOR<br/>
+      <strong>Representacion impresa de la Guia de Remision Electronica</strong><br/>
+      <strong>Autorizado mediante Resolucion de Superintendencia Nro 0180050002070/SUNAT</strong><br/>
+      <strong>Consulta web de este GRE: https://portal.efacturacion.pe/appefacturacion</strong><br/>
+      <strong>Fecha/hora impresión: {{date}} {{time}}</strong><br/>
+    </section>
+  </div>
+  <div style="flex:1;padding:5px;">
+    <br/>
+    <br/>
+    <br/>
+    <br/>
+    <br/>
+    <br/>
+    <p style="font-size: 1.2rem;font-weight:bolder;text-align:center;">
+      NEXT COMPANY S.A.C<br/>
+      NEXT
+    </p>
+    <section style="font-size:.8rem;border-bottom:.5px dashed black;">
+      <p>
+        DOMICILIO FISCAL: CAL.FELIPE SANTIAGO CRESPO NRO. 581 LIMA - LIMA - SAN LUIS<br/>
+        RUC: 20522094120<br/>
+        ALMACEN/NAVE: 023 - ALMACEN DE PRODUCTOS TERMINADOS - SAN LUIS<br/>
+        COD. ESTABLECIMIENTO SUNA: 344<br/>
+      </p>
+    </section>
+    <p style="font-size: 1.2rem;font-weight:bolder;text-align:center;">
+      GUIA DE REMISION ELECTRONICA - REMITENTE<br/>
+      T100-00000391
+    </p>
+    {{!-- <h2>GUIA DE REMISION ELECTRONICA - REMITENTE</h2>
+    <h2>T100-00000391</h2> --}}
+    <section style="display: flex;justify-content:space-between;border-bottom:.5px dashed black;padding-bottom: 10px;">
+      <div style="font-size: 1.2rem;text-align:center;">
+        <strong>FECHA DE EMISION:</strong> {{date}}
+      </div>
+      <div style="font-size: 1.2rem;text-align:center;">
+        <strong>HORA DE EMISION:</strong> {{time}}
+      </div>
+      {{!-- <div>
+        <h2>HORA DE EMISION: 17:40:27</h2>
+      </div> --}}
+    </section>
+    {{!-- <h2>DATOS DEL DESTINATARIO</h2> --}}
+    <p style="font-size: 1.2rem;font-weight:bolder;">
+      DATOS DEL DESTINATARIO<br/>
+    </p>
+    <section style="border-bottom:.5px dashed black;font-size:.9rem;padding-bottom: 10px;">
+      <table>
+        <tbody>
+          <tr>
+            <td>Seño(es):</td>
+            <td>NEXT COMPANY SAC</td>
+          </tr>
+          <tr>
+            <td>RUC:</td>
+            <td>20522094120</td>
+          </tr>
+          <tr>
+            <td>Punto de Partida :</td>
+            <td>AV LURIGANCHO 1349 URB.IND ZARATE</td>
+          </tr>
+          <tr>
+            <td>Destino: </td>
+            <td>P17672 - NEXT COMPANY SAC</td>
+          </tr>
+          <tr>
+            <td>Punto de Llegada :</td>
+            <td>CAL FELIPE SANTIAGO CRESPO NRO. 581 LIMA-SAN LUIS LIMA</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+    <p style="font-size: 1.2rem;font-weight:bolder;">
+      DATOS DEL TRANSPORTE<br/>
+    </p>
+    <section style="display: flex;justify-content:space-between;border-bottom:.5px dashed black;">
+      <div>
+        Fecha de inicio del traslado: 23/01/2025
+      </div>
+      <div>
+        Modalidad: Transporte Privado
+      </div>
+    </section>
+    <h2>TIPO Y MOTIVO DE TRASLADO</h2>
+    <section style="border-bottom:.5px dashed black;">
+      <div>
+        Tipo de Traslado: TRASLADO DE MUESTRAS A PROVEEDOR
+      </div>
+      <div>
+        Motivo de Traslado: PROVEEDOR P17672 - NEXT COMPANY SAC
+      </div>
+    </section>
+    <h2>DATOS ADICIONALES</h2><section style="border-bottom:.5px dashed black;">
+      <div>
+        Solicitante: LOJA VADILLO, KELLY NICOLE
+      </div>
+      <div>
+        Cliente: 20522094120 - NEXT COMPANY SAC
+      </div>
+    </section>
+    <h2>DATOS DE BIENES A TRANSPORTAR</h2>
+    <section style="border-bottom:.5px dashed black;">
+      <table>
+        <thead>
+          <tr>
+            <th>Codigo</th>
+            <th>Descripcion</th>
+            <th>OP</th>
+            <th>UM</th>
+            <th>Cantidad</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>7980107295</td>
+            <td>CASACA REVERSIBLE CABALLERO MODELO CIHAN</td>
+            <td>2410565</td>
+            <td>NIU</td>
+            <td>6</td>
+          </tr>
+          <tr>
+            <td>7980107295</td>
+            <td>CASACA CABALLERO MODELO MURATH</td>
+            <td>2410565</td>
+            <td>NIU</td>
+            <td>2</td>
+          </tr>
+          <tr>
+            <td>7980107295</td>
+            <td>CASACA REVERSIBLE CABALLERO MODELO CIHAN</td>
+            <td>2410565</td>
+            <td>NIU</td>
+            <td>6</td>
+          </tr>
+          <tr>
+            <td>7980107295</td>
+            <td>CASACA REVERSIBLE CABALLERO MODELO CIHAN</td>
+            <td>2410565</td>
+            <td>NIU</td>
+            <td>6</td>
+          </tr>
+          <tr>
+            <td>7980107295</td>
+            <td>CASACA REVERSIBLE CABALLERO MODELO CIHAN</td>
+            <td>2410565</td>
+            <td>NIU</td>
+            <td>6</td>
+          </tr>
+          <tr>
+            <td>7980107295</td>
+            <td>CASACA REVERSIBLE CABALLERO MODELO CIHAN</td>
+            <td>2410565</td>
+            <td>NIU</td>
+            <td>6</td>
+          </tr>
+          <tr>
+            <td>7980107295</td>
+            <td>CASACA REVERSIBLE CABALLERO MODELO CIHAN</td>
+            <td>2410565</td>
+            <td>NIU</td>
+            <td>6</td>
+          </tr>
+          <tr>
+            <td>7980107295</td>
+            <td>CASACA REVERSIBLE CABALLERO MODELO CIHAN</td>
+            <td>2410565</td>
+            <td>NIU</td>
+            <td>6</td>
+          </tr>
+          <tr>
+            <td>7980107295</td>
+            <td>CASACA REVERSIBLE CABALLERO MODELO CIHAN</td>
+            <td>2410565</td>
+            <td>NIU</td>
+            <td>6</td>
+          </tr>
+          <tr>
+            <td>7980107295</td>
+            <td>CASACA CABALLERO MODELO MURATH</td>
+            <td>2410565</td>
+            <td>NIU</td>
+            <td>2</td>
+          </tr>
+          <tr>
+            <td>7980107295</td>
+            <td>CASACA CABALLERO MODELO MURATH</td>
+            <td>2410565</td>
+            <td>NIU</td>
+            <td>2</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+    Total unidades : 2
+    <section style="padding-top:50px;">
+      <strong>Observaciones:</strong> DEVOLUCION DE MUESTAS A PROVEEDOR<br/>
+      <strong>Representacion impresa de la Guia de Remision Electronica</strong><br/>
+      <strong>Autorizado mediante Resolucion de Superintendencia Nro 0180050002070/SUNAT</strong><br/>
+      <strong>Consulta web de este GRE: https://portal.efacturacion.pe/appefacturacion</strong><br/>
+      <strong>Fecha/hora impresión: {{date}} {{time}}</strong><br/>
+    </section>
+  </div>
+  
+</div>

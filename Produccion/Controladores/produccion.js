@@ -2,6 +2,8 @@ import { ProduccionModel } from "../Servicios/produccion.js";
 import PDFDocument from "pdfkit"
 import fs from "node:fs/promises"
 import puppeteer from 'puppeteer';
+// import { width } from "pdfkit/js/page";
+// import { height } from "pdfkit/js/page";
 // import PDFDocument from "pdfkit";
 
 export class ProduccionController {
@@ -47,8 +49,54 @@ export class ProduccionController {
         resp.status(500).send('Error al generar el PDF');
       }
     });
+  }
+  static async exportInfoGuia(req,resp){
+    const params = req.params
+    const data = await ProduccionModel.getInfoGuiaCab(params.id)
+    const data2 = await ProduccionModel.getInfoGuiaDet(params.id)
+    console.log("Fecha creacion :",(new Date(data[0].created_at)).toLocaleString('en-GB'))
+    console.log("Fecha creacion :",(new Date(data[0].created_at)).toLocaleDateString('en-GB'))
+    console.log("Fecha creacion :",(new Date(data[0].created_at)).toLocaleTimeString('en-GB'))
+    console.log("Info cabecera:",data)
+    console.log("Info detalle:",data2)
+    // console.log("Fecha:",new Date(Date.parse(data2[0].created_at)).toLocaleDateString())
+    resp.render(
+    'guia',
+    {
+      info:params,
+      cabecera:data,
+      detalle:data2,
+      date:(new Date(data[0].created_at)).toLocaleDateString('en-GB'),
+      time:(new Date(data[0].created_at)).toLocaleTimeString('en-GB')
+      // fecha:new Date(Date.parse(data2[0].created_at)).toLocaleDateString()
+    },
+    async (err,html)=>{
+      try {
+        const browser = await puppeteer.launch();
 
+        const version = await browser.version();
+        console.log(`Versión de Chrome: ${version}`);
+        const page = await browser.newPage();
+        await page.setContent(html);
+
+        const pdfOptions = {
+          // format: 'A4',        // Puedes usar 'A4', 'Letter' o un tamaño personalizado como { width: '210mm', height: '297mm' }
+          width: '24.1cm',
+          height: '27.94cm',
+          landscape: false,    // Para orientación horizontal (landscape) usa `true`
+          printBackground: true // Incluir el fondo en el PDF
+        };
     
+        const pdfBuffer = await page.pdf(pdfOptions);
+        await browser.close();
+        resp.send({data:pdfBuffer.toString('base64')})
+      } catch (error) {
+        resp.status(500).send('Error al generar el PDF');
+        // await browser.close();
+      } finally{
+        // await browser.close();
+      }
+    });
   }
   static async exportPedidoAvios(req,resp){
     console.log("Iniciando el exportado:")
@@ -422,8 +470,11 @@ export class ProduccionController {
   }
   static async getInfoGuias(req, res){
     const id = req.params.id
-    const data = await ProduccionModel.getInfoGuias(id)
-    res.json(data)
+    // const data = await ProduccionModel.getInfoGuias(id)
+    const data = await ProduccionModel.getInfoGuiaCab(id)
+    const data2 = await ProduccionModel.getInfoGuiaDet(id)
+    console.log("Info guia by id:",data)
+    res.json([data[0],data2])
   }
   static async saveInfoGuias(req, res){
     const data = await ProduccionModel.saveInfoGuias(req.body)
