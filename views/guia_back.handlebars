@@ -1,0 +1,311 @@
+<style>
+  :root{
+    font-size: 10px;
+    font-family: Arial, Helvetica, sans-serif;
+  }
+  .cuerpo_estampado{
+    width: 100%;
+    /*height: 200px;*/
+    border:1px solid gray;
+    border-radius: 10px;
+    background-color: rgba(241, 241, 241, 0.5);
+    margin-bottom: 10px;
+    position: relative;
+  }
+  .main_informe{
+    /*padding:0.2cm;*/
+    display: flex;
+    flex-direction: row;
+    height: 27cm;
+  }
+  .main_informe h2{
+    font-size: 1.2rem;
+  }
+  .indice_estampado{
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    left: -15px;
+    top: -10px;
+    background-color: white;
+    border: 0.2px solid black;
+  }
+  .cuerpo_estampado .indicador span{
+    font-size: .8rem;
+  }
+  .cuerpo_estampado .indicador div{
+    padding: 5px;
+  }
+  .indicador{
+    flex:1;
+  }
+  .nowrap_space{
+    white-space: nowrap;
+  }
+</style>
+<div class="main_informe">  
+  {{!-- <div style="flex:1;padding:5px;border:1px solid green;"> --}}
+  <div style="flex:1;padding:5px;display:flex;flex-direction:column;">
+    <section style="flex:1;">
+      <br/>
+      <br/>
+      <br/>
+      <br/>
+      <br/>
+      <br/>
+      <p style="font-size: 1.2rem;font-weight:600;text-align:center;">
+        NEXT COMPANY S.A.C<br/>
+        NEXT
+      </p>
+      <section style="font-size:.8rem;border-bottom:.5px dashed black;">
+        <p>
+          DOMICILIO FISCAL: CAL.FELIPE SANTIAGO CRESPO NRO. 581 LIMA - LIMA - SAN LUIS<br/>
+          RUC: 20522094120<br/>
+          ALMACEN/NAVE: 023 - ALMACEN DE PRODUCTOS TERMINADOS - SAN LUIS<br/>
+          COD. ESTABLECIMIENTO SUNA: 344<br/>
+        </p>
+      </section>
+      <p style="font-size: 1.1rem;font-weight:bolder;text-align:center;">
+        GUIA DE REMISION ELECTRONICA - REMITENTE<br/>
+        T100-00000391
+      </p>
+      <section style="display: flex;justify-content:space-between;border-bottom:.5px dashed black;padding-bottom: 10px;">
+        <div style="font-size: .9rem;text-align:center;">
+          <strong>FECHA DE EMISION:</strong> {{date}}
+        </div>
+        <div style="font-size: .9rem;text-align:center;">
+          <strong>HORA DE EMISION:</strong> {{time}}
+        </div>
+      </section>
+      <p style="font-size: 1.1rem;font-weight:bolder;">
+        DATOS DEL DESTINATARIO<br/>
+      </p>
+      <section style="border-bottom:.5px dashed black;font-size:.8rem;padding-bottom: 10px;">
+        <table>
+          <tbody>
+            <tr>
+              <td>Seño(es):</td>
+              <td>NEXT COMPANY SAC</td>
+            </tr>
+            <tr>
+              <td>RUC:</td>
+              <td>20522094120</td>
+            </tr>
+            <tr>
+              <td>Punto de Partida :</td>
+              <td>AV LURIGANCHO 1349 URB.IND ZARATE</td>
+            </tr>
+            <tr>
+              <td>Destino: </td>
+              <td>P17672 - NEXT COMPANY SAC</td>
+            </tr>
+            <tr>
+              <td>Punto de Llegada :</td>
+              <td>CAL FELIPE SANTIAGO CRESPO NRO. 581 LIMA-SAN LUIS LIMA</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+      <p style="font-size: 1.1rem;font-weight:bold;">
+        DATOS DEL TRANSPORTE<br/>
+      </p>
+      <section style="display: flex;justify-content:space-between;border-bottom:.5px dashed black;padding-bottom:10px;font-size:.8rem;">
+        <div>
+          Fecha de inicio del traslado: 23/01/2025
+        </div>
+        <div>
+          Modalidad: Transporte Privado
+        </div>
+      </section>
+      <p style="font-size: 1.1rem;font-weight:bold;">
+        TIPO Y MOTIVO DE TRASLADO<br/>
+      </p>
+      <section style="border-bottom:.5px dashed black;padding-bottom:10px;font-size:.8rem;">
+        <div>
+          Tipo de Traslado: TRASLADO DE MUESTRAS A PROVEEDOR
+        </div>
+        <div>
+          Motivo de Traslado: PROVEEDOR P17672 - NEXT COMPANY SAC
+        </div>
+      </section>
+      <p style="font-size: 1.1rem;font-weight:bold;">
+        DATOS DE BIENES A TRANSPORTAR<br/>
+      </p>
+      <section style="border-bottom:.5px dashed black;font-size:.8rem; padding-bottom: 10px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Id</th>
+              <th style="width:20cm;text-align:left; ">Descripcion</th>
+              <th>OP</th>
+              <th>UM</th>
+              <th>Cantidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each detalle}}
+            <tr>
+              <td>{{idx}}</td>
+              <td>{{articulo}}</td>
+              <td>2410565</td>
+              <td>NIU</td>
+              <td>{{cantidad}}</td>
+            </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      </section>
+      <section style="padding-top:10px;">
+        <strong>Total unidades : 2</strong>
+      </section>
+    </section>
+    <footer>
+      <section style="display:flex;justify-content:space-around;gap:15px;">
+        <div style="border-top:.5px dashed black;padding:5px;text-align:center;flex:1;font-size:.8rem;">Entregué conforme</div>
+        <div style="border-top:.5px dashed black;padding:5px;text-align:center;flex:1;font-size:.8rem;">Lleve conforme</div>
+        <div style="border-top:.5px dashed black;padding:5px;text-align:center;flex:1;font-size:.8rem;">Recibí conforme</div>
+      </section>
+      <section style="padding-top:50px;font-size:.9rem;">
+        <strong>Observaciones:</strong> DEVOLUCION DE MUESTAS A PROVEEDOR<br/><br/>
+        <strong>Representacion impresa de la Guia de Remision Electronica</strong><br/>
+        <strong>Autorizado mediante Resolucion de Superintendencia Nro 0180050002070/SUNAT</strong><br/>
+        <strong>Consulta web de este GRE: https://portal.efacturacion.pe/appefacturacion</strong><br/>
+        <strong>Fecha/hora impresión: {{date}} {{time}}</strong><br/>
+      </section>
+    </footer>
+  </div>
+  {{!-- ////////////////////////////////////////////////////////////////////////////////////////////////////////////////// --}}
+  {{!-- ////////////////////////////////////////////////////////////////////////////////////////////////////////////////// --}}
+  {{!-- ////////////////////////////////////////////////////////////////////////////////////////////////////////////////// --}}
+  {{!-- ////////////////////////////////////////////////////////////////////////////////////////////////////////////////// --}}
+  {{!-- ////////////////////////////////////////////////////////////////////////////////////////////////////////////////// --}}
+  <div style="flex:1;padding:5px;display:flex;flex-direction:column;display:none;">
+    <section style="flex:1;">
+      <br/>
+      <br/>
+      <br/>
+      <br/>
+      <br/>
+      <br/>
+      <p style="font-size: 1.2rem;font-weight:600;text-align:center;">
+        NEXT COMPANY S.A.C<br/>
+        NEXT
+      </p>
+      <section style="font-size:.8rem;border-bottom:.5px dashed black;">
+        <p>
+          DOMICILIO FISCAL: CAL.FELIPE SANTIAGO CRESPO NRO. 581 LIMA - LIMA - SAN LUIS<br/>
+          RUC: 20522094120<br/>
+          ALMACEN/NAVE: 023 - ALMACEN DE PRODUCTOS TERMINADOS - SAN LUIS<br/>
+          COD. ESTABLECIMIENTO SUNA: 344<br/>
+        </p>
+      </section>
+      <p style="font-size: 1.1rem;font-weight:bolder;text-align:center;">
+        GUIA DE REMISION ELECTRONICA - REMITENTE<br/>
+        T100-00000391
+      </p>
+      <section style="display: flex;justify-content:space-between;border-bottom:.5px dashed black;padding-bottom: 10px;">
+        <div style="font-size: .9rem;text-align:center;">
+          <strong>FECHA DE EMISION:</strong> {{date}}
+        </div>
+        <div style="font-size: .9rem;text-align:center;">
+          <strong>HORA DE EMISION:</strong> {{time}}
+        </div>
+      </section>
+      <p style="font-size: 1.1rem;font-weight:bolder;">
+        DATOS DEL DESTINATARIO<br/>
+      </p>
+      <section style="border-bottom:.5px dashed black;font-size:.8rem;padding-bottom: 10px;">
+        <table>
+          <tbody>
+            <tr>
+              <td>Seño(es):</td>
+              <td>NEXT COMPANY SAC</td>
+            </tr>
+            <tr>
+              <td>RUC:</td>
+              <td>20522094120</td>
+            </tr>
+            <tr>
+              <td>Punto de Partida :</td>
+              <td>AV LURIGANCHO 1349 URB.IND ZARATE</td>
+            </tr>
+            <tr>
+              <td>Destino: </td>
+              <td>P17672 - NEXT COMPANY SAC</td>
+            </tr>
+            <tr>
+              <td>Punto de Llegada :</td>
+              <td>CAL FELIPE SANTIAGO CRESPO NRO. 581 LIMA-SAN LUIS LIMA</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+      <p style="font-size: 1.1rem;font-weight:bold;">
+        DATOS DEL TRANSPORTE<br/>
+      </p>
+      <section style="display: flex;justify-content:space-between;border-bottom:.5px dashed black;padding-bottom:10px;font-size:.8rem;">
+        <div>
+          Fecha de inicio del traslado: 23/01/2025
+        </div>
+        <div>
+          Modalidad: Transporte Privado
+        </div>
+      </section>
+      <p style="font-size: 1.1rem;font-weight:bold;">
+        TIPO Y MOTIVO DE TRASLADO<br/>
+      </p>
+      <section style="border-bottom:.5px dashed black;padding-bottom:10px;font-size:.8rem;">
+        <div>
+          Tipo de Traslado: TRASLADO DE MUESTRAS A PROVEEDOR
+        </div>
+        <div>
+          Motivo de Traslado: PROVEEDOR P17672 - NEXT COMPANY SAC
+        </div>
+      </section>
+      <p style="font-size: 1.1rem;font-weight:bold;">
+        DATOS DE BIENES A TRANSPORTAR<br/>
+      </p>
+      <section style="border-bottom:.5px dashed black;font-size:.8rem;">
+        <table>
+          <thead>
+            <tr>
+              <th>Id</th>
+              <th style="width:300px;text-align:left;background-color:rgb(213, 213, 213)">Descripcion</th>
+              <th>OP</th>
+              <th>UM</th>
+              <th>Cantidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each detalle}}
+            <tr>
+              <td>{{idx}}</td>
+              <td>{{articulo}}</td>
+              <td>2410565</td>
+              <td>NIU</td>
+              <td>{{cantidad}}</td>
+            </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      </section>
+      <section style="padding-top:10px;">
+        <strong>Total unidades : 2</strong>
+      </section>
+    </section>
+    <footer>
+      <section style="padding-top:50px;font-size:.9rem;">
+        <strong>Observaciones:</strong> DEVOLUCION DE MUESTAS A PROVEEDOR<br/>
+        <strong>Representacion impresa de la Guia de Remision Electronica</strong><br/>
+        <strong>Autorizado mediante Resolucion de Superintendencia Nro 0180050002070/SUNAT</strong><br/>
+        <strong>Consulta web de este GRE: https://portal.efacturacion.pe/appefacturacion</strong><br/>
+        <strong>Fecha/hora impresión: {{date}} {{time}}</strong><br/>
+      </section>
+    </footer>
+  </div>
+  
+</div>

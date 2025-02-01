@@ -61,7 +61,7 @@ export class ProduccionController {
     console.log("Info detalle:",data2)
     // console.log("Fecha:",new Date(Date.parse(data2[0].created_at)).toLocaleDateString())
     resp.render(
-    'guia',
+    'guia_back',
     {
       info:params,
       cabecera:data,
@@ -81,10 +81,15 @@ export class ProduccionController {
 
         const pdfOptions = {
           // format: 'A4',        // Puedes usar 'A4', 'Letter' o un tamaño personalizado como { width: '210mm', height: '297mm' }
-          width: '24.1cm',
+          // width: '24.1cm',
+          width: '20cm',
           height: '27.94cm',
           landscape: false,    // Para orientación horizontal (landscape) usa `true`
-          printBackground: true // Incluir el fondo en el PDF
+          printBackground: true, // Incluir el fondo en el PDF
+          margin: {
+            left: 0,
+            right: 0
+          }
         };
     
         const pdfBuffer = await page.pdf(pdfOptions);
