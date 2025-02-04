@@ -71,87 +71,62 @@
       </section>
       <p style="font-size: 1.1rem;font-weight:bolder;text-align:center;">
         GUIA DE TRASLADO INTERNO - REMITENTE<br/>
-        T100-00000391
+        {{idguia}}
       </p>
       <section style="display: flex;justify-content:space-between;border-bottom:.5px dashed black;padding-bottom: 10px;">
         <div style="font-size: .9rem;text-align:center;">
-          <strong>FECHA DE EMISION:</strong> {{date}}
+          <strong>FECHA DE EMISIÓN:</strong> {{date}}
         </div>
         <div style="font-size: .9rem;text-align:center;">
-          <strong>HORA DE EMISION:</strong> {{time}}
+          <strong>HORA DE EMISIÓN:</strong> {{time}}
         </div>
       </section>
       <p style="font-size: 1.1rem;font-weight:bolder;">
         DATOS DEL DESTINATARIO:<br/>
       </p>
-      <section style="border-bottom:.5px dashed black;font-size:.8rem;padding-bottom: 10px;">
+      <section style="border-bottom:.5px dashed black;font-size:.9rem;padding-bottom: 10px;">
         <table>
           <tbody>
             <tr>
-              <td>Seño(es):</td>
-              <td style="width: 300px;">NEXT COMPANY SAC</td>
+              <td>Señor(es):</td>
+              <td style="width: 300px;">{{proveedor.nom}}</td>
               <td>RUC:</td>
-              <td>20522094120</td>
+              <td>20644879156</td>
             </tr>
             <tr>
               <td>Punto de Partida :</td>
-              <td>AV LURIGANCHO 1349 URB.IND ZARATE</td>
+              <td>CAL FELIPE SANTIAGO CRESPO NRO. 581 LIMA-SAN LUIS LIMA</td>
               <td>Destino: </td>
-              <td>P17672 - NEXT COMPANY SAC</td>
-              {{!-- <td>RUC:</td>
-              <td>20522094120</td> --}}
+              <td>P17672 - {{proveedor.nom}}</td>
             </tr>
             <tr>
               <td>Punto de Llegada :</td>
-              <td>CAL FELIPE SANTIAGO CRESPO NRO. 581 LIMA-SAN LUIS LIMA</td>
+              <td>{{proveedor.direccion}}</td>
               <td></td>
               <td></td>
             </tr>
-            {{!-- <tr>
-              <td>Punto de Partida :</td>
-              <td>AV LURIGANCHO 1349 URB.IND ZARATE</td>
-            </tr>
-            <tr>
-              <td>Destino: </td>
-              <td>P17672 - NEXT COMPANY SAC</td>
-            </tr>
-            <tr>
-              <td>Punto de Llegada :</td>
-              <td>CAL FELIPE SANTIAGO CRESPO NRO. 581 LIMA-SAN LUIS LIMA</td>
-            </tr> --}}
           </tbody>
         </table>
       </section>
-      {{!-- <p style="font-size: 1.1rem;font-weight:bold;">
-        DATOS DEL TRANSPORTE<br/>
-      </p>
-      <section style="display: flex;justify-content:space-between;border-bottom:.5px dashed black;padding-bottom:10px;font-size:.8rem;">
-        <div>
-          Fecha de inicio del traslado: 23/01/2025
-        </div>
-        <div>
-          Modalidad: Transporte Privado
-        </div>
-      </section> --}}
       <p style="font-size: 1.1rem;font-weight:bold;">
         TIPO Y MOTIVO DE TRASLADO:<br/>
       </p>
-      <section style="border-bottom:.5px dashed black;padding-bottom:10px;font-size:.8rem;">
+      <section style="border-bottom:.5px dashed black;padding-bottom:10px;font-size:.9rem; display:flex;justify-content:space-between;">
         <div>
-          Tipo de Traslado: TRASLADO DE MUESTRAS A PROVEEDOR
+          Tipo de Traslado: {{cabecera.tipo}}
         </div>
         <div>
-          Motivo de Traslado: PROVEEDOR P17672 - NEXT COMPANY SAC
+          Motivo de Traslado: {{cabecera.motivo_traslado}}
         </div>
       </section>
       <p style="font-size: 1.1rem;font-weight:bold;">
         DATOS DE BIENES A TRANSPORTAR:<br/>
       </p>
-      <section style="border-bottom:.5px dashed black;font-size:.8rem; padding-bottom: 10px;">
+      <section style="border-bottom:.5px dashed black;font-size:.9rem; padding-bottom: 10px;">
         <table>
           <thead>
             <tr>
-              <th>Id</th>
+              <th>#</th>
               <th style="width:20cm;text-align:left;">Descripcion</th>
               <th style="width:2cm;text-align:center;">XS/20</th>
               <th style="width:2cm;text-align:center;">S/28</th>
@@ -160,36 +135,36 @@
               <th style="width:2cm;text-align:center;">XL/34</th>
               <th style="width:2cm;text-align:center;">XXL/36</th>
               <th style="width:2cm;text-align:center;">UM</th>
-              <th style="width:5cm;text-align:center;">Cantidad</th>
+              <th style="width:2cm;text-align:center;">Cantidad</th>
             </tr>
           </thead>
           <tbody>
             {{#each detalle}}
             <tr>
-              <td>{{idx}}</td>
+              <td>{{@index}}</td>
               <td>{{articulo}}</td>
-              <td>12</td>
-              <td>11</td>
-              <td>9</td>
-              <td>45</td>
-              <td>23</td>
-              <td>11</td>
-              <td>NIU</td>
-              <td>{{cantidad}}</td>
+              <td style="text-align: center;">{{xs}}</td>
+              <td style="text-align: center;">{{s}}</td>
+              <td style="text-align: center;">{{m}}</td>
+              <td style="text-align: center;">{{l}}</td>
+              <td style="text-align: center;">{{xl}}</td>
+              <td style="text-align: center;">{{xxl}}</td>
+              <td style="text-align: center;">NIU</td>
+              <td style="text-align: center;">{{cantidad}}</td>
             </tr>
             {{/each}}
           </tbody>
         </table>
       </section>
       <section style="padding-top:10px;">
-        <strong>Total unidades : 2</strong>
+        <strong>Total unidades : {{totalunid}}</strong>
       </section>
     </section>
     <footer>
       <section style="display:flex;justify-content:space-around;gap:15px;">
-        <div style="border-top:.5px dashed black;padding:5px;text-align:center;flex:1;font-size:.8rem;">Entregué conforme</div>
-        <div style="border-top:.5px dashed black;padding:5px;text-align:center;flex:1;font-size:.8rem;">Lleve conforme</div>
-        <div style="border-top:.5px dashed black;padding:5px;text-align:center;flex:1;font-size:.8rem;">Recibí conforme</div>
+        <div style="border-top:.5px dashed black;padding:5px;text-align:center;flex:1;font-size:.9rem;">Entregué conforme</div>
+        <div style="border-top:.5px dashed black;padding:5px;text-align:center;flex:1;font-size:.9rem;">Lleve conforme</div>
+        <div style="border-top:.5px dashed black;padding:5px;text-align:center;flex:1;font-size:.9rem;">Recibí conforme</div>
       </section>
       <section style="padding-top:50px;font-size:.9rem;">
         {{!-- <strong>Observaciones:</strong> DEVOLUCION DE MUESTAS A PROVEEDOR<br/><br/> --}}

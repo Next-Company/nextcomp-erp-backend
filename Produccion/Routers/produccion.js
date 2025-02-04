@@ -28,3 +28,8 @@ produccionRouter.put('/:id/:data',ProduccionController.updateItems)
 produccionRouter.delete('/:id',ProduccionController.deleteOrden)
 
 produccionRouter.get('/informe/:id',ProduccionController.ShowInforme)
+
+produccionRouter.get('/proveedoreslist/:limit',ProduccionController.getListaProveedores)
+produccionRouter.get('/searchproveedor/:info',ProduccionController.searchProveedor)
+produccionRouter.get('/searchproveedorbyid/:id',ProduccionController.searchProveedorById)
+

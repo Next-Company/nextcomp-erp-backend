@@ -54,11 +54,12 @@ export class ProduccionController {
     const params = req.params
     const data = await ProduccionModel.getInfoGuiaCab(params.id)
     const data2 = await ProduccionModel.getInfoGuiaDet(params.id)
-    console.log("Fecha creacion :",(new Date(data[0].created_at)).toLocaleString('en-GB'))
-    console.log("Fecha creacion :",(new Date(data[0].created_at)).toLocaleDateString('en-GB'))
-    console.log("Fecha creacion :",(new Date(data[0].created_at)).toLocaleTimeString('en-GB'))
-    console.log("Info cabecera:",data)
-    console.log("Info detalle:",data2)
+    const data3 = await ProduccionModel.searchProveedorById(data[0].id_proveedor_CAB)
+    // console.log("Fecha creacion :",(new Date(data[0].created_at)).toLocaleString('en-GB'))
+    // console.log("Fecha creacion :",(new Date(data[0].created_at)).toLocaleDateString('en-GB'))
+    // console.log("Fecha creacion :",(new Date(data[0].created_at)).toLocaleTimeString('en-GB'))
+    // console.log("Info cabecera:",data)
+    // console.log("Info detalle:",data2)
     // console.log("Fecha:",new Date(Date.parse(data2[0].created_at)).toLocaleDateString())
     resp.render(
     'guia_back',
@@ -67,7 +68,13 @@ export class ProduccionController {
       cabecera:data[0],
       detalle:data2,
       date:(new Date(data[0].created_at)).toLocaleDateString('en-GB'),
-      time:(new Date(data[0].created_at)).toLocaleTimeString('en-GB')
+      time:(new Date(data[0].created_at)).toLocaleTimeString('en-GB'),
+      idguia:`${data[0].idx}`.padStart(10,0),
+      totalunid:data2.reduce((carry,valor)=>{
+        carry += parseFloat(valor.cantidad)
+        return carry;
+      },0),
+      proveedor:data3[0]
       // fecha:new Date(Date.parse(data2[0].created_at)).toLocaleDateString()
     },
     async (err,html)=>{
@@ -488,6 +495,21 @@ export class ProduccionController {
   static async eliminarInfoGuias(req, res){
     const id = req.params.id
     const data = await ProduccionModel.eliminarInfoGuias(id)
+    res.json(data)
+  }
+  static async getListaProveedores(req, res){
+    const limit = req.params.limit
+    const data = await ProduccionModel.getListaProveedores(limit)
+    res.json(data)
+  }
+  static async searchProveedor(req, res){
+    const info = req.params.info
+    const data = await ProduccionModel.searchProveedor(info)
+    res.json(data)
+  }
+  static async searchProveedorById(req, res){
+    const info = req.params.info
+    const data = await ProduccionModel.searchProveedorById(info)
     res.json(data)
   }
 }
