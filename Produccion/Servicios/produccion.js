@@ -622,11 +622,12 @@ export class ProduccionModel {
   }
   static async eliminarInfoGuias(id){
     let conn
+    // console.log("El id de eliminado es el siguiente:",id)
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      await conn.query('DELETE FROM `tbl2_seguimiento_estampado_cab` WHERE `idx` = "' + id + '"');
-      await conn.query('DELETE FROM `tbl2_seguimiento_estampado_det` WHERE `id_seguimiento_cab` = "' + id + '"');
+      await conn.query('DELETE FROM `tbl2_guias_traslado_cab` WHERE `idx` = "' + id + '"');
+      await conn.query('DELETE FROM `tbl2_guias_traslado_det` WHERE `id_guia_CAB` = "' + id + '"');
       await conn.end();
       return results
     } catch (err) {

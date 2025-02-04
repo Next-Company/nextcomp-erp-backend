@@ -64,7 +64,7 @@ export class ProduccionController {
     'guia_back',
     {
       info:params,
-      cabecera:data,
+      cabecera:data[0],
       detalle:data2,
       date:(new Date(data[0].created_at)).toLocaleDateString('en-GB'),
       time:(new Date(data[0].created_at)).toLocaleTimeString('en-GB')

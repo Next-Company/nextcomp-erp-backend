@@ -61,7 +61,7 @@
         NEXT COMPANY S.A.C<br/>
         NEXT
       </p>
-      <section style="font-size:.8rem;border-bottom:.5px dashed black;">
+      <section style="font-size:.8rem;border-bottom:.5px dashed black;text-align:center;">
         <p>
           DOMICILIO FISCAL: CAL.FELIPE SANTIAGO CRESPO NRO. 581 LIMA - LIMA - SAN LUIS<br/>
           RUC: 20522094120<br/>
@@ -70,7 +70,7 @@
         </p>
       </section>
       <p style="font-size: 1.1rem;font-weight:bolder;text-align:center;">
-        GUIA DE REMISION ELECTRONICA - REMITENTE<br/>
+        GUIA DE TRASLADO INTERNO - REMITENTE<br/>
         T100-00000391
       </p>
       <section style="display: flex;justify-content:space-between;border-bottom:.5px dashed black;padding-bottom: 10px;">
@@ -82,20 +82,32 @@
         </div>
       </section>
       <p style="font-size: 1.1rem;font-weight:bolder;">
-        DATOS DEL DESTINATARIO<br/>
+        DATOS DEL DESTINATARIO:<br/>
       </p>
       <section style="border-bottom:.5px dashed black;font-size:.8rem;padding-bottom: 10px;">
         <table>
           <tbody>
             <tr>
               <td>Seño(es):</td>
-              <td>NEXT COMPANY SAC</td>
-            </tr>
-            <tr>
+              <td style="width: 300px;">NEXT COMPANY SAC</td>
               <td>RUC:</td>
               <td>20522094120</td>
             </tr>
             <tr>
+              <td>Punto de Partida :</td>
+              <td>AV LURIGANCHO 1349 URB.IND ZARATE</td>
+              <td>Destino: </td>
+              <td>P17672 - NEXT COMPANY SAC</td>
+              {{!-- <td>RUC:</td>
+              <td>20522094120</td> --}}
+            </tr>
+            <tr>
+              <td>Punto de Llegada :</td>
+              <td>CAL FELIPE SANTIAGO CRESPO NRO. 581 LIMA-SAN LUIS LIMA</td>
+              <td></td>
+              <td></td>
+            </tr>
+            {{!-- <tr>
               <td>Punto de Partida :</td>
               <td>AV LURIGANCHO 1349 URB.IND ZARATE</td>
             </tr>
@@ -106,11 +118,11 @@
             <tr>
               <td>Punto de Llegada :</td>
               <td>CAL FELIPE SANTIAGO CRESPO NRO. 581 LIMA-SAN LUIS LIMA</td>
-            </tr>
+            </tr> --}}
           </tbody>
         </table>
       </section>
-      <p style="font-size: 1.1rem;font-weight:bold;">
+      {{!-- <p style="font-size: 1.1rem;font-weight:bold;">
         DATOS DEL TRANSPORTE<br/>
       </p>
       <section style="display: flex;justify-content:space-between;border-bottom:.5px dashed black;padding-bottom:10px;font-size:.8rem;">
@@ -120,9 +132,9 @@
         <div>
           Modalidad: Transporte Privado
         </div>
-      </section>
+      </section> --}}
       <p style="font-size: 1.1rem;font-weight:bold;">
-        TIPO Y MOTIVO DE TRASLADO<br/>
+        TIPO Y MOTIVO DE TRASLADO:<br/>
       </p>
       <section style="border-bottom:.5px dashed black;padding-bottom:10px;font-size:.8rem;">
         <div>
@@ -133,17 +145,22 @@
         </div>
       </section>
       <p style="font-size: 1.1rem;font-weight:bold;">
-        DATOS DE BIENES A TRANSPORTAR<br/>
+        DATOS DE BIENES A TRANSPORTAR:<br/>
       </p>
       <section style="border-bottom:.5px dashed black;font-size:.8rem; padding-bottom: 10px;">
         <table>
           <thead>
             <tr>
               <th>Id</th>
-              <th style="width:20cm;text-align:left; ">Descripcion</th>
-              <th>OP</th>
-              <th>UM</th>
-              <th>Cantidad</th>
+              <th style="width:20cm;text-align:left;">Descripcion</th>
+              <th style="width:2cm;text-align:center;">XS/20</th>
+              <th style="width:2cm;text-align:center;">S/28</th>
+              <th style="width:2cm;text-align:center;">M/30</th>
+              <th style="width:2cm;text-align:center;">L/32</th>
+              <th style="width:2cm;text-align:center;">XL/34</th>
+              <th style="width:2cm;text-align:center;">XXL/36</th>
+              <th style="width:2cm;text-align:center;">UM</th>
+              <th style="width:5cm;text-align:center;">Cantidad</th>
             </tr>
           </thead>
           <tbody>
@@ -151,7 +168,12 @@
             <tr>
               <td>{{idx}}</td>
               <td>{{articulo}}</td>
-              <td>2410565</td>
+              <td>12</td>
+              <td>11</td>
+              <td>9</td>
+              <td>45</td>
+              <td>23</td>
+              <td>11</td>
               <td>NIU</td>
               <td>{{cantidad}}</td>
             </tr>
@@ -170,7 +192,13 @@
         <div style="border-top:.5px dashed black;padding:5px;text-align:center;flex:1;font-size:.8rem;">Recibí conforme</div>
       </section>
       <section style="padding-top:50px;font-size:.9rem;">
-        <strong>Observaciones:</strong> DEVOLUCION DE MUESTAS A PROVEEDOR<br/><br/>
+        {{!-- <strong>Observaciones:</strong> DEVOLUCION DE MUESTAS A PROVEEDOR<br/><br/> --}}
+        <strong>Observaciones:</strong> {{cabecera.observaciones}}<br/>
+        <strong>Fecha retorno:</strong> {{cabecera.fec_retorno}}<br/>
+        <strong>Costo:</strong> {{cabecera.costo}}<br/><br/>
+        {{!-- <p>
+          <strong>PENALIDADES:</strong> El despacho deberá ser al 100% de la OC, con el fin de compensar el perjuicio por la pérdida de ventas y contribución por la mercadería perdida y no despachada en periodo establecido se fija un cobro del 1% de penalidad que aplica sobre la mercadería no despachada para las OC que tengan un FILL RATE
+        </p> --}}
         <strong>Representacion impresa de la Guia de Remision Electronica</strong><br/>
         <strong>Autorizado mediante Resolucion de Superintendencia Nro 0180050002070/SUNAT</strong><br/>
         <strong>Consulta web de este GRE: https://portal.efacturacion.pe/appefacturacion</strong><br/>
@@ -299,7 +327,8 @@
     </section>
     <footer>
       <section style="padding-top:50px;font-size:.9rem;">
-        <strong>Observaciones:</strong> DEVOLUCION DE MUESTAS A PROVEEDOR<br/>
+        <strong>Observaciones:</strong> {{data.observaciones}}<br/>
+        <strong>Costo:</strong> {{data.costo}}<br/>
         <strong>Representacion impresa de la Guia de Remision Electronica</strong><br/>
         <strong>Autorizado mediante Resolucion de Superintendencia Nro 0180050002070/SUNAT</strong><br/>
         <strong>Consulta web de este GRE: https://portal.efacturacion.pe/appefacturacion</strong><br/>
