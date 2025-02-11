@@ -66,15 +66,18 @@ export class ProduccionController {
     {
       info:params,
       cabecera:data[0],
-      detalle:data2,
+      detalle:data2.filter(row=>!row.isprototipo),
+      prototipos:data2.filter(row=>row.isprototipo),
+      numproto:data2.filter(row=>row.isprototipo).length,
       date:(new Date(data[0].created_at)).toLocaleDateString('en-GB'),
       time:(new Date(data[0].created_at)).toLocaleTimeString('en-GB'),
       idguia:`${data[0].idx}`.padStart(10,0),
       totalunid:data2.reduce((carry,valor)=>{
-        carry += parseFloat(valor.cantidad)
+        carry += valor.isprototipo ? 0 : parseFloat(valor.cantidad)
         return carry;
       },0),
-      proveedor:data3[0]
+      proveedor:data3[0],
+      diasprod:7
       // fecha:new Date(Date.parse(data2[0].created_at)).toLocaleDateString()
     },
     async (err,html)=>{

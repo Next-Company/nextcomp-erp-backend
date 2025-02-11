@@ -65,7 +65,7 @@
         <p>
           DOMICILIO FISCAL: CAL.FELIPE SANTIAGO CRESPO NRO. 581 LIMA - LIMA - SAN LUIS, RUC: 20522094120<br/>
           {{!-- RUC: 20522094120<br/> --}}
-          ALMACEN/NAVE: 023 - ALMACEN DE PRODUCTOS TERMINADOS - SAN LUIS - COD. ESTABLECIMIENTO SUNA: 344<br/>
+          {{!-- ALMACEN/NAVE: 023 - ALMACEN DE PRODUCTOS TERMINADOS - SAN LUIS - COD. ESTABLECIMIENTO SUNA: 344<br/>   --}}
           {{!-- COD. ESTABLECIMIENTO SUNA: 344<br/> --}}
         </p>
       </section>
@@ -75,16 +75,16 @@
       </p>
       <section style="display: flex;justify-content:space-between;border-bottom:.5px dashed black;padding-bottom: 10px;">
         <div style="font-size: .9rem;text-align:center;">
-          <strong>FECHA DE EMISIÓN:</strong> {{date}}
+          <strong>FECHA DE EMISIÓN:</strong> {{cabecera.fec_emision}}
         </div>
         <div style="font-size: .9rem;text-align:center;">
           <strong>HORA DE EMISIÓN:</strong> {{time}}
         </div>
         <div style="font-size: .9rem;text-align:center;">
-          <strong>FECHA DE RETORNO:</strong> {{date}}
+          <strong>FECHA DE RETORNO:</strong> {{cabecera.fec_retorno}}
         </div>
         <div style="font-size: .9rem;text-align:center;">
-          <strong>DIAS PRODUCCION:</strong> {{date}}
+          <strong>DÍAS PRODUCCIÓN:</strong> {{diasprod}}
         </div>
       </section>
       <p style="font-size: 1.1rem;font-weight:bolder;">
@@ -97,7 +97,7 @@
               <td>Señor(es):</td>
               <td style="width: 300px;">{{proveedor.nom}}</td>
               <td>RUC:</td>
-              <td>20644879156</td>
+              <td>{{proveedor.nom}}</td>
             </tr>
             <tr>
               <td>Punto de Partida :</td>
@@ -124,7 +124,10 @@
           Tipo de Traslado: {{cabecera.tipo}}
         </div>
         <div>
-          Motivo de Traslado: {{cabecera.motivo_traslado}}
+          Responsable: {{cabecera.responsable}}
+        </div>
+        <div>
+          Motivo: {{cabecera.motivo_traslado}}
         </div>
       </section>
       <p style="font-size: 1.1rem;font-weight:bold;">
@@ -135,15 +138,15 @@
           <tbody>
             <tr>
               <td>Modelo:</td>
-              <td style="width: 300px;">{{proveedor.nom}}</td>
+              <td style="width: 300px;">{{cabecera.modelo}}</td>
               <td>Precio:</td>
-              <td>{{cabecera.costo}}</td>
+              <td>S/.{{cabecera.costo}}</td>
             </tr>
             <tr>
               <td>Descripción:</td>
-              <td>POLOS OVERSIZE ELENEX</td>
-              <td>N°Corte:</td>
-              <td>2025467</td>
+              <td>{{cabecera.producto}}</td>
+              <td>OP/Corte:</td>
+              <td>#{{cabecera.orden_ref}}</td>
             </tr>
           </tbody>
         </table>
@@ -153,25 +156,26 @@
       </p>
       {{!-- <section style="border-bottom:.5px dashed black;font-size:.9rem; padding-bottom: 10px;"> --}}
       <section style="font-size:.9rem; padding-bottom: 10px;">
-        <table>
+        <table style="border-collapse: collapse;width:100%;">
           <thead>
-            <tr>
+            <tr style="border-bottom:.2px solid gray;">
               <th>#</th>
-              <th style="width:20cm;text-align:left;">Detalle</th>
-              <th style="width:2cm;text-align:center;">XS/20</th>
-              <th style="width:2cm;text-align:center;">S/28</th>
-              <th style="width:2cm;text-align:center;">M/30</th>
-              <th style="width:2cm;text-align:center;">L/32</th>
-              <th style="width:2cm;text-align:center;">XL/34</th>
-              <th style="width:2cm;text-align:center;">XXL/36</th>
-              <th style="width:2cm;text-align:center;">UM</th>
-              <th style="width:2cm;text-align:center;">Total</th>
+              <th style="text-align:left;">Detalle</th>
+              <th style="text-align:center;">XS/26</th>
+              <th style="text-align:center;">S/28</th>
+              <th style="text-align:center;">M/30</th>
+              <th style="text-align:center;">L/32</th>
+              <th style="text-align:center;">XL/34</th>
+              <th style="text-align:center;">XXL/36</th>
+              <th style="text-align:center;">UM</th>
+              <th style="text-align:center;">Cantidad</th>
             </tr>
           </thead>
           <tbody>
             {{#each detalle}}
-            <tr>
-              <td>{{@index}}</td>
+            {{!-- <tr style="border-bottom: .2px solid gray;"> --}}
+            <tr style="">
+              <td style="text-align: center;width:.5cm;">{{@index}}</td>
               <td>{{articulo}}</td>
               <td style="text-align: center;">{{xs}}</td>
               <td style="text-align: center;">{{s}}</td>
@@ -179,8 +183,8 @@
               <td style="text-align: center;">{{l}}</td>
               <td style="text-align: center;">{{xl}}</td>
               <td style="text-align: center;">{{xxl}}</td>
-              <td style="text-align: center;">NIU</td>
-              <td style="text-align: center;">{{cantidad}}</td>
+              <td style="width:1.5px;text-align: center;">NIU</td>
+              <td style="width:1.5px;text-align: center;">{{cantidad}}</td>
             </tr>
             {{/each}}
             <tfoot>
@@ -193,6 +197,51 @@
           </tbody>
         </table>
       </section>
+      {{!-- </br> --}}
+      {{#if numproto}}
+      <section style="font-size:.9rem;">
+        <table style="border-collapse: collapse;width:100%;">
+          <thead>
+            <tr style="border-bottom: .2px solid gray;">
+              <th>#</th>
+              <th style="text-align:left;">Prototipos</th>
+              <th style="text-align:center;"></th>
+              <th style="text-align:center;"></th>
+              <th style="text-align:center;"></th>
+              <th style="text-align:center;"></th>
+              <th style="text-align:center;"></th>
+              <th style="text-align:center;"></th>
+              <th style="width:1.5cm;text-align:center;"></th>
+              <th style="width:1.5cm;text-align:center;">Cantidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each prototipos}}
+            {{!-- <tr style="border-bottom: .2px solid gray;"> --}}
+            <tr style="">
+              <td style="text-align: center;width:.5cm;">{{@index}}</td>
+              <td>{{articulo}}</td>
+              <td style="text-align: center;"></td>
+              <td style="text-align: center;"></td>
+              <td style="text-align: center;"></td>
+              <td style="text-align: center;"></td>
+              <td style="text-align: center;"></td>
+              <td style="text-align: center;"></td>
+              <td style="text-align: center;"></td>
+              <td style="text-align: center;">{{cantidad}}</td>
+            </tr>
+            {{/each}}
+            {{!-- <tfoot>
+              <tr>
+                <td colspan="8"></td>
+                <td style="text-align: center;font-size:.9rem;"><strong>Total</strong></td>
+                <td style="text-align: center;font-size:.9rem;"><strong>{{totalunid}}</strong></td>
+              </tr>
+            </tfoot> --}}
+          </tbody>
+        </table>
+      </section>
+      {{/if}}
       {{!-- <section style="padding-top:10px;">
         <strong>Total unidades : {{totalunid}}</strong>
       </section> --}}
@@ -211,142 +260,11 @@
         {{!-- <p>
           <strong>PENALIDADES:</strong> El despacho deberá ser al 100% de la OC, con el fin de compensar el perjuicio por la pérdida de ventas y contribución por la mercadería perdida y no despachada en periodo establecido se fija un cobro del 1% de penalidad que aplica sobre la mercadería no despachada para las OC que tengan un FILL RATE
         </p> --}}
-        <strong>Condiciones de pagos:</strong> Los pagos de los despachos efectuados los lunes, martes o miércoles sera programada para el día sábado dentro de la semanana en la que fue recepcionado el despacho, por otro lado, los pagos de los despachos efectuados los jueves, viernes y sábado será programada para el día sabado de la semana próxima tomando como referencia la semana en la que fue recepcionado el despacho, o en su defecto, en <strong>10</strong> días calendario las que se contabilizarán a partir del día miércoles de la semana en la que fue recepcionado el despacho.<br/>
-        <strong>Penalidades :</strong> El despacho deberá ejecutarse segun las fechas indicadas en el presente documento, despues de la fecha de vencimineto se aplicará una penalidad sobre el valor costo de la OC: de 1 a 5 días de retraso la penalidad sera de <strong>5%</strong>, de 6 a 10 días la penalidad serea de <strong>10%</strong> y de 11 a 15 días sera <strong>%15</strong>, de 16 días a más se evaluará la recepción de la OC. El proveedor consignado en el presente documento autoriza a Next Company a retener de forma automática el pago de facturas del proveedor por el valor de lo adeudado.<br/>
+        <strong>Condiciones de pagos:</strong> Las fechas de cierre son los días miércoles de cada semana. La programación de pagos variaran dependiendo de si los despachos fueron recepcionados antes o después de la fecha de cierre. Los proveedores cuyos despachos sean recibidos antes de la fecha de cierre(lunes, martes o miércoles), recibirán el pago en un plazo máximo de 10 días a partir de dicha fecha de cierre; por el contrario, los proveedores cuyos despachos sean recibidos después de la fecha de cierre(jueves, viernes o sábado), recibirán el pago en un plazo máximo de 10 días a partir de la fecha de cierre de la semana siguiente.<br/><br/>
+        <strong>Penalidades :</strong> El despacho deberá ejecutarse segun las fechas indicadas en el presente documento, despues de la fecha de vencimineto se aplicará una penalidad sobre el valor costo de la OC: de 1 a 5 días de retraso la penalidad sera de <strong>5%</strong>, de 6 a 10 días la penalidad serea de <strong>10%</strong> y de 11 a 15 días sera <strong>%15</strong>, de 16 días a más se evaluará la recepción de la OC. El proveedor consignado en el presente documento autoriza a Next Company a retener de forma automática el pago de facturas del proveedor por el valor de lo adeudado.<br/><br/>
         {{!-- <strong>Consulta web de este GRE: https://portal.efacturacion.pe/appefacturacion</strong><br/> --}}
         <strong>Fecha/hora impresión: {{date}} {{time}}</strong><br/>
       </section>
     </footer>
   </div>
-  {{!-- ////////////////////////////////////////////////////////////////////////////////////////////////////////////////// --}}
-  {{!-- ////////////////////////////////////////////////////////////////////////////////////////////////////////////////// --}}
-  {{!-- ////////////////////////////////////////////////////////////////////////////////////////////////////////////////// --}}
-  {{!-- ////////////////////////////////////////////////////////////////////////////////////////////////////////////////// --}}
-  {{!-- ////////////////////////////////////////////////////////////////////////////////////////////////////////////////// --}}
-  <div style="flex:1;padding:5px;display:flex;flex-direction:column;display:none;">
-    <section style="flex:1;">
-      <br/>
-      <br/>
-      <br/>
-      <br/>
-      <br/>
-      <br/>
-      <p style="font-size: 1.2rem;font-weight:600;text-align:center;">
-        NEXT COMPANY S.A.C<br/>
-        NEXT
-      </p>
-      <section style="font-size:.8rem;border-bottom:.5px dashed black;">
-        <p>
-          DOMICILIO FISCAL: CAL.FELIPE SANTIAGO CRESPO NRO. 581 LIMA - LIMA - SAN LUIS<br/>
-          RUC: 20522094120<br/>
-          ALMACEN/NAVE: 023 - ALMACEN DE PRODUCTOS TERMINADOS - SAN LUIS<br/>
-          COD. ESTABLECIMIENTO SUNA: 344<br/>
-        </p>
-      </section>
-      <p style="font-size: 1.1rem;font-weight:bolder;text-align:center;">
-        GUIA DE REMISION ELECTRONICA - REMITENTE<br/>
-        T100-00000391
-      </p>
-      <section style="display: flex;justify-content:space-between;border-bottom:.5px dashed black;padding-bottom: 10px;">
-        <div style="font-size: .9rem;text-align:center;">
-          <strong>FECHA DE EMISION:</strong> {{date}}
-        </div>
-        <div style="font-size: .9rem;text-align:center;">
-          <strong>HORA DE EMISION:</strong> {{time}}
-        </div>
-      </section>
-      <p style="font-size: 1.1rem;font-weight:bolder;">
-        DATOS DEL DESTINATARIO<br/>
-      </p>
-      <section style="border-bottom:.5px dashed black;font-size:.8rem;padding-bottom: 10px;">
-        <table>
-          <tbody>
-            <tr>
-              <td>Seño(es):</td>
-              <td>NEXT COMPANY SAC</td>
-            </tr>
-            <tr>
-              <td>RUC:</td>
-              <td>20522094120</td>
-            </tr>
-            <tr>
-              <td>Punto de Partida :</td>
-              <td>AV LURIGANCHO 1349 URB.IND ZARATE</td>
-            </tr>
-            <tr>
-              <td>Destino: </td>
-              <td>P17672 - NEXT COMPANY SAC</td>
-            </tr>
-            <tr>
-              <td>Punto de Llegada :</td>
-              <td>CAL FELIPE SANTIAGO CRESPO NRO. 581 LIMA-SAN LUIS LIMA</td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
-      <p style="font-size: 1.1rem;font-weight:bold;">
-        DATOS DEL TRANSPORTE<br/>
-      </p>
-      <section style="display: flex;justify-content:space-between;border-bottom:.5px dashed black;padding-bottom:10px;font-size:.8rem;">
-        <div>
-          Fecha de inicio del traslado: 23/01/2025
-        </div>
-        <div>
-          Modalidad: Transporte Privado
-        </div>
-      </section>
-      <p style="font-size: 1.1rem;font-weight:bold;">
-        TIPO Y MOTIVO DE TRASLADO<br/>
-      </p>
-      <section style="border-bottom:.5px dashed black;padding-bottom:10px;font-size:.8rem;">
-        <div>
-          Tipo de Traslado: TRASLADO DE MUESTRAS A PROVEEDOR
-        </div>
-        <div>
-          Motivo de Traslado: PROVEEDOR P17672 - NEXT COMPANY SAC
-        </div>
-      </section>
-      <p style="font-size: 1.1rem;font-weight:bold;">
-        DATOS DE BIENES A TRANSPORTAR<br/>
-      </p>
-      <section style="border-bottom:.5px dashed black;font-size:.8rem;">
-        <table>
-          <thead>
-            <tr>
-              <th>Id</th>
-              <th style="width:300px;text-align:left;background-color:rgb(213, 213, 213)">Descripcion</th>
-              <th>OP</th>
-              <th>UM</th>
-              <th>Cantidad</th>
-            </tr>
-          </thead>
-          <tbody>
-            {{#each detalle}}
-            <tr>
-              <td>{{idx}}</td>
-              <td>{{articulo}}</td>
-              <td>2410565</td>
-              <td>NIU</td>
-              <td>{{cantidad}}</td>
-            </tr>
-            {{/each}}
-          </tbody>
-        </table>
-      </section>
-      <section style="padding-top:10px;">
-        <strong>Total unidades : 2</strong>
-      </section>
-    </section>
-    <footer>
-      <section style="padding-top:50px;font-size:.9rem;">
-        <strong>Observaciones:</strong> {{data.observaciones}}<br/>
-        <strong>Costo:</strong> {{data.costo}}<br/>
-        <strong>Representacion impresa de la Guia de Remision Electronica</strong><br/>
-        <strong>Autorizado mediante Resolucion de Superintendencia Nro 0180050002070/SUNAT</strong><br/>
-        <strong>Consulta web de este GRE: https://portal.efacturacion.pe/appefacturacion</strong><br/>
-        <strong>Fecha/hora impresión: {{date}} {{time}}</strong><br/>
-      </section>
-    </footer>
-  </div>
-  
 </div>
