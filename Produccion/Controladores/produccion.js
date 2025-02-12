@@ -77,7 +77,7 @@ export class ProduccionController {
         return carry;
       },0),
       proveedor:data3[0],
-      diasprod:7
+      // diasprod:7
       // fecha:new Date(Date.parse(data2[0].created_at)).toLocaleDateString()
     },
     async (err,html)=>{
