@@ -173,19 +173,18 @@
           </thead>
           <tbody>
             {{#each detalle}}
-            {{!-- <tr style="border-bottom: .2px solid gray;"> --}}
-            <tr style="">
-              <td style="text-align: center;width:.5cm;">{{@index}}</td>
-              <td>{{articulo}}</td>
-              <td style="text-align: center;">{{xs}}</td>
-              <td style="text-align: center;">{{s}}</td>
-              <td style="text-align: center;">{{m}}</td>
-              <td style="text-align: center;">{{l}}</td>
-              <td style="text-align: center;">{{xl}}</td>
-              <td style="text-align: center;">{{xxl}}</td>
-              <td style="width:1.5px;text-align: center;">NIU</td>
-              <td style="width:1.5px;text-align: center;">{{cantidad}}</td>
-            </tr>
+              <tr style="">
+                <td style="text-align: center;width:.5cm;">{{plusindex @index}}</td>
+                <td>{{articulo}}</td>
+                <td style="text-align: center;">{{xs}}</td>
+                <td style="text-align: center;">{{s}}</td>
+                <td style="text-align: center;">{{m}}</td>
+                <td style="text-align: center;">{{l}}</td>
+                <td style="text-align: center;">{{xl}}</td>
+                <td style="text-align: center;">{{xxl}}</td>
+                <td style="width:1.5px;text-align: center;">NIU</td>
+                <td style="width:1.5px;text-align: center;">{{cantidad}}</td>
+              </tr>
             {{/each}}
             <tfoot>
               <tr>
@@ -219,7 +218,7 @@
             {{#each prototipos}}
             {{!-- <tr style="border-bottom: .2px solid gray;"> --}}
             <tr style="">
-              <td style="text-align: center;width:.5cm;">{{@index}}</td>
+              <td style="text-align: center;width:.5cm;">{{plusindex @index}}</td>
               <td>{{articulo}}</td>
               <td style="text-align: center;"></td>
               <td style="text-align: center;"></td>

@@ -498,8 +498,7 @@ export class ProduccionModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      const [results, fields] = await conn.query('SELECT *, (date(fec_retorno) - date(fec_emision)) as duracion FROM tbl2_guias_traslado_cab where idx = ?',[id]);
-      console.log(results)
+      const [results, fields] = await conn.query('SELECT idx,orden_ref,tipo,motivo_traslado,id_proveedor_CAB,proveedor,servicio,responsable,modelo,producto,date_format(fec_emision,"%d/%m/%Y") as fec_emision,date_format(fec_retorno,"%d/%m/%Y") as fec_retorno,date_format(fec_recepcion,"%d/%m/%Y") as fec_recepcion,costo,observaciones,estado,created_at, (date(fec_retorno) - date(fec_emision)) as duracion FROM tbl2_guias_traslado_cab where idx = ?',[id]);
       await conn.end();
       
       return results

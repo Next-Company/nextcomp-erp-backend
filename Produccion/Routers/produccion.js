@@ -33,3 +33,5 @@ produccionRouter.get('/proveedoreslist/:limit',ProduccionController.getListaProv
 produccionRouter.get('/searchproveedor/:info',ProduccionController.searchProveedor)
 produccionRouter.get('/searchproveedorbyid/:id',ProduccionController.searchProveedorById)
 
+produccionRouter.get('/vistapreviapedido/:tipo',ProduccionController.VistaPreviaPedido)
+

@@ -77,6 +77,11 @@ export class ProduccionController {
         return carry;
       },0),
       proveedor:data3[0],
+      helpers: {
+        plusindex(index) { 
+          return index + 1
+        }
+      }
       // diasprod:7
       // fecha:new Date(Date.parse(data2[0].created_at)).toLocaleDateString()
     },
@@ -514,5 +519,32 @@ export class ProduccionController {
     const info = req.params.info
     const data = await ProduccionModel.searchProveedorById(info)
     res.json(data)
+  }
+  static async VistaPreviaPedido(req, res){
+    const BINARY_CHUNKS = await fs.readFile('public/images/firma_jefferson.png')
+    // const BINARY_CHUNKS2 = await fs.readFile('public/images/logo_next-02.jpg')
+    const BINARY_CHUNKS2 = await fs.readFile('public/images/logo_next.png')
+    const BINARY_CHUNKS3 = await fs.readFile('public/images/orden_pedido.png')
+    
+    res.render(
+      'telas_v2',{
+        BINARY_CHUNKS:BINARY_CHUNKS.toString('base64'),
+        BINARY_CHUNKS2:BINARY_CHUNKS2.toString('base64'),
+        BINARY_CHUNKS3:BINARY_CHUNKS3.toString('base64'),
+        datos:{nro_orden:'',nro_orden:'',fecha:'',proveedor:'',re:'',ruc:'',dirigido:'',girado:'',telefono:'',acuenta:'',entrega:'',observaciones:''},
+        detalle:[['','','','','','','']],
+        helpers: {
+          foo(items,options) { 
+            let extra = 22 - items.length
+            for(let i=0; i < extra; i++){
+              items.push(['','','','','','',''])
+            }
+            const itemsAsHtml = items.map((item,key) => `<tr><td style="width: 35px;text-align: center;" contenteditable="true">${key + 1}</td><td style="width: 60px;text-align: left;" contenteditable="true">`+item[0]+`</td><td style="width: 60px;text-align: center;" contenteditable="true">`+item[1]+`</td><td style="width: 60px;text-align: center;" contenteditable="true">`+item[2]+`</td><td style="width: 60px;text-align: center;" contenteditable="true">`+item[3]+`</td><td style="width: 60px;text-align: center;" contenteditable="true">`+item[4]+`</td><td style="width: 60px;text-align: center;" contenteditable="true">`+item[5]+`</td></tr>`)
+            return itemsAsHtml.join("\n")
+          }
+        }
+      }
+    )
+
   }
 }
