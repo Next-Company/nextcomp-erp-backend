@@ -604,7 +604,7 @@ export class ProduccionModel {
       }else{
         console.log("Creandsssso")
         try{
-          const [res,fields] = await conn.query('INSERT INTO tbl2_guias_traslado_cab(orden_ref,tipo,id_proveedor_CAB,proveedor,servicio,fec_emision,fec_retorno,costo,observaciones,motivo_traslado,responsable,modelo,producto) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),,NULLIF(?, ""),,NULLIF(?, ""))',[cabecera.orden_ref,cabecera.tipo,cabecera.id_proveedor_CAB,cabecera.proveedor,cabecera.servicio,cabecera.fec_emision,cabecera.fec_retorno,cabecera.costo,cabecera.observaciones,cabecera.motivo_traslado,cabecera.responsable,cabecera.modelo,cabecera.producto])
+          const [res,fields] = await conn.query('INSERT INTO tbl2_guias_traslado_cab(orden_ref,tipo,id_proveedor_CAB,proveedor,servicio,fec_emision,fec_retorno,costo,observaciones,motivo_traslado,responsable,modelo,producto) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',[cabecera.orden_ref,cabecera.tipo,cabecera.id_proveedor_CAB,cabecera.proveedor,cabecera.servicio,cabecera.fec_emision,cabecera.fec_retorno,cabecera.costo,cabecera.observaciones,cabecera.motivo_traslado,cabecera.responsable,cabecera.modelo,cabecera.producto])
 
           const insert = async ()=>{
             const fila = articulos.shift()

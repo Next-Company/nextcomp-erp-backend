@@ -17,99 +17,108 @@
 </div>
  --}}
 <style>
-  html{
+  /*html{
+    overflow: hidden;
+  }*/
+  html::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+    /* background: #efefef; */
+    background: transparent;
   }
-    * {
-        font-family: calibri;
-        font-size: 10px;
-        
-        color: #000000;
-    }
+  html::-webkit-scrollbar-thumb {
+    background: #c2c2c2;
+    border-radius: 6px;
+  }
+  html::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
 
-    body {
-        background-color: white;
-        padding: 40px 20px 20px;
-        margin: 0px;
-        width: 21cm;
-        height: 29cm;
-        position: relative;
-        box-sizing: border-box;
-        border-right: 1px dashed gray;
-    }
+  * {
+      font-family: calibri;
+      font-size: 10px;
+      
+      color: #000000;
+  }
 
-    table {
-        padding: 2px
-    }
+  body {
+      background-color: white;
+      padding: 0px 20px 0px;
+      margin: 0px;
+      width: 21cm;
+      height: 29cm;
+      position: relative;
+      box-sizing: border-box;
+      /*border-right: 1px dashed gray;*/
+  }
 
+  table {
+      padding: 2px
+  }
+  table#principal {
+      /* border-spacing: 2px 5px; */
+  }
+  table#principal td {
+      /* padding:0xpx */
+  }
 
-    table#principal {
-        /* border-spacing: 2px 5px; */
-    }
-
-    table#principal td {
-        
-        /* padding:0xpx */
-    }
-
-
-
-    table.contenido {
-        /* width: 100%; */
-        border-collapse: collapse;
-        text-transform: uppercase;
-        border-left: 0.5px solid #004080;
-        /* padding-left:20px; */
-    }
-
-
-    table.contenido tr th {
-        background-color: #004bbb;
-        border-right: 0.5px solid #004080;
-        border-bottom: 0.5px solid #004080;
-        border-top: 0.5px solid #004080;
-        text-align: center;
-        font-weight: bolder;
-        height: 16px;
-        line-height: 11px;
-        color:white;
-    }
+  table.contenido {
+      /* width: 100%; */
+      border-collapse: collapse;
+      text-transform: uppercase;
+      border-left: 0.5px solid #004080;
+      /* padding-left:20px; */
+  }
 
 
-    table.contenido tr td {
+  table.contenido tr th {
+      background-color: #004bbb;
+      border-right: 0.5px solid #004080;
+      border-bottom: 0.5px solid #004080;
+      border-top: 0.5px solid #004080;
+      text-align: center;
+      font-weight: bolder;
+      height: 16px;
+      line-height: 11px;
+      color:white;
+  }
 
-        border-right: 0.5px solid #004080;
-        border-bottom: 0.5px solid #004080;
 
-        padding: 5px 5px;
-        line-height: 8px;
-    }
-    table.contenido2 {
-     border-collapse: collapse; 
-    }
-    table.contenido2 tr td {
-      border-left: 0.5px solid black;
-      border-top: 0.5px solid black;
-      border-right: 0.5px solid black;
-      border-bottom: 0.5px solid black;
+  table.contenido tr td {
+
+      border-right: 0.5px solid #004080;
+      border-bottom: 0.5px solid #004080;
+
       padding: 5px 5px;
       line-height: 8px;
-    }
+  }
+  table.contenido2 {
+    border-collapse: collapse; 
+  }
+  table.contenido2 tr td {
+    border-left: 0.5px solid black;
+    border-top: 0.5px solid black;
+    border-right: 0.5px solid black;
+    border-bottom: 0.5px solid black;
+    padding: 5px 5px;
+    line-height: 8px;
+  }
 
-    table.tabla_datos {
-      border: 0.5px solid #004080;
-      border-collapse: separate;
-      border-spacing: 3px;
-      padding: 0.0px;
-      line-height: 7px;
-    }
-    .saltopagina {
-        display: block;
-        border: none;
-        page-break-after: always;
-    }
-    .tipo_orden td{
-        border:0.5px solid black;
-    }
+  table.tabla_datos {
+    border: 0.5px solid #004080;
+    border-collapse: separate;
+    border-spacing: 3px;
+    padding: 0.0px;
+    line-height: 7px;
+  }
+  .saltopagina {
+      display: block;
+      border: none;
+      page-break-after: always;
+  }
+  .tipo_orden td{
+      border:0.5px solid black;
+  }
 </style>
 <body>
     <table id="principal" style="width: 100%;">
@@ -146,7 +155,7 @@
                                         <table class="tipo_orden">
                                             <tr>
                                               <td style="border:none;">
-                                                <table style="border-collapse: collapse; padding: 6px 1px;margin: 0px;width:300px;">
+                                                <table style="border-collapse: collapse; padding: 6px 1px;margin: 0px;width:380px;">
                                                   <tr>
                                                     <td style="border:1px solid black;font-weight:bold;font-size:16px;text-align:center;padding:5px;">
                                                       <img src="data:image/jpg;base64,{{this.BINARY_CHUNKS3}}" class="logo" style="width:200px;">
@@ -158,20 +167,24 @@
                                             <tr>
                                               <td style="border:none;">
                                                 <!-- <table style="border-collapse: collapse; padding: 6px 1px;margin: 0px;"> -->
-                                                <table class="contenido2" style="">
-                                                  <tr>
-                                                    <td style="height:20px;width:100px;font-weight:bolder;" valing="middle">N° ORDEN</td>
-                                                    <td style="height:20px;width:45px;font-weight:bolder">AL.</td>
-                                                    <td style="height:20px;width:280px;" colspan="8" contenteditable="true">00139</td>
-                                                  </tr>
-                                                  <tr>
-                                                    <td style="height:20px;width:80px;font-weight:bolder">FECHA PEDIDO</td>
-                                                    <td colspan="2" contenteditable="true">2-May</td>
-                                                    <td colspan="2" contenteditable="true">FECHA ENTREGA</td>
-                                                    <td colspan="2" contenteditable="true">2-May</td>
-                                                    <td colspan="2" contenteditable="true">DÍAS PRODUCCIÓN</td>
-                                                    <td colspan="2" contenteditable="true">177</td>
-                                                  </tr>
+                                                <table class="contenido" style="">
+                                                  <thead>
+                                                    <tr>
+                                                      <th style="height:25px;width:100px;font-weight:bolder;font-size:20px;" valing="middle">N° ORDEN</td>
+                                                      <th style="height:25px;width:45px;font-weight:bolder">AL.</td>
+                                                      <th style="height:25px;width:280px;font-size:20px;" colspan="8">00139</td>
+                                                    </tr>
+                                                  </thead>
+                                                  <tbody>
+                                                    <tr>
+                                                      <td style="height:20px;width:80px;font-weight:bolder">FECHA PEDIDO</td>
+                                                      <td colspan="2"><strong>2-May</strong></td>
+                                                      <td colspan="2">FECHA ENTREGA</td>
+                                                      <td colspan="2"><strong>2-May</strong></td>
+                                                      <td colspan="2">DÍAS PRODUCCIÓN</td>
+                                                      <td colspan="2"><strong>177</strong></td>
+                                                    </tr>
+                                                  </tbody>
                                                 </table>
                                               </td>
                                             </tr>
@@ -268,15 +281,15 @@
       </tbody>
       <tfoot>
         <tr>
-          <td colspan="7"><strong>OBSERVACIONES:</strong></td>
+          <td colspan="7" style="height:15px;padding:10px;"><strong>OBSERVACIONES:</strong></td>
         </tr>
         <tr>
-          <td colspan="7">
+          <td colspan="7" style="padding:10px 10px 10px;">
             <strong>CONDICIONES DE PAGO:</strong> Las fechas de cierre son los días miércoles de cada semana. La programación de pagos variaran dependiendo de si los despachos fueron recepcionados antes o después de la fecha de cierre. Los proveedores cuyos despachos sean recibidos antes de la fecha de cierre(<strong>lunes, martes o miércoles</strong>), recibirán el pago en un plazo máximo de 10 días a partir de dicha fecha de cierre; por el contrario, los proveedores cuyos despachos sean recibidos después de la fecha de cierre(<strong>jueves, viernes o sábado</strong>), recibirán el pago en un plazo máximo de 10 días a partir de la fecha de cierre de la semana siguiente.
           </td>
         </tr>
         <tr>
-          <td colspan="7">
+          <td colspan="7" style="padding:10px 10px 10px;">
             <strong>PENALIDADES:</strong> El despacho deberá ejecutarse segun las fechas indicadas en el presente documento, despues de la fecha de vencimineto se aplicará una penalidad sobre el valor costo de la OC: de 1 a 5 días de retraso la penalidad sera de 5%, de 6 a 10 días la penalidad serea de 10% y de 11 a 15 días sera %15, de 16 días a más se evaluará la recepción de la OC. El proveedor consignado en el presente documento autoriza a Next Company a retener de forma automática el pago de facturas del proveedor por el valor de lo adeudado.
           </td>
         </tr>

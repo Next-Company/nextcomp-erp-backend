@@ -539,9 +539,43 @@ export class ProduccionController {
             for(let i=0; i < extra; i++){
               items.push(['','','','','','',''])
             }
-            const itemsAsHtml = items.map((item,key) => `<tr><td style="width: 35px;text-align: center;" contenteditable="true">${key + 1}</td><td style="width: 60px;text-align: left;" contenteditable="true">`+item[0]+`</td><td style="width: 60px;text-align: center;" contenteditable="true">`+item[1]+`</td><td style="width: 60px;text-align: center;" contenteditable="true">`+item[2]+`</td><td style="width: 60px;text-align: center;" contenteditable="true">`+item[3]+`</td><td style="width: 60px;text-align: center;" contenteditable="true">`+item[4]+`</td><td style="width: 60px;text-align: center;" contenteditable="true">`+item[5]+`</td></tr>`)
+            const itemsAsHtml = items.map((item,key) => `<tr style="height:25px;"><td style="width:35px;text-align: center;">${key + 1}</td><td style="width:60px;text-align: left;">`+item[0]+`</td><td style="width:60px;text-align: center;">`+item[1]+`</td><td style="width:60px;text-align: center;">`+item[2]+`</td><td style="width:60px;text-align: center;">`+item[3]+`</td><td style="width: 60px;text-align: center;">`+item[4]+`</td><td style="width: 60px;text-align: center;">`+item[5]+`</td></tr>`)
             return itemsAsHtml.join("\n")
           }
+        },
+        
+      },
+      async (err,html)=>{
+        try {
+          const browser = await puppeteer.launch();
+  
+          const version = await browser.version();
+          console.log(`Versión de Chrome: ${version}`);
+          const page = await browser.newPage();
+          await page.setContent(html);
+  
+          const pdfOptions = {
+            // format: 'A4',        // Puedes usar 'A4', 'Letter' o un tamaño personalizado como { width: '210mm', height: '297mm' }
+            // width: '24.1cm',
+            width: '20cm',
+            height: '27.94cm',
+            landscape: false,    // Para orientación horizontal (landscape) usa `true`
+            printBackground: true, // Incluir el fondo en el PDF
+            margin: {
+              left: 0,
+              right: 0
+            }
+          };
+      
+          const pdfBuffer = await page.pdf(pdfOptions);
+          await browser.close();
+          // res.send(pdfBuffer.toString('base64'))
+          res.send(pdfBuffer)
+        } catch (error) {
+          res.status(500).send('Error al generar el PDF');
+          // await browser.close();
+        } finally{
+          // await browser.close();
         }
       }
     )
