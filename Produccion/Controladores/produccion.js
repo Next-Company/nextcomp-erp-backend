@@ -58,7 +58,7 @@ export class ProduccionController {
     // console.log("Fecha creacion :",(new Date(data[0].created_at)).toLocaleString('en-GB'))
     // console.log("Fecha creacion :",(new Date(data[0].created_at)).toLocaleDateString('en-GB'))
     // console.log("Fecha creacion :",(new Date(data[0].created_at)).toLocaleTimeString('en-GB'))
-    // console.log("Info cabecera:",data)
+    console.log("Info cabecera:",data)
     // console.log("Info detalle:",data2)
     // console.log("Fecha:",new Date(Date.parse(data2[0].created_at)).toLocaleDateString())
     resp.render(
@@ -535,11 +535,11 @@ export class ProduccionController {
         detalle:[['','','','','','','']],
         helpers: {
           foo(items,options) { 
-            let extra = 22 - items.length
+            let extra = 18 - items.length
             for(let i=0; i < extra; i++){
               items.push(['','','','','','',''])
             }
-            const itemsAsHtml = items.map((item,key) => `<tr style="height:25px;"><td style="width:35px;text-align: center;">${key + 1}</td><td style="width:60px;text-align: left;">`+item[0]+`</td><td style="width:60px;text-align: center;">`+item[1]+`</td><td style="width:60px;text-align: center;">`+item[2]+`</td><td style="width:60px;text-align: center;">`+item[3]+`</td><td style="width: 60px;text-align: center;">`+item[4]+`</td><td style="width: 60px;text-align: center;">`+item[5]+`</td></tr>`)
+            const itemsAsHtml = items.map((item,key) => `<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;">${key + 1}</td><td style="width:60px;text-align: left;">`+item[0]+`</td><td style="width:60px;text-align: center;background-color:#ddebf7;">`+item[1]+`</td><td style="width:60px;text-align: center;background-color:#ddebf7;">`+item[2]+`</td><td style="width:60px;text-align: center;background-color:#ddebf7;">`+item[3]+`</td><td style="width: 60px;text-align: center;background-color:#ddebf7;">`+item[4]+`</td><td style="width: 60px;text-align: center;background-color:#ddebf7;">`+item[5]+`</td></tr>`)
             return itemsAsHtml.join("\n")
           }
         },
@@ -548,19 +548,18 @@ export class ProduccionController {
       async (err,html)=>{
         try {
           const browser = await puppeteer.launch();
-  
+      
           const version = await browser.version();
           console.log(`Versión de Chrome: ${version}`);
           const page = await browser.newPage();
           await page.setContent(html);
-  
+      
           const pdfOptions = {
-            // format: 'A4',        // Puedes usar 'A4', 'Letter' o un tamaño personalizado como { width: '210mm', height: '297mm' }
-            // width: '24.1cm',
+            // format: 'A4',
             width: '20cm',
             height: '27.94cm',
-            landscape: false,    // Para orientación horizontal (landscape) usa `true`
-            printBackground: true, // Incluir el fondo en el PDF
+            landscape: false,
+            printBackground: true,
             margin: {
               left: 0,
               right: 0
@@ -569,8 +568,8 @@ export class ProduccionController {
       
           const pdfBuffer = await page.pdf(pdfOptions);
           await browser.close();
-          // res.send(pdfBuffer.toString('base64'))
-          res.send(pdfBuffer)
+          res.send({data:pdfBuffer.toString('base64')})
+          // res.send(pdfBuffer)
         } catch (error) {
           res.status(500).send('Error al generar el PDF');
           // await browser.close();
@@ -578,7 +577,78 @@ export class ProduccionController {
           // await browser.close();
         }
       }
+      
     )
 
+  }
+  static async VistaPreviaPedidoAvios(req, res){
+    const BINARY_CHUNKS = await fs.readFile('public/images/firma_jefferson.png')
+    // const BINARY_CHUNKS2 = await fs.readFile('public/images/logo_next-02.jpg')
+    const BINARY_CHUNKS2 = await fs.readFile('public/images/logo_next.png')
+    const BINARY_CHUNKS3 = await fs.readFile('public/images/orden_pedido.png')
+    
+    res.render(
+      'avios_v2',{
+        BINARY_CHUNKS:BINARY_CHUNKS.toString('base64'),
+        BINARY_CHUNKS2:BINARY_CHUNKS2.toString('base64'),
+        BINARY_CHUNKS3:BINARY_CHUNKS3.toString('base64'),
+        datos:{nro_orden:'',nro_orden:'',fecha:'',proveedor:'',re:'',ruc:'',dirigido:'',girado:'',telefono:'',acuenta:'',entrega:'',observaciones:''},
+        detalle:[['','','','','','','']],
+        helpers: {
+          foo(items,options) { 
+            let extra = 18 - items.length
+            for(let i=0; i < extra; i++){
+              items.push(['','','','','','',''])
+            }
+            const itemsAsHtml = items.map((item,key) => `<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;">${key + 1}</td><td style="width:60px;text-align:left;background-color:#ddebf7;">`+item[0]+`</td><td style="width:60px;text-align: center;">`+item[1]+`</td><td style="width:60px;text-align: center;background-color:#ddebf7;">`+item[2]+`</td><td style="width:60px;text-align: center;background-color:#ddebf7;">`+item[3]+`</td><td style="width: 60px;text-align: center;background-color:#ddebf7;">`+item[4]+`</td><td style="width: 60px;text-align: center;background-color:#ddebf7;">`+item[5]+`</td></tr>`)
+            return itemsAsHtml.join("\n")
+          }
+        },
+        
+      },
+      async (err,html)=>{
+        try {
+          const browser = await puppeteer.launch();
+      
+          const version = await browser.version();
+          console.log(`Versión de Chrome: ${version}`);
+          const page = await browser.newPage();
+          await page.setContent(html);
+      
+          const pdfOptions = {
+            // format: 'A4',
+            width: '20cm',
+            height: '27.94cm',
+            landscape: false,
+            printBackground: true,
+            margin: {
+              left: 0,
+              right: 0
+            }
+          };
+      
+          const pdfBuffer = await page.pdf(pdfOptions);
+          await browser.close();
+          res.send({data:pdfBuffer.toString('base64')})
+          // res.send(pdfBuffer)
+        } catch (error) {
+          res.status(500).send('Error al generar el PDF');
+          // await browser.close();
+        } finally{
+          // await browser.close();
+        }
+      } 
+    )
+  }
+  //////////////////////////////
+  // Seccion registro de guias //
+  //////////////////////////////
+  static async getListaPedidos(req, res){
+    const data = await ProduccionModel.getListaPedidos()
+    res.json(data)
+  }
+  static async saveInfoPedidos(req, res){
+    const data = await ProduccionModel.saveInfoPedidos(req.body)
+    res.json({ok:true,message:'datos guardados'})
   }
 }

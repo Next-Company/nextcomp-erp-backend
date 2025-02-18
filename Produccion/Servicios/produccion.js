@@ -461,7 +461,7 @@ export class ProduccionModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      const [results, fields] = await conn.query("SELECT idx,orden_ref,tipo,servicio,proveedor,fec_emision,fec_retorno,fec_recepcion,costo,COALESCE(DATEDIFF(fec_retorno,fec_emision),'') as tiempo_produccion,if(COALESCE(DATEDIFF(fec_retorno,fec_emision),'') >= 0 ,'hola','adios') as dias_pendientes FROM tbl2_guias_traslado_cab order by created_at desc");
+      const [results, fields] = await conn.query("SELECT idx,orden_ref,tipo,servicio,proveedor,fec_emision,fec_retorno,fec_recepcion,costo,COALESCE(DATEDIFF(fec_retorno,fec_emision),'') as tiempo_produccion,COALESCE(DATEDIFF(STR_TO_DATE(fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes FROM tbl2_guias_traslado_cab order by created_at desc");
 
       await conn.end();
       return results
@@ -498,7 +498,7 @@ export class ProduccionModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      const [results, fields] = await conn.query('SELECT idx,orden_ref,tipo,motivo_traslado,id_proveedor_CAB,proveedor,servicio,responsable,modelo,producto,date_format(fec_emision,"%d/%m/%Y") as fec_emision,date_format(fec_retorno,"%d/%m/%Y") as fec_retorno,date_format(fec_recepcion,"%d/%m/%Y") as fec_recepcion,costo,observaciones,estado,created_at, (date(fec_retorno) - date(fec_emision)) as duracion FROM tbl2_guias_traslado_cab where idx = ?',[id]);
+      const [results, fields] = await conn.query('SELECT idx,orden_ref,tipo,motivo_traslado,id_proveedor_CAB,proveedor,servicio,responsable,modelo,producto,DATE_FORMAT(fec_emision,"%d/%m/%Y") as fec_emision_guia,fec_emision,fec_retorno,DATE_FORMAT(fec_retorno,"%d/%m/%Y") as fec_retorno_guia, date_format(fec_recepcion,"%d/%m/%Y") as fec_recepcion,costo,observaciones,estado,created_at, DATEDIFF(STR_TO_DATE(fec_retorno,"%Y-%m-%d"), STR_TO_DATE(fec_emision,"%Y-%m-%d")) as duracion FROM tbl2_guias_traslado_cab where idx = ?',[id]);
       await conn.end();
       
       return results
@@ -710,6 +710,126 @@ export class ProduccionModel {
       return [err]
     } finally {
       if (conn) {
+        await conn.end();
+      }
+    }
+  }
+  //////////////////////////////////
+  //seccion guias traslado interno
+  //////////////////////////////////
+  static async getListaPedidos(){
+    console.log("Obteniendo listado de guais de traslado")
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      const [results, fields] = await conn.query("SELECT idx,orden_ref,tipo,proveedor,fec_emision,fec_retorno,COALESCE(DATEDIFF(fec_retorno,fec_emision),'') as tiempo_produccion,COALESCE(DATEDIFF(STR_TO_DATE(fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes FROM tbl2_pedidos_insumos_cab order by created_at desc");
+
+      await conn.end();
+      return results
+    } catch (err) {
+      console.log(err)
+      return [err]
+    } finally {
+      if (conn) {
+        // console.log("Cerrando session")
+        // await conn.end();
+        await conn.end();
+      }
+    }
+  }
+  static async saveInfoPedidos(data){
+    let conn
+    const results = {ok:true,message:'test'}
+    const cabecera = JSON.parse(data.info)
+    const articulos = JSON.parse(data.detalle)
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+
+      if(data.id){
+
+        await conn.query('UPDATE tbl2_guias_traslado_cab SET orden_ref=NULLIF(?, ""),tipo=NULLIF(?, ""),id_proveedor_CAB=NULLIF(?, ""),proveedor=NULLIF(?, ""),servicio=NULLIF(?, ""),fec_emision=NULLIF(?, ""),fec_retorno=NULLIF(?, ""),fec_recepcion=NULLIF(?, ""),costo=NULLIF(?, ""),observaciones=NULLIF(?, ""),estado=NULLIF(?, ""),motivo_traslado=NULLIF(?, ""),responsable=NULLIF(?, ""),modelo=NULLIF(?, ""),producto=NULLIF(?, "") WHERE idx = ?',[cabecera.orden_ref,cabecera.tipo,cabecera.id_proveedor_CAB,cabecera.proveedor,cabecera.servicio,cabecera.fec_emision,cabecera.fec_retorno,cabecera.fec_recepcion,cabecera.costo,cabecera.observaciones,cabecera.estado,cabecera.motivo_traslado,cabecera.responsable,cabecera.modelo,cabecera.producto,parseInt(data.id)])
+
+        const [res,fld] = await conn.query("SELECT *FROM tbl2_guias_traslado_det WHERE id_guia_CAB = "+ parseInt(data.id))
+        const ids_delete = res.filter(row=> row.idx !== ''  && !articulos.map(fila=>parseInt(fila.idx)).includes(parseInt(row.idx)) ) 
+
+        const insert = async ()=>{
+          const fila = articulos.shift()
+          if(fila){
+            let fracciones = []
+            if(fila.idx && fila.idx !== ''){
+              console.log("Dentro de 1 actualizacion")
+              const [results, fields] = await conn.query('UPDATE tbl2_guias_traslado_det SET articulo=NULLIF(?, ""),cantidad=NULLIF(?, ""),isprototipo=NULLIF(?, "") WHERE idx = ? and id_guia_CAB = ?',[fila.articulo,fila.cantidad,fila.isprototipo,fila.idx,parseInt(data.id)]);
+              // insert()
+              fracciones = Object.keys(fila).filter(valor=>['xs','s','m','l','xl','xxl'].includes(valor)).reduce((carry,value)=>{
+                carry.push([fila.idx,value,parseInt(fila[value])])
+                return carry
+              },[])
+              console.log("Detalle de las fracciones :",fracciones)
+            }else{
+              console.log("Dentro de 2 insertado")
+              const [results, fields] = await conn.query('INSERT INTO tbl2_guias_traslado_det(id_guia_CAB,articulo,cantidad,isprototipo) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',[parseInt(data.id),fila.articulo,fila.cantidad,fila.isprototipo]);
+              // insert()
+              fracciones = Object.keys(fila).filter(valor=>['xs','s','m','l','xl','xxl'].includes(valor)).reduce((carry,value)=>{
+                carry.push([results.insertId,value,parseInt(fila[value])])
+                return carry
+              },[])
+            }
+            // console.log("Dentro de actualizado las fracciones son :",fracciones)
+            await conn.query('REPLACE INTO tbl2_guias_traslado_det_fracciones(id_guia_DET,talla,cantidad) values ?',[fracciones])
+
+            await insert()
+          }else{
+            console.log("Devolviendo resolve")
+            return Promise.resolve('')
+          }
+        }
+        await insert()
+
+        const eliminar = async ()=>{
+          const fila = ids_delete.shift()
+          if(fila){
+            await conn.query('DELETE FROM `tbl2_guias_traslado_det` WHERE `id_guia_CAB` = ? and `idx` = ?',[parseInt(data.id),parseInt(fila.idx)])
+            await eliminar()
+          }else{
+            return Promise.resolve('')
+          }
+        }
+        await eliminar()
+        
+      }else{
+        console.log("Creandsssso")
+        try{
+          const [res,fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_cab(orden_ref,tipo,id_proveedor_CAB,proveedor,servicio,fec_emision,fec_retorno,costo,observaciones,motivo_traslado,responsable,modelo,producto) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',[cabecera.orden_ref,cabecera.tipo,cabecera.id_proveedor_CAB,cabecera.proveedor,cabecera.servicio,cabecera.fec_emision,cabecera.fec_retorno,cabecera.costo,cabecera.observaciones,cabecera.motivo_traslado,cabecera.responsable,cabecera.modelo,cabecera.producto])
+
+          const insert = async ()=>{
+            const fila = articulos.shift()
+            if(fila){  
+              const [results,fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_det(id_pedido_CAB,producto,color,rollos,cantidad,unidad,precio,anulado) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',[res.insertId,fila.producto,fila.color,fila.rollos,fila.cantidad,fila.unidad,,fila.precio,fila.anulado]);
+
+              await insert()
+            }else{
+              return Promise.resolve('')
+            }
+          }
+          await insert()
+
+        }catch(err){
+          console.log("error en la consulta",err)
+        }
+      
+        // console.log("filas afectadas :",res)
+        await conn.end();
+        return results
+      }
+
+    } catch (err) {
+      console.log(err)
+      return [err]
+    } finally {
+      if (conn) {
+        console.log("Terminando consultas")
         await conn.end();
       }
     }
