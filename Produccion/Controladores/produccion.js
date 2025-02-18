@@ -582,6 +582,10 @@ export class ProduccionController {
 
   }
   static async VistaPreviaPedidoAvios(req, res){
+
+    const data = req.body
+    console.log("La info pasada a la vista es :",JSON.parse(data.info),JSON.parse(data.detalle))
+
     const BINARY_CHUNKS = await fs.readFile('public/images/firma_jefferson.png')
     // const BINARY_CHUNKS2 = await fs.readFile('public/images/logo_next-02.jpg')
     const BINARY_CHUNKS2 = await fs.readFile('public/images/logo_next.png')
@@ -592,8 +596,8 @@ export class ProduccionController {
         BINARY_CHUNKS:BINARY_CHUNKS.toString('base64'),
         BINARY_CHUNKS2:BINARY_CHUNKS2.toString('base64'),
         BINARY_CHUNKS3:BINARY_CHUNKS3.toString('base64'),
-        datos:{nro_orden:'',nro_orden:'',fecha:'',proveedor:'',re:'',ruc:'',dirigido:'',girado:'',telefono:'',acuenta:'',entrega:'',observaciones:''},
-        detalle:[['','','','','','','']],
+        datos:JSON.parse(data.info), // {idx:'',orden_ref:'',fec_emision:'',id_proveedor_CAB,proveedor:'',fec_retorno:'',forma_pago:'',tipo:'',responsable:'',nro_contacto:'',estado:'',observaciones:''}
+        detalle:JSON.parse(data.detalle), //[['','','','','','','']],
         helpers: {
           foo(items,options) { 
             let extra = 18 - items.length
@@ -625,6 +629,7 @@ export class ProduccionController {
               left: 0,
               right: 0
             }
+            ,scale:1
           };
       
           const pdfBuffer = await page.pdf(pdfOptions);
@@ -650,5 +655,11 @@ export class ProduccionController {
   static async saveInfoPedidos(req, res){
     const data = await ProduccionModel.saveInfoPedidos(req.body)
     res.json({ok:true,message:'datos guardados'})
+  }
+  static async getInfoPedidos(req, res){
+    const id = req.params.id
+    const data = await ProduccionModel.getInfoPedidoCab(id)
+    const data2 = await ProduccionModel.getInfoPedidoDet(id)
+    res.json([data[0],data2])
   }
 }
