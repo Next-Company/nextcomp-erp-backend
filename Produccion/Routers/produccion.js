@@ -18,6 +18,10 @@ produccionRouter.get('/getListaPedidos',ProduccionController.getListaPedidos)
 produccionRouter.get('/pedido/:id',ProduccionController.getInfoPedidos)
 produccionRouter.put('/guardarpedido',ProduccionController.saveInfoPedidos)
 
+produccionRouter.get('/getListaDespachos',ProduccionController.getListaDespachos)
+produccionRouter.get('/despacho/:id',ProduccionController.getInfoDespachos)
+produccionRouter.put('/guardardespacho',ProduccionController.saveInfoDespachos)
+
 produccionRouter.get('/getListaEstampados',ProduccionController.getListaEstampados)
 produccionRouter.get('/estampado/:id',ProduccionController.getInfoEstampado)
 produccionRouter.put('/guardarestampado',ProduccionController.saveInfoEstampado)
@@ -36,6 +40,10 @@ produccionRouter.get('/informe/:id',ProduccionController.ShowInforme)
 produccionRouter.get('/proveedoreslist/:limit',ProduccionController.getListaProveedores)
 produccionRouter.get('/searchproveedor/:info',ProduccionController.searchProveedor)
 produccionRouter.get('/searchproveedorbyid/:id',ProduccionController.searchProveedorById)
+
+// produccionRouter.get('/guiaslist/:limit',ProduccionController.getListaGuias)
+// produccionRouter.get('/searchproveedor/:info',ProduccionController.searchProveedor)
+// produccionRouter.get('/searchproveedorbyid/:id',ProduccionController.searchProveedorById)
 
 produccionRouter.get('/vistapreviapedido/:tipo',ProduccionController.VistaPreviaPedido)
 produccionRouter.post('/vistapreviapedidoavios/:tipo',ProduccionController.VistaPreviaPedidoAvios)

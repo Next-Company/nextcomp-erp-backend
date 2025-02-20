@@ -662,4 +662,21 @@ export class ProduccionController {
     const data2 = await ProduccionModel.getInfoPedidoDet(id)
     res.json([data[0],data2])
   }
+  ///////////////////////////////////
+  // Seccion registro de despachos //
+  ///////////////////////////////////
+  static async getListaDespachos(req, res){
+    const data = await ProduccionModel.getListaDespachos()
+    res.json(data)
+  }
+  static async saveInfoDespachos(req, res){
+    const data = await ProduccionModel.saveInfoDespachos(req.body)
+    res.json({ok:true,message:'datos guardados'})
+  }
+  static async getInfoDespachos(req, res){
+    const id = req.params.id
+    const data = await ProduccionModel.getInfoDespachoCab(id)
+    const data2 = await ProduccionModel.getInfoDespachoDet(id)
+    res.json([data[0],data2])
+  }
 }
