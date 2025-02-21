@@ -890,57 +890,58 @@ export class ProduccionModel {
 
     console.log("Informacion cabecera:",cabecera)
     console.log("Informacion detalle:",articulos)
+    // return results
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
 
       if(data.id){
-        await conn.query('UPDATE tbl2_pedidos_insumos_cab SET orden_ref=NULLIF(?, ""),fec_emision=NULLIF(?, ""),fec_retorno=NULLIF(?, ""),tipo=NULLIF(?, ""),id_proveedor_CAB=NULLIF(?, ""),proveedor=NULLIF(?, ""),responsable=NULLIF(?, ""),forma_pago=NULLIF(?, ""),nro_contacto=NULLIF(?, ""),observaciones=NULLIF(?, ""),estado=NULLIF(?, "") WHERE idx = ?',[cabecera.orden_ref,cabecera.fec_emision,cabecera.fec_retorno,cabecera.tipo,cabecera.id_proveedor_CAB,cabecera.proveedor,cabecera.responsable,cabecera.forma_pago,cabecera.nro_contacto,cabecera.observaciones,cabecera.estado,parseInt(data.id)])
+        // await conn.query('UPDATE tbl2_pedidos_insumos_cab SET orden_ref=NULLIF(?, ""),fec_emision=NULLIF(?, ""),fec_retorno=NULLIF(?, ""),tipo=NULLIF(?, ""),id_proveedor_CAB=NULLIF(?, ""),proveedor=NULLIF(?, ""),responsable=NULLIF(?, ""),forma_pago=NULLIF(?, ""),nro_contacto=NULLIF(?, ""),observaciones=NULLIF(?, ""),estado=NULLIF(?, "") WHERE idx = ?',[cabecera.orden_ref,cabecera.fec_emision,cabecera.fec_retorno,cabecera.tipo,cabecera.id_proveedor_CAB,cabecera.proveedor,cabecera.responsable,cabecera.forma_pago,cabecera.nro_contacto,cabecera.observaciones,cabecera.estado,parseInt(data.id)])
 
-        const [res,fld] = await conn.query("SELECT *FROM tbl2_pedidos_insumos_det WHERE id_pedido_CAB = "+ parseInt(data.id))
-        const ids_delete = res.filter(row=> row.idx !== ''  && !articulos.map(fila=>parseInt(fila.idx)).includes(parseInt(row.idx)) ) 
+        // const [res,fld] = await conn.query("SELECT *FROM tbl2_pedidos_insumos_det WHERE id_pedido_CAB = "+ parseInt(data.id))
+        // const ids_delete = res.filter(row=> row.idx !== ''  && !articulos.map(fila=>parseInt(fila.idx)).includes(parseInt(row.idx)) ) 
 
-        const insert = async ()=>{
-          const fila = articulos.shift()
-          if(fila){
-            let fracciones = []
-            if(fila.idx && fila.idx !== ''){
-              console.log("Dentro de 1 actualizacion")
-              const [results, fields] = await conn.query('UPDATE tbl2_pedidos_insumos_det SET id_pedido_CAB=NULLIF(?, ""),producto=NULLIF(?, ""),color=NULLIF(?, ""),rollos=NULLIF(?, ""),cantidad=NULLIF(?, ""),unidad=NULLIF(?, ""),precio=NULLIF(?, ""),anulado=NULLIF(?, "")',[parseInt(data.id),fila.producto,fila.color,fila.rollos,fila.cantidad,fila.unidad,fila.precio,fila.anulado]);
+        // const insert = async ()=>{
+        //   const fila = articulos.shift()
+        //   if(fila){
+        //     let fracciones = []
+        //     if(fila.idx && fila.idx !== ''){
+        //       console.log("Dentro de 1 actualizacion")
+        //       const [results, fields] = await conn.query('UPDATE tbl2_pedidos_insumos_det SET id_pedido_CAB=NULLIF(?, ""),producto=NULLIF(?, ""),color=NULLIF(?, ""),rollos=NULLIF(?, ""),cantidad=NULLIF(?, ""),unidad=NULLIF(?, ""),precio=NULLIF(?, ""),anulado=NULLIF(?, "")',[parseInt(data.id),fila.producto,fila.color,fila.rollos,fila.cantidad,fila.unidad,fila.precio,fila.anulado]);
 
-            }else{
-              console.log("Dentro de 2 insertado")
-              const [results,fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_det(id_pedido_CAB,producto,color,rollos,cantidad,unidad,precio,anulado) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',[parseInt(data.id),fila.producto,fila.color,fila.rollos,fila.cantidad,fila.unidad,,fila.precio,fila.anulado]);
+        //     }else{
+        //       console.log("Dentro de 2 insertado")
+        //       const [results,fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_det(id_pedido_CAB,producto,color,rollos,cantidad,unidad,precio,anulado) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',[parseInt(data.id),fila.producto,fila.color,fila.rollos,fila.cantidad,fila.unidad,,fila.precio,fila.anulado]);
 
-            }
-            await insert()
-          }else{
-            console.log("Devolviendo resolve")
-            return Promise.resolve('')
-          }
-        }
-        await insert()
+        //     }
+        //     await insert()
+        //   }else{
+        //     console.log("Devolviendo resolve")
+        //     return Promise.resolve('')
+        //   }
+        // }
+        // await insert()
 
-        const eliminar = async ()=>{
-          const fila = ids_delete.shift()
-          if(fila){
-            await conn.query('DELETE FROM `tbl2_pedidos_insumos_det` WHERE `id_pedido_CAB` = ? and `idx` = ?',[parseInt(data.id),parseInt(fila.idx)])
-            await eliminar()
-          }else{
-            return Promise.resolve('')
-          }
-        }
-        await eliminar()
+        // const eliminar = async ()=>{
+        //   const fila = ids_delete.shift()
+        //   if(fila){
+        //     await conn.query('DELETE FROM `tbl2_pedidos_insumos_det` WHERE `id_pedido_CAB` = ? and `idx` = ?',[parseInt(data.id),parseInt(fila.idx)])
+        //     await eliminar()
+        //   }else{
+        //     return Promise.resolve('')
+        //   }
+        // }
+        // await eliminar()
         
       }else{
         console.log("Creandsssso")
         try{
-          const [res,fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_cab(orden_ref,fec_emision,fec_retorno,tipo,id_proveedor_CAB,proveedor,responsable,forma_pago,nro_contacto,observaciones,estado) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',[cabecera.orden_ref,cabecera.fec_emision,cabecera.fec_retorno,cabecera.tipo,cabecera.id_proveedor_CAB,cabecera.proveedor,cabecera.responsable,cabecera.forma_pago,cabecera.nro_contacto,cabecera.observaciones,cabecera.estado])
+          const [res,fields] = await conn.query('INSERT INTO tbl2_despachos_cab(fec_emision_guia,fec_despacho,tipo,id_proveedor_CAB,proveedor,responsable,id_guia_origen,nro_guia_origen,id_pedido_origen,nro_pedido_origen,observaciones) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',[cabecera.fec_emision_guia,cabecera.fec_despacho,cabecera.tipo,cabecera.id_proveedor_CAB,cabecera.proveedor,cabecera.responsable,cabecera.id_guia_origen,cabecera.nro_guia_origen,,cabecera.id_pedido_origen,cabecera.nro_pedido_origen,cabecera.observaciones])
 
           const insert = async ()=>{
             const fila = articulos.shift()
             if(fila){  
-              const [results,fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_det(id_pedido_CAB,producto,color,rollos,cantidad,unidad,precio,anulado) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',[res.insertId,fila.producto,fila.color,fila.rollos,fila.cantidad,fila.unidad,,fila.precio,fila.anulado]);
+              const [results,fields] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,despacho) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',[res.insertId,fila.idx,parseFloat(fila.despacho)]);
 
               await insert()
             }else{
@@ -971,7 +972,7 @@ export class ProduccionModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      const [results, fields] = await conn.query('SELECT *FROM tbl2_pedidos_insumos_cab where idx = ?',[id]);
+      const [results, fields] = await conn.query('SELECT *FROM tbl2_despachos_cab where idx = ?',[id]);
       await conn.end();
       
       return results
@@ -988,11 +989,20 @@ export class ProduccionModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      const [results, fields] = await conn.query('SELECT *FROM tbl2_pedidos_insumos_det where id_pedido_CAB = ?',[id]);
+      const [results, fields] = await conn.query('select tgtd.*,tdd.despacho from tbl2_guias_traslado_det tgtd join tbl2_despachos_det tdd on tdd.id_item = tgtd.idx where tdd.id_despacho_CAB = ?',[id]);
       const ids = results.map(row=>row.idx)
 
+      const [results2] = await conn.query("select id_guia_DET,concat('({',GROUP_CONCAT(concat(talla,':',CAST(cantidad as unsigned))),'})') as fracciones from tbl2_guias_traslado_det_fracciones where id_guia_DET in (?) group by id_guia_DET",[ids])
+
+      let new_articulos = results.map(row=>{
+        let add = eval(results2.filter(row2=>row2.id_guia_DET == row.idx)[0].fracciones)
+        return {...row,...add}
+      })
+
+      console.log("detalle desoacho:",new_articulos)
+
       await conn.end();
-      return results
+      return new_articulos
     } catch (err) {
       console.log(err)
       return [err]
@@ -1001,5 +1011,18 @@ export class ProduccionModel {
         await conn.end();
       }
     }
+  }
+  static async getStatusGuia(id){
+    const conn = await mysql.createConnection(configs[1])
+    await conn.connect();
+
+    // const consulta = await conn.query("SELECT *from tbl2_iforme_guia where ruc = '20522094120' and nro_guia = ?",[id])
+    // const consulta2 = await conn.query("SELECT *from tbl2_iforme_guia where ruc = '20522094120' and nro_guia = ?",[id])
+
+    // consulta2.map(row=>{
+    //   console.log("El valor de la columna es :",row.estado)
+    // })
+
+    return 0  
   }
 }

@@ -505,6 +505,28 @@ export class ProduccionController {
     const data = await ProduccionModel.eliminarInfoGuias(id)
     res.json(data)
   }
+  static async getStatusGuia(req, res){
+    const id = req.params.id
+    // const data = await
+    res.render(
+      'statusguia',{
+        info:{nro_orden:'',nro_orden:'',fecha:'',proveedor:'',re:'',ruc:'',dirigido:'',girado:'',telefono:'',acuenta:'',entrega:'',observaciones:''},
+        helpers: {
+          foo(items,options) { 
+            let extra = 18 - items.length
+            for(let i=0; i < extra; i++){
+              items.push(['','','','','','',''])
+            }
+            const itemsAsHtml = items.map((item,key) => `<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;">${key + 1}</td><td style="width:60px;text-align: left;">`+item[0]+`</td><td style="width:60px;text-align: center;background-color:#ddebf7;">`+item[1]+`</td><td style="width:60px;text-align: center;background-color:#ddebf7;">`+item[2]+`</td><td style="width:60px;text-align: center;background-color:#ddebf7;">`+item[3]+`</td><td style="width: 60px;text-align: center;background-color:#ddebf7;">`+item[4]+`</td><td style="width: 60px;text-align: center;background-color:#ddebf7;">`+item[5]+`</td></tr>`)
+            return itemsAsHtml.join("\n")
+          }
+        },
+        
+      })
+  }
+
+
+
   static async getListaProveedores(req, res){
     const limit = req.params.limit
     const data = await ProduccionModel.getListaProveedores(limit)

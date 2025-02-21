@@ -13,6 +13,9 @@ produccionRouter.get('/getListaGuias',ProduccionController.getListaGuias)
 produccionRouter.get('/guia/:id',ProduccionController.getInfoGuias)
 produccionRouter.put('/guardarguia',ProduccionController.saveInfoGuias)
 produccionRouter.delete('/borrarguia/:id',ProduccionController.eliminarInfoGuias)
+produccionRouter.get('/estadoguia/:id',ProduccionController.getStatusGuia)
+
+
 
 produccionRouter.get('/getListaPedidos',ProduccionController.getListaPedidos)
 produccionRouter.get('/pedido/:id',ProduccionController.getInfoPedidos)
@@ -43,8 +46,10 @@ produccionRouter.get('/searchproveedorbyid/:id',ProduccionController.searchProve
 
 // produccionRouter.get('/guiaslist/:limit',ProduccionController.getListaGuias)
 // produccionRouter.get('/searchproveedor/:info',ProduccionController.searchProveedor)
-// produccionRouter.get('/searchproveedorbyid/:id',ProduccionController.searchProveedorById)
+// produccionRouter.get('/searchproveedorbyid/:id',ProduccionController.searchProveedorById
 
 produccionRouter.get('/vistapreviapedido/:tipo',ProduccionController.VistaPreviaPedido)
 produccionRouter.post('/vistapreviapedidoavios/:tipo',ProduccionController.VistaPreviaPedidoAvios)
+
+
 
