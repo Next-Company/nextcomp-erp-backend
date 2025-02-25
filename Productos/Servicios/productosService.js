@@ -5,7 +5,7 @@ export class ProductosService{
     const conn = await mysql.createConnection(configs[1]);
     await conn.connect();
     try {
-      const [rows,fields] = await conn.execute("SELECT * FROM tbl2_productos where ruc_ = '20522094120' and tipo = 'I' LIMIT 50");
+      const [rows,fields] = await conn.execute("SELECT * FROM tbl2_prod_color_talla_det where tipo in ('I','A') LIMIT 50");
       console.log(rows);
       return rows;
     }

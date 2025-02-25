@@ -621,12 +621,12 @@ export class ProduccionController {
         datos:JSON.parse(data.info), // {idx:'',orden_ref:'',fec_emision:'',id_proveedor_CAB,proveedor:'',fec_retorno:'',forma_pago:'',tipo:'',responsable:'',nro_contacto:'',estado:'',observaciones:''}
         detalle:JSON.parse(data.detalle), //[['','','','','','','']],
         helpers: {
-          foo(items,options) { 
+          foo(items) { 
             let extra = 18 - items.length
             for(let i=0; i < extra; i++){
-              items.push(['','','','','','',''])
+              items.push({color:'',producto:'',cantidad:0,unidad:'',precio:0,importe:0})
             }
-            const itemsAsHtml = items.map((item,key) => `<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;">${key + 1}</td><td style="width:60px;text-align:left;background-color:#ddebf7;">`+item[0]+`</td><td style="width:60px;text-align: center;">`+item[1]+`</td><td style="width:60px;text-align: center;background-color:#ddebf7;">`+item[2]+`</td><td style="width:60px;text-align: center;background-color:#ddebf7;">`+item[3]+`</td><td style="width: 60px;text-align: center;background-color:#ddebf7;">`+item[4]+`</td><td style="width: 60px;text-align: center;background-color:#ddebf7;">`+item[5]+`</td></tr>`)
+            const itemsAsHtml = items.map((item,key) => `<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;">${key + 1}</td><td style="width:60px;text-align:left;background-color:#ddebf7;">`+item['color']+`</td><td style="width:60px;text-align: center;">`+item['producto']+`</td><td style="width:60px;text-align: center;background-color:#ddebf7;">`+item['cantidad']+`</td><td style="width:60px;text-align: center;background-color:#ddebf7;">`+item['unidad']+`</td><td style="width: 60px;text-align: center;background-color:#ddebf7;">`+item['precio']+`</td><td style="width: 60px;text-align: center;background-color:#ddebf7;">`+parseFloat(item['cantidad'])*parseFloat(item['precio'])+`</td></tr>`)
             return itemsAsHtml.join("\n")
           }
         },
@@ -671,7 +671,9 @@ export class ProduccionController {
   // Seccion registro de guias //
   //////////////////////////////
   static async getListaPedidos(req, res){
-    const data = await ProduccionModel.getListaPedidos()
+    console.log("Obteniendo lista de pedidos")
+    const limit = req.params.limit
+    const data = await ProduccionModel.getListaPedidos(limit)
     res.json(data)
   }
   static async saveInfoPedidos(req, res){
@@ -683,6 +685,11 @@ export class ProduccionController {
     const data = await ProduccionModel.getInfoPedidoCab(id)
     const data2 = await ProduccionModel.getInfoPedidoDet(id)
     res.json([data[0],data2])
+  }
+  static async eliminarInfoPedidos(req, res){
+    const id = req.params.id
+    const data = await ProduccionModel.eliminarInfoPedidos(id)
+    res.json(data)
   }
   ///////////////////////////////////
   // Seccion registro de despachos //
@@ -698,7 +705,12 @@ export class ProduccionController {
   static async getInfoDespachos(req, res){
     const id = req.params.id
     const data = await ProduccionModel.getInfoDespachoCab(id)
-    const data2 = await ProduccionModel.getInfoDespachoDet(id)
+    const data2 = await ProduccionModel.getInfoDespachoDet(id,data[0].tipo)
     res.json([data[0],data2])
+  }
+  static async eliminarInfoDespachos(req, res){
+    const id = req.params.id
+    const data = await ProduccionModel.eliminarInfoDespachos(id)
+    res.json(data)
   }
 }

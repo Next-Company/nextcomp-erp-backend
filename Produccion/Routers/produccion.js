@@ -15,15 +15,15 @@ produccionRouter.put('/guardarguia',ProduccionController.saveInfoGuias)
 produccionRouter.delete('/borrarguia/:id',ProduccionController.eliminarInfoGuias)
 produccionRouter.get('/estadoguia/:id',ProduccionController.getStatusGuia)
 
-
-
-produccionRouter.get('/getListaPedidos',ProduccionController.getListaPedidos)
+produccionRouter.get('/getListaPedidos/:limit',ProduccionController.getListaPedidos)
 produccionRouter.get('/pedido/:id',ProduccionController.getInfoPedidos)
 produccionRouter.put('/guardarpedido',ProduccionController.saveInfoPedidos)
+produccionRouter.delete('/borrarpedido/:id',ProduccionController.eliminarInfoPedidos)
 
 produccionRouter.get('/getListaDespachos',ProduccionController.getListaDespachos)
 produccionRouter.get('/despacho/:id',ProduccionController.getInfoDespachos)
 produccionRouter.put('/guardardespacho',ProduccionController.saveInfoDespachos)
+produccionRouter.delete('/borrardespacho/:id',ProduccionController.eliminarInfoDespachos)
 
 produccionRouter.get('/getListaEstampados',ProduccionController.getListaEstampados)
 produccionRouter.get('/estampado/:id',ProduccionController.getInfoEstampado)
