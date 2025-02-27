@@ -542,7 +542,7 @@ export class ProduccionController {
     const data = await ProduccionModel.searchProveedorById(info)
     res.json(data)
   }
-  static async VistaPreviaPedido(req, res){
+  static async VistaPreviaPedido_(req, res){
     const BINARY_CHUNKS = await fs.readFile('public/images/firma_jefferson.png')
     // const BINARY_CHUNKS2 = await fs.readFile('public/images/logo_next-02.jpg')
     const BINARY_CHUNKS2 = await fs.readFile('public/images/logo_next.png')
@@ -603,30 +603,46 @@ export class ProduccionController {
     )
 
   }
-  static async VistaPreviaPedidoAvios(req, res){
-
+  static async VistaPreviaPedido(req, res){
+    const tipo = req.params.tipo
     const data = req.body
+    console.log("El tipo de pedido es :",tipo)
     console.log("La info pasada a la vista es :",JSON.parse(data.info),JSON.parse(data.detalle))
 
     const BINARY_CHUNKS = await fs.readFile('public/images/firma_jefferson.png')
-    // const BINARY_CHUNKS2 = await fs.readFile('public/images/logo_next-02.jpg')
     const BINARY_CHUNKS2 = await fs.readFile('public/images/logo_next.png')
     const BINARY_CHUNKS3 = await fs.readFile('public/images/orden_pedido.png')
-    
+    // const tipo = JSON.parse(data.info).tipo
+    console.log("El tipo de pedido es :",tipo)
     res.render(
-      'avios_v2',{
+      `${tipo == 'avios' ? 'avios_v2' : 'telas_v2'}`,
+      {
         BINARY_CHUNKS:BINARY_CHUNKS.toString('base64'),
         BINARY_CHUNKS2:BINARY_CHUNKS2.toString('base64'),
         BINARY_CHUNKS3:BINARY_CHUNKS3.toString('base64'),
-        datos:JSON.parse(data.info), // {idx:'',orden_ref:'',fec_emision:'',id_proveedor_CAB,proveedor:'',fec_retorno:'',forma_pago:'',tipo:'',responsable:'',nro_contacto:'',estado:'',observaciones:''}
-        detalle:JSON.parse(data.detalle), //[['','','','','','','']],
+        datos:JSON.parse(data.info),
+        detalle:JSON.parse(data.detalle),
         helpers: {
           foo(items) { 
-            let extra = 18 - items.length
-            for(let i=0; i < extra; i++){
-              items.push({color:'',producto:'',cantidad:0,unidad:'',precio:0,importe:0})
+            let itemsAsHtml = null
+            let extra = 20 - items.length
+            if(tipo == 'avios'){
+              itemsAsHtml = items.map((item,key) => `<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;">${key + 1}</td><td style="width:60px;text-align:left;background-color:#ddebf7;">`+item['color']+`</td><td style="width:60px;text-align: center;">`+item['producto']+`</td><td style="width:60px;text-align: center;background-color:#ddebf7;">`+item['cantidad']+`</td><td style="width:60px;text-align: center;background-color:#ddebf7;">`+item['unidad']+`</td><td style="width: 60px;text-align: center;background-color:#ddebf7;">`+item['precio']+`</td><td style="width: 60px;text-align: center;background-color:#ddebf7;">`+(parseFloat(item['cantidad'])*parseFloat(item['precio'])).toFixed(2)+`</td></tr>`)
+            }else{
+              itemsAsHtml = items.map((item,key) => `<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;">${key + 1}</td><td style="width:60px;text-align: center;">`+ `${item['producto']} ${item['color']}` +`</td><td style="width:60px;text-align:center;background-color:#ddebf7;">`+ (item['rollos'] ? item['rollos'] : '') +`</td><td style="width:60px;text-align: center;background-color:#ddebf7;">`+item['cantidad']+`</td><td style="width:60px;text-align: center;background-color:#ddebf7;">`+item['unidad']+`</td><td style="text-align: center;background-color:#ddebf7;">`+item['precio']+`</td><td style="text-align: center;background-color:#ddebf7;">`+(parseFloat(item['cantidad'])*parseFloat(item['precio'])).toFixed(2)+`</td></tr>`)
             }
-            const itemsAsHtml = items.map((item,key) => `<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;">${key + 1}</td><td style="width:60px;text-align:left;background-color:#ddebf7;">`+item['color']+`</td><td style="width:60px;text-align: center;">`+item['producto']+`</td><td style="width:60px;text-align: center;background-color:#ddebf7;">`+item['cantidad']+`</td><td style="width:60px;text-align: center;background-color:#ddebf7;">`+item['unidad']+`</td><td style="width: 60px;text-align: center;background-color:#ddebf7;">`+item['precio']+`</td><td style="width: 60px;text-align: center;background-color:#ddebf7;">`+parseFloat(item['cantidad'])*parseFloat(item['precio'])+`</td></tr>`)
+            for(let i=0; i < extra; i++){
+              tipo == 'avios' 
+              ? 
+                itemsAsHtml.push(`<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align:left;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width: 60px;text-align: center;background-color:#ddebf7;"></td><td style="width: 60px;text-align: center;background-color:#ddebf7;"></td></tr>`) 
+              : 
+                itemsAsHtml.push(`<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;"></td><td style="width:60px;text-align:center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="text-align: center;background-color:#ddebf7;"></td><td style="text-align: center;background-color:#ddebf7;"></td></tr>`)
+              // items.push({color:'',producto:'',cantidad:0,unidad:'',precio:0,importe:0})
+            }
+            const total = items.reduce((carry,valor)=>{carry += parseFloat(valor['cantidad'])*parseFloat(valor['precio']);return carry},0).toFixed(2)
+            itemsAsHtml.push(`<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;"></td>${tipo == 'avios' && '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>'}<td style="width:60px;text-align: center;"></td>${tipo !== 'avios' && '<td style="width:60px;text-align: center;background-color:#ddebf7;">'}</td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width:100px;text-align: center;background-color:#ddebf7;text-wrap-mode:nowrap"><strong>SUB TOTAL</strong></td><td style="width:80px;text-align: center;background-color:#ddebf7;">$ ${total}</td></tr>`)
+            itemsAsHtml.push(`<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;"></td>${tipo == 'avios' && '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>'}<td style="width:60px;text-align: center;"></td>${tipo !== 'avios' && '<td style="width:60px;text-align: center;background-color:#ddebf7;">'}<td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="text-align: center;background-color:#ddebf7;"><strong>IGV 18%</strong></td><td style="text-align: center;background-color:#ddebf7;">$ ${(total*0.18).toFixed(2)}</td></tr>`)
+            itemsAsHtml.push(`<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;"></td>${tipo == 'avios' && '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>'}<td style="width:60px;text-align: center;"></td>${tipo !== 'avios' && '<td style="width:60px;text-align: center;background-color:#ddebf7;">'}</td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="text-align: center;background-color:#ddebf7;"><strong>TOTAL</strong></td><td style="text-align: center;background-color:#ddebf7;">$ ${(total*1.18).toFixed(2)}</td></tr>`)
             return itemsAsHtml.join("\n")
           }
         },

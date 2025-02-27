@@ -48,8 +48,8 @@ produccionRouter.get('/searchproveedorbyid/:id',ProduccionController.searchProve
 // produccionRouter.get('/searchproveedor/:info',ProduccionController.searchProveedor)
 // produccionRouter.get('/searchproveedorbyid/:id',ProduccionController.searchProveedorById
 
-produccionRouter.get('/vistapreviapedido/:tipo',ProduccionController.VistaPreviaPedido)
-produccionRouter.post('/vistapreviapedidoavios/:tipo',ProduccionController.VistaPreviaPedidoAvios)
+produccionRouter.post('/vistapreviapedido/:tipo',ProduccionController.VistaPreviaPedido)
+// produccionRouter.post('/vistapreviapedidoavios/:tipo',ProduccionController.VistaPreviaPedidoAvios)
 
 
 
