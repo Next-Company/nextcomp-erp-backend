@@ -863,6 +863,35 @@ export class ProduccionModel {
       }
     }
   }
+  static async getInfoPedidoDespacho(id){
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+
+      const [results, fields] = await conn.query(`
+      SELECT tpid.idx,tpid.producto,tpid.color,tpid.cantidad,tpid.precio,dp.idx as id_despacho,dp.despacho
+      FROM tbl2_pedidos_insumos_det tpid 
+      JOIN(
+        SELECT tdc.id_pedido_origen,tdc.idx,tdd.id_item,tdd.despacho FROM tbl2_despachos_cab tdc 
+        LEFT JOIN tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
+      ) AS dp on tpid.id_pedido_CAB = dp.id_pedido_origen and tpid.idx = dp.id_item
+      WHERE tpid.id_pedido_CAB = ?`,[id]);
+
+      const ids = results.map(row=>row.idx)
+      console.log("Lista de ids:",ids)
+
+      await conn.end();
+      return results
+    } catch (err) {
+      console.log(err)
+      return [err]
+    } finally {
+      if (conn) {
+        await conn.end();
+      }
+    }
+  }
   static async eliminarInfoPedidos(id){
     let conn
     // console.log("El id de eliminado es el siguiente:",id)
@@ -889,7 +918,7 @@ export class ProduccionModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      const [results, fields] = await conn.query("SELECT *FROM tbl2_despachos_cab order by created_at desc");
+      const [results, fields] = await conn.query("SELECT idx,fec_emision_guia,fec_despacho,id_proveedor_CAB,proveedor,tipo,nro_guia,id_guia_origen,nro_guia_origen,id_pedido_origen,nro_pedido_origen,responsable,observaciones,created_at FROM tbl2_despachos_cab order by created_at desc");
 
       await conn.end();
       return results
@@ -958,7 +987,7 @@ export class ProduccionModel {
       }else{
         console.log("Creandsssso")
         try{
-          const [res,fields] = await conn.query('INSERT INTO tbl2_despachos_cab(tipo,fec_emision_guia,fec_despacho,tipo,id_proveedor_CAB,proveedor,responsable,id_guia_origen,nro_guia_origen,id_pedido_origen,nro_pedido_origen,observaciones,nro_guia) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',[cabecera.tipo,cabecera.fec_emision_guia,cabecera.fec_despacho,cabecera.tipo,cabecera.id_proveedor_CAB,cabecera.proveedor,cabecera.responsable,cabecera.id_guia_origen,cabecera.nro_guia_origen,cabecera.id_pedido_origen,cabecera.nro_pedido_origen,cabecera.observaciones,cabecera.nro_guia])
+          const [res,fields] = await conn.query('INSERT INTO tbl2_despachos_cab(fec_emision_guia,fec_despacho,tipo,id_proveedor_CAB,proveedor,responsable,id_guia_origen,nro_guia_origen,id_pedido_origen,nro_pedido_origen,observaciones,nro_guia) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',[cabecera.fec_emision_guia,cabecera.fec_despacho,cabecera.tipo,cabecera.id_proveedor_CAB,cabecera.proveedor,cabecera.responsable,cabecera.id_guia_origen,cabecera.nro_guia_origen,cabecera.id_pedido_origen,cabecera.nro_pedido_origen,cabecera.observaciones,cabecera.nro_guia])
 
           const insert = async ()=>{
             const fila = articulos.shift()

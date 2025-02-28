@@ -2,6 +2,7 @@ import { ProduccionModel } from "../Servicios/produccion.js";
 import PDFDocument from "pdfkit"
 import fs from "node:fs/promises"
 import puppeteer from 'puppeteer';
+import { OtherTarget } from "puppeteer-core";
 // import { width } from "pdfkit/js/page";
 // import { height } from "pdfkit/js/page";
 // import PDFDocument from "pdfkit";
@@ -606,9 +607,22 @@ export class ProduccionController {
   static async VistaPreviaPedido(req, res){
     const tipo = req.params.tipo
     const data = req.body
-    console.log("El tipo de pedido es :",tipo)
-    console.log("La info pasada a la vista es :",JSON.parse(data.info),JSON.parse(data.detalle))
+    console.log("La informacion es:",data)
+    let cabecera = []
+    let detalle = []
+    // console.log("El tipo de pedido es :",tipo)
+    // console.log("La info pasada a la vista es :",JSON.parse(data.info),JSON.parse(data.detalle))
 
+    if(data.id){
+      cabecera = (await ProduccionModel.getInfoPedidoCab(data.id))[0]
+      detalle = await ProduccionModel.getInfoPedidoDet(data.id)
+      console.log("Cabecera:",cabecera)
+      console.log("Detalle:",detalle)
+    }else{
+      cabecera = JSON.parse(data.info)
+      detalle = JSON.parse(data.detalle)
+    }
+    
     const BINARY_CHUNKS = await fs.readFile('public/images/firma_jefferson.png')
     const BINARY_CHUNKS2 = await fs.readFile('public/images/logo_next.png')
     const BINARY_CHUNKS3 = await fs.readFile('public/images/orden_pedido.png')
@@ -620,8 +634,8 @@ export class ProduccionController {
         BINARY_CHUNKS:BINARY_CHUNKS.toString('base64'),
         BINARY_CHUNKS2:BINARY_CHUNKS2.toString('base64'),
         BINARY_CHUNKS3:BINARY_CHUNKS3.toString('base64'),
-        datos:JSON.parse(data.info),
-        detalle:JSON.parse(data.detalle),
+        datos:cabecera,
+        detalle:detalle,
         helpers: {
           foo(items) { 
             let itemsAsHtml = null
@@ -706,6 +720,83 @@ export class ProduccionController {
     const id = req.params.id
     const data = await ProduccionModel.eliminarInfoPedidos(id)
     res.json(data)
+  }
+  static async ShowInformePedido(req, res){
+    const params = req.params
+
+
+    const data = await ProduccionModel.getInfoPedidoCab(params.id)
+    const detalle = await ProduccionModel.getInfoPedidoDet(params.id)
+    const cruce = await ProduccionModel.getInfoPedidoDespacho(params.id)
+    console.log("Mostrando informe seguimiento pedido",data)
+    console.log("Mostrando informe seguimiento pedido",detalle)
+    console.log("Mostrando informe seguimiento pedido",cruce)
+
+    let lista_despachos = [...new Set(cruce.reduce((carry,valor)=>{return [...carry,valor.id_despacho]},[]))]
+
+    let new_cruce = cruce.reduce((carry,valor)=>{
+      console.log("Id busqueda :",carry.find(row=>row.idx == valor.idx))
+      if(carry.find(row=>row.idx == valor.idx)){
+        let idc = carry.find(row=>row.idx == valor.idx)
+        lista_despachos.forEach((item)=>{
+          carry[idc][item] = carry[idc][item] + (valor.id_despacho == item ? valor.despacho : 0)
+        })
+      }else{
+        lista_despachos.forEach((item)=>{
+          valor[item] = item == valor.id_despacho ? valor.despacho : 0
+        })
+        carry.push(valor)
+      }
+      return carry
+    },[])
+
+    console.log("Nueve cruce:",new_cruce)
+    // let filtro_detalle = cruce.reduce((carry,valor)=>{
+    //   if(carry.find(row=>row.idx == valor.idx).length == 0){
+    //     carry.push({idx:valor.idx,producto:valor.producto,color:valor.color,cantidad:valor.cantidad,precio:valor.precio})
+    //   }else{
+    //     carry.push({idx:valor.idx,producto:valor.producto,color:valor.color,cantidad:valor.cantidad,precio:valor.precio,[valor.id_despacho]:valor.despacho})
+    //   }
+    //   return carry
+    // },[])
+
+    // cruce
+
+    // const data = await ProduccionModel.getInfoEstampado(params.id)
+    // const data2 = await ProduccionModel.getInfoEstampadoCab(params.id)
+    res.render('pedidoinforme',{
+      datos:{nom:'hola'},
+      detalle:{nom:'adios'},
+      helpers: {
+        foo(items) { 
+          // let itemsAsHtml = null
+          // let extra = 20 - items.length
+          // if(tipo == 'avios'){
+          //   itemsAsHtml = items.map((item,key) => `<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;">${key + 1}</td><td style="width:60px;text-align:left;background-color:#ddebf7;">`+item['color']+`</td><td style="width:60px;text-align: center;">`+item['producto']+`</td><td style="width:60px;text-align: center;background-color:#ddebf7;">`+item['cantidad']+`</td><td style="width:60px;text-align: center;background-color:#ddebf7;">`+item['unidad']+`</td><td style="width: 60px;text-align: center;background-color:#ddebf7;">`+item['precio']+`</td><td style="width: 60px;text-align: center;background-color:#ddebf7;">`+(parseFloat(item['cantidad'])*parseFloat(item['precio'])).toFixed(2)+`</td></tr>`)
+          // }else{
+          //   itemsAsHtml = items.map((item,key) => `<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;">${key + 1}</td><td style="width:60px;text-align: center;">`+ `${item['producto']} ${item['color']}` +`</td><td style="width:60px;text-align:center;background-color:#ddebf7;">`+ (item['rollos'] ? item['rollos'] : '') +`</td><td style="width:60px;text-align: center;background-color:#ddebf7;">`+item['cantidad']+`</td><td style="width:60px;text-align: center;background-color:#ddebf7;">`+item['unidad']+`</td><td style="text-align: center;background-color:#ddebf7;">`+item['precio']+`</td><td style="text-align: center;background-color:#ddebf7;">`+(parseFloat(item['cantidad'])*parseFloat(item['precio'])).toFixed(2)+`</td></tr>`)
+          // }
+          // for(let i=0; i < extra; i++){
+          //   tipo == 'avios' 
+          //   ? 
+          //     itemsAsHtml.push(`<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align:left;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width: 60px;text-align: center;background-color:#ddebf7;"></td><td style="width: 60px;text-align: center;background-color:#ddebf7;"></td></tr>`) 
+          //   : 
+          //     itemsAsHtml.push(`<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;"></td><td style="width:60px;text-align:center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="text-align: center;background-color:#ddebf7;"></td><td style="text-align: center;background-color:#ddebf7;"></td></tr>`)
+          //   // items.push({color:'',producto:'',cantidad:0,unidad:'',precio:0,importe:0})
+          // }
+          // const total = items.reduce((carry,valor)=>{carry += parseFloat(valor['cantidad'])*parseFloat(valor['precio']);return carry},0).toFixed(2)
+          // itemsAsHtml.push(`<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;"></td>${tipo == 'avios' && '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>'}<td style="width:60px;text-align: center;"></td>${tipo !== 'avios' && '<td style="width:60px;text-align: center;background-color:#ddebf7;">'}</td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width:100px;text-align: center;background-color:#ddebf7;text-wrap-mode:nowrap"><strong>SUB TOTAL</strong></td><td style="width:80px;text-align: center;background-color:#ddebf7;">$ ${total}</td></tr>`)
+          // itemsAsHtml.push(`<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;"></td>${tipo == 'avios' && '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>'}<td style="width:60px;text-align: center;"></td>${tipo !== 'avios' && '<td style="width:60px;text-align: center;background-color:#ddebf7;">'}<td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="text-align: center;background-color:#ddebf7;"><strong>IGV 18%</strong></td><td style="text-align: center;background-color:#ddebf7;">$ ${(total*0.18).toFixed(2)}</td></tr>`)
+          // itemsAsHtml.push(`<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;"></td>${tipo == 'avios' && '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>'}<td style="width:60px;text-align: center;"></td>${tipo !== 'avios' && '<td style="width:60px;text-align: center;background-color:#ddebf7;">'}</td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="text-align: center;background-color:#ddebf7;"><strong>TOTAL</strong></td><td style="text-align: center;background-color:#ddebf7;">$ ${(total*1.18).toFixed(2)}</td></tr>`)
+          // return itemsAsHtml.join("\n")
+        }
+      }
+    })
+    // res.render('estampado',{
+    //   info:params,
+    //   detalle:data,
+    //   fecha:new Date(Date.parse(data2[0].created_at)).toLocaleDateString()  
+    // })
   }
   ///////////////////////////////////
   // Seccion registro de despachos //

@@ -1,0 +1,272 @@
+<style>
+  :root{
+    font-size: 10px;
+    font-family: Arial, Helvetica, sans-serif;
+  }
+  .cuerpo_estampado{
+    width: 100%;
+    /*height: 200px;*/
+    border:1px solid gray;
+    border-radius: 10px;
+    background-color: rgba(241, 241, 241, 0.5);
+    margin-bottom: 10px;
+    position: relative;
+  }
+  .main_informe{
+    /*padding:0.2cm;*/
+    display: flex;
+    flex-direction: row;
+    height: 27cm;
+  }
+  .main_informe h2{
+    font-size: 1.2rem;
+  }
+  .indice_estampado{
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    left: -15px;
+    top: -10px;
+    background-color: white;
+    border: 0.2px solid black;
+  }
+  .cuerpo_estampado .indicador span{
+    font-size: .8rem;
+  }
+  .cuerpo_estampado .indicador div{
+    padding: 5px;
+  }
+  .indicador{
+    flex:1;
+  }
+  .nowrap_space{
+    white-space: nowrap;
+  }
+</style>
+<div class="main_informe">  
+  {{!-- <div style="flex:1;padding:5px;border:1px solid green;"> --}}
+  <div style="flex:1;padding:5px;display:flex;flex-direction:column;">
+    <section style="flex:1;">
+      <br/>
+      <br/>
+      <br/>
+      <p style="font-size: 1.2rem;font-weight:600;text-align:center;">
+        NEXT COMPANY S.A.C<br/>
+        NEXT
+      </p>
+      <section style="font-size:.8rem;border-bottom:.5px dashed black;text-align:center;">
+        <p>
+          DOMICILIO FISCAL: CAL.FELIPE SANTIAGO CRESPO NRO. 581 LIMA - LIMA - SAN LUIS, RUC: 20522094120<br/>
+        </p>
+      </section>
+      <p style="font-size: 1.1rem;font-weight:bolder;text-align:center;">
+        GUIA DE TRASLADO INTERNO - REMITENTE<br/>
+        {{!-- {{idguia}} --}}
+      </p>
+      <section style="display: flex;justify-content:space-between;border-bottom:.5px dashed black;padding-bottom: 10px;">
+        <div style="font-size: .9rem;text-align:center;">
+          <strong>FECHA DE EMISIÓN:</strong> 
+          {{!-- {{cabecera.fec_emision_guia}} --}}
+        </div>
+        <div style="font-size: .9rem;text-align:center;">
+          <strong>HORA DE EMISIÓN:</strong> 
+          {{!-- {{time}} --}}
+        </div>
+        <div style="font-size: .9rem;text-align:center;">
+          <strong>FECHA DE RETORNO:</strong> 
+          {{!-- {{cabecera.fec_retorno_guia}} --}}
+        </div>
+        <div style="font-size: .9rem;text-align:center;">
+          <strong>DÍAS PRODUCCIÓN:</strong> 
+          {{!-- {{cabecera.duracion}} --}}
+        </div>
+      </section>
+      <p style="font-size: 1.1rem;font-weight:bolder;">
+        DATOS DEL DESTINATARIO:<br/>
+      </p>
+      <section style="border-bottom:.5px dashed black;font-size:.9rem;padding-bottom: 10px;">
+        <table>
+          <tbody>
+            <tr>
+              <td>Señor(es):</td>
+              <td style="width: 300px;">
+                {{!-- {{proveedor.nom}} --}}
+              </td>
+              {{!-- <td style="width: 300px;">ARTURO COVEÑAS</td> --}}
+              <td>RUC:</td>
+              <td>
+                {{!-- {{proveedor.ruc}} --}}
+              </td>
+            </tr>
+            <tr>
+              <td>Punto de Partida :</td>
+              <td>CAL FELIPE SANTIAGO CRESPO NRO. 581 LIMA-SAN LUIS LIMA</td>
+              <td>Punto de Llegada :</td>
+              <td>
+                {{!-- {{proveedor.direccion}} --}}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+      <p style="font-size: 1.1rem;font-weight:bold;">
+        MOTIVO DE TRASLADO:<br/>
+      </p>
+      <section style="border-bottom:.5px dashed black;padding-bottom:10px;font-size:.9rem; display:flex;justify-content:space-between;">
+        <div>
+          Tipo de Traslado: 
+          {{!-- {{cabecera.tipo}} --}}
+        </div>
+        <div>
+          Responsable: 
+          {{!-- {{cabecera.responsable}} --}}
+        </div>
+        <div>
+          Motivo: 
+          {{!-- {{cabecera.motivo_traslado}} --}}
+        </div>
+      </section>
+      <p style="font-size: 1.1rem;font-weight:bold;">
+        DATOS DE BIENES:<br/>
+      </p>
+      <section style="border-bottom:.5px dashed black;padding-bottom:10px;font-size:.9rem; display:flex;justify-content:space-between;">
+        <table>
+          <tbody>
+            <tr>
+              <td>Modelo:</td>
+              <td style="width: 300px;">
+                {{!-- {{cabecera.modelo}} --}}
+              </td>
+              <td>Precio:</td>
+              <td>S/.
+                {{!-- {{cabecera.costo}} --}}
+              </td>
+            </tr>
+            <tr>
+              <td>Descripción:</td>
+              <td>
+                {{!-- {{cabecera.producto}} --}}
+              </td>
+              <td>OP/Corte:</td>
+              <td>#
+                {{!-- {{cabecera.orden_ref}} --}}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+      <p style="font-size: 1.1rem;font-weight:bold;">
+        A TRANSPORTAR:<br/>
+      </p>
+      {{!-- <section style="border-bottom:.5px dashed black;font-size:.9rem; padding-bottom: 10px;"> --}}
+      <section style="font-size:.9rem; padding-bottom: 10px;">
+        <table style="border-collapse: collapse;width:100%;">
+          <thead>
+            <tr style="border-bottom:.2px solid gray;">
+              <th>#</th>
+              <th style="text-align:left;">Descripcion</th>
+              <th style="text-align:center;">Cantidad</th>
+              <th style="text-align:center;">Precio</th>
+              <th style="text-align:center;">Ingreso1</th>
+              <th style="text-align:center;">Ingreso2</th>
+              <th style="text-align:center;">Ingreso3</th>
+              <th style="text-align:center;">Diferencia</th>
+              <th style="text-align:center;">Importe1</th>
+              <th style="text-align:center;">Importe2</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>-</td>
+              <td>JERSEY 28/1 2 CABOS CON CORTE NEGRO</td>
+              <td style="text-align:center;">460</td>
+              <td style="text-align:center;">9.6</td>
+              <td style="text-align:center;">0</td>
+              <td style="text-align:center;">477.55</td>
+              <td style="text-align:center;">0</td>
+              <td style="text-align:center;color:green;">+17.55</td>
+              <td style="text-align:center;">4416.00</td>
+              <td style="text-align:center;">4584.48</td>
+            </tr>
+            {{!-- {{#each detalle}}
+              <tr style="">
+                <td style="text-align: center;width:.5cm;">{{plusindex @index}}</td>
+                <td>{{articulo}}</td>
+                <td style="text-align: center;">{{xs}}</td>
+                <td style="text-align: center;">{{s}}</td>
+                <td style="text-align: center;">{{m}}</td>
+                <td style="text-align: center;">{{l}}</td>
+                <td style="text-align: center;">{{xl}}</td>
+                <td style="text-align: center;">{{xxl}}</td>
+                <td style="width:1.5px;text-align: center;">NIU</td>
+                <td style="width:1.5px;text-align: center;">{{cantidad}}</td>
+              </tr>
+            {{/each}}
+            <tfoot>
+              <tr>
+                <td colspan="8"></td>
+                <td style="text-align: center;font-size:.9rem;"><strong>Total</strong></td>
+                <td style="text-align: center;font-size:.9rem;"><strong>{{totalunid}}</strong></td>
+              </tr>
+            </tfoot> --}}
+          </tbody>
+        </table>
+      </section>
+      {{!-- {{#if numproto}}
+      <section style="font-size:.9rem;">
+        <table style="border-collapse: collapse;width:100%;">
+          <thead>
+            <tr style="border-bottom: .2px solid gray;">
+              <th>#</th>
+              <th style="text-align:left;">Prototipos</th>
+              <th style="text-align:center;"></th>
+              <th style="text-align:center;"></th>
+              <th style="text-align:center;"></th>
+              <th style="text-align:center;"></th>
+              <th style="text-align:center;"></th>
+              <th style="text-align:center;"></th>
+              <th style="width:1.5cm;text-align:center;"></th>
+              <th style="width:1.5cm;text-align:center;">Cantidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each prototipos}}
+            <tr style="">
+              <td style="text-align: center;width:.5cm;">{{plusindex @index}}</td>
+              <td>{{articulo}}</td>
+              <td style="text-align: center;"></td>
+              <td style="text-align: center;"></td>
+              <td style="text-align: center;"></td>
+              <td style="text-align: center;"></td>
+              <td style="text-align: center;"></td>
+              <td style="text-align: center;"></td>
+              <td style="text-align: center;"></td>
+              <td style="text-align: center;">{{cantidad}}</td>
+            </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      </section>
+      {{/if}} --}}
+    </section>
+    <footer>
+      <section style="display:flex;justify-content:space-around;gap:15px;">
+        <div style="border-top:.5px dashed black;padding:5px;text-align:center;flex:1;font-size:.9rem;">Entregué conforme</div>
+        <div style="border-top:.5px dashed black;padding:5px;text-align:center;flex:1;font-size:.9rem;">Lleve conforme</div>
+        <div style="border-top:.5px dashed black;padding:5px;text-align:center;flex:1;font-size:.9rem;">Recibí conforme</div>
+      </section>
+      <section style="padding-top:50px;font-size:.9rem;">
+        <strong>Condiciones de pagos:</strong> Las fechas de cierre son los días miércoles de cada semana. La programación de pagos variaran dependiendo de si los despachos fueron recepcionados antes o después de la fecha de cierre. Los proveedores cuyos despachos sean recibidos antes de la fecha de cierre(lunes, martes o miércoles), recibirán el pago en un plazo máximo de 10 días a partir de dicha fecha de cierre; por el contrario, los proveedores cuyos despachos sean recibidos después de la fecha de cierre(jueves, viernes o sábado), recibirán el pago en un plazo máximo de 10 días a partir de la fecha de cierre de la semana siguiente.<br/><br/>
+        <strong>Penalidades :</strong> El despacho deberá ejecutarse segun las fechas indicadas en el presente documento, despues de la fecha de vencimineto se aplicará una penalidad sobre el valor costo de la OC: de 1 a 5 días de retraso la penalidad sera de <strong>5%</strong>, de 6 a 10 días la penalidad serea de <strong>10%</strong> y de 11 a 15 días sera <strong>%15</strong>, de 16 días a más se evaluará la recepción de la OC. El proveedor consignado en el presente documento autoriza a Next Company a retener de forma automática el pago de facturas del proveedor por el valor de lo adeudado.<br/><br/>
+        {{!-- <strong>Consulta web de este GRE: https://portal.efacturacion.pe/appefacturacion</strong><br/> --}}
+        <strong>Fecha/hora impresión: 
+          {{!-- {{date}} {{time}} --}}
+        </strong><br/>
+      </section>
+    </footer>
+  </div>
+</div>

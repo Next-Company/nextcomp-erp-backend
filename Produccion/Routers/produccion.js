@@ -19,6 +19,7 @@ produccionRouter.get('/getListaPedidos/:limit',ProduccionController.getListaPedi
 produccionRouter.get('/pedido/:id',ProduccionController.getInfoPedidos)
 produccionRouter.put('/guardarpedido',ProduccionController.saveInfoPedidos)
 produccionRouter.delete('/borrarpedido/:id',ProduccionController.eliminarInfoPedidos)
+produccionRouter.get('/showinformepedido/:id',ProduccionController.ShowInformePedido)
 
 produccionRouter.get('/getListaDespachos',ProduccionController.getListaDespachos)
 produccionRouter.get('/despacho/:id',ProduccionController.getInfoDespachos)
