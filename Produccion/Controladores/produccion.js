@@ -723,73 +723,96 @@ export class ProduccionController {
   }
   static async ShowInformePedido(req, res){
     const params = req.params
-
-
     const data = await ProduccionModel.getInfoPedidoCab(params.id)
-    const detalle = await ProduccionModel.getInfoPedidoDet(params.id)
     const cruce = await ProduccionModel.getInfoPedidoDespacho(params.id)
     console.log("Mostrando informe seguimiento pedido",data)
-    console.log("Mostrando informe seguimiento pedido",detalle)
+    // console.log("Mostrando informe seguimiento pedido",detalle)
     console.log("Mostrando informe seguimiento pedido",cruce)
 
     let lista_despachos = [...new Set(cruce.reduce((carry,valor)=>{return [...carry,valor.id_despacho]},[]))]
 
-    let new_cruce = cruce.reduce((carry,valor)=>{
-      console.log("Id busqueda :",carry.find(row=>row.idx == valor.idx))
+    let formateo = cruce.reduce((carry,valor)=>{
       if(carry.find(row=>row.idx == valor.idx)){
-        let idc = carry.find(row=>row.idx == valor.idx)
+        let itm = carry.find(row=>row.idx == valor.idx)
         lista_despachos.forEach((item)=>{
-          carry[idc][item] = carry[idc][item] + (valor.id_despacho == item ? valor.despacho : 0)
+          itm[item] = itm[item] + (valor.id_despacho == item ? valor.despacho : 0)
         })
       }else{
         lista_despachos.forEach((item)=>{
-          valor[item] = item == valor.id_despacho ? valor.despacho : 0
+          valor[item] = (item == valor.id_despacho ? valor.despacho : 0)
         })
         carry.push(valor)
       }
       return carry
     },[])
 
-    console.log("Nueve cruce:",new_cruce)
-    // let filtro_detalle = cruce.reduce((carry,valor)=>{
-    //   if(carry.find(row=>row.idx == valor.idx).length == 0){
-    //     carry.push({idx:valor.idx,producto:valor.producto,color:valor.color,cantidad:valor.cantidad,precio:valor.precio})
-    //   }else{
-    //     carry.push({idx:valor.idx,producto:valor.producto,color:valor.color,cantidad:valor.cantidad,precio:valor.precio,[valor.id_despacho]:valor.despacho})
-    //   }
-    //   return carry
-    // },[])
-
-    // cruce
-
-    // const data = await ProduccionModel.getInfoEstampado(params.id)
-    // const data2 = await ProduccionModel.getInfoEstampadoCab(params.id)
+    let final = formateo.reduce((carry,valor)=>{
+      valor['total_despacho'] = 0
+      lista_despachos.forEach((item)=>{
+        valor['total_despacho'] += valor[item]
+      })
+      valor['diferencia'] = (valor['total_despacho'] - valor['cantidad']).toFixed(2)
+      valor['importe_inicial'] = (valor['cantidad'] * valor['precio']).toFixed(2)
+      valor['importe_despacho'] = (valor['total_despacho'] * valor['precio']).toFixed(2)
+      valor['importe_diferencia'] = (valor['diferencia'] * valor['precio']).toFixed(2)
+      carry.push(valor)
+      return carry
+    },[])
+    console.log("Nueve cruce:",final)
     res.render('pedidoinforme',{
-      datos:{nom:'hola'},
-      detalle:{nom:'adios'},
+      datos:data,
+      detalle:final,
+      despachos:lista_despachos,
       helpers: {
+        plusindex(index) { 
+          return index + 1
+        },
         foo(items) { 
-          // let itemsAsHtml = null
+          let itemsAsHtml = null
           // let extra = 20 - items.length
-          // if(tipo == 'avios'){
-          //   itemsAsHtml = items.map((item,key) => `<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;">${key + 1}</td><td style="width:60px;text-align:left;background-color:#ddebf7;">`+item['color']+`</td><td style="width:60px;text-align: center;">`+item['producto']+`</td><td style="width:60px;text-align: center;background-color:#ddebf7;">`+item['cantidad']+`</td><td style="width:60px;text-align: center;background-color:#ddebf7;">`+item['unidad']+`</td><td style="width: 60px;text-align: center;background-color:#ddebf7;">`+item['precio']+`</td><td style="width: 60px;text-align: center;background-color:#ddebf7;">`+(parseFloat(item['cantidad'])*parseFloat(item['precio'])).toFixed(2)+`</td></tr>`)
-          // }else{
-          //   itemsAsHtml = items.map((item,key) => `<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;">${key + 1}</td><td style="width:60px;text-align: center;">`+ `${item['producto']} ${item['color']}` +`</td><td style="width:60px;text-align:center;background-color:#ddebf7;">`+ (item['rollos'] ? item['rollos'] : '') +`</td><td style="width:60px;text-align: center;background-color:#ddebf7;">`+item['cantidad']+`</td><td style="width:60px;text-align: center;background-color:#ddebf7;">`+item['unidad']+`</td><td style="text-align: center;background-color:#ddebf7;">`+item['precio']+`</td><td style="text-align: center;background-color:#ddebf7;">`+(parseFloat(item['cantidad'])*parseFloat(item['precio'])).toFixed(2)+`</td></tr>`)
-          // }
-          // for(let i=0; i < extra; i++){
-          //   tipo == 'avios' 
-          //   ? 
-          //     itemsAsHtml.push(`<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align:left;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width: 60px;text-align: center;background-color:#ddebf7;"></td><td style="width: 60px;text-align: center;background-color:#ddebf7;"></td></tr>`) 
-          //   : 
-          //     itemsAsHtml.push(`<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;"></td><td style="width:60px;text-align:center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="text-align: center;background-color:#ddebf7;"></td><td style="text-align: center;background-color:#ddebf7;"></td></tr>`)
-          //   // items.push({color:'',producto:'',cantidad:0,unidad:'',precio:0,importe:0})
-          // }
-          // const total = items.reduce((carry,valor)=>{carry += parseFloat(valor['cantidad'])*parseFloat(valor['precio']);return carry},0).toFixed(2)
-          // itemsAsHtml.push(`<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;"></td>${tipo == 'avios' && '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>'}<td style="width:60px;text-align: center;"></td>${tipo !== 'avios' && '<td style="width:60px;text-align: center;background-color:#ddebf7;">'}</td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width:100px;text-align: center;background-color:#ddebf7;text-wrap-mode:nowrap"><strong>SUB TOTAL</strong></td><td style="width:80px;text-align: center;background-color:#ddebf7;">$ ${total}</td></tr>`)
-          // itemsAsHtml.push(`<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;"></td>${tipo == 'avios' && '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>'}<td style="width:60px;text-align: center;"></td>${tipo !== 'avios' && '<td style="width:60px;text-align: center;background-color:#ddebf7;">'}<td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="text-align: center;background-color:#ddebf7;"><strong>IGV 18%</strong></td><td style="text-align: center;background-color:#ddebf7;">$ ${(total*0.18).toFixed(2)}</td></tr>`)
-          // itemsAsHtml.push(`<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;"></td>${tipo == 'avios' && '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>'}<td style="width:60px;text-align: center;"></td>${tipo !== 'avios' && '<td style="width:60px;text-align: center;background-color:#ddebf7;">'}</td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="text-align: center;background-color:#ddebf7;"><strong>TOTAL</strong></td><td style="text-align: center;background-color:#ddebf7;">$ ${(total*1.18).toFixed(2)}</td></tr>`)
-          // return itemsAsHtml.join("\n")
+          itemsAsHtml = items.map((item,key) =>{ 
+            return `<tr style="height:32px;background-color:${(key+1)%2 > 0 ? '#e9e9e9' : 'white'};"><td style="width:25px;text-align: center;">${key + 1}</td><td style="width:130px;text-align:left;font-size:.9rem;">`+item['producto']+ ' ' + item['color'] + `</td><td style="width:30px;text-align: center;font-size:.9rem;">`+item['cantidad']+`</td><td style="width:40px;text-align: center;font-size:.9rem;">`+item['precio']+
+
+            lista_despachos.map((id)=>`<td style="width:40px;text-align: center;font-size:.9rem;">${item[id]}</td>`).join("")
+          
+            +`<td style="width: 40px;text-align: center;color:${item['diferencia'] > 0 ? 'green' : 'red'};font-size:.9rem;">`+item['diferencia']+`</td><td style="width: 40px;text-align: center;font-weight:bold;font-size:.9rem;">`+item['importe_inicial']+`</td><td style="width: 40px;text-align: center;font-weight:bold;font-size:.9rem;">`+item['importe_despacho']+`</td></tr>`
+
+          })
+          itemsAsHtml.push(`<tr style="border-top:.5px solid blue;"><td colspan='8' style="text-align:right;">Total:</td><td>1</td><td>2</td></tr>`)
+          return itemsAsHtml.join("\n")
         }
+      }
+    },async (err,html)=>{
+      try {
+        const browser = await puppeteer.launch();    
+        const version = await browser.version();
+        console.log(`Versión de Chrome: ${version}`);
+        const page = await browser.newPage();
+        await page.setContent(html);    
+        const pdfOptions = {
+          // format: 'A4',
+          // width: '27.94cm',
+          // height: '20cm',
+          height: '27.94cm',
+          width: '20cm',
+          landscape: false,
+          printBackground: true,
+          margin: {
+            left: 0,
+            right: 0
+          }
+          ,scale:1
+        };
+    
+        const pdfBuffer = await page.pdf(pdfOptions);
+        await browser.close();
+        res.send({data:pdfBuffer.toString('base64')})
+        // res.send(pdfBuffer)
+      } catch (error) {
+        res.status(500).send('Error al generar el PDF');
+        // await browser.close();
+      } finally{
+        // await browser.close();
       }
     })
     // res.render('estampado',{

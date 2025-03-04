@@ -64,7 +64,7 @@
         </p>
       </section>
       <p style="font-size: 1.1rem;font-weight:bolder;text-align:center;">
-        GUIA DE TRASLADO INTERNO - REMITENTE<br/>
+        CUADRE PEDIDO Y DESPACHOS - GENERAL<br/>
         {{!-- {{idguia}} --}}
       </p>
       <section style="display: flex;justify-content:space-between;border-bottom:.5px dashed black;padding-bottom: 10px;">
@@ -86,7 +86,7 @@
         </div>
       </section>
       <p style="font-size: 1.1rem;font-weight:bolder;">
-        DATOS DEL DESTINATARIO:<br/>
+        DATOS DEL PEDIDO:<br/>
       </p>
       <section style="border-bottom:.5px dashed black;font-size:.9rem;padding-bottom: 10px;">
         <table>
@@ -114,53 +114,7 @@
         </table>
       </section>
       <p style="font-size: 1.1rem;font-weight:bold;">
-        MOTIVO DE TRASLADO:<br/>
-      </p>
-      <section style="border-bottom:.5px dashed black;padding-bottom:10px;font-size:.9rem; display:flex;justify-content:space-between;">
-        <div>
-          Tipo de Traslado: 
-          {{!-- {{cabecera.tipo}} --}}
-        </div>
-        <div>
-          Responsable: 
-          {{!-- {{cabecera.responsable}} --}}
-        </div>
-        <div>
-          Motivo: 
-          {{!-- {{cabecera.motivo_traslado}} --}}
-        </div>
-      </section>
-      <p style="font-size: 1.1rem;font-weight:bold;">
-        DATOS DE BIENES:<br/>
-      </p>
-      <section style="border-bottom:.5px dashed black;padding-bottom:10px;font-size:.9rem; display:flex;justify-content:space-between;">
-        <table>
-          <tbody>
-            <tr>
-              <td>Modelo:</td>
-              <td style="width: 300px;">
-                {{!-- {{cabecera.modelo}} --}}
-              </td>
-              <td>Precio:</td>
-              <td>S/.
-                {{!-- {{cabecera.costo}} --}}
-              </td>
-            </tr>
-            <tr>
-              <td>Descripción:</td>
-              <td>
-                {{!-- {{cabecera.producto}} --}}
-              </td>
-              <td>OP/Corte:</td>
-              <td>#
-                {{!-- {{cabecera.orden_ref}} --}}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
-      <p style="font-size: 1.1rem;font-weight:bold;">
-        A TRANSPORTAR:<br/>
+        RESUMEN:<br/>
       </p>
       {{!-- <section style="border-bottom:.5px dashed black;font-size:.9rem; padding-bottom: 10px;"> --}}
       <section style="font-size:.9rem; padding-bottom: 10px;">
@@ -168,19 +122,21 @@
           <thead>
             <tr style="border-bottom:.2px solid gray;">
               <th>#</th>
-              <th style="text-align:left;">Descripcion</th>
-              <th style="text-align:center;">Cantidad</th>
-              <th style="text-align:center;">Precio</th>
-              <th style="text-align:center;">Ingreso1</th>
-              <th style="text-align:center;">Ingreso2</th>
-              <th style="text-align:center;">Ingreso3</th>
-              <th style="text-align:center;">Diferencia</th>
-              <th style="text-align:center;">Importe1</th>
-              <th style="text-align:center;">Importe2</th>
+              <th style="text-align:left;font-size:0.9rem;">Descripcion</th>
+              <th style="text-align:center;font-size:0.9rem;">Pedido</th>
+              <th style="text-align:center;font-size:0.9rem;">Precio</th>
+              {{#each despachos}}
+              <th style="text-align:center;font-size:0.9rem;">Despacho{{plusindex @index}}</th>
+              {{/each}}
+              <th style="text-align:center;font-size:0.9rem;">Diferencia</th>
+              <th style="text-align:center;font-size:0.9rem;">Importe Inicial</th>
+              <th style="text-align:center;font-size:0.9rem;">Importe Final</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
+            {{#foo detalle}}
+            {{/foo}}
+            {{!-- <tr>
               <td>-</td>
               <td>JERSEY 28/1 2 CABOS CON CORTE NEGRO</td>
               <td style="text-align:center;">460</td>
@@ -191,7 +147,7 @@
               <td style="text-align:center;color:green;">+17.55</td>
               <td style="text-align:center;">4416.00</td>
               <td style="text-align:center;">4584.48</td>
-            </tr>
+            </tr> --}}
             {{!-- {{#each detalle}}
               <tr style="">
                 <td style="text-align: center;width:.5cm;">{{plusindex @index}}</td>
@@ -253,7 +209,7 @@
       </section>
       {{/if}} --}}
     </section>
-    <footer>
+    {{!-- <footer>
       <section style="display:flex;justify-content:space-around;gap:15px;">
         <div style="border-top:.5px dashed black;padding:5px;text-align:center;flex:1;font-size:.9rem;">Entregué conforme</div>
         <div style="border-top:.5px dashed black;padding:5px;text-align:center;flex:1;font-size:.9rem;">Lleve conforme</div>
@@ -262,11 +218,9 @@
       <section style="padding-top:50px;font-size:.9rem;">
         <strong>Condiciones de pagos:</strong> Las fechas de cierre son los días miércoles de cada semana. La programación de pagos variaran dependiendo de si los despachos fueron recepcionados antes o después de la fecha de cierre. Los proveedores cuyos despachos sean recibidos antes de la fecha de cierre(lunes, martes o miércoles), recibirán el pago en un plazo máximo de 10 días a partir de dicha fecha de cierre; por el contrario, los proveedores cuyos despachos sean recibidos después de la fecha de cierre(jueves, viernes o sábado), recibirán el pago en un plazo máximo de 10 días a partir de la fecha de cierre de la semana siguiente.<br/><br/>
         <strong>Penalidades :</strong> El despacho deberá ejecutarse segun las fechas indicadas en el presente documento, despues de la fecha de vencimineto se aplicará una penalidad sobre el valor costo de la OC: de 1 a 5 días de retraso la penalidad sera de <strong>5%</strong>, de 6 a 10 días la penalidad serea de <strong>10%</strong> y de 11 a 15 días sera <strong>%15</strong>, de 16 días a más se evaluará la recepción de la OC. El proveedor consignado en el presente documento autoriza a Next Company a retener de forma automática el pago de facturas del proveedor por el valor de lo adeudado.<br/><br/>
-        {{!-- <strong>Consulta web de este GRE: https://portal.efacturacion.pe/appefacturacion</strong><br/> --}}
         <strong>Fecha/hora impresión: 
-          {{!-- {{date}} {{time}} --}}
         </strong><br/>
       </section>
-    </footer>
+    </footer> --}}
   </div>
 </div>
