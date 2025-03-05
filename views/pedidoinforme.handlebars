@@ -64,25 +64,25 @@
         </p>
       </section>
       <p style="font-size: 1.1rem;font-weight:bolder;text-align:center;">
-        CUADRE PEDIDO Y DESPACHOS - GENERAL<br/>
+        CUADRE PEDIDO Y DESPACHOS - {{datos.tipo}}<br/>
         {{!-- {{idguia}} --}}
       </p>
       <section style="display: flex;justify-content:space-between;border-bottom:.5px dashed black;padding-bottom: 10px;">
         <div style="font-size: .9rem;text-align:center;">
           <strong>FECHA DE EMISIÓN:</strong> 
-          {{!-- {{cabecera.fec_emision_guia}} --}}
+          {{datos.fec_emision_cuadre}}
         </div>
         <div style="font-size: .9rem;text-align:center;">
           <strong>HORA DE EMISIÓN:</strong> 
-          {{!-- {{time}} --}}
+          {{time}}
         </div>
         <div style="font-size: .9rem;text-align:center;">
           <strong>FECHA DE RETORNO:</strong> 
-          {{!-- {{cabecera.fec_retorno_guia}} --}}
+          {{datos.fec_retorno_cuadre}}
         </div>
         <div style="font-size: .9rem;text-align:center;">
           <strong>DÍAS PRODUCCIÓN:</strong> 
-          {{!-- {{cabecera.duracion}} --}}
+          {{datos.duracion}}
         </div>
       </section>
       <p style="font-size: 1.1rem;font-weight:bolder;">
@@ -92,29 +92,28 @@
         <table>
           <tbody>
             <tr>
-              <td>Señor(es):</td>
+              <td>Proveedor:</td>
               <td style="width: 300px;">
-                {{!-- {{proveedor.nom}} --}}
+                {{datos.proveedor}}
               </td>
-              {{!-- <td style="width: 300px;">ARTURO COVEÑAS</td> --}}
-              <td>RUC:</td>
+              <td>Producción:</td>
               <td>
-                {{!-- {{proveedor.ruc}} --}}
+                {{datos.duracion}}
               </td>
             </tr>
             <tr>
-              <td>Punto de Partida :</td>
-              <td>CAL FELIPE SANTIAGO CRESPO NRO. 581 LIMA-SAN LUIS LIMA</td>
-              <td>Punto de Llegada :</td>
+              <td>Forma de Pago:</td>
+              <td>{{datos.forma_pago}}</td>
+              <td>Girador por:</td>
               <td>
-                {{!-- {{proveedor.direccion}} --}}
+                {{datos.responsable}}
               </td>
             </tr>
           </tbody>
         </table>
       </section>
       <p style="font-size: 1.1rem;font-weight:bold;">
-        RESUMEN:<br/>
+        INFORME DESPACHOS:<br/>
       </p>
       {{!-- <section style="border-bottom:.5px dashed black;font-size:.9rem; padding-bottom: 10px;"> --}}
       <section style="font-size:.9rem; padding-bottom: 10px;">
@@ -122,15 +121,15 @@
           <thead>
             <tr style="border-bottom:.2px solid gray;">
               <th>#</th>
-              <th style="text-align:left;font-size:0.9rem;">Descripcion</th>
-              <th style="text-align:center;font-size:0.9rem;">Pedido</th>
-              <th style="text-align:center;font-size:0.9rem;">Precio</th>
+              <th style="text-align:left;font-size:0.65rem;">Descripcion</th>
+              <th style="text-align:center;font-size:0.65rem;">Pedido</th>
+              <th style="text-align:center;font-size:0.65rem;">Precio</th>
+              <th style="text-align:center;font-size:0.65rem;">Importe Inicial</th>
               {{#each despachos}}
-              <th style="text-align:center;font-size:0.9rem;">Despacho{{plusindex @index}}</th>
+              <th style="text-align:center;font-size:0.65rem;">Despacho{{plusindex @index}}</th>
               {{/each}}
-              <th style="text-align:center;font-size:0.9rem;">Diferencia</th>
-              <th style="text-align:center;font-size:0.9rem;">Importe Inicial</th>
-              <th style="text-align:center;font-size:0.9rem;">Importe Final</th>
+              <th style="text-align:center;font-size:0.65rem;">Diferencia</th>
+              <th style="text-align:center;font-size:0.65rem;">Importe Final</th>
             </tr>
           </thead>
           <tbody>

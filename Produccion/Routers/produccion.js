@@ -47,7 +47,7 @@ produccionRouter.get('/searchproveedorbyid/:id',ProduccionController.searchProve
 
 // produccionRouter.get('/guiaslist/:limit',ProduccionController.getListaGuias)
 // produccionRouter.get('/searchproveedor/:info',ProduccionController.searchProveedor)
-// produccionRouter.get('/searchproveedorbyid/:id',ProduccionController.searchProveedorById
+// produccionRouter.get('/searchproveedorbyid/:id',ProduccionController.searchProveedorById)
 
 produccionRouter.post('/vistapreviapedido/:tipo',ProduccionController.VistaPreviaPedido)
 // produccionRouter.post('/vistapreviapedidoavios/:tipo',ProduccionController.VistaPreviaPedidoAvios)

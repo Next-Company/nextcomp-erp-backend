@@ -760,25 +760,31 @@ export class ProduccionController {
     },[])
     console.log("Nueve cruce:",final)
     res.render('pedidoinforme',{
-      datos:data,
+      datos:data[0],
       detalle:final,
       despachos:lista_despachos,
+      date:(new Date(data[0].created_at)).toLocaleDateString('en-GB'),
+      time:(new Date(data[0].created_at)).toLocaleTimeString('en-GB'),
       helpers: {
         plusindex(index) { 
           return index + 1
         },
         foo(items) { 
           let itemsAsHtml = null
+          let total_inicial = 0
+          let total_final = 0
           // let extra = 20 - items.length
           itemsAsHtml = items.map((item,key) =>{ 
-            return `<tr style="height:32px;background-color:${(key+1)%2 > 0 ? '#e9e9e9' : 'white'};"><td style="width:25px;text-align: center;">${key + 1}</td><td style="width:130px;text-align:left;font-size:.9rem;">`+item['producto']+ ' ' + item['color'] + `</td><td style="width:30px;text-align: center;font-size:.9rem;">`+item['cantidad']+`</td><td style="width:40px;text-align: center;font-size:.9rem;">`+item['precio']+
+            total_inicial+=parseFloat(item['importe_inicial'])
+            total_final+=parseFloat(item['importe_despacho'])
+            return `<tr style="height:32px;background-color:${(key+1)%2 > 0 ? '#e9e9e9' : 'white'};"><td style="width:25px;text-align: center;font-size:.65rem;">${key + 1}</td><td style="width:130px;text-align:left;font-size:.65rem;font-weight:bold;">`+item['producto']+ ' ' + item['color'] + `</td><td style="width:30px;text-align: center;font-size:.65rem;">`+item['cantidad']+`</td><td style="width:40px;text-align: center;font-size:.65rem;">`+item['precio']+`</td><td style="width: 40px;text-align: center;font-weight:bold;font-size:.65rem;">`+item['importe_inicial']+`</td>`+
 
-            lista_despachos.map((id)=>`<td style="width:40px;text-align: center;font-size:.9rem;">${item[id]}</td>`).join("")
+            lista_despachos.map((id)=>`<td style="width:40px;text-align: center;font-size:.65rem;">${item[id]}</td>`).join("")
           
-            +`<td style="width: 40px;text-align: center;color:${item['diferencia'] > 0 ? 'green' : 'red'};font-size:.9rem;">`+item['diferencia']+`</td><td style="width: 40px;text-align: center;font-weight:bold;font-size:.9rem;">`+item['importe_inicial']+`</td><td style="width: 40px;text-align: center;font-weight:bold;font-size:.9rem;">`+item['importe_despacho']+`</td></tr>`
-
+            +`<td style="width: 40px;text-align: center;color:${item['diferencia'] > 0 ? 'green' : 'red'};font-size:.65rem;">`+item['diferencia']+`</td><td style="width: 40px;text-align: center;font-weight:bold;font-size:.65rem;">`+item['importe_despacho']+`</td></tr>`
+            
           })
-          itemsAsHtml.push(`<tr style="border-top:.5px solid blue;"><td colspan='8' style="text-align:right;">Total:</td><td>1</td><td>2</td></tr>`)
+          itemsAsHtml.push(`<tr style="height:32px;border-top:.2px solid gray;"><td colspan='${4 + lista_despachos.length}'></td><td colspan="2" style="text-align:right;font-weight:bold;">TOTAL IMP. FINAL:</td><td style="text-align:center;">${total_inicial.toFixed(2)}</td></tr><tr style="height:32px;border-top:.2px solid gray;"><td colspan='${4 + lista_despachos.length}'></td><td colspan="2" style="text-align:right;font-weight:bold;">TOTAL IMP. INICIAL:</td><td style="text-align:center;">${total_final.toFixed(2)}</td></tr><tr style="height:32px;border-top:.2px solid gray;"><td colspan='${4 + lista_despachos.length}'></td><td colspan="2" style="text-align:right;font-weight:bold;">DIFERENCIA:</td><td style="text-align:center;">${(total_inicial - total_final).toFixed(2)}</td></tr>`)
           return itemsAsHtml.join("\n")
         }
       }
