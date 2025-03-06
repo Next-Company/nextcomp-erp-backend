@@ -72,7 +72,7 @@ app.use((req, resp, next) => {
         // sameSite: 'None',
         // secure:true,
         sameSite: 'strict',
-        maxAge: 1000 * 60 * 30
+        maxAge: 1000 * 60 * 60
       })
       next()
     } catch (error) {

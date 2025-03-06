@@ -622,7 +622,7 @@ export class ProduccionController {
       cabecera = JSON.parse(data.info)
       detalle = JSON.parse(data.detalle)
     }
-    
+    console.log("DEtalle de la cabecerea es: ",cabecera)
     const BINARY_CHUNKS = await fs.readFile('public/images/firma_jefferson.png')
     const BINARY_CHUNKS2 = await fs.readFile('public/images/logo_next.png')
     const BINARY_CHUNKS3 = await fs.readFile('public/images/orden_pedido.png')
@@ -637,6 +637,17 @@ export class ProduccionController {
         datos:cabecera,
         detalle:detalle,
         helpers: {
+          fechaCorta(fechaStr){
+            const partes = fechaStr.split('/');
+            const dia = parseInt(partes[0], 10);
+            const mes = parseInt(partes[1], 10) - 1;
+            const anio = parseInt(partes[2], 10);
+          
+            const fecha = new Date(anio, mes, dia);
+            const nombreMes = fecha.toLocaleString('es-ES', { month: 'short' });
+            console.log("La fecha corta es:",nombreMes)
+            return `${dia}-${nombreMes}`;
+          },
           foo(items) { 
             let itemsAsHtml = null
             let extra = 20 - items.length
@@ -654,9 +665,9 @@ export class ProduccionController {
               // items.push({color:'',producto:'',cantidad:0,unidad:'',precio:0,importe:0})
             }
             const total = items.reduce((carry,valor)=>{carry += parseFloat(valor['cantidad'])*parseFloat(valor['precio']);return carry},0).toFixed(2)
-            itemsAsHtml.push(`<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;"></td>${tipo == 'avios' && '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>'}<td style="width:60px;text-align: center;"></td>${tipo !== 'avios' && '<td style="width:60px;text-align: center;background-color:#ddebf7;">'}</td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width:100px;text-align: center;background-color:#ddebf7;text-wrap-mode:nowrap"><strong>SUB TOTAL</strong></td><td style="width:80px;text-align: center;background-color:#ddebf7;">$ ${total}</td></tr>`)
-            itemsAsHtml.push(`<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;"></td>${tipo == 'avios' && '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>'}<td style="width:60px;text-align: center;"></td>${tipo !== 'avios' && '<td style="width:60px;text-align: center;background-color:#ddebf7;">'}<td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="text-align: center;background-color:#ddebf7;"><strong>IGV 18%</strong></td><td style="text-align: center;background-color:#ddebf7;">$ ${(total*0.18).toFixed(2)}</td></tr>`)
-            itemsAsHtml.push(`<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;"></td>${tipo == 'avios' && '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>'}<td style="width:60px;text-align: center;"></td>${tipo !== 'avios' && '<td style="width:60px;text-align: center;background-color:#ddebf7;">'}</td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="text-align: center;background-color:#ddebf7;"><strong>TOTAL</strong></td><td style="text-align: center;background-color:#ddebf7;">$ ${(total*1.18).toFixed(2)}</td></tr>`)
+            itemsAsHtml.push(`<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;"></td>${tipo == 'avios' ? '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>' : ''}<td style="width:60px;text-align: center;"></td>${tipo !== 'avios' ? '<td style="width:60px;text-align: center;background-color:#ddebf7;">' : ''}</td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width:100px;text-align: center;background-color:#ddebf7;text-wrap-mode:nowrap"><strong>SUB TOTAL</strong></td><td style="width:90px;text-align: center;background-color:#ddebf7;">${cabecera.moneda == 'USD' ? '$' : 'S/.'} ${total}</td></tr>`)
+            itemsAsHtml.push(`<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;"></td>${tipo == 'avios' ? '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>' : ''}<td style="width:60px;text-align: center;"></td>${tipo !== 'avios' ? '<td style="width:60px;text-align: center;background-color:#ddebf7;">' : ''}<td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="text-align: center;background-color:#ddebf7;"><strong>IGV 18%</strong></td><td style="text-align: center;background-color:#ddebf7;">${cabecera.moneda == 'USD' ? '$' : 'S/.'} ${parseInt(cabecera.igv) ? (total*0.18).toFixed(2) : 0}</td></tr>`)
+            itemsAsHtml.push(`<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;"></td>${tipo == 'avios' ? '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>' : ''}<td style="width:60px;text-align: center;"></td>${tipo !== 'avios' ? '<td style="width:60px;text-align: center;background-color:#ddebf7;">' : ''}</td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="text-align: center;background-color:#ddebf7;"><strong>TOTAL</strong></td><td style="text-align: center;background-color:#ddebf7;">${cabecera.moneda == 'USD' ? '$' : 'S/.'} ${parseInt(cabecera.igv) ? (total*1.18).toFixed(2) : total}</td></tr>`)
             return itemsAsHtml.join("\n")
           }
         },
@@ -753,8 +764,10 @@ export class ProduccionController {
       })
       valor['diferencia'] = (valor['total_despacho'] - valor['cantidad']).toFixed(2)
       valor['importe_inicial'] = (valor['cantidad'] * valor['precio']).toFixed(2)
-      valor['importe_despacho'] = (valor['total_despacho'] * valor['precio']).toFixed(2)
-      valor['importe_diferencia'] = (valor['diferencia'] * valor['precio']).toFixed(2)
+      // valor['importe_despacho'] = (valor['total_despacho'] * valor['precio']).toFixed(2)
+      valor['importe_despacho'] = (valor['total_despacho'] * valor['precio_despacho']).toFixed(2)
+      // valor['importe_diferencia'] = (valor['diferencia'] * valor['precio']).toFixed(2)
+      valor['importe_diferencia'] = valor['importe_despacho'] - valor['importe_inicial']
       carry.push(valor)
       return carry
     },[])
@@ -777,14 +790,15 @@ export class ProduccionController {
           itemsAsHtml = items.map((item,key) =>{ 
             total_inicial+=parseFloat(item['importe_inicial'])
             total_final+=parseFloat(item['importe_despacho'])
-            return `<tr style="height:32px;background-color:${(key+1)%2 > 0 ? '#e9e9e9' : 'white'};"><td style="width:25px;text-align: center;font-size:.65rem;">${key + 1}</td><td style="width:130px;text-align:left;font-size:.65rem;font-weight:bold;">`+item['producto']+ ' ' + item['color'] + `</td><td style="width:30px;text-align: center;font-size:.65rem;">`+item['cantidad']+`</td><td style="width:40px;text-align: center;font-size:.65rem;">`+item['precio']+`</td><td style="width: 40px;text-align: center;font-weight:bold;font-size:.65rem;">`+item['importe_inicial']+`</td>`+
+            return `<tr style="height:32px;background-color:${(key+1)%2 > 0 ? '#e9e9e9' : 'white'};"><td style="width:25px;text-align: center;font-size:.65rem;">${key + 1}</td><td style="width:130px;text-align:left;font-size:.65rem;font-weight:bold;">`+item['producto']+ ' ' + item['color'] + `</td><td style="width:30px;text-align: center;font-size:.65rem;">`+item['cantidad']+`</td><td style="width:40px;text-align: center;font-size:.65rem;">`+item['precio']+`</td><td style="width: 40px;text-align: center;font-weight:bold;font-size:.65rem;">`+item['importe_inicial']+
 
-            lista_despachos.map((id)=>`<td style="width:40px;text-align: center;font-size:.65rem;">${item[id]}</td>`).join("")
+            `<td style="width:40px;text-align: center;font-size:.65rem;">`+lista_despachos.map((id)=>parseFloat(item[id]) > 0 ? item[id]+'/' : '').join("")+`</td>`
+            // lista_despachos.map((id)=>`<td style="width:40px;text-align: center;font-size:.65rem;">${item[id]}</td>`).join("")
           
-            +`<td style="width: 40px;text-align: center;color:${item['diferencia'] > 0 ? 'green' : 'red'};font-size:.65rem;">`+item['diferencia']+`</td><td style="width: 40px;text-align: center;font-weight:bold;font-size:.65rem;">`+item['importe_despacho']+`</td></tr>`
+            +`<td style="width: 40px;text-align: center;color:${item['diferencia'] > 0 ? 'green' : 'red'};font-size:.65rem;">`+item['diferencia']+`</td></td><td style="width:40px;text-align: center;font-size:.65rem;">`+item['precio_despacho']+`</td><td style="width: 40px;text-align: center;font-weight:bold;font-size:.65rem;">`+item['importe_despacho']+`</td></tr>`
             
           })
-          itemsAsHtml.push(`<tr style="height:32px;border-top:.2px solid gray;"><td colspan='${4 + lista_despachos.length}'></td><td colspan="2" style="text-align:right;font-weight:bold;">TOTAL IMP. FINAL:</td><td style="text-align:center;">${total_inicial.toFixed(2)}</td></tr><tr style="height:32px;border-top:.2px solid gray;"><td colspan='${4 + lista_despachos.length}'></td><td colspan="2" style="text-align:right;font-weight:bold;">TOTAL IMP. INICIAL:</td><td style="text-align:center;">${total_final.toFixed(2)}</td></tr><tr style="height:32px;border-top:.2px solid gray;"><td colspan='${4 + lista_despachos.length}'></td><td colspan="2" style="text-align:right;font-weight:bold;">DIFERENCIA:</td><td style="text-align:center;">${(total_inicial - total_final).toFixed(2)}</td></tr>`)
+          itemsAsHtml.push(`<tr style="height:32px;border-top:.2px solid gray;"><td colspan='${5 + lista_despachos.length*0 + 1}'></td><td colspan="2" style="text-align:right;font-weight:bold;">TOTAL IMP. FINAL:</td><td style="text-align:center;">${total_inicial.toFixed(2)}</td></tr><tr style="height:32px;border-top:.2px solid gray;"><td colspan='${5 + lista_despachos.length*0 + 1}'></td><td colspan="2" style="text-align:right;font-weight:bold;">TOTAL IMP. INICIAL:</td><td style="text-align:center;">${total_final.toFixed(2)}</td></tr><tr style="height:32px;border-top:.2px solid gray;"><td colspan='${5 + lista_despachos.length*0 + 1}'></td><td colspan="2" style="text-align:right;font-weight:bold;">DIFERENCIA:</td><td style="text-align:center;">${(total_inicial - total_final).toFixed(2)}</td></tr>`)
           return itemsAsHtml.join("\n")
         }
       }

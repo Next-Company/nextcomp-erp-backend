@@ -172,9 +172,9 @@
                                                   <tbody>
                                                     <tr>
                                                       <td style="height:20px;width:80px;font-size:8px;">FECHA PEDIDO</td>
-                                                      <td colspan="2" style="font-size:8px;"><strong style="font-size: inherit;">2-May</strong></td>
+                                                      <td colspan="2" style="font-size:8px;"><strong style="font-size: inherit;">{{#fechaCorta datos.fec_emision_cuadre}}{{/fechaCorta}}</strong></td>
                                                       <td colspan="2" style="font-size:8px;">FECHA ENTREGA</td>
-                                                      <td colspan="2" style="font-size:8px;width:50px;"><strong style="font-size: inherit;">2-May</strong></td>
+                                                      <td colspan="2" style="font-size:8px;width:50px;"><strong style="font-size: inherit;">{{#fechaCorta datos.fec_retorno_cuadre}}{{/fechaCorta}}</strong></td>
                                                       <td colspan="2" style="font-size:8px;">DÍAS PRODUCCIÓN</td>
                                                       <td colspan="2" style="font-size:8px;"><strong style="font-size: inherit;">177</strong></td>
                                                     </tr>
@@ -216,7 +216,6 @@
         </tr>
     </table>
     <br />
-
     <table class="contenido" style="width:100%;">
         <thead>
             <tr nobr="true" style="height:40px;">
