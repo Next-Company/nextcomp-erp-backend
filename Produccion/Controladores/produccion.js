@@ -486,7 +486,8 @@ export class ProduccionController {
   // Seccion registro de guias //
   //////////////////////////////
   static async getListaGuias(req, res){
-    const data = await ProduccionModel.getListaGuias()
+    const search = req.params.search ?? ''
+    const data = await ProduccionModel.getListaGuias(search)
     res.json(data)
   }
   static async getInfoGuias(req, res){
@@ -638,15 +639,19 @@ export class ProduccionController {
         detalle:detalle,
         helpers: {
           fechaCorta(fechaStr){
-            const partes = fechaStr.split('/');
-            const dia = parseInt(partes[0], 10);
-            const mes = parseInt(partes[1], 10) - 1;
-            const anio = parseInt(partes[2], 10);
-          
-            const fecha = new Date(anio, mes, dia);
-            const nombreMes = fecha.toLocaleString('es-ES', { month: 'short' });
-            console.log("La fecha corta es:",nombreMes)
-            return `${dia}-${nombreMes}`;
+            let formateo = ''
+            if(fechaStr){
+              const partes = fechaStr.split('/');
+              const dia = parseInt(partes[0], 10);
+              const mes = parseInt(partes[1], 10) - 1;
+              const anio = parseInt(partes[2], 10);
+            
+              const fecha = new Date(anio, mes, dia);
+              const nombreMes = fecha.toLocaleString('es-ES', { month: 'short' });
+              formateo = `${dia}-${nombreMes}`;
+              console.log("La fecha corta es:",nombreMes)
+            }
+            return formateo
           },
           foo(items) { 
             let itemsAsHtml = null
@@ -662,7 +667,7 @@ export class ProduccionController {
                 itemsAsHtml.push(`<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align:left;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width: 60px;text-align: center;background-color:#ddebf7;"></td><td style="width: 60px;text-align: center;background-color:#ddebf7;"></td></tr>`) 
               : 
                 itemsAsHtml.push(`<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;"></td><td style="width:60px;text-align:center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="text-align: center;background-color:#ddebf7;"></td><td style="text-align: center;background-color:#ddebf7;"></td></tr>`)
-              // items.push({color:'',producto:'',cantidad:0,unidad:'',precio:0,importe:0})
+                // items.push({color:'',producto:'',cantidad:0,unidad:'',precio:0,importe:0})
             }
             const total = items.reduce((carry,valor)=>{carry += parseFloat(valor['cantidad'])*parseFloat(valor['precio']);return carry},0).toFixed(2)
             itemsAsHtml.push(`<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;"></td>${tipo == 'avios' ? '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>' : ''}<td style="width:60px;text-align: center;"></td>${tipo !== 'avios' ? '<td style="width:60px;text-align: center;background-color:#ddebf7;">' : ''}</td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width:100px;text-align: center;background-color:#ddebf7;text-wrap-mode:nowrap"><strong>SUB TOTAL</strong></td><td style="width:90px;text-align: center;background-color:#ddebf7;">${cabecera.moneda == 'USD' ? '$' : 'S/.'} ${total}</td></tr>`)

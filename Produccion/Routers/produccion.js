@@ -10,6 +10,7 @@ produccionRouter.post('/exportestampado/:id',ProduccionController.exportInfoEsta
 produccionRouter.post('/exportguia/:id',ProduccionController.exportInfoGuia)
 
 produccionRouter.get('/getListaGuias',ProduccionController.getListaGuias)
+produccionRouter.get('/getListaGuias/:search',ProduccionController.getListaGuias)
 produccionRouter.get('/guia/:id',ProduccionController.getInfoGuias)
 produccionRouter.put('/guardarguia',ProduccionController.saveInfoGuias)
 produccionRouter.delete('/borrarguia/:id',ProduccionController.eliminarInfoGuias)
