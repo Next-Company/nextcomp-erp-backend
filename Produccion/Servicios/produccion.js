@@ -464,7 +464,7 @@ export class ProduccionModel {
 
       let extra = search.split(" ").length > 0 ? search.split(" ").map(word=>"AND LOCATE('"+word+"',CONCAT(TRIM(orden_ref),' ',TRIM(servicio),' ',TRIM(producto),' ',TRIM(proveedor),' ',TRIM(modelo))) > 0").join(" ") : ""
 
-      const [results, fields] = await conn.query(`SELECT idx,orden_ref,producto,modelo,estado,tipo,servicio,proveedor,fec_emision,DATE_FORMAT(fec_emision,'%d/%m/%Y') as fec_emision_guia,fec_retorno,DATE_FORMAT(fec_retorno,'%d/%m/%Y') as fec_retorno_guia,fec_recepcion,costo,COALESCE(DATEDIFF(fec_retorno,fec_emision),'') as tiempo_produccion,COALESCE(DATEDIFF(STR_TO_DATE(fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes FROM tbl2_guias_traslado_cab where 1=1 ${search !== '_' ? extra : ''} order by created_at desc limit 100`);
+      const [results, fields] = await conn.query(`SELECT idx,orden_ref,producto,modelo,estado,tipo,servicio,id_proveedor_CAB,proveedor,fec_emision,DATE_FORMAT(fec_emision,'%d/%m/%Y') as fec_emision_guia,fec_retorno,DATE_FORMAT(fec_retorno,'%d/%m/%Y') as fec_retorno_guia,fec_recepcion,costo,COALESCE(DATEDIFF(fec_retorno,fec_emision),'') as tiempo_produccion,COALESCE(DATEDIFF(STR_TO_DATE(fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes FROM tbl2_guias_traslado_cab where 1=1 ${search !== '_' ? extra : ''} order by created_at desc limit 100`);
 
       await conn.end();
       return results
@@ -658,6 +658,36 @@ export class ProduccionModel {
       await conn.end();
       return results
     } catch (err) {
+      return [err]
+    } finally {
+      if (conn) {
+        await conn.end();
+      }
+    }
+  }
+  static async getInfoGuiaDespacho(id){
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+
+      const [results, fields] = await conn.query(`
+      SELECT tpid.idx,tpid.articulo,'' as color,tpid.cantidad,tgtc.costo,dp.idx as id_despacho,dp.despacho,COALESCE(dp.precio,0) as precio_despacho
+      FROM tbl2_guias_traslado_det tpid 
+      JOIN tbl2_guias_traslado_cab tgtc on tgtc.idx = tpid.id_guia_CAB 
+      JOIN(
+        SELECT tdc.id_guia_origen,tdc.idx,tdd.id_item,tdd.precio,tdd.despacho FROM tbl2_despachos_cab tdc 
+        LEFT JOIN tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
+      ) AS dp on tpid.id_guia_CAB = dp.id_guia_origen and tpid.idx = dp.id_item
+      WHERE tpid.id_guia_CAB = ?`,[id]);
+
+      const ids = results.map(row=>row.idx)
+      console.log("Lista de ids:",ids)
+
+      await conn.end();
+      return results
+    } catch (err) {
+      console.log(err)
       return [err]
     } finally {
       if (conn) {

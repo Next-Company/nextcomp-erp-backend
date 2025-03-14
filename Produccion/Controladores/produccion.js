@@ -846,6 +846,107 @@ export class ProduccionController {
     //   fecha:new Date(Date.parse(data2[0].created_at)).toLocaleDateString()  
     // })
   }
+  static async ShowInformeServicio(req, res){
+    const params = req.params
+    const data = await ProduccionModel.getInfoGuiaCab(params.id)
+    const cruce = await ProduccionModel.getInfoGuiaDespacho(params.id)
+
+    let lista_despachos = [...new Set(cruce.reduce((carry,valor)=>{return [...carry,valor.id_despacho]},[]))]
+
+    let formateo = cruce.reduce((carry,valor)=>{
+      if(carry.find(row=>row.idx == valor.idx)){
+        let itm = carry.find(row=>row.idx == valor.idx)
+        lista_despachos.forEach((item)=>{
+          itm[item] = itm[item] + (valor.id_despacho == item ? valor.despacho : 0)
+        })
+      }else{
+        lista_despachos.forEach((item)=>{
+          valor[item] = (item == valor.id_despacho ? valor.despacho : 0)
+        })
+        carry.push(valor)
+      }
+      return carry
+    },[])
+
+    let final = formateo.reduce((carry,valor)=>{
+      valor['total_despacho'] = 0
+      lista_despachos.forEach((item)=>{
+        valor['total_despacho'] += valor[item]
+      })
+      valor['diferencia'] = (valor['total_despacho'] - valor['cantidad']).toFixed(2)
+      valor['importe_inicial'] = (valor['cantidad'] * valor['costo']).toFixed(2)
+      // valor['importe_despacho'] = (valor['total_despacho'] * valor['precio']).toFixed(2)
+      valor['importe_despacho'] = (valor['total_despacho'] * valor['costo']).toFixed(2)
+      // valor['importe_diferencia'] = (valor['diferencia'] * valor['precio']).toFixed(2)
+      valor['importe_diferencia'] = valor['importe_despacho'] - valor['importe_inicial']
+      carry.push(valor)
+      return carry
+    },[])
+    console.log("Nueve cruce:",final)
+    res.render('servicioinforme',{
+      datos:data[0],
+      detalle:final,
+      despachos:lista_despachos,
+      date:(new Date(data[0].created_at)).toLocaleDateString('en-GB'),
+      time:(new Date(data[0].created_at)).toLocaleTimeString('en-GB'),
+      helpers: {
+        plusindex(index) { 
+          return index + 1
+        },
+        foo(items) { 
+          let itemsAsHtml = null
+          let total_inicial = 0
+          let total_final = 0
+          // let extra = 20 - items.length
+          itemsAsHtml = items.map((item,key) =>{ 
+            total_inicial+=parseFloat(item['importe_inicial'])
+            total_final+=parseFloat(item['importe_despacho'])
+            return `<tr style="height:32px;background-color:${(key+1)%2 > 0 ? '#e9e9e9' : 'white'};"><td style="width:25px;text-align: center;font-size:.65rem;">${key + 1}</td><td style="width:130px;text-align:left;font-size:.65rem;font-weight:bold;">`+item['articulo']+ ' ' + item['color'] + `</td><td style="width:30px;text-align: center;font-size:.65rem;">`+item['cantidad']+`</td><td style="width:40px;text-align: center;font-size:.65rem;">`+item['costo']+`</td><td style="width: 40px;text-align: center;font-weight:bold;font-size:.65rem;">`+item['importe_inicial']+
+
+            `<td style="width:40px;text-align: center;font-size:.65rem;">`+lista_despachos.map((id)=>parseFloat(item[id]) > 0 ? item[id]+'/' : '').join("")+`</td>`
+            // lista_despachos.map((id)=>`<td style="width:40px;text-align: center;font-size:.65rem;">${item[id]}</td>`).join("")
+          
+            +`<td style="width: 40px;text-align: center;color:${item['diferencia'] > 0 ? 'green' : 'red'};font-size:.65rem;">`+item['diferencia']+`</td></td><td style="width: 40px;text-align: center;font-weight:bold;font-size:.65rem;">`+item['importe_despacho']+`</td></tr>`
+            
+          })
+          itemsAsHtml.push(`<tr style="height:32px;border-top:.2px solid gray;"><td colspan='${4 + lista_despachos.length*0 + 1}'></td><td colspan="2" style="text-align:right;font-weight:bold;">TOTAL IMP. FINAL:</td><td style="text-align:center;">${total_inicial.toFixed(2)}</td></tr><tr style="height:32px;border-top:.2px solid gray;"><td colspan='${4 + lista_despachos.length*0 + 1}'></td><td colspan="2" style="text-align:right;font-weight:bold;">TOTAL IMP. INICIAL:</td><td style="text-align:center;">${total_final.toFixed(2)}</td></tr><tr style="height:32px;border-top:.2px solid gray;"><td colspan='${4 + lista_despachos.length*0 + 1}'></td><td colspan="2" style="text-align:right;font-weight:bold;">RESTA:</td><td style="text-align:center;">${(total_inicial - total_final).toFixed(2)}</td></tr>`)
+          return itemsAsHtml.join("\n")
+        }
+      }
+    },async (err,html)=>{
+      try {
+        const browser = await puppeteer.launch();    
+        const version = await browser.version();
+        console.log(`Versión de Chrome: ${version}`);
+        const page = await browser.newPage();
+        await page.setContent(html);    
+        const pdfOptions = {
+          // format: 'A4',
+          // width: '27.94cm',
+          // height: '20cm',
+          height: '27.94cm',
+          width: '20cm',
+          landscape: false,
+          printBackground: true,
+          margin: {
+            left: 0,
+            right: 0
+          }
+          ,scale:1
+        };
+    
+        const pdfBuffer = await page.pdf(pdfOptions);
+        await browser.close();
+        res.send({data:pdfBuffer.toString('base64')})
+        // res.send(pdfBuffer)
+      } catch (error) {
+        res.status(500).send('Error al generar el PDF');
+        // await browser.close();
+      } finally{
+        // await browser.close();
+      }
+    })
+  }
   ///////////////////////////////////
   // Seccion registro de despachos //
   ///////////////////////////////////

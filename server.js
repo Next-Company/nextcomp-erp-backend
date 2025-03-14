@@ -64,7 +64,7 @@ app.use((req, resp, next) => {
         { id: data.id, username: data.username, niv: data.niv },
         SECRET_JWT_KEY,
         {
-          expiresIn: '1h'
+          expiresIn: '2h'
         }
       )
       resp.cookie('access_token', new_token, {
@@ -72,7 +72,7 @@ app.use((req, resp, next) => {
         // sameSite: 'None',
         // secure:true,
         sameSite: 'strict',
-        maxAge: 1000 * 60 * 60
+        maxAge: 1000 * 60 * 60 * 2
       })
       next()
     } catch (error) {
