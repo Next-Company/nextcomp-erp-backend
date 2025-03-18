@@ -16,6 +16,7 @@ produccionRouter.put('/guardarguia',ProduccionController.saveInfoGuias)
 produccionRouter.delete('/borrarguia/:id',ProduccionController.eliminarInfoGuias)
 produccionRouter.get('/estadoguia/:id',ProduccionController.getStatusGuia)
 produccionRouter.get('/showinformeservicio/:id',ProduccionController.ShowInformeServicio)
+produccionRouter.get('/showinformeservicio2/:id',ProduccionController.ShowInformeServicio2)
 
 produccionRouter.get('/getListaPedidos/:limit',ProduccionController.getListaPedidos)
 produccionRouter.get('/pedido/:id',ProduccionController.getInfoPedidos)

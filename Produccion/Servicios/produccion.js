@@ -1139,4 +1139,20 @@ export class ProduccionModel {
 
     return 0  
   }
+  static async getInfoInforme(){
+    const conn = await mysql.createConnection(configs[1])
+    await conn.connect();
+
+    const [resultado] = await conn.query(`SELECT tgtc.idx as id_guia,tgtc.fec_emision,tgtc.fec_retorno,tgtc.proveedor,tpid.idx,tpid.articulo,tpid.cantidad,GROUP_CONCAT(dp.nro_guia) as guia,tgtc.costo,sum(dp.despacho) as total_despacho
+      FROM tbl2_guias_traslado_det tpid 
+      JOIN tbl2_guias_traslado_cab tgtc on tgtc.idx = tpid.id_guia_CAB 
+      LEFT JOIN(
+        SELECT tdc.nro_guia,tdc.id_guia_origen,tdc.idx,tdd.id_item,tdd.precio,tdd.despacho FROM tbl2_despachos_cab tdc 
+        LEFT JOIN tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
+      ) AS dp on tpid.id_guia_CAB = dp.id_guia_origen and tpid.idx = dp.id_item
+    --  WHERE tpid.id_guia_CAB = 16
+    GROUP BY tgtc.idx,tgtc.fec_emision,tgtc.fec_retorno,tgtc.proveedor,tpid.idx,tpid.articulo,tpid.cantidad,tgtc.costo`)
+
+    return resultado;
+  }
 }

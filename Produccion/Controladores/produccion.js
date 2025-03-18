@@ -3,6 +3,7 @@ import PDFDocument from "pdfkit"
 import fs from "node:fs/promises"
 import puppeteer from 'puppeteer';
 import { OtherTarget } from "puppeteer-core";
+import { concat } from "puppeteer-core/lib/esm/third_party/rxjs/rxjs.js";
 // import { width } from "pdfkit/js/page";
 // import { height } from "pdfkit/js/page";
 // import PDFDocument from "pdfkit";
@@ -944,6 +945,172 @@ export class ProduccionController {
         // await browser.close();
       } finally{
         // await browser.close();
+      }
+    })
+  }
+  static async ShowInformeServicio2_(req, res){
+    const params = req.params
+    const data = await ProduccionModel.getInfoGuiaCab(params.id)
+    const cruce = await ProduccionModel.getInfoGuiaDespacho(params.id)
+
+    let lista_despachos = [...new Set(cruce.reduce((carry,valor)=>{return [...carry,valor.id_despacho]},[]))]
+
+    let formateo = cruce.reduce((carry,valor)=>{
+      if(carry.find(row=>row.idx == valor.idx)){
+        let itm = carry.find(row=>row.idx == valor.idx)
+        lista_despachos.forEach((item)=>{
+          itm[item] = itm[item] + (valor.id_despacho == item ? valor.despacho : 0)
+        })
+      }else{
+        lista_despachos.forEach((item)=>{
+          valor[item] = (item == valor.id_despacho ? valor.despacho : 0)
+        })
+        carry.push(valor)
+      }
+      return carry
+    },[])
+
+    let final = formateo.reduce((carry,valor)=>{
+      valor['total_despacho'] = 0
+      lista_despachos.forEach((item)=>{
+        valor['total_despacho'] += valor[item]
+      })
+      valor['diferencia'] = (valor['total_despacho'] - valor['cantidad']).toFixed(2)
+      valor['importe_inicial'] = (valor['cantidad'] * valor['costo']).toFixed(2)
+      valor['importe_despacho'] = (valor['total_despacho'] * valor['costo']).toFixed(2)
+      valor['importe_diferencia'] = valor['importe_despacho'] - valor['importe_inicial']
+      carry.push(valor)
+      return carry
+    },[])
+    console.log("Nueve cruce:",final)
+    res.render('servicioinforme2',{
+      datos:data[0],
+      detalle:final,
+      despachos:lista_despachos,
+      date:(new Date(data[0].created_at)).toLocaleDateString('en-GB'),
+      time:(new Date(data[0].created_at)).toLocaleTimeString('en-GB'),
+      helpers: {
+        plusindex(index) { 
+          return index + 1
+        },
+        foo(items,cab) { 
+          let itemsAsHtml = null
+          let total_inicial = 0
+          let total_final = 0
+          // let extra = 20 - items.length
+          itemsAsHtml = items.map((item,key) =>{ 
+            total_inicial+=parseFloat(item['importe_inicial'])
+            total_final+=parseFloat(item['importe_despacho'])
+            return `
+            <tr style="height:32px;background-color:${(key+1)%2 > 0 ? '#e9e9e9' : 'white'};">
+              <td style="width:25px;text-align: center;font-size:.9rem;">${key == 0 ? cab.fec_emision : ''}</td>
+              <td style="width:25px;text-align: center;font-size:.9rem;">#${key == 0 ? cab.idx : ''}</td>
+              <td style="width:30px;text-align: center;font-size:.9rem;">`+item['cantidad']+`</td>
+              <td style="width:130px;text-align:left;font-size:.9rem;font-weight:bold;">`+item['articulo']+ ' ' + item['color'] + `</td>
+              <td style="width:40px;text-align: center;font-size:.9rem;">`+item['costo']+`</td>
+              <td style="width: 40px;text-align: center;font-weight:bold;font-size:.9rem;">`+item['importe_inicial']+
+
+            `</td><td style="width:40px;text-align: center;font-size:.9rem;">`+lista_despachos.map((id)=>parseFloat(item[id]) > 0 ? item[id]+'/' : '').join("")+`</td>`
+          
+            +`<td style="width: 40px;text-align: center;color:${item['diferencia'] > 0 ? 'green' : 'red'};font-size:.9rem;">`+item['diferencia']+`</td><td style="width: 40px;text-align: center;font-weight:bold;font-size:.9rem;">`+item['importe_despacho']+`</td></tr>`
+            
+          })
+          console.log("pepe mujika:",itemsAsHtml)
+          let pp = items.map((item,key) =>{ 
+            total_inicial+=parseFloat(item['importe_inicial'])
+            total_final+=parseFloat(item['importe_despacho'])
+            return `
+            <tr style="height:32px;background-color:${(key+1)%2 > 0 ? '#e9e9e9' : 'white'};">
+              <td style="width:25px;text-align: center;font-size:.9rem;">${key == 0 ? cab.fec_emision : ''}</td>
+              <td style="width:25px;text-align: center;font-size:.9rem;">${'#' + (key == 0 ? cab.idx : '')}</td>
+              <td style="width:30px;text-align: center;font-size:.9rem;">`+item['cantidad']+`</td>
+              <td style="width:130px;text-align:left;font-size:.9rem;font-weight:bold;">`+item['articulo']+ ' ' + item['color'] + `</td>
+              <td style="width:40px;text-align: center;font-size:.9rem;">`+item['costo']+`</td>
+              <td style="width: 40px;text-align: center;font-weight:bold;font-size:.9rem;">`+item['importe_inicial']+
+
+            `</td><td style="width:40px;text-align: center;font-size:.9rem;">`+lista_despachos.map((id)=>parseFloat(item[id]) > 0 ? item[id]+'/' : '').join("")+`</td>`
+          
+            +`<td style="width: 40px;text-align: center;color:${item['diferencia'] > 0 ? 'green' : 'red'};font-size:.9rem;">`+item['diferencia']+`</td><td style="width: 40px;text-align: center;font-weight:bold;font-size:.9rem;">`+item['importe_despacho']+`</td></tr>`
+            
+          })
+          console.log("adsff asfs:",pp)
+          console.log("poipoipo:",itemsAsHtml.concat(pp))
+          // itemsAsHtml.concat(pp)
+          // console.log("pepe mujika:",itemsAsHtml)
+          // itemsAsHtml.push(`<tr style="height:32px;border-top:.2px solid gray;"><td colspan='${4 + lista_despachos.length*0 + 1}'></td><td colspan="2" style="text-align:right;font-weight:bold;">TOTAL IMP. FINAL:</td><td style="text-align:center;">${total_inicial.toFixed(2)}</td></tr><tr style="height:32px;border-top:.2px solid gray;"><td colspan='${4 + lista_despachos.length*0 + 1}'></td><td colspan="2" style="text-align:right;font-weight:bold;">TOTAL IMP. INICIAL:</td><td style="text-align:center;">${total_final.toFixed(2)}</td></tr><tr style="height:32px;border-top:.2px solid gray;"><td colspan='${4 + lista_despachos.length*0 + 1}'></td><td colspan="2" style="text-align:right;font-weight:bold;">RESTA:</td><td style="text-align:center;">${(total_inicial - total_final).toFixed(2)}</td></tr>`)
+          return itemsAsHtml.concat(pp).join("\n")
+        }
+      }
+    })
+  }
+  static async ShowInformeServicio2(req, res){
+    const params = req.params
+    const data = await ProduccionModel.getInfoInforme()
+
+    res.render('informe',{
+      datos:data,
+      helpers: {
+        plusindex(index) { 
+          return index + 1
+        },
+        foo(cab) { 
+          let itemsAsHtml = null
+          let total_inicial = 0
+          let total_final = 0
+          // let extra = 20 - items.length
+
+          // <th style="text-align:left;height:30px;">Fecha</th>
+          // <th style="text-align:left;height:30px;">Guia</th>
+          // <th style="text-align:center;height:30px;">Cantidad</th>
+          // <th style="text-align:left;height:30px;">Detalle</th>
+          // <th style="text-align:center;height:30px;">Costo</th>
+          // <th style="text-align:center;height:30px;">Importe Inicial</th>              
+          // <th style="text-align:center;height:30px;">Ingresos</th>
+          // <th style="text-align:center;height:30px;">Diferencia</th>
+          // <th style="text-align:center;height:30px;">Importe Final</th>
+
+          itemsAsHtml = items.map((item,key) =>{ 
+            total_inicial+=parseFloat(item['cantidad'])
+            total_final+=parseFloat(item['total_despacho'])
+            return `
+            <tr style="height:32px;background-color:${(key+1)%2 > 0 ? '#e9e9e9' : 'white'};">
+              <td style="width:25px;text-align: center;font-size:.9rem;">${key == 0 ? cab.fec_emision : ''}</td>
+              <td style="width:25px;text-align: center;font-size:.9rem;">#${key == 0 ? cab.id_guia : ''}</td>
+              <td style="width:30px;text-align: center;font-size:.9rem;">`+item['cantidad']+`</td>
+              <td style="width:130px;text-align:left;font-size:.9rem;font-weight:bold;">`+ item['articulo'] + `</td>
+              <td style="width:40px;text-align: center;font-size:.9rem;">`+item['costo']+`</td>
+              <td style="width: 40px;text-align: center;font-weight:bold;font-size:.9rem;">`+item['importe_inicial']+
+
+            `</td><td style="width:40px;text-align: center;font-size:.9rem;">`+lista_despachos.map((id)=>parseFloat(item[id]) > 0 ? item[id]+'/' : '').join("")+`</td>`
+          
+            +`<td style="width: 40px;text-align: center;color:${item['diferencia'] > 0 ? 'green' : 'red'};font-size:.9rem;">`+item['diferencia']+`</td><td style="width: 40px;text-align: center;font-weight:bold;font-size:.9rem;">`+item['importe_despacho']+`</td></tr>`
+            
+          })
+          console.log("pepe mujika:",itemsAsHtml)
+          let pp = items.map((item,key) =>{ 
+            total_inicial+=parseFloat(item['importe_inicial'])
+            total_final+=parseFloat(item['importe_despacho'])
+            return `
+            <tr style="height:32px;background-color:${(key+1)%2 > 0 ? '#e9e9e9' : 'white'};">
+              <td style="width:25px;text-align: center;font-size:.9rem;">${key == 0 ? cab.fec_emision : ''}</td>
+              <td style="width:25px;text-align: center;font-size:.9rem;">${'#' + (key == 0 ? cab.idx : '')}</td>
+              <td style="width:30px;text-align: center;font-size:.9rem;">`+item['cantidad']+`</td>
+              <td style="width:130px;text-align:left;font-size:.9rem;font-weight:bold;">`+item['articulo']+ ' ' + item['color'] + `</td>
+              <td style="width:40px;text-align: center;font-size:.9rem;">`+item['costo']+`</td>
+              <td style="width: 40px;text-align: center;font-weight:bold;font-size:.9rem;">`+item['importe_inicial']+
+
+            `</td><td style="width:40px;text-align: center;font-size:.9rem;">`+lista_despachos.map((id)=>parseFloat(item[id]) > 0 ? item[id]+'/' : '').join("")+`</td>`
+          
+            +`<td style="width: 40px;text-align: center;color:${item['diferencia'] > 0 ? 'green' : 'red'};font-size:.9rem;">`+item['diferencia']+`</td><td style="width: 40px;text-align: center;font-weight:bold;font-size:.9rem;">`+item['importe_despacho']+`</td></tr>`
+            
+          })
+          console.log("adsff asfs:",pp)
+          console.log("poipoipo:",itemsAsHtml.concat(pp))
+          // itemsAsHtml.concat(pp)
+          // console.log("pepe mujika:",itemsAsHtml)
+          // itemsAsHtml.push(`<tr style="height:32px;border-top:.2px solid gray;"><td colspan='${4 + lista_despachos.length*0 + 1}'></td><td colspan="2" style="text-align:right;font-weight:bold;">TOTAL IMP. FINAL:</td><td style="text-align:center;">${total_inicial.toFixed(2)}</td></tr><tr style="height:32px;border-top:.2px solid gray;"><td colspan='${4 + lista_despachos.length*0 + 1}'></td><td colspan="2" style="text-align:right;font-weight:bold;">TOTAL IMP. INICIAL:</td><td style="text-align:center;">${total_final.toFixed(2)}</td></tr><tr style="height:32px;border-top:.2px solid gray;"><td colspan='${4 + lista_despachos.length*0 + 1}'></td><td colspan="2" style="text-align:right;font-weight:bold;">RESTA:</td><td style="text-align:center;">${(total_inicial - total_final).toFixed(2)}</td></tr>`)
+          return itemsAsHtml.concat(pp).join("\n")
+        }
       }
     })
   }

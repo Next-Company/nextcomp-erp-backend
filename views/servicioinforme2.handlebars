@@ -1,0 +1,109 @@
+<style>
+  :root{
+    font-size: 12px;
+    font-family: Arial, Helvetica, sans-serif;
+  }
+  .cuerpo_estampado{
+    width: 100%;
+    /*height: 200px;*/
+    border:1px solid gray;
+    border-radius: 10px;
+    background-color: rgba(241, 241, 241, 0.5);
+    margin-bottom: 10px;
+    position: relative;
+  }
+  .main_informe{
+    /*padding:0.2cm;*/
+    display: flex;
+    flex-direction: row;
+    height: 27cm;
+  }
+  .main_informe h2{
+    font-size: 1.2rem;
+  }
+  .indice_estampado{
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    left: -15px;
+    top: -10px;
+    background-color: white;
+    border: 0.2px solid black;
+  }
+  .cuerpo_estampado .indicador span{
+    font-size: .8rem;
+  }
+  .cuerpo_estampado .indicador div{
+    padding: 5px;
+  }
+  .indicador{
+    flex:1;
+  }
+  .nowrap_space{
+    white-space: nowrap;
+  }
+</style>
+<div class="main_informe">  
+  {{!-- <div style="flex:1;padding:5px;border:1px solid green;"> --}}
+  <div style="flex:1;padding:5px;display:flex;flex-direction:column;">
+    <section style="flex:1;">
+      <br/>
+      <br/>
+      <section style="font-size:.8rem;border-bottom:.5px dashed black;text-align:center;">
+        {{!-- <p>
+          DOMICILIO FISCAL: CAL.FELIPE SANTIAGO CRESPO NRO. 581 LIMA - LIMA - SAN LUIS, RUC: 20522094120<br/>
+        </p> --}}
+      </section>
+      <p style="font-size: 1.1rem;font-weight:bolder;text-align:center;">
+        {{!-- CUADRE PEDIDO Y DESPACHOS - {{datos.tipo}}<br/> --}}
+        {{!-- {{idguia}} --}}
+      </p>
+      <section style="display: flex;justify-content:space-between;border-bottom:.5px dashed black;padding-bottom: 10px;">
+        <div style="font-size: .9rem;text-align:center;">
+          <strong>FECHA DE EMISIÓN:</strong> 
+          {{datos.fec_emision_guia}}
+        </div>
+        <div style="font-size: .9rem;text-align:center;">
+          <strong>HORA DE EMISIÓN:</strong> 
+          {{time}}
+        </div>
+        <div style="font-size: .9rem;text-align:center;">
+          <strong>FECHA DE RETORNO:</strong> 
+          {{datos.fec_retorno_guia}}
+        </div>
+        <div style="font-size: .9rem;text-align:center;">
+          <strong>DÍAS PRODUCCIÓN:</strong> 
+          {{datos.duracion}}
+        </div>
+      </section>
+      {{!-- <p style="font-size: 1.1rem;font-weight:bold;">
+        INFORME DESPACHOS:<br/>
+      </p> --}}
+      <section style="font-size:.9rem; padding-bottom: 10px;">
+        <table style="border-collapse: collapse;width:100%;">
+          <thead>
+            <tr style="border-bottom:.2px solid gray;">
+              <th style="text-align:left;height:30px;">Fecha</th>
+              <th style="text-align:left;height:30px;">Guia</th>
+              <th style="text-align:center;height:30px;">Cantidad</th>
+              <th style="text-align:left;height:30px;">Detalle</th>
+              <th style="text-align:center;height:30px;">Costo</th>
+              <th style="text-align:center;height:30px;">Importe Inicial</th>              
+              <th style="text-align:center;height:30px;">Ingresos</th>
+              <th style="text-align:center;height:30px;">Diferencia</th>
+              <th style="text-align:center;height:30px;">Importe Final</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#foo detalle datos}}
+            {{/foo}}
+          </tbody>
+        </table>
+      </section>
+    </section>
+  </div>
+</div>
