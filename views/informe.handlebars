@@ -49,31 +49,25 @@
 </style>
 <div class="main_informe">  
   {{!-- <div style="flex:1;padding:5px;border:1px solid green;"> --}}
-  <div style="flex:1;padding:5px;display:flex;flex-direction:column;">
+  <div style="flex:1;display:flex;flex-direction:column;">
     <section style="flex:1;">
-      <br/>
-      <br/>
-      <section style="font-size:.8rem;border-bottom:.5px dashed black;text-align:center;">
-        {{!-- <p>
-          DOMICILIO FISCAL: CAL.FELIPE SANTIAGO CRESPO NRO. 581 LIMA - LIMA - SAN LUIS, RUC: 20522094120<br/>
-        </p> --}}
-      </section>
+      
       <p style="font-size: 1.1rem;font-weight:bolder;text-align:center;">
         {{!-- CUADRE PEDIDO Y DESPACHOS - {{datos.tipo}}<br/> --}}
         {{!-- {{idguia}} --}}
       </p>
       <section style="font-size:.9rem; padding-bottom: 10px;">
+        {{!-- <button id="magia">Clickme!!</button> --}}
         <table style="border-collapse: collapse;width:100%;">
-          <thead>
+          <thead style="position:sticky;top:0;background-color:gray;">
             <tr style="border-bottom:.2px solid gray;">
-              <th style="text-align:left;height:30px;">Fecha</th>
-              <th style="text-align:left;height:30px;">Guia</th>
+              <th style="text-align:left;height:30px;">InfoGuia</th>
               <th style="text-align:center;height:30px;">Cantidad</th>
               <th style="text-align:left;height:30px;">Detalle</th>
               <th style="text-align:center;height:30px;">Costo</th>
               <th style="text-align:center;height:30px;">Importe Inicial</th>              
-              <th style="text-align:center;height:30px;">Ingresos</th>
-              <th style="text-align:center;height:30px;">Diferencia</th>
+              <th style="text-align:center;height:30px;">Guias</th>
+              <th style="text-align:center;height:30px;">Cantidad</th>
               <th style="text-align:center;height:30px;">Importe Final</th>
             </tr>
           </thead>
@@ -86,3 +80,8 @@
     </section>
   </div>
 </div>
+{{!-- <script>
+  document.querySelector("#magia").addEventListener('click',(addEventListener)=>{
+    alert("Hola mudno")
+  })
+</script> --}}

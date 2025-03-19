@@ -1044,8 +1044,9 @@ export class ProduccionController {
     })
   }
   static async ShowInformeServicio2(req, res){
-    const params = req.params
-    const data = await ProduccionModel.getInfoInforme()
+    const params = req.query
+    console.log("Los paramentros enviados son:",params)
+    const data = await ProduccionModel.getInfoInforme(params)
 
     res.render('informe',{
       datos:data,
@@ -1054,65 +1055,83 @@ export class ProduccionController {
           return index + 1
         },
         foo(cab) { 
-          let itemsAsHtml = null
+          const colorfase = {
+            'CONFECCION':'rgb(168, 85, 247)',
+            'ESTAMPADO':'rgb(107, 114, 128)',
+            'ACABADOS':'rgb(234, 49, 8)',
+            'LAVANDERIA':'rgb(34, 197, 94)',
+            'MOLDES':'bg-orange-500',
+            'OJAL BOTON':'rgb(8, 132, 234)',
+            'CORTE':'bg-rose-400',
+            'BORDADO':'rgb(234, 179, 8)',
+          }
+          let itemsAsHtml = []
           let total_inicial = 0
           let total_final = 0
-          // let extra = 20 - items.length
-
-          // <th style="text-align:left;height:30px;">Fecha</th>
-          // <th style="text-align:left;height:30px;">Guia</th>
-          // <th style="text-align:center;height:30px;">Cantidad</th>
-          // <th style="text-align:left;height:30px;">Detalle</th>
-          // <th style="text-align:center;height:30px;">Costo</th>
-          // <th style="text-align:center;height:30px;">Importe Inicial</th>              
-          // <th style="text-align:center;height:30px;">Ingresos</th>
-          // <th style="text-align:center;height:30px;">Diferencia</th>
-          // <th style="text-align:center;height:30px;">Importe Final</th>
-
-          itemsAsHtml = items.map((item,key) =>{ 
-            total_inicial+=parseFloat(item['cantidad'])
-            total_final+=parseFloat(item['total_despacho'])
-            return `
-            <tr style="height:32px;background-color:${(key+1)%2 > 0 ? '#e9e9e9' : 'white'};">
-              <td style="width:25px;text-align: center;font-size:.9rem;">${key == 0 ? cab.fec_emision : ''}</td>
-              <td style="width:25px;text-align: center;font-size:.9rem;">#${key == 0 ? cab.id_guia : ''}</td>
-              <td style="width:30px;text-align: center;font-size:.9rem;">`+item['cantidad']+`</td>
-              <td style="width:130px;text-align:left;font-size:.9rem;font-weight:bold;">`+ item['articulo'] + `</td>
-              <td style="width:40px;text-align: center;font-size:.9rem;">`+item['costo']+`</td>
-              <td style="width: 40px;text-align: center;font-weight:bold;font-size:.9rem;">`+item['importe_inicial']+
-
-            `</td><td style="width:40px;text-align: center;font-size:.9rem;">`+lista_despachos.map((id)=>parseFloat(item[id]) > 0 ? item[id]+'/' : '').join("")+`</td>`
           
-            +`<td style="width: 40px;text-align: center;color:${item['diferencia'] > 0 ? 'green' : 'red'};font-size:.9rem;">`+item['diferencia']+`</td><td style="width: 40px;text-align: center;font-weight:bold;font-size:.9rem;">`+item['importe_despacho']+`</td></tr>`
-            
-          })
-          console.log("pepe mujika:",itemsAsHtml)
-          let pp = items.map((item,key) =>{ 
-            total_inicial+=parseFloat(item['importe_inicial'])
-            total_final+=parseFloat(item['importe_despacho'])
-            return `
-            <tr style="height:32px;background-color:${(key+1)%2 > 0 ? '#e9e9e9' : 'white'};">
-              <td style="width:25px;text-align: center;font-size:.9rem;">${key == 0 ? cab.fec_emision : ''}</td>
-              <td style="width:25px;text-align: center;font-size:.9rem;">${'#' + (key == 0 ? cab.idx : '')}</td>
-              <td style="width:30px;text-align: center;font-size:.9rem;">`+item['cantidad']+`</td>
-              <td style="width:130px;text-align:left;font-size:.9rem;font-weight:bold;">`+item['articulo']+ ' ' + item['color'] + `</td>
-              <td style="width:40px;text-align: center;font-size:.9rem;">`+item['costo']+`</td>
-              <td style="width: 40px;text-align: center;font-weight:bold;font-size:.9rem;">`+item['importe_inicial']+
+          let formateo = cab.reduce((carry,item)=>{
+            if(Object.keys(carry).includes(item.proveedor) && Object.keys(carry[item.proveedor]).includes(`${item.id_guia}`)){
+              carry[item.proveedor][`${item.id_guia}`].push(item)
+            }else{
+              carry[item.proveedor] = {[item.id_guia] : [item]}
+            }
+            return carry
+          },{})
 
-            `</td><td style="width:40px;text-align: center;font-size:.9rem;">`+lista_despachos.map((id)=>parseFloat(item[id]) > 0 ? item[id]+'/' : '').join("")+`</td>`
-          
-            +`<td style="width: 40px;text-align: center;color:${item['diferencia'] > 0 ? 'green' : 'red'};font-size:.9rem;">`+item['diferencia']+`</td><td style="width: 40px;text-align: center;font-weight:bold;font-size:.9rem;">`+item['importe_despacho']+`</td></tr>`
-            
+          // itemsAsHtml = 
+          Object.keys(formateo).forEach(prov=>{
+            let fila = ``
+            fila = `<tr style="height:32px;font-size:14px;font-weight:900;background-color:#ebebeb;"><td colspan='8'>${prov}</td></tr>`
+            Object.keys(formateo[prov]).forEach((guia)=>{
+
+              fila += `<tr style="height:32px;font-size:12px;"><td colspan='8'>
+                <div style='width:80px;color:white;text-align:center;border-radius:20px;font-size:9px;padding:2px;background-color:${colorfase[formateo[prov][`${guia}`][0].servicio]};'}>${formateo[prov][`${guia}`][0].servicio}</div>
+                <div style="padding:5px;">
+                  <strong>Guia:</strong>#${guia} - 
+                  <strong>FechaEmision:</strong>${formateo[prov][`${guia}`][0].fec_emision} - 
+                  <strong>FechaRetorno:</strong>${formateo[prov][`${guia}`][0].fec_retorno} -
+                  <strong>OC:</strong>${formateo[prov][`${guia}`][0].orden_ref} 
+                </div>
+              </td></tr>`
+
+              itemsAsHtml = itemsAsHtml.concat(formateo[prov][`${guia}`].forEach((item,key)=>{
+                fila += `
+                  <tr style="height:28px;border-bottom:.2px solid gray;">
+                    <td style="width:10px;text-align: center;font-size:.9rem;"></td>
+                    <td style="width:30px;text-align: center;font-size:.9rem;">`+item['cantidad']+`</td>
+                    <td style="width:130px;text-align:left;font-size:.9rem;font-weight:bold;">`+ item['articulo'] + `</td>
+                    <td style="width:40px;text-align: center;font-size:.9rem;">`+item['costo']+`</td>
+                    <td style="width: 40px;text-align: center;font-weight:bold;font-size:.9rem;background-color:#ebebeb;">`+(item['cantidad']*item['costo']).toFixed(2)+`</td>
+                    <td style="width:40px;text-align: center;font-size:.9rem;">`+(item['guia'] ?? '-')+`</td>
+                    <td style="width: 40px;text-align: center;color:${(item['total_despacho'] - item['cantidad']) >= 0 ? 'green' : 'red'};font-size:.9rem;">`+(item['total_despacho'] ?? '-')+`</td>
+                    <td style="width: 40px;text-align: center;font-weight:bold;font-size:.9rem;">`+(item['total_despacho']*item['costo']).toFixed(2)+`</td>
+                  </tr>
+                  ` 
+                // return fila
+              }))
+            })
+            fila += `
+              <tr style="height:30px;"><td></td></tr>
+              <tr style="height:30px;"><td></td></tr>
+            `
+            // itemsAsHtml = itemsAsHtml.concat()
+            itemsAsHtml.push(fila)
           })
-          console.log("adsff asfs:",pp)
-          console.log("poipoipo:",itemsAsHtml.concat(pp))
-          // itemsAsHtml.concat(pp)
-          // console.log("pepe mujika:",itemsAsHtml)
           // itemsAsHtml.push(`<tr style="height:32px;border-top:.2px solid gray;"><td colspan='${4 + lista_despachos.length*0 + 1}'></td><td colspan="2" style="text-align:right;font-weight:bold;">TOTAL IMP. FINAL:</td><td style="text-align:center;">${total_inicial.toFixed(2)}</td></tr><tr style="height:32px;border-top:.2px solid gray;"><td colspan='${4 + lista_despachos.length*0 + 1}'></td><td colspan="2" style="text-align:right;font-weight:bold;">TOTAL IMP. INICIAL:</td><td style="text-align:center;">${total_final.toFixed(2)}</td></tr><tr style="height:32px;border-top:.2px solid gray;"><td colspan='${4 + lista_despachos.length*0 + 1}'></td><td colspan="2" style="text-align:right;font-weight:bold;">RESTA:</td><td style="text-align:center;">${(total_inicial - total_final).toFixed(2)}</td></tr>`)
-          return itemsAsHtml.concat(pp).join("\n")
+          // return itemsAsHtml.concat(pp).join("\n")
+          return itemsAsHtml.join("\n")
         }
       }
     })
+    // },async (err,html)=>{
+    //   try {
+    //     console.log(html)
+    //     res.json({info:html})
+    //   } catch (error) {
+    //     res.status(500).send('Error al generar el PDF');
+    //   } finally{
+    //   }
+    // })
   }
   ///////////////////////////////////
   // Seccion registro de despachos //
