@@ -16,6 +16,7 @@ import { PORT_DEFAULT, SECRET_JWT_KEY, SECRET_JWT_KEY2, ORIGINS } from './Main/c
 import { jwt } from './Main/utils.js';
 import { produccionRouter } from "./Produccion/Routers/produccion.js";
 import { ProductosRouter } from "./Productos/Routers/productosRouter.js";
+import { AbonoRouter } from "./Abonos/Routers/abonoRouter.js";
 const app = express()
 
 
@@ -94,6 +95,7 @@ app.use('/soporte', soporteRouter)
 app.use('/directorio', directorioRouter)
 app.use('/produccion', produccionRouter)
 app.use('/productos', ProductosRouter)
+app.use('/abonos', AbonoRouter)
 
 app.listen(PORT_DEFAULT, () => {
   console.log('Servidor corriendo en el puerto 4000')
