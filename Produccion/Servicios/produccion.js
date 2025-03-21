@@ -1166,7 +1166,7 @@ export class ProduccionModel {
           SELECT tdc.nro_guia,tdc.id_guia_origen,tdc.idx,tdd.id_item,tdd.precio,tdd.despacho FROM tbl2_despachos_cab tdc 
           LEFT JOIN tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
         ) AS dp on tpid.id_guia_CAB = dp.id_guia_origen and tpid.idx = dp.id_item
-      WHERE 1=1 `+ filtros +`
+      WHERE tgtc.estado not in ('ANULADO','PENDIENTE') and COALESCE(tpid.isprototipo,0) = 0 `+ filtros +`
       GROUP BY tgtc.idx,tgtc.servicio,tgtc.orden_ref,tgtc.fec_emision,tgtc.fec_retorno,tgtc.id_proveedor_CAB,tgtc.proveedor,tpid.idx,tpid.articulo,tpid.cantidad,tgtc.costo`)
       
       await conn.end();
@@ -1178,6 +1178,21 @@ export class ProduccionModel {
         await conn.end();
       }
     }
-    
+  }
+  static async getInfoAbonos(){
+    let conn
+    try{
+      let conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      const [resultado] = await conn.query(`select ta.*,tc.id_servicio_CAB from tbl2_abonos ta join tbl2_conciliaciones tc on ta.idx = tc.id_abono_CAB where ta.ruc_ = '20522094120'`)
+      await conn.end();
+      return resultado;
+    }catch(err){
+      return err
+    }finally{
+      if (conn) {
+        await conn.end();
+      }
+    }
   }
 }

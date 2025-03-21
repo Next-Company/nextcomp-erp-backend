@@ -1047,14 +1047,17 @@ export class ProduccionController {
     const params = req.query
     console.log("Los paramentros enviados son:",params)
     const data = await ProduccionModel.getInfoInforme(params)
+    const data2 = await ProduccionModel.getInfoAbonos(params)
 
+    console.log("Mostrando abonos",data2)
     res.render('informe',{
       datos:data,
+      abonos:data2,
       helpers: {
         plusindex(index) { 
           return index + 1
         },
-        foo(cab) { 
+        foo(cab,abonos) { 
           const colorfase = {
             'CONFECCION':'rgb(168, 85, 247)',
             'ESTAMPADO':'rgb(107, 114, 128)',
@@ -1081,6 +1084,10 @@ export class ProduccionController {
           // itemsAsHtml = 
           Object.keys(formateo).forEach(prov=>{
             let fila = ``
+            let total_despacho = 0
+            let total_cantidad = 0
+            let total_imp = 0
+            let id_sercivio = undefined
             fila = `<tr style="height:32px;font-size:14px;font-weight:900;background-color:#ebebeb;"><td colspan='8'>${prov}</td></tr>`
             Object.keys(formateo[prov]).forEach((guia)=>{
 
@@ -1106,14 +1113,45 @@ export class ProduccionController {
                     <td style="width: 40px;text-align: center;color:${(item['total_despacho'] - item['cantidad']) >= 0 ? 'green' : 'red'};font-size:.9rem;">`+(item['total_despacho'] ?? '-')+`</td>
                     <td style="width: 40px;text-align: center;font-weight:bold;font-size:.9rem;">`+(item['total_despacho']*item['costo']).toFixed(2)+`</td>
                   </tr>
-                  ` 
+                  `
+                  total_imp += parseFloat(item['total_despacho']*item['costo'])
+                  total_despacho += parseFloat(item['total_despacho'] ?? 0)
+                  total_cantidad += parseFloat(item['cantidad'] ?? 0)
+                  id_sercivio = guia
                 // return fila
               }))
+              fila += `
+                <tr style="height:30px;border-bottom:.2px solid gray;">
+                  <td></td>
+                  <td style="text-align:center;">${total_cantidad}</td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td style="text-align:center;">${total_despacho}</td>
+                  <td style="text-align:center;">${total_imp.toFixed(2)}</td>
+                </tr>              
+              `
+              abonos.filter(row=>row.id_servicio_CAB == guia).forEach((item,key)=>{
+                fila += `
+                  <tr style="height:30px;">
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td style="text-align:center;color:red;">ABONO-${key + 1}</td>
+                    <td style="text-align:center;color:red;">${item['importe']}</td>
+                  </tr>
+                `
+              })
+              fila += `
+                <tr style="height:30px;">
+                  <td></td>
+                </tr>              
+              `
             })
-            fila += `
-              <tr style="height:30px;"><td></td></tr>
-              <tr style="height:30px;"><td></td></tr>
-            `
             // itemsAsHtml = itemsAsHtml.concat()
             itemsAsHtml.push(fila)
           })
