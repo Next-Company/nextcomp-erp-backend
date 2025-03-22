@@ -499,6 +499,12 @@ export class ProduccionController {
     console.log("Info guia by id:",data)
     res.json([data[0],data2])
   }
+  static async searchGuia(req, res){
+    const { info } = req.params
+    const data = await ProduccionModel.searchGuia(info)
+    res.json(data)
+  }
+
   static async saveInfoGuias(req, res){
     const data = await ProduccionModel.saveInfoGuias(req.body)
     res.json({ok:true,message:'datos guardados'})
@@ -1175,7 +1181,8 @@ export class ProduccionController {
   // Seccion registro de despachos //
   ///////////////////////////////////
   static async getListaDespachos(req, res){
-    const data = await ProduccionModel.getListaDespachos()
+    const search = req.params.search ?? ''
+    const data = await ProduccionModel.getListaDespachos(search)
     res.json(data)
   }
   static async saveInfoDespachos(req, res){
@@ -1193,4 +1200,10 @@ export class ProduccionController {
     const data = await ProduccionModel.eliminarInfoDespachos(id)
     res.json(data)
   }
+  static async validaInventario(req, res){
+    console.log("Validando inventario")
+    const data = await ProduccionModel.validaInventario()
+    res.json(data)
+  }
+
 }

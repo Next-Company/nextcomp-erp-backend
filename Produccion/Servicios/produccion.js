@@ -1,6 +1,7 @@
 import { concatMap } from "puppeteer-core/lib/esm/third_party/rxjs/rxjs.js";
 import { configs } from "../../Main/utils.js";
 import mysql from "mysql2/promise";
+// import { inventario } from "../../Main/config.js";
 export class ProduccionModel {
   static async getOrdenes(user_data) {
     let conn
@@ -462,9 +463,31 @@ export class ProduccionModel {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
 
-      let extra = search.split(" ").length > 0 ? search.split(" ").map(word=>"AND LOCATE('"+word+"',CONCAT(TRIM(orden_ref),' ',TRIM(servicio),' ',TRIM(producto),' ',TRIM(proveedor),' ',TRIM(modelo))) > 0").join(" ") : ""
+      let extra = search.split(" ").length > 0 ? search.split(" ").map(word=>"AND LOCATE('"+word+"',CONCAT(TRIM(idx),' ',TRIM(orden_ref),' ',TRIM(servicio),' ',TRIM(producto),' ',TRIM(proveedor),' ',TRIM(modelo))) > 0").join(" ") : ""
 
-      const [results, fields] = await conn.query(`SELECT idx,orden_ref,producto,modelo,marca,estado,tipo,servicio,id_proveedor_CAB,proveedor,fec_emision,DATE_FORMAT(fec_emision,'%d/%m/%Y') as fec_emision_guia,fec_retorno,DATE_FORMAT(fec_retorno,'%d/%m/%Y') as fec_retorno_guia,fec_recepcion,costo,COALESCE(DATEDIFF(fec_retorno,fec_emision),'') as tiempo_produccion,COALESCE(DATEDIFF(STR_TO_DATE(fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes FROM tbl2_guias_traslado_cab where 1=1 ${search !== '_' ? extra : ''} order by created_at desc limit 100`);
+      let query = `SELECT idx,orden_ref,producto,modelo,marca,estado,tipo,servicio,id_proveedor_CAB,proveedor,fec_emision,DATE_FORMAT(fec_emision,'%d/%m/%Y') as fec_emision_guia,fec_retorno,DATE_FORMAT(fec_retorno,'%d/%m/%Y') as fec_retorno_guia,fec_recepcion,costo,COALESCE(DATEDIFF(fec_retorno,fec_emision),'') as tiempo_produccion,COALESCE(DATEDIFF(STR_TO_DATE(fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
+      (
+        select sum(cantidad) from tbl2_guias_traslado_det tgtd where tgtd.id_guia_CAB = tbl2_guias_traslado_cab.idx
+      ) as cantidad_servicio,
+      (
+        select sum(COALESCE(tdd.despacho,0) + COALESCE(tdd.caidos,0)) as total from tbl2_despachos_cab tdc 
+        join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
+        where tdc.id_guia_origen = tbl2_guias_traslado_cab.idx
+      ) as ingresos
+      FROM tbl2_guias_traslado_cab where 1=1 ${search !== '_' ? extra : ''} order by created_at desc limit 100`
+
+      console.log("Query de busqueda:",query)
+
+      const [results, fields] = await conn.query(`SELECT idx,orden_ref,producto,modelo,marca,estado,tipo,servicio,id_proveedor_CAB,proveedor,fec_emision,DATE_FORMAT(fec_emision,'%d/%m/%Y') as fec_emision_guia,fec_retorno,DATE_FORMAT(fec_retorno,'%d/%m/%Y') as fec_retorno_guia,fec_recepcion,costo,COALESCE(DATEDIFF(fec_retorno,fec_emision),'') as tiempo_produccion,COALESCE(DATEDIFF(STR_TO_DATE(fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
+      (
+        select sum(cantidad) from tbl2_guias_traslado_det tgtd where tgtd.id_guia_CAB = tbl2_guias_traslado_cab.idx
+      ) as cantidad_servicio,
+      (
+        select sum(COALESCE(tdd.despacho,0) + COALESCE(tdd.caidos,0)) as total from tbl2_despachos_cab tdc 
+        join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
+        where tdc.id_guia_origen = tbl2_guias_traslado_cab.idx
+      ) as ingresos
+      FROM tbl2_guias_traslado_cab where 1=1 ${search !== '_' ? extra : ''} order by created_at desc limit 100`);
 
       await conn.end();
       return results
@@ -518,7 +541,7 @@ export class ProduccionModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      const [results, fields] = await conn.query('SELECT *FROM tbl2_guias_traslado_det where id_guia_CAB = ?',[id]);
+      const [results, fields] = await conn.query('SELECT tb2.servicio,tb2.marca,tb2.modelo,tb1.*FROM tbl2_guias_traslado_det tb1 join tbl2_guias_traslado_cab tb2 on tb1.id_guia_CAB = tb2.idx where id_guia_CAB = ?',[id]);
       const ids = results.map(row=>row.idx)
 
       const [results2] = await conn.query("select id_guia_DET,concat('({',GROUP_CONCAT(concat(talla,':',CAST(cantidad as unsigned))),'})') as fracciones from tbl2_guias_traslado_det_fracciones where id_guia_DET in (?) group by id_guia_DET",[ids])
@@ -530,6 +553,32 @@ export class ProduccionModel {
 
       await conn.end();
       return new_articulos
+    } catch (err) {
+      console.log(err)
+      return [err]
+    } finally {
+      if (conn) {
+        await conn.end();
+      }
+    }
+  }
+  static async searchGuia(search){
+    let conn
+    try {
+      console.log("Buscando guias de traslado - searchGuia")
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+
+      let extra = search.split(" ").length > 0 ? search.split(" ").map(word=>"AND LOCATE('"+word+"',CONCAT(TRIM(idx),' ',TRIM(COALESCE(proveedor,'')),' ',TRIM(COALESCE(servicio,'')),' ',TRIM(COALESCE(producto,'')),' ',TRIM(COALESCE(marca,'')),' ',TRIM(COALESCE(modelo,'')),' ')) > 0").join(" ") : ""
+
+      // const [results, fields] = await conn.query('SELECT *FROM tbl2_proveedor where ruc_ = "20522094120" ' + (search !== '_' ? 'and ( ruc like ? or nom like ? )' : '') + ' limit 50',[`%${search}%`,`%${search}%`]);
+
+      let query = 'SELECT *FROM tbl2_guias_traslado_cab where 1=1 ' + (search !== '_' ? extra : '') + ' limit 50'
+      console.log("Query de busqueda:",query)
+
+      const [results, fields] = await conn.query('SELECT *FROM tbl2_guias_traslado_cab where 1=1 ' + (search !== '_' ? extra : '') + ' limit 50');
+      await conn.end();
+      return results
     } catch (err) {
       console.log(err)
       return [err]
@@ -945,13 +994,19 @@ export class ProduccionModel {
   //////////////////////////////////
   //seccion guias traslado interno
   //////////////////////////////////
-  static async getListaDespachos(){
+  static async getListaDespachos(search){
     let conn
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      const [results, fields] = await conn.query("SELECT idx,fec_emision_guia,fec_despacho,id_proveedor_CAB,proveedor,tipo,nro_guia,id_guia_origen,nro_guia_origen,id_pedido_origen,nro_pedido_origen,responsable,observaciones,created_at FROM tbl2_despachos_cab order by created_at desc");
-
+      let extra = search.split(" ").length > 0 ? search.split(" ").map(word=>"AND LOCATE('"+word+"',CONCAT(TRIM(tdc.tipo),' ',TRIM(tdc.proveedor))) > 0").join(" ") : ""
+      
+      const [results, fields] = await conn.query(`SELECT tdc.idx,tdc.fec_emision_guia,tdc.fec_despacho,tdc.id_proveedor_CAB,tdc.proveedor,tdc.tipo,tdc.nro_guia,tdc.id_guia_origen,tdc.nro_guia_origen,tdc.id_pedido_origen,tdc.nro_pedido_origen,tdc.responsable,tdc.observaciones,tdc.created_at,tgtc.servicio,tgtc.producto,tgtc.marca,tgtc.modelo
+      FROM tbl2_despachos_cab tdc 
+      left join tbl2_guias_traslado_cab tgtc on tdc.id_guia_origen = tgtc.idx
+      left join tbl2_pedidos_insumos_cab tpic on tdc.id_pedido_origen = tpic.idx
+      WHERE 1=1 ${extra}
+      ORDER BY created_at desc`);
       await conn.end();
       return results
     } catch (err) {
@@ -999,7 +1054,9 @@ export class ProduccionModel {
           }
         }
         await insert()
+        console.log("Lista de filas a eliminar:",ids_delete)
         const eliminar = async ()=>{
+          console.log("Eliminando")
           const fila = ids_delete.shift()
           if(fila){
             await conn.query('DELETE FROM `tbl2_despachos_det` WHERE `id_despacho_CAB` = ? and `idx` = ?',[parseInt(data.id),parseInt(fila.idx)])
@@ -1077,7 +1134,14 @@ export class ProduccionModel {
         const [data, fields] = await conn.query('select tgtd.idx,tgtd.id_pedido_CAB,tgtd.id_producto_CAB,tgtd.producto,tgtd.color,tgtd.rollos,tgtd.cantidad,tgtd.unidad,tgtd.anulado,tdd.precio,tdd.despacho from tbl2_pedidos_insumos_det tgtd join tbl2_despachos_det tdd on tdd.id_item = tgtd.idx where tdd.id_despacho_CAB = ?',[id]);
         new_articulos = data
       }else{
-        const [results, fields] = await conn.query('select tgtd.*,tdd.despacho,tdd.caidos from tbl2_guias_traslado_det tgtd join tbl2_despachos_det tdd on tdd.id_item = tgtd.idx where tdd.id_despacho_CAB = ?',[id]);
+        const [results, fields] = await conn.query(`
+          SELECT tdd.idx,tgtc.servicio,tgtc.modelo,tgtd.id_guia_CAB,tgtd.articulo,tgtd.cantidad,tgtd.isprototipo,
+          tdd.despacho,tdd.caidos 
+          FROM tbl2_guias_traslado_det tgtd 
+          JOIN tbl2_despachos_det tdd on tdd.id_item = tgtd.idx 
+          JOIN tbl2_guias_traslado_cab tgtc on tgtc.idx = tgtd.id_guia_CAB
+          WHERE tdd.id_despacho_CAB = ?
+        `,[id]);
         const ids = results.map(row=>row.idx)
   
         const [results2] = await conn.query("select id_guia_DET,concat('({',GROUP_CONCAT(concat(talla,':',CAST(cantidad as unsigned))),'})') as fracciones from tbl2_guias_traslado_det_fracciones where id_guia_DET in (?) group by id_guia_DET",[ids])
@@ -1088,7 +1152,7 @@ export class ProduccionModel {
         })
 
       }
-      console.log("detalle desoacho:",new_articulos)
+      console.log("detalle desoachoss:",new_articulos)
 
       await conn.end();
       return new_articulos
@@ -1188,6 +1252,34 @@ export class ProduccionModel {
       await conn.end();
       return resultado;
     }catch(err){
+      return err
+    }finally{
+      if (conn) {
+        await conn.end();
+      }
+    }
+  }
+  static async validaInventario(){
+    // console.log(inventario)
+
+    let conn
+    try{
+      let conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+
+      const [resultado] = await conn.query(`select tid.* From tbl2_inventario_cab tic 
+      join tbl2_inventario_det tid on tic.idx = tid.id_inventario_CAB
+      where tic.idx = 723`)
+
+      let diferencias = inventario.filter(item=>{
+        return resultado.find(row=>parseInt(row.idxsub) == parseInt(item.idxsub) && parseInt(row.cantidad) !== parseInt(item.cantidad))
+      })
+      console.log("Las diferencias: ",diferencias.map(row=>row.producto + " - " + row.talla + " - " + row.color + " - " + row.cantidad))
+
+      await conn.end();
+      return ['hola'];
+    }catch(err){
+      console.log(err)
       return err
     }finally{
       if (conn) {

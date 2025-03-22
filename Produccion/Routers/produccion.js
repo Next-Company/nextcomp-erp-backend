@@ -2,6 +2,10 @@ import { Router } from "express";
 import { ProduccionController } from "../Controladores/produccion.js";
 
 export const produccionRouter = Router()
+
+produccionRouter.get('/inventario/:numero',ProduccionController.validaInventario)
+
+
 produccionRouter.get('/',ProduccionController.getOrdenes)
 produccionRouter.get('/print',ProduccionController.printOrdenes)
 produccionRouter.post('/exportavios',ProduccionController.exportPedidoAvios)
@@ -18,6 +22,7 @@ produccionRouter.get('/estadoguia/:id',ProduccionController.getStatusGuia)
 produccionRouter.get('/showinformeservicio/:id',ProduccionController.ShowInformeServicio)
 // produccionRouter.get('/showinformeservicio2/:id',ProduccionController.ShowInformeServicio2)
 produccionRouter.get('/showinformeservicio2',ProduccionController.ShowInformeServicio2)
+produccionRouter.get('/searchguia/:info',ProduccionController.searchGuia)
 
 produccionRouter.get('/getListaPedidos/:limit',ProduccionController.getListaPedidos)
 produccionRouter.get('/pedido/:id',ProduccionController.getInfoPedidos)
@@ -26,6 +31,7 @@ produccionRouter.delete('/borrarpedido/:id',ProduccionController.eliminarInfoPed
 produccionRouter.get('/showinformepedido/:id',ProduccionController.ShowInformePedido)
 
 produccionRouter.get('/getListaDespachos',ProduccionController.getListaDespachos)
+produccionRouter.get('/getListaDespachos/:search',ProduccionController.getListaDespachos)
 produccionRouter.get('/despacho/:id',ProduccionController.getInfoDespachos)
 produccionRouter.put('/guardardespacho',ProduccionController.saveInfoDespachos)
 produccionRouter.delete('/borrardespacho/:id',ProduccionController.eliminarInfoDespachos)
@@ -55,6 +61,7 @@ produccionRouter.get('/searchproveedorbyid/:id',ProduccionController.searchProve
 
 produccionRouter.post('/vistapreviapedido/:tipo',ProduccionController.VistaPreviaPedido)
 // produccionRouter.post('/vistapreviapedidoavios/:tipo',ProduccionController.VistaPreviaPedidoAvios)
+
 
 
 
