@@ -15,6 +15,35 @@ export default class AbonoServicio{
       if(conn) conn.end()
     }
   }
+  static async getServiciosStatus(limit){
+    let conn
+    try {
+      conn = await mysql2.createConnection(configs[1])
+      await conn.connect()
+      let [rows] = await conn.execute(`
+        SELECT resumen.id_guia as idx,resumen.servicio,resumen.proveedor,resumen.producto,resumen.marca,resumen.modelo,resumen.costo,SUM(resumen.cantidad) as cantidad,
+        SUM(resumen.despacho) as despacho
+        FROM
+        (
+          SELECT tgtc.idx as id_guia,tgtc.servicio,tgtc.proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,'' as color,tpid.cantidad,tgtc.costo,dp.idx as id_despacho,dp.despacho,COALESCE(dp.precio,0) as precio_despacho
+          FROM tbl2_guias_traslado_det tpid 
+          JOIN tbl2_guias_traslado_cab tgtc on tgtc.idx = tpid.id_guia_CAB 
+          JOIN(
+            SELECT tdc.id_guia_origen,tdc.idx,tdd.id_item,tdd.precio,tdd.despacho FROM tbl2_despachos_cab tdc 
+            LEFT JOIN tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
+          ) AS dp on tpid.id_guia_CAB = dp.id_guia_origen and tpid.idx = dp.id_item
+          WHERE tgtc.estado <> 'FINALIZADO'
+        ) as resumen
+        GROUP BY resumen.id_guia,resumen.servicio,resumen.proveedor,resumen.producto,resumen.marca,resumen.modelo,resumen.costo
+      `, [limit])
+      await conn.end()
+      return rows
+    } catch (error) {
+      
+    } finally {
+      if(conn) conn.end()
+    }
+  }
   static async getAbono(idabono){
     let conn
     try {
@@ -166,6 +195,43 @@ export default class AbonoServicio{
       if(conn) conn.end()
       return resp
 
+    }
+  }
+  static async getServiciosStatusDetalle(idguia){
+    let conn
+    try {
+      conn = await mysql2.createConnection(configs[1])
+      await conn.connect()
+      // let infodet = undefined
+      // let [infodet] = await conn.execute(`
+      //   select tc.idx,tgtc.orden_ref,tgtc.servicio,tgtc.producto,tgtc.modelo,tgtc.marca,tgtc.costo,sum(tgtd.cantidad*tgtc.costo) as importe 
+      //   from tbl2_conciliaciones tc 
+      //   join tbl2_guias_traslado_cab tgtc on tgtc.idx = tc.id_servicio_CAB 
+      //   join tbl2_guias_traslado_det tgtd on tgtd.id_guia_CAB = tgtc.idx
+      //   where tc.id_abono_CAB = ?
+      //   group by tc.idx,tgtc.orden_ref,tgtc.servicio,tgtc.producto,tgtc.modelo,tgtc.marca,tgtc.costo`
+      //   , [idabono])
+
+      const [resultado] = await conn.query(`
+        SELECT tgtc.idx as id_guia,tgtc.servicio,tgtc.orden_ref,tgtc.marca,tgtc.modelo,
+tgtc.fec_emision,tgtc.fec_retorno,tgtc.id_proveedor_CAB,tgtc.proveedor,tpid.idx,tpid.articulo,tpid.cantidad,
+GROUP_CONCAT(dp.nro_guia) as guia,tgtc.costo,sum(dp.despacho) as total_despacho
+    FROM tbl2_guias_traslado_det tpid 
+    JOIN tbl2_guias_traslado_cab tgtc on tgtc.idx = tpid.id_guia_CAB 
+    LEFT JOIN(
+      SELECT tdc.nro_guia,tdc.id_guia_origen,tdc.idx,tdd.id_item,tdd.precio,tdd.despacho FROM tbl2_despachos_cab tdc 
+      LEFT JOIN tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
+    ) AS dp on tpid.id_guia_CAB = dp.id_guia_origen and tpid.idx = dp.id_item
+  WHERE tgtc.estado not in ('FINALIZADO') and COALESCE(tpid.isprototipo,0) = 0 and tgtc.idx = ?
+  GROUP BY tgtc.idx,tgtc.servicio,tgtc.orden_ref,tgtc.marca,tgtc.modelo,tgtc.fec_emision,tgtc.fec_retorno,tgtc.id_proveedor_CAB,tgtc.proveedor,tpid.idx,tpid.articulo,tpid.cantidad,tgtc.costo
+      `,[idguia])
+
+      await conn.end()
+      return resultado
+    } catch (error) {
+      console.log(error)
+    } finally {
+      if(conn) conn.end()
     }
   }
 }

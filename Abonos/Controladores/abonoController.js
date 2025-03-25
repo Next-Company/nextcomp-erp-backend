@@ -7,6 +7,16 @@ export default class AbonoController {
     const abonos = await AbonoServicio.getAbonosList(limit)
     res.json(abonos)
   }
+  static async getServiciosStatus(req, res) {
+    const { limit } = req.params
+    const servicios = await AbonoServicio.getServiciosStatus(limit)
+    res.json(servicios)
+  }
+  static async getServiciosStatusDetalle(req, res) {
+    const { idguia } = req.params
+    const servicios = await AbonoServicio.getServiciosStatusDetalle(idguia)
+    res.json(servicios)
+  }
   static async getAbonoById(req, res) {
     console.log("Llegando a getAbonoById")
     const { idabono } = req.params
