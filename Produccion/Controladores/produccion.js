@@ -56,7 +56,7 @@ export class ProduccionController {
     const params = req.params
     const data = await ProduccionModel.getInfoGuiaCab(params.id)
     const data2 = await ProduccionModel.getInfoGuiaDet(params.id)
-    const data3 = await ProduccionModel.searchProveedorById(data[0].id_proveedor_CAB)
+    const data3 = data[0].id_proveedor_CAB ? await ProduccionModel.searchProveedorById(data[0].id_proveedor_CAB) : [{nom:data[0].responsable,ruc:'',direccion:data[0].destino}]
     // console.log("Fecha creacion :",(new Date(data[0].created_at)).toLocaleString('en-GB'))
     // console.log("Fecha creacion :",(new Date(data[0].created_at)).toLocaleDateString('en-GB'))
     // console.log("Fecha creacion :",(new Date(data[0].created_at)).toLocaleTimeString('en-GB'))
@@ -64,7 +64,7 @@ export class ProduccionController {
     // console.log("Info detalle:",data2)
     // console.log("Fecha:",new Date(Date.parse(data2[0].created_at)).toLocaleDateString())
     resp.render(
-    'guia_back',
+    data[0].tipo == 'SERVICIOS' ? 'guia_back' : 'guia_muestras',
     {
       info:params,
       cabecera:data[0],
@@ -100,6 +100,7 @@ export class ProduccionController {
           // format: 'A4',        // Puedes usar 'A4', 'Letter' o un tamaño personalizado como { width: '210mm', height: '297mm' }
           // width: '24.1cm',
           width: '20cm',
+          // height: data[0].tipo == 'SERVICIOS' ? '27.94cm' : '13.97cm',
           height: '27.94cm',
           landscape: false,    // Para orientación horizontal (landscape) usa `true`
           printBackground: true, // Incluir el fondo en el PDF
@@ -489,6 +490,11 @@ export class ProduccionController {
   static async getListaGuias(req, res){
     const search = req.params.search ?? ''
     const data = await ProduccionModel.getListaGuias(search)
+    res.json(data)
+  }
+  static async getListaMuestras(req, res){
+    const search = req.params.search ?? ''
+    const data = await ProduccionModel.getListaMuestras(search)
     res.json(data)
   }
   static async getInfoGuias(req, res){

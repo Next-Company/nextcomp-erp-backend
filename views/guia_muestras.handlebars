@@ -1,0 +1,406 @@
+<style>
+  :root{
+    font-size: 10px;
+    font-family: Arial, Helvetica, sans-serif;
+    color:blue;
+  }
+  body{
+    padding: 0px;
+    margin: 0px;
+  }
+  .cuerpo_estampado{
+    width: 100%;
+    /*height: 200px;*/
+    border:1px solid gray;
+    border-radius: 10px;
+    background-color: rgba(241, 241, 241, 0.5);
+    margin-bottom: 10px;
+    position: relative;
+  }
+  .main_informe{
+    /*padding:0.2cm;*/
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    border:0px solid red;
+    /*height: 27cm;*/
+  }
+  .main_informe h2{
+    font-size: 1.2rem;
+  }
+  .indice_estampado{
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    left: -15px;
+    top: -10px;
+    background-color: white;
+    border: 0.2px solid black;
+  }
+  .cuerpo_estampado .indicador span{
+    font-size: .8rem;
+  }
+  .cuerpo_estampado .indicador div{
+    padding: 5px;
+  }
+  .indicador{
+    flex:1;
+  }
+
+  .nowrap_space{
+    white-space: nowrap;
+  }
+</style>
+<div class="main_informe">  
+  {{!-- <div style="flex:1;padding:5px;border:1px solid green;"> --}}
+  <div style="flex:1;display:flex;flex-direction:column;border-bottom:.2px dashed rgb(199, 199, 199);padding-bottom:30px;">
+    <section style="flex:1;">
+      <br/>
+      {{!-- <p style="font-size: 1.2rem;font-weight:600;text-align:center;">
+        NEXT COMPANY S.A.C<br/>
+        NEXT
+      </p>
+      <section style="font-size:.8rem;border-bottom:.5px dashed black;text-align:center;">
+        <p>
+          DOMICILIO FISCAL: CAL.FELIPE SANTIAGO CRESPO NRO. 581 LIMA - LIMA - SAN LUIS, RUC: 20522094120<br/>
+        </p>
+      </section> --}}
+      {{!-- <div style="text-align:center;margin-bottom:10px;display:flex;justify-content:space-between;border-bottom:.5px dashed black;padding-bottom:10px;">
+        <div style="text-align:left;font-size: 1.1rem;font-weight:bolder;">
+        NEXT COMPANY S.A.C<br/>
+        GUIA DE TRASLADO INTERNO - MUESTRAS<br/>
+        #{{idguia}}
+        </div>
+        <div style="text-align:right;font-size: 1rem">
+          <strong style="font-size: 1.1rem;">FECHA DE EMISIÓN:</strong> {{cabecera.fec_emision_guia}}<br/>
+          <strong style="font-size: 1.1rem;">HORA DE EMISIÓN:</strong> {{time}}<br/>
+          <strong style="font-size: 1.1rem;">FECHA DE RETORNO:</strong> {{cabecera.fec_retorno_guia}}<br/>
+        </div>
+      </div> --}}
+      <div style="font-size: 1.1rem;font-weight:bolder;text-align:center;margin-bottom:10px;border-bottom:.5px dashed black;padding-bottom:10px;">
+        GUIA DE TRASLADO INTERNO - MUESTRAS<br/>
+        {{idguia}}
+      </div>
+
+      <section style="display: flex;justify-content:space-between;border-bottom:.5px dashed black;padding-bottom: 10px;">
+        <div style="font-size: .9rem;text-align:center;">
+          <strong>FECHA DE EMISIÓN:</strong> {{cabecera.fec_emision_guia}}
+        </div>
+        <div style="font-size: .9rem;text-align:center;">
+          <strong>HORA DE EMISIÓN:</strong> {{time}}
+        </div>
+        <div style="font-size: .9rem;text-align:center;">
+          <strong>FECHA DE RETORNO:</strong> {{cabecera.fec_retorno_guia}}
+        </div>
+        <div style="font-size: .9rem;text-align:center;">
+          <strong>DÍAS DE RETORNO:</strong> {{cabecera.duracion}}
+        </div>
+      </section>
+      <p style="font-size: 1.1rem;font-weight:bolder;margin:10px 0px;">
+        DATOS DEL DESTINATARIO:<br/>
+      </p>
+      <section style="border-bottom:.5px dashed black;font-size:.9rem;padding-bottom: 10px;">
+        <table>
+          <tbody>
+            <tr>
+              <td>De:</td>
+              <td style="width: 300px;">NEXT COMPANY</td>
+              <td>Para:</td>
+              <td style="width: 300px;">{{proveedor.nom}}</td>
+            </tr>
+            <tr>
+              <td>Punto de Partida :</td>
+              <td>CAL FELIPE SANTIAGO CRESPO NRO. 581 LIMA-SAN LUIS LIMA</td>
+              <td>Punto de Llegada :</td>
+              <td>{{proveedor.direccion}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+      <p style="font-size: 1.1rem;font-weight:bold;">
+        A TRANSPORTAR:<br/>
+      </p>
+      {{!-- <section style="border-bottom:.5px dashed black;font-size:.9rem; padding-bottom: 10px;"> --}}
+      <section style="font-size:.9rem; padding-bottom: 10px;">
+        <table style="border-collapse: collapse;width:100%;">
+          <thead>
+            <tr style="border-bottom:.2px solid gray;">
+              <th>#</th>
+              <th style="text-align:left;">Artículos de producción</th>
+              <th style="text-align:center;">XS/26</th>
+              <th style="text-align:center;">S/28</th>
+              <th style="text-align:center;">M/30</th>
+              <th style="text-align:center;">L/32</th>
+              <th style="text-align:center;">XL/34</th>
+              <th style="text-align:center;">XXL/36</th>
+              <th style="text-align:center;">UM</th>
+              <th style="text-align:center;">Cantidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each detalle}}
+              <tr style="">
+                <td style="text-align: center;width:.5cm;">{{plusindex @index}}</td>
+                <td>{{articulo}}</td>
+                <td style="text-align: center;">{{xs}}</td>
+                <td style="text-align: center;">{{s}}</td>
+                <td style="text-align: center;">{{m}}</td>
+                <td style="text-align: center;">{{l}}</td>
+                <td style="text-align: center;">{{xl}}</td>
+                <td style="text-align: center;">{{xxl}}</td>
+                <td style="width:1.5px;text-align: center;">NIU</td>
+                <td style="width:1.5px;text-align: center;">{{cantidad}}</td>
+              </tr>
+            {{/each}}
+            <tfoot>
+              <tr>
+                <td colspan="8"></td>
+                <td style="text-align: center;font-size:.9rem;"><strong>Total</strong></td>
+                <td style="text-align: center;font-size:.9rem;"><strong>{{totalunid}}</strong></td>
+              </tr>
+            </tfoot>
+          </tbody>
+        </table>
+      </section>
+      {{!-- </br> --}}
+      {{#if numproto}}
+      <section style="font-size:.9rem;">
+        <table style="border-collapse: collapse;width:100%;">
+          <thead>
+            <tr style="border-bottom: .2px solid gray;">
+              <th>#</th>
+              <th style="text-align:left;">Adicionales</th>
+              <th style="text-align:center;"></th>
+              <th style="text-align:center;"></th>
+              <th style="text-align:center;"></th>
+              <th style="text-align:center;"></th>
+              <th style="text-align:center;"></th>
+              <th style="text-align:center;"></th>
+              <th style="width:1.5cm;text-align:center;"></th>
+              <th style="width:1.5cm;text-align:center;">Cantidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each prototipos}}
+            {{!-- <tr style="border-bottom: .2px solid gray;"> --}}
+            <tr style="">
+              <td style="text-align: center;width:.5cm;">{{plusindex @index}}</td>
+              <td>{{articulo}}</td>
+              <td style="text-align: center;"></td>
+              <td style="text-align: center;"></td>
+              <td style="text-align: center;"></td>
+              <td style="text-align: center;"></td>
+              <td style="text-align: center;"></td>
+              <td style="text-align: center;"></td>
+              <td style="text-align: center;"></td>
+              <td style="text-align: center;">{{cantidad}}</td>
+            </tr>
+            {{/each}}
+            {{!-- <tfoot>
+              <tr>
+                <td colspan="8"></td>
+                <td style="text-align: center;font-size:.9rem;"><strong>Total</strong></td>
+                <td style="text-align: center;font-size:.9rem;"><strong>{{totalunid}}</strong></td>
+              </tr>
+            </tfoot> --}}
+          </tbody>
+        </table>
+      </section>
+      {{/if}}
+      {{!-- <section style="padding-top:10px;">
+        <strong>Total unidades : {{totalunid}}</strong>
+      </section> --}}
+    </section>
+    <footer>
+      <section style="display:flex;justify-content:space-around;gap:15px;">
+        <div style="border-top:.5px dashed black;padding:5px;text-align:center;flex:1;font-size:.9rem;">
+          Entregué conforme
+          <div style="text-align:left;height:30px;border-bottom:.5px dotted gray;display:flex;align-items:center;">Nom:</div>
+        </div>
+        <div style="border-top:.5px dashed black;padding:5px;text-align:center;flex:1;font-size:.9rem;">
+          Lleve conforme
+          <div style="text-align:left;height:30px;border-bottom:.5px dotted gray;display:flex;align-items:center;">Nom:</div>
+        </div>
+        <div style="border-top:.5px dashed black;padding:5px;text-align:center;flex:1;font-size:.9rem;">
+          Recibí conforme
+          <div style="text-align:left;height:30px;border-bottom:.5px dotted gray;display:flex;align-items:center;">Nom:</div>
+        </div>
+      </section>
+      <section style="padding-top:10px;font-size:.9rem;">
+        <strong>Fecha/hora impresión: {{date}} {{time}}</strong><br/>
+      </section>
+    </footer>
+  </div>
+  {{!-- ///////////////////////////////////////////////////////////////////////////////////////////////////////// --}}
+  {{!-- ///////////////////////////////////////////////////////////////////////////////////////////////////////// --}}
+  {{!-- ///////////////////////////////////////////////////////////////////////////////////////////////////////// --}}
+  <div style="flex:1;display:flex;flex-direction:column;padding-top:30px;">
+    <section style="flex:1;">
+      <br/>
+      {{!-- <p style="font-size: 1.2rem;font-weight:600;text-align:center;">
+        NEXT COMPANY S.A.C<br/>
+        NEXT
+      </p>
+      <section style="font-size:.8rem;border-bottom:.5px dashed black;text-align:center;">
+        <p>
+          DOMICILIO FISCAL: CAL.FELIPE SANTIAGO CRESPO NRO. 581 LIMA - LIMA - SAN LUIS, RUC: 20522094120<br/>
+        </p>
+      </section> --}}
+      <div style="font-size: 1.1rem;font-weight:bolder;text-align:center;padding-bottom:10px;border-bottom:.5px dashed black;padding-bottom:10px;">
+        GUIA DE TRASLADO INTERNO - MUESTRAS<br/>
+        {{idguia}}
+      </div>
+      <section style="display: flex;justify-content:space-between;border-bottom:.5px dashed black;padding-top:10px;padding-bottom:10px;">
+        <div style="font-size: .9rem;text-align:center;">
+          <strong>FECHA DE EMISIÓN:</strong> {{cabecera.fec_emision_guia}}
+        </div>
+        <div style="font-size: .9rem;text-align:center;">
+          <strong>HORA DE EMISIÓN:</strong> {{time}}
+        </div>
+        <div style="font-size: .9rem;text-align:center;">
+          <strong>FECHA DE RETORNO:</strong> {{cabecera.fec_retorno_guia}}
+        </div>
+        <div style="font-size: .9rem;text-align:center;">
+          <strong>DÍAS DE RETORNO:</strong> {{cabecera.duracion}}
+        </div>
+      </section>
+      <p style="font-size: 1.1rem;font-weight:bolder;margin:10px 0px;">
+        DATOS DEL DESTINATARIO:<br/>
+      </p>
+      <section style="border-bottom:.5px dashed black;font-size:.9rem;padding-bottom: 10px;">
+        <table>
+          <tbody>
+            <tr>
+              <td>De:</td>
+              <td style="width: 300px;">NEXT COMPANY</td>
+              <td>Para:</td>
+              <td style="width: 300px;">{{proveedor.nom}}</td>
+            </tr>
+            <tr>
+              <td>Punto de Partida :</td>
+              <td>CAL FELIPE SANTIAGO CRESPO NRO. 581 LIMA-SAN LUIS LIMA</td>
+              <td>Punto de Llegada :</td>
+              <td>{{proveedor.direccion}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+      <p style="font-size: 1.1rem;font-weight:bold;">
+        A TRANSPORTAR:<br/>
+      </p>
+      {{!-- <section style="border-bottom:.5px dashed black;font-size:.9rem; padding-bottom: 10px;"> --}}
+      <section style="font-size:.9rem; padding-bottom: 10px;">
+        <table style="border-collapse: collapse;width:100%;">
+          <thead>
+            <tr style="border-bottom:.2px solid gray;">
+              <th>#</th>
+              <th style="text-align:left;">Artículos de producción</th>
+              <th style="text-align:center;">XS/26</th>
+              <th style="text-align:center;">S/28</th>
+              <th style="text-align:center;">M/30</th>
+              <th style="text-align:center;">L/32</th>
+              <th style="text-align:center;">XL/34</th>
+              <th style="text-align:center;">XXL/36</th>
+              <th style="text-align:center;">UM</th>
+              <th style="text-align:center;">Cantidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each detalle}}
+              <tr style="">
+                <td style="text-align: center;width:.5cm;">{{plusindex @index}}</td>
+                <td>{{articulo}}</td>
+                <td style="text-align: center;">{{xs}}</td>
+                <td style="text-align: center;">{{s}}</td>
+                <td style="text-align: center;">{{m}}</td>
+                <td style="text-align: center;">{{l}}</td>
+                <td style="text-align: center;">{{xl}}</td>
+                <td style="text-align: center;">{{xxl}}</td>
+                <td style="width:1.5px;text-align: center;">NIU</td>
+                <td style="width:1.5px;text-align: center;">{{cantidad}}</td>
+              </tr>
+            {{/each}}
+            <tfoot>
+              <tr>
+                <td colspan="8"></td>
+                <td style="text-align: center;font-size:.9rem;"><strong>Total</strong></td>
+                <td style="text-align: center;font-size:.9rem;"><strong>{{totalunid}}</strong></td>
+              </tr>
+            </tfoot>
+          </tbody>
+        </table>
+      </section>
+      {{!-- </br> --}}
+      {{#if numproto}}
+      <section style="font-size:.9rem;">
+        <table style="border-collapse: collapse;width:100%;">
+          <thead>
+            <tr style="border-bottom: .2px solid gray;">
+              <th>#</th>
+              <th style="text-align:left;">Adicionales</th>
+              <th style="text-align:center;"></th>
+              <th style="text-align:center;"></th>
+              <th style="text-align:center;"></th>
+              <th style="text-align:center;"></th>
+              <th style="text-align:center;"></th>
+              <th style="text-align:center;"></th>
+              <th style="width:1.5cm;text-align:center;"></th>
+              <th style="width:1.5cm;text-align:center;">Cantidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each prototipos}}
+            {{!-- <tr style="border-bottom: .2px solid gray;"> --}}
+            <tr style="">
+              <td style="text-align: center;width:.5cm;">{{plusindex @index}}</td>
+              <td>{{articulo}}</td>
+              <td style="text-align: center;"></td>
+              <td style="text-align: center;"></td>
+              <td style="text-align: center;"></td>
+              <td style="text-align: center;"></td>
+              <td style="text-align: center;"></td>
+              <td style="text-align: center;"></td>
+              <td style="text-align: center;"></td>
+              <td style="text-align: center;">{{cantidad}}</td>
+            </tr>
+            {{/each}}
+            {{!-- <tfoot>
+              <tr>
+                <td colspan="8"></td>
+                <td style="text-align: center;font-size:.9rem;"><strong>Total</strong></td>
+                <td style="text-align: center;font-size:.9rem;"><strong>{{totalunid}}</strong></td>
+              </tr>
+            </tfoot> --}}
+          </tbody>
+        </table>
+      </section>
+      {{/if}}
+      {{!-- <section style="padding-top:10px;">
+        <strong>Total unidades : {{totalunid}}</strong>
+      </section> --}}
+    </section>
+    <footer>
+      <section style="display:flex;justify-content:space-around;gap:15px;">
+        <div style="border-top:.5px dashed black;padding:5px;text-align:center;flex:1;font-size:.9rem;">
+          Entregué conforme
+          <div style="text-align:left;height:30px;border-bottom:.5px dotted gray;display:flex;align-items:center;">Nom:</div>
+        </div>
+        <div style="border-top:.5px dashed black;padding:5px;text-align:center;flex:1;font-size:.9rem;">
+          Lleve conforme
+          <div style="text-align:left;height:30px;border-bottom:.5px dotted gray;display:flex;align-items:center;">Nom:</div>
+        </div>
+        <div style="border-top:.5px dashed black;padding:5px;text-align:center;flex:1;font-size:.9rem;">
+          Recibí conforme
+          <div style="text-align:left;height:30px;border-bottom:.5px dotted gray;display:flex;align-items:center;">Nom:</div>
+        </div>
+      </section>
+      <section style="margin-top:10px;font-size:.9rem;">
+        <strong>Fecha/hora impresión: {{date}} {{time}}</strong><br/>
+      </section>
+    </footer>
+  </div>
+</div>

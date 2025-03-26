@@ -15,6 +15,8 @@ produccionRouter.post('/exportguia/:id',ProduccionController.exportInfoGuia)
 
 produccionRouter.get('/getListaGuias',ProduccionController.getListaGuias)
 produccionRouter.get('/getListaGuias/:search',ProduccionController.getListaGuias)
+produccionRouter.get('/getListaMuestras',ProduccionController.getListaMuestras)
+produccionRouter.get('/getListaMuestras/:search',ProduccionController.getListaMuestras)
 produccionRouter.get('/guia/:id',ProduccionController.getInfoGuias)
 produccionRouter.put('/guardarguia',ProduccionController.saveInfoGuias)
 produccionRouter.delete('/borrarguia/:id',ProduccionController.eliminarInfoGuias)
@@ -32,6 +34,7 @@ produccionRouter.get('/showinformepedido/:id',ProduccionController.ShowInformePe
 
 produccionRouter.get('/getListaDespachos',ProduccionController.getListaDespachos)
 produccionRouter.get('/getListaDespachos/:search',ProduccionController.getListaDespachos)
+// produccionRouter.get('/getListaDespachos/:search/:filtros',ProduccionController.getListaDespachos)
 produccionRouter.get('/despacho/:id',ProduccionController.getInfoDespachos)
 produccionRouter.put('/guardardespacho',ProduccionController.saveInfoDespachos)
 produccionRouter.delete('/borrardespacho/:id',ProduccionController.eliminarInfoDespachos)
