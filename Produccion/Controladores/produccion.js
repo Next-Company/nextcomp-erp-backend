@@ -1188,7 +1188,8 @@ export class ProduccionController {
   ///////////////////////////////////
   static async getListaDespachos(req, res){
     const search = req.params.search ?? ''
-    const data = await ProduccionModel.getListaDespachos(search)
+    const tipo = req.params.tipo ?? ''
+    const data = await ProduccionModel.getListaDespachos(tipo,search)
     res.json(data)
   }
   static async saveInfoDespachos(req, res){

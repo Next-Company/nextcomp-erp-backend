@@ -18,11 +18,16 @@ export default class AbonoController {
     res.json(servicios)
   }
   static async getAbonoById(req, res) {
-    console.log("Llegando a getAbonoById")
     const { idabono } = req.params
     // const abonos = await req.container.resolve('AbonoRepository').getAbonosList(limit)
     const abono = await AbonoServicio.getAbono(idabono)
     res.json(abono)
+  }
+  static async getAbonoByServicio(req, res) {
+    console.log("Dentro de abonos por servicio")
+    const { idservicio } = req.params
+    const abonos = await AbonoServicio.getAbonoByServicio(idservicio)
+    res.json(abonos)
   }
   static async getSaldosServicio(req, res) {
     const { idproveedor } = req.params

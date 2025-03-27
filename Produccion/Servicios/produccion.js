@@ -1,4 +1,3 @@
-import { concatMap } from "puppeteer-core/lib/esm/third_party/rxjs/rxjs.js";
 import { configs } from "../../Main/utils.js";
 import mysql from "mysql2/promise";
 // import { inventario } from "../../Main/config.js";
@@ -463,31 +462,33 @@ export class ProduccionModel {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
 
-      let extra = search.split(" ").length > 0 ? search.split(" ").map(word=>"AND LOCATE('"+word+"',CONCAT(TRIM(tipo),' ',TRIM(idx),' ',TRIM(orden_ref),' ',TRIM(servicio),' ',TRIM(producto),' ',TRIM(proveedor),' ',TRIM(modelo))) > 0").join(" ") : ""
+      let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word=>"AND LOCATE('"+word+"',CONCAT(TRIM(tipo),' ',TRIM(idx),' ',TRIM(orden_ref),' ',TRIM(servicio),' ',TRIM(producto),' ',TRIM(proveedor),' ',TRIM(modelo))) > 0").join(" ") : ""
 
+      // let query = `SELECT idx,orden_ref,producto,modelo,marca,estado,tipo,servicio,id_proveedor_CAB,proveedor,fec_emision,DATE_FORMAT(fec_emision,'%d/%m/%Y') as fec_emision_guia,fec_retorno,DATE_FORMAT(fec_retorno,'%d/%m/%Y') as fec_retorno_guia,fec_recepcion,costo,COALESCE(DATEDIFF(fec_retorno,fec_emision),'') as tiempo_produccion,COALESCE(DATEDIFF(STR_TO_DATE(fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
+      // (
+      //   select sum(cantidad) from tbl2_guias_traslado_det tgtd where tgtd.id_guia_CAB = tbl2_guias_traslado_cab.idx
+      // ) as cantidad_servicio,
+      // (
+      //   select sum(COALESCE(tdd.despacho,0) + COALESCE(tdd.caidos,0)) as total from tbl2_despachos_cab tdc 
+      //   join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
+      //   where tdc.id_guia_origen = tbl2_guias_traslado_cab.idx
+      // ) as ingresos
+      // FROM tbl2_guias_traslado_cab where 1=1 ${search !== '_' ? extra : ''} order by created_at desc limit 100`
+
+      // console.log("Query de busqueda:",quEry)
       let query = `SELECT idx,orden_ref,producto,modelo,marca,estado,tipo,servicio,id_proveedor_CAB,proveedor,fec_emision,DATE_FORMAT(fec_emision,'%d/%m/%Y') as fec_emision_guia,fec_retorno,DATE_FORMAT(fec_retorno,'%d/%m/%Y') as fec_retorno_guia,fec_recepcion,costo,COALESCE(DATEDIFF(fec_retorno,fec_emision),'') as tiempo_produccion,COALESCE(DATEDIFF(STR_TO_DATE(fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
       (
         select sum(cantidad) from tbl2_guias_traslado_det tgtd where tgtd.id_guia_CAB = tbl2_guias_traslado_cab.idx
       ) as cantidad_servicio,
       (
-        select sum(COALESCE(tdd.despacho,0) + COALESCE(tdd.caidos,0)) as total from tbl2_despachos_cab tdc 
+        select COALESCE(sum(COALESCE(tdd.despacho,0) + COALESCE(tdd.caidos,0)),0) as total from tbl2_despachos_cab tdc 
         join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
         where tdc.id_guia_origen = tbl2_guias_traslado_cab.idx
       ) as ingresos
-      FROM tbl2_guias_traslado_cab where 1=1 ${search !== '_' ? extra : ''} order by created_at desc limit 100`
+      FROM tbl2_guias_traslado_cab where tipo = 'SERVICIOS' ${search !== '_' ? extra : ''} order by created_at desc limit 100`
+      console.log("Consulta lista guias:",query)
 
-      console.log("Query de busqueda:",query)
-
-      const [results, fields] = await conn.query(`SELECT idx,orden_ref,producto,modelo,marca,estado,tipo,servicio,id_proveedor_CAB,proveedor,fec_emision,DATE_FORMAT(fec_emision,'%d/%m/%Y') as fec_emision_guia,fec_retorno,DATE_FORMAT(fec_retorno,'%d/%m/%Y') as fec_retorno_guia,fec_recepcion,costo,COALESCE(DATEDIFF(fec_retorno,fec_emision),'') as tiempo_produccion,COALESCE(DATEDIFF(STR_TO_DATE(fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
-      (
-        select sum(cantidad) from tbl2_guias_traslado_det tgtd where tgtd.id_guia_CAB = tbl2_guias_traslado_cab.idx
-      ) as cantidad_servicio,
-      (
-        select sum(COALESCE(tdd.despacho,0) + COALESCE(tdd.caidos,0)) as total from tbl2_despachos_cab tdc 
-        join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
-        where tdc.id_guia_origen = tbl2_guias_traslado_cab.idx
-      ) as ingresos
-      FROM tbl2_guias_traslado_cab where 1=1 ${search !== '_' ? extra : ''} order by created_at desc limit 100`);
+      const [results, fields] = await conn.query(query);
 
       await conn.end();
       return results
@@ -1039,19 +1040,21 @@ export class ProduccionModel {
   //////////////////////////////////
   //seccion guias traslado interno
   //////////////////////////////////
-  static async getListaDespachos(search){
+  static async getListaDespachos(tipo,search){
     let conn
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      let extra = search.split(" ").length > 0 ? search.split(" ").map(word=>"AND LOCATE('"+word+"',CONCAT(TRIM(tdc.tipo),' ',TRIM(tdc.proveedor),' ',TRIM(tdc.nro_guia),' ',TRIM(tgtc.servicio),' ',TRIM(tgtc.producto),' ',TRIM(COALESCE(tgtc.marca,'')),' ',TRIM(COALESCE(tgtc.modelo,'')))) > 0").join(" ") : ""
+      let extra = search.split(" ").length > 0 ? search.split(" ").map(word=>"AND LOCATE('"+word+"',CONCAT(TRIM(tdc.tipo),' ',TRIM(tdc.proveedor),' ',TRIM(tdc.nro_guia),' ',TRIM(COALESCE(tgtc.servicio,'')),' ',TRIM(tgtc.producto),' ',TRIM(COALESCE(tgtc.marca,'')),' ',TRIM(COALESCE(tgtc.modelo,'')))) > 0").join(" ") : ""
 
       const consulta = `SELECT tdc.idx,tdc.fec_emision_guia,tdc.fec_despacho,tdc.id_proveedor_CAB,tdc.proveedor,tdc.tipo,tdc.nro_guia,tdc.id_guia_origen,tdc.nro_guia_origen,tdc.id_pedido_origen,tdc.nro_pedido_origen,tdc.responsable,tdc.observaciones,tdc.created_at,tgtc.servicio,tgtc.producto,tgtc.marca,tgtc.modelo
       FROM tbl2_despachos_cab tdc 
       left join tbl2_guias_traslado_cab tgtc on tdc.id_guia_origen = tgtc.idx
       left join tbl2_pedidos_insumos_cab tpic on tdc.id_pedido_origen = tpic.idx
-      WHERE 1=1 ${extra}
+      WHERE tdc.tipo = '${tipo}' ${extra}
       ORDER BY created_at desc`
+      
+      console.log("Mostrado query de lista despachos:",consulta)
       
       const [results, fields] = await conn.query(consulta);
       await conn.end();

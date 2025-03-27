@@ -6,7 +6,14 @@ export default class AbonoServicio{
     try {
       conn = await mysql2.createConnection(configs[1])
       await conn.connect()
-      let [rows] = await conn.execute(`SELECT * FROM tbl2_abonos where ruc_ = '20522094120' LIMIT ?`, [limit])
+      let [rows] = await conn.execute(`
+        SELECT IF(ISNULL(tc.id_servicio_CAB),tpic.idx,tgtc.idx) as idref,IF(ISNULL(tc.id_servicio_CAB),tpic.proveedor,tgtc.proveedor) as proveedor,ta.* 
+        FROM tbl2_abonos ta 
+        JOIN tbl2_conciliaciones tc on ta.idx = tc.id_abono_CAB 
+        LEFT JOIN tbl2_guias_traslado_cab tgtc on tc.id_servicio_CAB = tgtc.idx
+        LEFT JOIN tbl2_pedidos_insumos_cab tpic on tc.id_pedido_CAB = tpic.idx
+        WHERE ta.tipo in ('SERV')
+      `, [limit])
       await conn.end()
       return rows
     } catch (error) {
@@ -38,7 +45,7 @@ export default class AbonoServicio{
             FROM tbl2_despachos_cab tdc 
             LEFT JOIN tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
           ) AS dp on tpid.id_guia_CAB = dp.id_guia_origen and tpid.idx = dp.id_item
-          WHERE tgtc.estado <> 'FINALIZADO'
+          WHERE tgtc.estado <> 'FINALIZADO' and tgtc.costo > 0 
           GROUP BY tgtc.idx,tgtc.servicio,tgtc.proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,tpid.cantidad,tgtc.costo
         ) as resumen
         GROUP BY resumen.id_guia,resumen.servicio,resumen.proveedor,resumen.producto,resumen.marca,resumen.modelo,resumen.costo
@@ -76,6 +83,23 @@ export default class AbonoServicio{
 
       await conn.end()
       return [infocab[0],infodet]
+    } catch (error) {
+      console.log(error)
+    } finally {
+      if(conn) conn.end()
+    }
+  }
+  static async getAbonoByServicio(idservicio){
+    let conn
+    try {
+      console.log("Llegando a getAbonao",idservicio)
+      conn = await mysql2.createConnection(configs[1])
+      await conn.connect()
+
+      let [infodet] = await conn.execute(`SELECT tgtc.idx,tgtc.servicio,tgtc.producto,ta.* FROM tbl2_abonos ta JOIN tbl2_conciliaciones tc on ta.idx = tc.id_abono_CAB 
+        JOIN tbl2_guias_traslado_cab tgtc on tc.id_servicio_CAB = tgtc.idx WHERE tgtc.idx = ?`, [idservicio])
+      await conn.end()
+      return infodet
     } catch (error) {
       console.log(error)
     } finally {
@@ -228,7 +252,7 @@ export default class AbonoServicio{
           FROM tbl2_despachos_cab tdc 
           LEFT JOIN tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
         ) AS dp on tpid.id_guia_CAB = dp.id_guia_origen and tpid.idx = dp.id_item
-        WHERE tgtc.estado <> 'FINALIZADO'
+        WHERE tgtc.estado <> 'FINALIZADO' and tgtc.idx = ?
         GROUP BY tgtc.idx,tgtc.servicio,tgtc.id_proveedor_CAB,tgtc.proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,tpid.cantidad,tgtc.costo,tpid.isprototipo
       `,[idguia])
 
