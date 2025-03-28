@@ -57,18 +57,26 @@ export class ProduccionController {
     const data = await ProduccionModel.getInfoGuiaCab(params.id)
     const data2 = await ProduccionModel.getInfoGuiaDet(params.id)
     const data3 = data[0].id_proveedor_CAB ? await ProduccionModel.searchProveedorById(data[0].id_proveedor_CAB) : [{nom:data[0].responsable,ruc:'',direccion:data[0].destino}]
+    // let relleno = []
+    // const cantidad_relleno = 25 - data2.length
+    // for (let index = 0; index < cantidad_relleno; index++) {
+    //   relleno.push({    })
+      
+    // }
     // console.log("Fecha creacion :",(new Date(data[0].created_at)).toLocaleString('en-GB'))
     // console.log("Fecha creacion :",(new Date(data[0].created_at)).toLocaleDateString('en-GB'))
     // console.log("Fecha creacion :",(new Date(data[0].created_at)).toLocaleTimeString('en-GB'))
-    console.log("Info cabecera:",data)
+    // console.log("Info cabecera:",data)
     // console.log("Info detalle:",data2)
     // console.log("Fecha:",new Date(Date.parse(data2[0].created_at)).toLocaleDateString())
     resp.render(
-    data[0].tipo == 'SERVICIOS' ? 'guia_back' : 'guia_muestras',
+    data[0].tipo == 'SERVICIOS' ? 'guia_back' : 'guia_muestras_v2',
     {
+      color:data[0].servicio == 'ACABADOS' ? 'red' : 'black',
       info:params,
       cabecera:data[0],
       detalle:data2.filter(row=>!row.isprototipo),
+      // relleno:data2.filter(),
       prototipos:data2.filter(row=>row.isprototipo),
       numproto:data2.filter(row=>row.isprototipo).length,
       date:(new Date(data[0].created_at)).toLocaleDateString('en-GB'),

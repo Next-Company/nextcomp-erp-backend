@@ -481,7 +481,7 @@ export class ProduccionModel {
         select sum(cantidad) from tbl2_guias_traslado_det tgtd where tgtd.id_guia_CAB = tbl2_guias_traslado_cab.idx
       ) as cantidad_servicio,
       (
-        select COALESCE(sum(COALESCE(tdd.despacho,0) + COALESCE(tdd.caidos,0)),0) as total from tbl2_despachos_cab tdc 
+        select COALESCE(sum(COALESCE(tdd.despacho,0)),0) as total from tbl2_despachos_cab tdc 
         join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
         where tdc.id_guia_origen = tbl2_guias_traslado_cab.idx
       ) as ingresos
@@ -522,7 +522,7 @@ export class ProduccionModel {
       //   where tdc.id_guia_origen = tbl2_guias_traslado_cab.idx
       // ) as ingresos
       // FROM tbl2_guias_traslado_cab where tipo <> 'SERVICIOS' ${search !== '_' ? extra : ''} order by created_at desc limit 100`
-      let query = `SELECT idx,orden_ref,producto,modelo,marca,estado,tipo,servicio,id_proveedor_CAB,proveedor,fec_emision,DATE_FORMAT(fec_emision,'%d/%m/%Y') as fec_emision_guia,fec_retorno,DATE_FORMAT(fec_retorno,'%d/%m/%Y') as fec_retorno_guia,fec_recepcion,costo,COALESCE(DATEDIFF(fec_retorno,fec_emision),'') as tiempo_produccion,COALESCE(DATEDIFF(STR_TO_DATE(fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
+      let query = `SELECT idx,orden_ref,producto,responsable,modelo,marca,estado,tipo,servicio,id_proveedor_CAB,proveedor,fec_emision,DATE_FORMAT(fec_emision,'%d/%m/%Y') as fec_emision_guia,fec_retorno,DATE_FORMAT(fec_retorno,'%d/%m/%Y') as fec_retorno_guia,fec_recepcion,costo,COALESCE(DATEDIFF(fec_retorno,fec_emision),'') as tiempo_produccion,COALESCE(DATEDIFF(STR_TO_DATE(fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
       (
         select sum(cantidad) from tbl2_guias_traslado_det tgtd where tgtd.id_guia_CAB = tbl2_guias_traslado_cab.idx
       ) as cantidad_servicio,

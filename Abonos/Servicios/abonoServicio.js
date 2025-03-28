@@ -6,16 +6,16 @@ export default class AbonoServicio{
     try {
       conn = await mysql2.createConnection(configs[1])
       await conn.connect()
-      let [rows] = await conn.execute(`
+      const [cabecera] = await conn.execute(`
         SELECT IF(ISNULL(tc.id_servicio_CAB),tpic.idx,tgtc.idx) as idref,IF(ISNULL(tc.id_servicio_CAB),tpic.proveedor,tgtc.proveedor) as proveedor,ta.* 
         FROM tbl2_abonos ta 
         JOIN tbl2_conciliaciones tc on ta.idx = tc.id_abono_CAB 
         LEFT JOIN tbl2_guias_traslado_cab tgtc on tc.id_servicio_CAB = tgtc.idx
         LEFT JOIN tbl2_pedidos_insumos_cab tpic on tc.id_pedido_CAB = tpic.idx
-        WHERE ta.tipo in ('SERV')
+        WHERE ta.tipo in ('SERV') ORDER BY ta.idx DESC
       `, [limit])
       await conn.end()
-      return rows
+      return cabecera
     } catch (error) {
       
     } finally {
@@ -37,15 +37,15 @@ export default class AbonoServicio{
         ) as cancelado
         FROM
         (
-          SELECT tgtc.idx as id_guia,tgtc.servicio,tgtc.proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,'' as color,tpid.cantidad,tgtc.costo,GROUP_CONCAT(dp.nro_guia) as id_despacho,SUM(COALESCE(dp.despacho,0)-COALESCE(dp.caidos,0)) as despacho,SUM(IF(COALESCE(tpid.isprototipo,0) = 1,0,tgtc.costo*(COALESCE(dp.despacho,0)-COALESCE(dp.caidos,0)))) as total
+          SELECT tgtc.idx as id_guia,tgtc.servicio,tgtc.proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,'' as color,IF(COALESCE(tpid.isprototipo),0,tpid.cantidad) as cantidad,tgtc.costo,GROUP_CONCAT(dp.nro_guia) as id_despacho,SUM(COALESCE(IF(COALESCE(tpid.isprototipo),0,dp.despacho),0)-COALESCE(dp.caidos,0)) as despacho,SUM(IF(COALESCE(tpid.isprototipo,0) = 1,0,tgtc.costo*(COALESCE(dp.despacho,0)-COALESCE(dp.caidos,0)))) as total
           FROM tbl2_guias_traslado_det tpid 
           JOIN tbl2_guias_traslado_cab tgtc on tgtc.idx = tpid.id_guia_CAB 
-          JOIN(
+          LEFT JOIN(
             SELECT tdc.id_guia_origen,tdc.nro_guia,tdc.idx,tdd.id_item,tdd.precio,tdd.despacho,tdd.caidos
             FROM tbl2_despachos_cab tdc 
             LEFT JOIN tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
           ) AS dp on tpid.id_guia_CAB = dp.id_guia_origen and tpid.idx = dp.id_item
-          WHERE tgtc.estado <> 'FINALIZADO' and tgtc.costo > 0 
+          WHERE tgtc.estado <> 'FINALIZADO' and tgtc.costo > 0 and tgtc.tipo = 'SERVICIOS' and tgtc.servicio <> 'ACABADOS'
           GROUP BY tgtc.idx,tgtc.servicio,tgtc.proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,tpid.cantidad,tgtc.costo
         ) as resumen
         GROUP BY resumen.id_guia,resumen.servicio,resumen.proveedor,resumen.producto,resumen.marca,resumen.modelo,resumen.costo
@@ -65,17 +65,45 @@ export default class AbonoServicio{
       conn = await mysql2.createConnection(configs[1])
       await conn.connect()
       let infodet = undefined
-      let [infocab] = await conn.execute(`SELECT ta.*,tp.idx as id_proveedor_CAB,tp.nom as proveedor FROM tbl2_abonos ta left join tbl2_proveedor tp on tp.idx = ta.id_proveedor where ta.ruc_ = '20522094120' and ta.idx = ?`, [idabono])
+      let [infocab] = await conn.execute(`
+        SELECT ta.*,tc.id_servicio_CAB,tc.id_pedido_CAB,tp.idx as id_proveedor_CAB,tp.nom as proveedor 
+        FROM tbl2_abonos ta 
+        JOIN tbl2_conciliaciones tc on tc.id_abono_CAB = ta.idx
+        LEFT JOIN tbl2_proveedor tp on tp.idx = ta.id_proveedor where ta.ruc_ = '20522094120' and ta.idx = ?`, [idabono])
       console.log("Informacion cabecera:",infocab)
       if(infocab[0].tipo == 'SERV'){
-        [infodet] = await conn.execute(`
-          select tc.idx,tgtc.orden_ref,tgtc.servicio,tgtc.producto,tgtc.modelo,tgtc.marca,tgtc.costo,sum(tgtd.cantidad*tgtc.costo) as importe 
-          from tbl2_conciliaciones tc 
-          join tbl2_guias_traslado_cab tgtc on tgtc.idx = tc.id_servicio_CAB 
-          join tbl2_guias_traslado_det tgtd on tgtd.id_guia_CAB = tgtc.idx
-          where tc.id_abono_CAB = ?
-          group by tc.idx,tgtc.orden_ref,tgtc.servicio,tgtc.producto,tgtc.modelo,tgtc.marca,tgtc.costo`
-          , [idabono])
+
+        // [infodet] = await conn.execute(`
+        //   select tc.idx,tgtc.orden_ref,tgtc.idx as id_servicio,tgtc.servicio,tgtc.producto,tgtc.modelo,tgtc.marca,tgtc.costo,sum(tgtd.cantidad*tgtc.costo) as importe 
+        //   from tbl2_conciliaciones tc 
+        //   join tbl2_guias_traslado_cab tgtc on tgtc.idx = tc.id_servicio_CAB 
+        //   join tbl2_guias_traslado_det tgtd on tgtd.id_guia_CAB = tgtc.idx
+        //   where tc.id_abono_CAB = ?
+        //   group by tc.idx,tgtc.orden_ref,tgtc.idx,tgtc.servicio,tgtc.producto,tgtc.modelo,tgtc.marca,tgtc.costo
+        //   `, [idabono])
+
+          // const [cabecera,fields] = await conn.query(`SELECT sum(importe) as cancelado FROM tbl2_guias_traslado_cab tgtc JOIN tbl2_conciliaciones tc ON tgtc.idx = tc.id_servicio_CAB JOIN tbl2_abonos ta ON ta.idx = tc.id_abono_CAB WHERE tgtc.idx = ?`,[idguia])
+
+        [infodet] = await conn.query(`
+          SELECT tgtc.idx as id_guia,tgtc.servicio,tgtc.id_proveedor_CAB,tgtc.proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,'' as color,tpid.cantidad,tgtc.costo,COALESCE(tpid.isprototipo,0) as isprototipo,GROUP_CONCAT(dp.nro_guia) as id_despacho,sum(COALESCE(dp.despacho,0)) as despacho,sum(COALESCE(dp.caidos,0)) as caidos,
+          (
+            SELECT sum(importe) as cancelado FROM tbl2_conciliaciones tc  
+            JOIN tbl2_abonos ta on ta.idx = tc.id_abono_CAB 
+            WHERE tgtc.idx = tc.id_servicio_CAB
+          ) as cancelado
+          FROM tbl2_guias_traslado_det tpid 
+          JOIN tbl2_guias_traslado_cab tgtc on tgtc.idx = tpid.id_guia_CAB 
+          JOIN(
+            SELECT tdc.id_guia_origen,tdc.nro_guia,tdc.idx,tdd.id_item,tdd.precio,tdd.despacho,tdd.caidos
+            FROM tbl2_despachos_cab tdc 
+            LEFT JOIN tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
+          ) AS dp on tpid.id_guia_CAB = dp.id_guia_origen and tpid.idx = dp.id_item
+          WHERE tgtc.estado <> 'FINALIZADO' and tgtc.idx = ?
+          GROUP BY tgtc.idx,tgtc.servicio,tgtc.id_proveedor_CAB,tgtc.proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,tpid.cantidad,tgtc.costo,tpid.isprototipo
+        `,[infocab[0].id_servicio_CAB])
+
+
+
       }else{
         // let [infodet] = await conn.execute(`select *from tbl2_conciliaciones tc join tbl2_guias_traslado_cab tgtc on tgtc.idx = tc.id_servicio_CAB where tc.id_abono_CAB = ?`, [idabono])
       }
@@ -128,7 +156,6 @@ export default class AbonoServicio{
     const cabecera = JSON.parse(data.info)
     const articulos = JSON.parse(data.detalle)
 
-    // console.log("Informacion data:",data)
     console.log("Informacion cabecera:",cabecera)
     console.log("Informacion detalle:",articulos)
     try {
@@ -139,31 +166,31 @@ export default class AbonoServicio{
         console.log("Actualizando cabecera")
         await conn.query('UPDATE tbl2_abonos SET entidad_bancaria=NULLIF(?, ""),cuenta_corriente=NULLIF(?, ""),id_proveedor=NULLIF(?, ""),num_operacion=NULLIF(?, ""),moneda=NULLIF(?, ""),fec_pago=NULLIF(?, ""),importe=NULLIF(?, ""),tipo=NULLIF(?, ""),tipo_operacion=NULLIF(?, "") WHERE idx = ?',[cabecera.entidad_bancaria,cabecera.cuenta_corriente,cabecera.id_proveedor_CAB,cabecera.num_operacion,cabecera.moneda,cabecera.fec_pago,cabecera.importe,cabecera.tipo,cabecera.tipo_operacion,parseInt(data.id)])
 
-        const [res,fld] = await conn.query("SELECT *FROM tbl2_conciliaciones WHERE id_abono_CAB = "+ parseInt(data.id))
-        const ids_delete = res.filter(row=> row.idx !== ''  && !articulos.map(fila=>parseInt(fila.idx)).includes(parseInt(row.idx)) )
-        const insert = async ()=>{
-          const fila = articulos.shift()
-          if(fila){
-            if(!fila.idx || fila.idx == ''){
-              const [results,fields] = await conn.query('INSERT INTO tbl2_conciliaciones(ruc_,id_servicio_CAB,id_abono_CAB) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',fila.idx,parseInt(data.id)]);
-            }
-            await insert()
-          }else{
-            return Promise.resolve('')
-          }
-        }
-        await insert()
-        const eliminar = async ()=>{
-          console.log("Dentro de elimiado")
-          const fila = ids_delete.shift()
-          if(fila){
-            await conn.query('DELETE FROM `tbl2_conciliaciones` WHERE `id_abono_CAB` = ? and `idx` = ?',[parseInt(data.id),parseInt(fila.idx)])
-            await eliminar()
-          }else{
-            return Promise.resolve('')
-          }
-        }
-        await eliminar()
+        // const [res,fld] = await conn.query("SELECT *FROM tbl2_conciliaciones WHERE id_abono_CAB = "+ parseInt(data.id))
+        // const ids_delete = res.filter(row=> row.idx !== ''  && !articulos.map(fila=>parseInt(fila.idx)).includes(parseInt(row.idx)) )
+        // const insert = async ()=>{
+        //   const fila = articulos.shift()
+        //   if(fila){
+        //     if(!fila.idx || fila.idx == ''){
+        //       const [results,fields] = await conn.query('INSERT INTO tbl2_conciliaciones(ruc_,id_servicio_CAB,id_abono_CAB) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',fila.idx,parseInt(data.id)]);
+        //     }
+        //     await insert()
+        //   }else{
+        //     return Promise.resolve('')
+        //   }
+        // }
+        // await insert()
+        // const eliminar = async ()=>{
+        //   console.log("Dentro de elimiado")
+        //   const fila = ids_delete.shift()
+        //   if(fila){
+        //     await conn.query('DELETE FROM `tbl2_conciliaciones` WHERE `id_abono_CAB` = ? and `idx` = ?',[parseInt(data.id),parseInt(fila.idx)])
+        //     await eliminar()
+        //   }else{
+        //     return Promise.resolve('')
+        //   }
+        // }
+        // await eliminar()
 
       }else{     
         console.log("Insertando cabecera")   

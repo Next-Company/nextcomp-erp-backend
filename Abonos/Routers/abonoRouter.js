@@ -10,7 +10,5 @@ AbonoRouter.get('/getsaldos/:idproveedor',AbonoController.getSaldosServicio)
 AbonoRouter.put('/saveabono',AbonoController.saveAbono)
 AbonoRouter.delete('/deleteabono/:idabono',AbonoController.deleteAbono)
 AbonoRouter.get('/servicios/:limit',AbonoController.getServiciosStatus)
-
 AbonoRouter.get('/statusdetalle/:idguia',AbonoController.getServiciosStatusDetalle)
-
 AbonoRouter.get('/test', AbonoController.getServiciosStatus)
