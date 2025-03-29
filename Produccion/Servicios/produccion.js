@@ -1185,20 +1185,24 @@ export class ProduccionModel {
         const [data, fields] = await conn.query('select tgtd.idx,tgtd.id_pedido_CAB,tgtd.id_producto_CAB,tgtd.producto,tgtd.color,tgtd.rollos,tgtd.cantidad,tgtd.unidad,tgtd.anulado,tdd.precio,tdd.despacho from tbl2_pedidos_insumos_det tgtd join tbl2_despachos_det tdd on tdd.id_item = tgtd.idx where tdd.id_despacho_CAB = ?',[id]);
         new_articulos = data
       }else{
+        console.log("El id del despacho es: ",id)
         const [results, fields] = await conn.query(`
-          SELECT tdd.idx,tgtc.servicio,tgtc.modelo,tgtd.id_guia_CAB,tgtd.articulo,tgtd.cantidad,tgtd.isprototipo,
+          SELECT tdd.idx,tdd.id_item,tgtc.servicio,tgtc.modelo,tgtd.id_guia_CAB,tgtd.articulo,tgtd.cantidad,tgtd.isprototipo,
           tdd.despacho,tdd.caidos 
           FROM tbl2_guias_traslado_det tgtd 
           JOIN tbl2_despachos_det tdd on tdd.id_item = tgtd.idx 
           JOIN tbl2_guias_traslado_cab tgtc on tgtc.idx = tgtd.id_guia_CAB
           WHERE tdd.id_despacho_CAB = ?
         `,[id]);
-        const ids = results.map(row=>row.idx)
+        console.log(results)
+        const ids = results.map(row=>row.id_item)
   
         const [results2] = await conn.query("select id_guia_DET,concat('({',GROUP_CONCAT(concat(talla,':',CAST(cantidad as unsigned))),'})') as fracciones from tbl2_guias_traslado_det_fracciones where id_guia_DET in (?) group by id_guia_DET",[ids])
+        
+        console.log(results2)
   
         new_articulos = results.map(row=>{
-          let add = eval(results2.filter(row2=>row2.id_guia_DET == row.idx)[0].fracciones)
+          let add = eval(results2.filter(row2=>row2.id_guia_DET == row.id_item)[0].fracciones)
           return {...row,...add}
         })
 

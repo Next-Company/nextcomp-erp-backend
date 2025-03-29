@@ -129,6 +129,70 @@ export class ProduccionController {
       }
     });
   }
+  static async exportInfoDespacho(req,resp){
+    const params = req.params
+    const data = await ProduccionModel.getInfoGuiaCab(params.idguia)
+    // const data2 = await ProduccionModel.getInfoGuiaDet(params.id)
+    const data2 = await ProduccionModel.getInfoDespachoDet(params.id)
+    console.log(data2)
+    const data3 = data[0].id_proveedor_CAB ? await ProduccionModel.searchProveedorById(data[0].id_proveedor_CAB) : [{nom:data[0].responsable,ruc:'',direccion:data[0].destino}]
+    resp.render(
+    'guia_despacho',
+    {
+      color:data[0].servicio == 'ACABADOS' ? 'red' : 'black',
+      info:params,
+      cabecera:data[0],
+      // detalle:data2.filter(row=>!row.isprototipo),
+      detalle:data2,
+      // relleno:data2.filter(),
+      prototipos:data2.filter(row=>row.isprototipo),
+      numproto:data2.filter(row=>row.isprototipo).length,
+      date:(new Date(data[0].created_at)).toLocaleDateString('en-GB'),
+      time:(new Date(data[0].created_at)).toLocaleTimeString('en-GB'),
+      idguia:`${data[0].idx}`.padStart(10,0),
+      totalunid:data2.reduce((carry,valor)=>{
+        carry += valor.isprototipo ? 0 : parseFloat(valor.cantidad)
+        return carry;
+      },0),
+      proveedor:data3[0],
+      helpers: {
+        plusindex(index) { 
+          return index + 1
+        }
+      }
+    },
+    async (err,html)=>{
+      try {
+        const browser = await puppeteer.launch();
+        const version = await browser.version();
+        console.log(`Versión de Chrome: ${version}`);
+        const page = await browser.newPage();
+        await page.setContent(html);
+        const pdfOptions = {
+          // format: 'A4',        // Puedes usar 'A4', 'Letter' o un tamaño personalizado como { width: '210mm', height: '297mm' }
+          // width: '24.1cm',
+          width: '20cm',
+          // height: data[0].tipo == 'SERVICIOS' ? '27.94cm' : '13.97cm',
+          height: '20.94cm',
+          landscape: false,    // Para orientación horizontal (landscape) usa `true`
+          printBackground: true, // Incluir el fondo en el PDF
+          margin: {
+            left: 0,
+            right: 0
+          }
+        };
+    
+        const pdfBuffer = await page.pdf(pdfOptions);
+        await browser.close();
+        resp.send({data:pdfBuffer.toString('base64')})
+      } catch (error) {
+        resp.status(500).send('Error al generar el PDF');
+        // await browser.close();
+      } finally{
+        // await browser.close();
+      }
+    });
+  }
   static async exportPedidoAvios(req,resp){
     console.log("Iniciando el exportado:")
     console.log(req.body)
