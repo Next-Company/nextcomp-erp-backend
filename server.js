@@ -18,6 +18,7 @@ import { produccionRouter } from "./Produccion/Routers/produccion.js";
 import { ProductosRouter } from "./Productos/Routers/productosRouter.js";
 import { AbonoRouter } from "./Abonos/Routers/abonoRouter.js";
 import { LetrasRouter } from "./Letras/Routers/letrasRouter.js";
+import { ReportRouter } from "./Reports/Routers/reportRouter.js";
 const app = express()
 
 
@@ -98,6 +99,7 @@ app.use('/produccion', produccionRouter)
 app.use('/productos', ProductosRouter)
 app.use('/abonos', AbonoRouter)
 app.use('/letras', LetrasRouter)
+app.use('/reports', ReportRouter)
 
 app.listen(PORT_DEFAULT, () => {
   console.log('Servidor corriendo en el puerto 4000')

@@ -1,5 +1,6 @@
 import mysql2 from 'mysql2/promise'
 import { configs } from '../../Main/utils.js'
+import { OtherTarget } from 'puppeteer-core'
 export default class AbonoServicio{
   static async getAbonosList(limit){
     let conn
@@ -287,6 +288,21 @@ export default class AbonoServicio{
       return resultado
     } catch (error) {
       console.log(error)
+    } finally {
+      if(conn) conn.end()
+    }
+  }
+  static async getCuentasList(search = ''){
+    let conn
+    try {
+      conn = await mysql2.createConnection(configs[1])
+      await conn.connect()
+      const busqueda = search.length > 0 ? search.split(" ").map(item=>`AND LOCATE('${item}',CONCAT(TRIM(COALESCE(nom,'')),TRIM(COALESCE(tipo,'')),TRIM(COALESCE(nro_cuenta,'')))) > 0`).join(" ") : ""
+      const [cabecera] = await conn.execute(`SELECT *FROM tbl2_cuentas_bancos WHERE 1=1 ${busqueda}`)
+      await conn.end()
+      return cabecera
+    } catch (error) {
+      
     } finally {
       if(conn) conn.end()
     }

@@ -1140,7 +1140,7 @@ export class ProduccionModel {
           const insert2 = async ()=>{
             const fila = facturas.shift()
             if(fila){  
-              const [results,fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_adi(id_pedido_CAB,serie,numero,fec_emision,unidades,importe_bruto,base_imponible,monto_inafecto,igv,importe_total) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',[cabecera.id_pedido_origen,fila.serie,fila.numero,fila.fec_emision,parseFloat(fila.unidades),parseFloat(fila.importe_bruto),parseFloat(fila.base_imponible),parseFloat(fila.monto_inafecto),parseFloat(fila.igv),parseFloat(fila.importe_total)]);
+              const [results,fields] = await conn.query('INSERT INTO tbl2_despachos_adi(id_despacho_CAB,serie,numero,fec_emision,unidades,importe_bruto,base_imponible,monto_inafecto,igv,importe_total) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',[res.insertId,fila.serie,fila.numero,fila.fec_emision,parseFloat(fila.unidades),parseFloat(fila.importe_bruto),parseFloat(fila.base_imponible),parseFloat(fila.monto_inafecto),parseFloat(fila.igv),parseFloat(fila.importe_total)]);
 
               await insert()
             }else{
@@ -1223,6 +1223,26 @@ export class ProduccionModel {
 
       }
       console.log("detalle desoachoss:",new_articulos)
+
+      await conn.end();
+      return new_articulos
+    } catch (err) {
+      console.log(err)
+      return [err]
+    } finally {
+      if (conn) {
+        await conn.end();
+      }
+    }
+  }
+  static async getInfoDespachoAdi(id,tipo=null){
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+
+      const [data, fields] = await conn.query('SELECT tda.* FROM tbl2_despachos_adi tda WHERE tda.id_despacho_CAB = ?',[id]);
+      new_articulos = data
 
       await conn.end();
       return new_articulos

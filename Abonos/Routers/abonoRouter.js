@@ -3,6 +3,8 @@ import AbonoController from "../Controladores/abonoController.js";
 
 export const AbonoRouter = new Router();
 
+AbonoRouter.get('/listacuentasbancos/:search', AbonoController.getCuentasList)
+AbonoRouter.get('/listacuentasbancos', AbonoController.getCuentasList)
 AbonoRouter.get('/:limit',AbonoController.getAbonosList)
 AbonoRouter.get('/getabono/:idabono',AbonoController.getAbonoById)
 AbonoRouter.get('/getabonobyservicio/:idservicio',AbonoController.getAbonoByServicio)

@@ -44,4 +44,9 @@ export default class AbonoController {
     const resp = await AbonoServicio.deleteAbono(idabono)
     res.json(resp)
   }
+  static async getCuentasList(req, res) {
+    const search = req.params.search ?? ""
+    const abonos = await AbonoServicio.getCuentasList(search)
+    res.json(abonos)
+  }
 }
