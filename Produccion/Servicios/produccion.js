@@ -481,7 +481,7 @@ export class ProduccionModel {
         select sum(cantidad) from tbl2_guias_traslado_det tgtd where tgtd.id_guia_CAB = tbl2_guias_traslado_cab.idx
       ) as cantidad_servicio,
       (
-        select COALESCE(sum(COALESCE(tdd.despacho,0)),0) as total from tbl2_despachos_cab tdc 
+        select COALESCE(sum(COALESCE(tdd.despacho,0) + COALESCE(tdd.caidos,0)),0) as total from tbl2_despachos_cab tdc 
         join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
         where tdc.id_guia_origen = tbl2_guias_traslado_cab.idx
       ) as ingresos
@@ -510,7 +510,7 @@ export class ProduccionModel {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
 
-      let extra = search.split(" ").length > 0 ? search.split(" ").map(word=>"AND LOCATE('"+word+"',CONCAT(TRIM(tipo),' ',TRIM(idx),' ',TRIM(orden_ref),' ',TRIM(servicio),' ',TRIM(producto),' ',TRIM(proveedor),' ',TRIM(modelo))) > 0").join(" ") : ""
+      let extra = search.split(" ").length > 0 ? search.split(" ").map(word=>"AND LOCATE('"+word+"',CONCAT(TRIM(COALESCE(tipo,'')),' ',TRIM(idx),' ',TRIM(COALESCE(orden_ref,'')),' ',TRIM(COALESCE(servicio,'')),' ',TRIM(COALESCE(producto,'')),' ',TRIM(COALESCE(proveedor,'')),' ',TRIM(COALESCE(modelo,'')))) > 0").join(" ") : ""
 
       // let query = `SELECT idx,orden_ref,producto,modelo,marca,estado,tipo,servicio,id_proveedor_CAB,proveedor,fec_emision,DATE_FORMAT(fec_emision,'%d/%m/%Y') as fec_emision_guia,fec_retorno,DATE_FORMAT(fec_retorno,'%d/%m/%Y') as fec_retorno_guia,fec_recepcion,costo,COALESCE(DATEDIFF(fec_retorno,fec_emision),'') as tiempo_produccion,COALESCE(DATEDIFF(STR_TO_DATE(fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
       // (
@@ -527,7 +527,7 @@ export class ProduccionModel {
         select sum(cantidad) from tbl2_guias_traslado_det tgtd where tgtd.id_guia_CAB = tbl2_guias_traslado_cab.idx
       ) as cantidad_servicio,
       (
-        select sum(COALESCE(tdd.despacho,0) + COALESCE(tdd.caidos,0)) as total from tbl2_despachos_cab tdc 
+        select COALESCE(sum(COALESCE(tdd.despacho,0) + COALESCE(tdd.caidos,0)),0) as total from tbl2_despachos_cab tdc 
         join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
         where tdc.id_guia_origen = tbl2_guias_traslado_cab.idx
       ) as ingresos
@@ -1041,11 +1041,12 @@ export class ProduccionModel {
   //seccion guias traslado interno
   //////////////////////////////////
   static async getListaDespachos(tipo,search){
+    console.log("El filtro de busqueda es :",search)
     let conn
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      let extra = search.split(" ").length > 0 ? search.split(" ").map(word=>"AND LOCATE('"+word+"',CONCAT(TRIM(tdc.tipo),' ',TRIM(tdc.proveedor),' ',TRIM(tdc.nro_guia),' ',TRIM(COALESCE(tgtc.servicio,'')),' ',TRIM(tgtc.producto),' ',TRIM(COALESCE(tgtc.marca,'')),' ',TRIM(COALESCE(tgtc.modelo,'')))) > 0").join(" ") : ""
+      let extra = search.split(" ").length > 0 ? search.split(" ").map(word=>"AND LOCATE('"+word+"',CONCAT(TRIM(COALESCE(tdc.tipo,'')),' ',TRIM(COALESCE(tdc.proveedor,'')),' ',TRIM(COALESCE(tdc.nro_guia,'')),' ',TRIM(COALESCE(COALESCE(tgtc.servicio,''),'')),' ',TRIM(COALESCE(tgtc.producto,'')),' ',TRIM(COALESCE(tgtc.marca,'')),' ',TRIM(COALESCE(tgtc.modelo,'')))) > 0").join(" ") : ""
 
       const consulta = `SELECT tdc.idx,tdc.fec_emision_guia,tdc.fec_despacho,tdc.id_proveedor_CAB,tdc.proveedor,tdc.tipo,tdc.nro_guia,tdc.id_guia_origen,tdc.nro_guia_origen,tdc.id_pedido_origen,tdc.nro_pedido_origen,tdc.responsable,tdc.observaciones,tdc.created_at,tgtc.servicio,tgtc.producto,tgtc.marca,tgtc.modelo
       FROM tbl2_despachos_cab tdc 
@@ -1075,9 +1076,11 @@ export class ProduccionModel {
     const results = {ok:true,message:'test'}
     const cabecera = JSON.parse(data.info)
     const articulos = JSON.parse(data.detalle)
+    const facturas = JSON.parse(data.facturas)
 
     console.log("Informacion cabecera:",cabecera)
     console.log("Informacion detalle:",articulos)
+    console.log("Informacion facturas:",facturas)
     // return results
     try {
       conn = await mysql.createConnection(configs[1])
@@ -1125,7 +1128,7 @@ export class ProduccionModel {
           const insert = async ()=>{
             const fila = articulos.shift()
             if(fila){  
-              const [results,fields] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,precio,despacho,caidos) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',[res.insertId,fila.idx,fila.precio,parseFloat(fila.despacho),parseFloat(fila.caidos)]);
+              const [results,fields] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,precio,despacho,caidos) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',[res.insertId,fila.idx,fila.precio,parseFloat(fila.despacho),parseFloat(fila.caidos ?? 0)]);
 
               await insert()
             }else{
@@ -1133,6 +1136,18 @@ export class ProduccionModel {
             }
           }
           await insert()
+
+          const insert2 = async ()=>{
+            const fila = facturas.shift()
+            if(fila){  
+              const [results,fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_adi(id_pedido_CAB,serie,numero,fec_emision,unidades,importe_bruto,base_imponible,monto_inafecto,igv,importe_total) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',[cabecera.id_pedido_origen,fila.serie,fila.numero,fila.fec_emision,parseFloat(fila.unidades),parseFloat(fila.importe_bruto),parseFloat(fila.base_imponible),parseFloat(fila.monto_inafecto),parseFloat(fila.igv),parseFloat(fila.importe_total)]);
+
+              await insert()
+            }else{
+              return Promise.resolve('')
+            }
+          }
+          ( cabecera.id_pedido_origen ?? false ) && await insert2()
 
         }catch(err){
           console.log("error en la consulta",err)
