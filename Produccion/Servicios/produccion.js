@@ -1091,7 +1091,6 @@ export class ProduccionModel {
 
         const [res,fld] = await conn.query("SELECT *FROM tbl2_despachos_det WHERE id_despacho_CAB = "+ parseInt(data.id))
         const ids_delete = res.filter(row=> row.idx !== ''  && !articulos.map(fila=>parseInt(fila.idx)).includes(parseInt(row.idx)) ) 
-
         const insert = async ()=>{
           const fila = articulos.shift()
           if(fila){
@@ -1107,7 +1106,7 @@ export class ProduccionModel {
             return Promise.resolve('')
           }
         }
-        await insert()
+        await insert();
         console.log("Lista de filas a eliminar:",ids_delete)
         const eliminar = async ()=>{
           console.log("Eliminando")
@@ -1119,9 +1118,39 @@ export class ProduccionModel {
             return Promise.resolve('')
           }
         }
-        await eliminar()
+        await eliminar();
+
+        const [res2] = await conn.query("SELECT *FROM tbl2_despachos_adi WHERE id_despacho_CAB = "+ parseInt(data.id))
+        const ids_delete2 = res2.filter(row=> row.idx !== ''  && !facturas.map(fila=>parseInt(fila.idx)).includes(parseInt(row.idx)) ) 
+        console.log("Lista de filas a eliminar:",ids_delete2)
+        const insert2 = async ()=>{
+          const fila = facturas.shift()
+          console.log("Dentro de insertado facturas",fila)
+          if(fila){
+            if(fila.idx && fila.idx !== ''){
+              const [results, fields] = await conn.query('UPDATE tbl2_despachos_adi SET serie=NULLIF(?, ""),numero=NULLIF(?, ""),fec_emision=NULLIF(?, ""),unidades=NULLIF(?, ""),importe_bruto=NULLIF(?, ""),base_imponible=NULLIF(?, ""),monto_inafecto=NULLIF(?, ""),igv=NULLIF(?, ""),importe_total=NULLIF(?, "") WHERE idx = ? and id_despacho_CAB = ?',[fila.serie,fila.numero,fila.fec_emision,fila.unidades,fila.importe_bruto,fila.base_imponible,fila.monto_inafecto,fila.igv,fila.importe_total,fila.idx,parseInt(data.id)]);
+            }else{
+              const [results,fields] = await conn.query('INSERT INTO tbl2_despachos_adi(id_despacho_CAB,serie,numero,fec_emision,unidades,importe_bruto,base_imponible,monto_inafecto,igv,importe_total) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',[parseInt(data.id),fila.serie,fila.numero,fila.fec_emision,parseFloat(fila.unidades),parseFloat(fila.importe_bruto),parseFloat(fila.base_imponible),parseFloat(fila.monto_inafecto),parseFloat(fila.igv),parseFloat(fila.importe_total)]);
+            }
+            await insert2()
+          }else{
+            return Promise.resolve('')
+          }
+        }
+        await insert2()
+        const eliminar2 = async ()=>{
+          console.log("Dentro de eliminando facturas")
+          const fila = ids_delete2.shift()
+          if(fila){
+            await conn.query('DELETE FROM `tbl2_despachos_adi` WHERE `id_despacho_CAB` = ? and `idx` = ?',[parseInt(data.id),parseInt(fila.idx)])
+            await eliminar2()
+          }else{
+            return Promise.resolve('')
+          }
+        }
+        await eliminar2()
+
       }else{
-        // console.log("La info de cabecera es:",cabecera)
         try{
           const [res,fields] = await conn.query('INSERT INTO tbl2_despachos_cab(fec_emision_guia,fec_despacho,tipo,id_proveedor_CAB,proveedor,responsable,id_guia_origen,nro_guia_origen,id_pedido_origen,nro_pedido_origen,observaciones,nro_guia,nro_factura,imp_factura) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',[cabecera.fec_emision_guia,cabecera.fec_despacho,cabecera.tipo,cabecera.id_proveedor_CAB,cabecera.proveedor,cabecera.responsable,cabecera.id_guia_origen,cabecera.nro_guia_origen,cabecera.id_pedido_origen,cabecera.nro_pedido_origen,cabecera.observaciones,cabecera.nro_guia,cabecera.nro_factura,cabecera.imp_factura])
 
@@ -1197,8 +1226,14 @@ export class ProduccionModel {
 
       let new_articulos = null
       if(tipo == 'PEDIDOS'){
-        const [data, fields] = await conn.query('select tgtd.idx,tgtd.id_pedido_CAB,tgtd.id_producto_CAB,tgtd.producto,tgtd.color,tgtd.rollos,tgtd.cantidad,tgtd.unidad,tgtd.anulado,tdd.precio,tdd.despacho from tbl2_pedidos_insumos_det tgtd join tbl2_despachos_det tdd on tdd.id_item = tgtd.idx where tdd.id_despacho_CAB = ?',[id]);
-        new_articulos = data
+        const [data] = await conn.query(`select tdd.idx,tgtd.id_pedido_CAB,tgtd.id_producto_CAB,tgtd.producto,tgtd.color,tgtd.rollos,tgtd.cantidad,tgtd.unidad,tgtd.anulado,IF(tdd.precio IS NULL,tgtd.precio,tdd.precio) as precio,tdd.despacho 
+        FROM tbl2_pedidos_insumos_det tgtd 
+        JOIN tbl2_despachos_det tdd on tdd.id_item = tgtd.idx 
+        WHERE tdd.id_despacho_CAB = ?`,[id]);
+
+        const [data2] = await conn.query('SELECT tda.* FROM tbl2_despachos_adi tda WHERE tda.id_despacho_CAB = ?',[id]);
+
+        new_articulos = [data,data2]
       }else{
         console.log("El id del despacho es: ",id)
         const [results, fields] = await conn.query(`

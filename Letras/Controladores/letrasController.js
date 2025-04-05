@@ -7,6 +7,12 @@ export class LetrasController{
     console.log(busqueda)
     resp.json(busqueda)
   }
+  static async getFacturasByProveedor(req,resp){
+    const idproveedor = req.params.idproveedor ?? ''
+    const busqueda = await LetrasService.getFacturasByProveedor(idproveedor)
+    console.log(busqueda)
+    resp.json(busqueda)
+  }
   static async getLetraById(req,resp){
     const id = req.params.id ?? ''
     const busqueda = await LetrasService.getLetraById(id)

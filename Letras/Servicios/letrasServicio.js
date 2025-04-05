@@ -54,16 +54,60 @@ export class LetrasService{
     console.log("Info del formulario:",data)
     const results = {ok:true,message:'test'}
     const cabecera = JSON.parse(data.info)
-    console.log("Muestra info cabecera : ",cabecera)
+    const detalle = JSON.parse(data.registros)
+    console.log("Muestra info cabecera :",detalle)
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
       conn.beginTransaction()
       if(data.id){
         await conn.query('UPDATE tbl2_letras_cab SET id_proveedor_CAB=NULLIF(?, ""),proveedor=NULLIF(?, ""),documentos_ref=NULLIF(?, ""),num_letra=NULLIF(?, ""),fec_emision=NULLIF(?, ""),fec_vencimiento=NULLIF(?, ""),importe=NULLIF(?, ""),estado=NULLIF(?, ""),observaciones=NULLIF(?, ""),moneda=NULLIF(?, "") WHERE idx = ?',[cabecera.id_proveedor_CAB,cabecera.proveedor,cabecera.documentos_ref,cabecera.num_letra,cabecera.fec_emision,cabecera.fec_vencimiento,cabecera.importe,cabecera.estado,cabecera.observaciones,cabecera.moneda,parseInt(data.id)])
+
+        const [res,fld] = await conn.query("SELECT *FROM tbl2_letras_adi WHERE id_letra_CAB = "+ parseInt(data.id))
+        const ids_delete = res.filter(row=> row.idx !== ''  && !detalle.map(fila=>parseInt(fila.idx)).includes(parseInt(row.idx)) ) 
+        const insert = async ()=>{
+          const fila = detalle.shift()
+          if(fila){
+            if(fila.idx && fila.idx !== ''){
+              console.log("Detro de la actualizacion")
+              const [results, fields] = await conn.query('UPDATE tbl2_letras_adi SET id_factura_CAB=NULLIF(?, "") WHERE idx = ? and id_letra_CAB = ?',[fila.precio,fila.despacho,fila.caidos,fila.idx,parseInt(data.id)]);
+            }else{
+              const [results,fields] = await conn.query('INSERT INTO tbl2_letras_adi(id_letra_CAB,id_factura_CAB) VALUES(NULLIF(?, ""),NULLIF(?, ""))',[parseInt(data.id),fila.id_item,fila.despacho,fila.caidos]);
+            }
+            await insert()
+          }else{
+            console.log("Devolviendo resolve")
+            return Promise.resolve('')
+          }
+        }
+        await insert();
+        const eliminar = async ()=>{
+          console.log("Eliminando")
+          const fila = ids_delete.shift()
+          if(fila){
+            await conn.query('DELETE FROM `tbl2_letras_adi` WHERE `id_letra_CAB` = ? and `idx` = ?',[parseInt(data.id),parseInt(fila.idx)])
+            await eliminar()
+          }else{
+            return Promise.resolve('')
+          }
+        }
+        await eliminar();
+        
       }else{
         try{
           const [res,fields] = await conn.query('INSERT INTO tbl2_letras_cab(ruc_,id_proveedor_CAB,proveedor,documentos_ref,num_letra,fec_emision,fec_vencimiento,importe,estado,observaciones,moneda) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',cabecera.id_proveedor_CAB,cabecera.proveedor,cabecera.documentos_ref,cabecera.num_letra,cabecera.fec_emision,cabecera.fec_vencimiento,cabecera.importe,cabecera.estado,cabecera.observaciones,cabecera.moneda])
+
+          const insert = async ()=>{
+            const fila = detalle.shift()
+            if(fila){  
+              const [results,fields] = await conn.query('INSERT INTO tbl2_letras_adi(id_letra_CAB,id_factura_CAB) VALUES(NULLIF(?, ""),NULLIF(?, ""))',[res.insertId,fila.idx]);
+              await insert()
+            }else{
+              return Promise.resolve('')
+            }
+          }
+          await insert()
+          
         }catch(err){
           console.log("error en la consulta",err)
         }
@@ -76,10 +120,32 @@ export class LetrasService{
       return [err]
     } finally {
       if (conn) {
-        conn.commit()
-        // conn.rollback()
+        // conn.commit()
+        conn.rollback()
         await conn.end();
       }
+    }
+  }
+  static async getFacturasByProveedor(idproveedor){
+    let conn = undefined
+    console.log("Consultando facturas por proveedor:",idproveedor)
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect()
+      let [result] = await conn.query(`
+        SELECT tp.nom,tpic.orden_ref,tdc.nro_guia as guia_ingreso,tda.* 
+        FROM tbl2_proveedor tp 
+        JOIN tbl2_pedidos_insumos_cab tpic ON tp.idx = tpic.id_proveedor_CAB 
+        JOIN tbl2_despachos_cab tdc ON tdc.id_pedido_origen = tpic.idx
+        JOIN tbl2_despachos_adi tda ON tdc.idx = tda.id_despacho_CAB 
+        WHERE tp.idx = ?
+      `,[idproveedor])
+      return result 
+    } catch (error) {
+      console.log(error)
+    } finally {
+      if(conn) await conn.end()
+      // return 0
     }
   }
 }
