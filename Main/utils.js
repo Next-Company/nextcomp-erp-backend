@@ -3,8 +3,8 @@ import jwt_ from 'jsonwebtoken';
 
 export const configs = [
   {
-    host: '192.168.18.20',
-    // host: '192.168.0.171',
+    // host: '192.168.18.20',
+    host: '192.168.0.171',
     port: '3306',
     user: 'ubuntu',
     password: '',
