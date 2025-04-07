@@ -807,6 +807,10 @@ export class ProduccionController {
     const data = await ProduccionModel.getListaPedidos(limit)
     res.json(data)
   }
+  static async getNuevoPedido(req, res) {
+    const data = await ProduccionModel.getNuevoPedido()
+    res.json(data)
+  }
   static async saveInfoPedidos(req, res) {
     const data = await ProduccionModel.saveInfoPedidos(req.body)
     res.json({ ok: true, message: 'datos guardados' })

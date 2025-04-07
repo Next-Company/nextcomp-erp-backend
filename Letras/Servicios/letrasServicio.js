@@ -8,7 +8,7 @@ export class LetrasService{
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect()
-      let [result] = await conn.query(`SELECT tlc.*,COALESCE(DATEDIFF(STR_TO_DATE(tlc.fec_vencimiento,'%Y-%m-%d'),date(now())),0) as dias_pendientes FROM tbl2_letras_cab tlc WHERE 1=1 LIMIT 100`)
+      let [result] = await conn.query(`SELECT tlc.*,COALESCE(DATEDIFF(STR_TO_DATE(tlc.fec_vencimiento,'%Y-%m-%d'),date(now())),0) as dias_pendientes FROM tbl2_letras_cab tlc WHERE 1=1 ORDER BY tlc.idx DESC LIMIT 100`)
       console.log(result)
 
       // await conn.end()
@@ -27,8 +27,11 @@ export class LetrasService{
       conn = await mysql.createConnection(configs[1])
       await conn.connect()
       let [result] = await conn.query(`SELECT tlc.*,COALESCE(DATEDIFF(STR_TO_DATE(tlc.fec_vencimiento,'%Y-%m-%d'),date(now())),0) as dias_pendientes FROM tbl2_letras_cab tlc WHERE idx = ? LIMIT 100`,[id])
+      let [result2] = await conn.query(`SELECT tda.* FROM tbl2_letras_adi tla
+        JOIN tbl2_despachos_adi tda ON tla.id_factura_CAB = tda.idx
+        WHERE tla.id_letra_CAB = ? LIMIT 100`,[id])
 
-      return result 
+      return [result,result2]
     } catch (error) {
       console.log(error)
     } finally {
@@ -120,8 +123,8 @@ export class LetrasService{
       return [err]
     } finally {
       if (conn) {
-        // conn.commit()
-        conn.rollback()
+        conn.commit()
+        // conn.rollback()
         await conn.end();
       }
     }
