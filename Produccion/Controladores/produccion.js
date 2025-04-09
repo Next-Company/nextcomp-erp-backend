@@ -744,7 +744,7 @@ export class ProduccionController {
             if (tipo == 'avios') {
               itemsAsHtml = items.map((item, key) => `<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;">${key + 1}</td><td style="width:60px;text-align:left;background-color:#ddebf7;">` + item['color'] + `</td><td style="width:60px;text-align: center;">` + item['producto'] + `</td><td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['cantidad'] + `</td><td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['unidad'] + `</td><td style="width: 60px;text-align: center;background-color:#ddebf7;">` + item['precio'] + `</td><td style="width: 60px;text-align: center;background-color:#ddebf7;">` + (parseFloat(item['cantidad']) * parseFloat(item['precio'])).toFixed(2) + `</td></tr>`)
             } else {
-              itemsAsHtml = items.map((item, key) => `<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;">${key + 1}</td><td style="width:60px;text-align: center;">` + `${item['producto']} ${item['color']}` + `</td><td style="width:60px;text-align:center;background-color:#ddebf7;">` + (item['rollos'] ? item['rollos'] : '') + `</td><td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['cantidad'] + `</td><td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['unidad'] + `</td><td style="text-align: center;background-color:#ddebf7;">` + item['precio'] + `</td><td style="text-align: center;background-color:#ddebf7;">` + (parseFloat(item['cantidad']) * parseFloat(item['precio'])).toFixed(2) + `</td></tr>`)
+              itemsAsHtml = items.map((item, key) => `<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;">${key + 1}</td><td style="width:60px;">` + `${item['producto']} ${item['color']}` + `</td><td style="width:60px;text-align:center;background-color:#ddebf7;">` + (item['rollos'] ? item['rollos'] : '') + `</td><td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['cantidad'] + `</td><td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['unidad'] + `</td><td style="text-align: center;background-color:#ddebf7;">` + item['precio'] + `</td><td style="text-align: center;background-color:#ddebf7;">` + (parseFloat(item['cantidad']) * parseFloat(item['precio'])).toFixed(2) + `</td></tr>`)
             }
             for (let i = 0; i < extra; i++) {
               tipo == 'avios'
@@ -803,8 +803,9 @@ export class ProduccionController {
   //////////////////////////////
   static async getListaPedidos(req, res) {
     console.log("Obteniendo lista de pedidos")
-    const limit = req.params.limit
-    const data = await ProduccionModel.getListaPedidos(limit)
+    // const limit = req.params.limit
+    const search = req.params.search ?? ''
+    const data = await ProduccionModel.getListaPedidos(search)
     res.json(data)
   }
   static async getNuevoPedido(req, res) {

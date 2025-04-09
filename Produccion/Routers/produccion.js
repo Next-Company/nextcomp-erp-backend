@@ -25,7 +25,8 @@ produccionRouter.get('/showinformeservicio/:id',ProduccionController.ShowInforme
 produccionRouter.get('/showinformeservicio2',ProduccionController.ShowInformeServicio2)
 produccionRouter.get('/searchguia/:info',ProduccionController.searchGuia)
 
-produccionRouter.get('/getListaPedidos/:limit',ProduccionController.getListaPedidos)
+produccionRouter.get('/getListaPedidos',ProduccionController.getListaPedidos)
+produccionRouter.get('/getListaPedidos/:search',ProduccionController.getListaPedidos)
 produccionRouter.get('/pedido/:id',ProduccionController.getInfoPedidos)
 produccionRouter.get('/nuevopedido',ProduccionController.getNuevoPedido)
 produccionRouter.put('/guardarpedido',ProduccionController.saveInfoPedidos)

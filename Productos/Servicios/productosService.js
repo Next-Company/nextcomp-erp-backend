@@ -17,7 +17,7 @@ export class ProductosService{
     }
     return info;
   }
-  static async searchProducto(busqueda){
+  static async searchProducto(busqueda = ""){
     const conn = await mysql.createConnection(configs[1]);
     await conn.connect();
     try {

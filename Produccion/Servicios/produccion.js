@@ -844,13 +844,30 @@ export class ProduccionModel {
   //////////////////////////////////
   //seccion guias traslado interno
   //////////////////////////////////
-  static async getListaPedidos(limit = 100) {
-    console.log("Obteniendo listado de guais de traslado")
+  static async getListaPedidos(search = '') {
+    console.log("Obteniendo lista de pedidos",search)
     let conn
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      const [results, fields] = await conn.query("SELECT idx,orden_ref,tipo,proveedor,fec_emision,fec_retorno,COALESCE(DATEDIFF(fec_retorno,fec_emision),'') as tiempo_produccion,COALESCE(DATEDIFF(STR_TO_DATE(fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,forma_pago,estado FROM tbl2_pedidos_insumos_cab order by created_at desc limit ?", [parseInt(limit)]);
+      let extra = search.split(" ").length > 0 ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(TRIM(orden_ref),' ',TRIM(proveedor),' ',TRIM(produccion),' ',TRIM(estado))) > 0").join(" ") : ""
+      const [results, fields] = await conn.query(`
+        SELECT tb1.idx,tb1.orden_ref,tb1.tipo,tb1.proveedor,tb1.fec_emision,tb1.fec_retorno,COALESCE(DATEDIFF(tb1.fec_retorno,tb1.fec_emision),'') as tiempo_produccion,
+        COALESCE(DATEDIFF(STR_TO_DATE(tb1.fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,tb1.forma_pago,tb1.estado,
+        (
+          SELECT SUM(COALESCE(cantidad,0)) FROM tbl2_pedidos_insumos_det tpid 
+          WHERE tpid.id_pedido_CAB = tb1.idx
+        ) as cantidad,
+        (
+          SELECT COALESCE(sum(despacho),0) as despacho FROM tbl2_despachos_cab tdc
+          JOIN tbl2_despachos_det tdd ON tdc.idx = tdd.id_despacho_CAB
+          WHERE tdc.id_pedido_origen = tb1.idx
+        ) as despacho
+        FROM tbl2_pedidos_insumos_cab tb1
+        WHERE 1=1 ${extra}
+        ORDER BY created_at DESC 
+        LIMIT 100
+        `);
 
       await conn.end();
       return results
@@ -870,7 +887,8 @@ export class ProduccionModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      const [results, fields] = await conn.query("SELECT (orden_ref + 1) as correlativo FROM tbl2_pedidos_insumos_cab tpic WHERE estado <> 'ANULADO' ORDER BY idx DESC LIMIT 1");
+      // const [results, fields] = await conn.query("SELECT (orden_ref + 1) as correlativo FROM tbl2_pedidos_insumos_cab tpic WHERE estado <> 'ANULADO' ORDER BY idx DESC LIMIT 1");
+      const [results, fields] = await conn.query("SELECT (orden_ref + 1) as correlativo FROM tbl2_pedidos_insumos_cab tpic ORDER BY idx DESC LIMIT 1");
 
       await conn.end();
       return results
@@ -939,7 +957,7 @@ export class ProduccionModel {
       } else {
         console.log("Creandsssso")
         try {
-          const [res, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_cab(orden_ref,fec_emision,fec_retorno,tipo,id_proveedor_CAB,proveedor,responsable,forma_pago,nro_contacto,observaciones,estado,moneda,igv,produccion) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [cabecera.orden_ref, cabecera.fec_emision, cabecera.fec_retorno, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.forma_pago, cabecera.nro_contacto, cabecera.observaciones, cabecera.estado, cabecera.moneda, cabecera.igv, cabecera.produccion])
+          const [res, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_cab(orden_ref,fec_emision,fec_retorno,tipo,id_proveedor_CAB,proveedor,responsable,forma_pago,nro_contacto,observaciones,estado,moneda,igv,produccion) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [cabecera.orden_ref, cabecera.fec_emision, cabecera.fec_retorno, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.forma_pago, cabecera.nro_contacto, cabecera.observaciones, cabecera.estado, cabecera.moneda, cabecera.igv, cabecera.produccion])
 
           const insert = async () => {
             const fila = articulos.shift()
@@ -1172,12 +1190,12 @@ export class ProduccionModel {
 
       } else {
         try {
-          const [res, fields] = await conn.query('INSERT INTO tbl2_despachos_cab(fec_emision_guia,fec_despacho,tipo,id_proveedor_CAB,proveedor,responsable,id_guia_origen,nro_guia_origen,id_pedido_origen,nro_pedido_origen,observaciones,nro_guia,nro_factura,imp_factura) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [cabecera.fec_emision_guia, cabecera.fec_despacho, C, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.id_guia_origen, cabecera.nro_guia_origen, cabecera.id_pedido_origen, cabecera.nro_pedido_origen, cabecera.observaciones, cabecera.nro_guia, cabecera.nro_factura, cabecera.imp_factura])
+          const [res, fields] = await conn.query('INSERT INTO tbl2_despachos_cab(fec_emision_guia,fec_despacho,tipo,id_proveedor_CAB,proveedor,responsable,id_guia_origen,nro_guia_origen,id_pedido_origen,nro_pedido_origen,observaciones,nro_guia,nro_factura,imp_factura) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [cabecera.fec_emision_guia, cabecera.fec_despacho, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.id_guia_origen, cabecera.nro_guia_origen, cabecera.id_pedido_origen, cabecera.nro_pedido_origen, cabecera.observaciones, cabecera.nro_guia, cabecera.nro_factura, cabecera.imp_factura])
 
           const insert = async () => {
             const fila = articulos.shift()
             if (fila) {
-              // const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,precio,despacho,caidos) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.idx, fila.precio, parseFloat(fila.despacho), parseFloat(fila.caidos ?? 0)]);
+              // const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,precio,despacho,caidos) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.idx, fila.precio, parseFloat(fila.despacho), parseFloat(fila.caidos ?? 0)])
               const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,precio,despacho,caidos) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.id_item, fila.precio, parseFloat(fila.despacho), parseFloat(fila.caidos ?? 0)]);
 
               await insert()
@@ -1216,8 +1234,8 @@ export class ProduccionModel {
     } finally {
       if (conn) {
         console.log("Terminando consultas")
-        // conn.commit()
-        conn.rollback()
+        conn.commit()
+        // conn.rollback()
         await conn.end();
       }
     }

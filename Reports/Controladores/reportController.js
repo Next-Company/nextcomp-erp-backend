@@ -28,13 +28,13 @@ export default class ReportController{
         };
         row+=1
         formateo[key].forEach(item=>{
-          worksheet.getRow(row).values = [item.num_letra,item.documentos_ref,item.proveedor,item.fec_vencimiento,item.importe]
+          worksheet.getRow(row).values = [item.num_letra,item.facturas_ref ? item.facturas_ref : item.documentos_ref,item.proveedor,item.fec_vencimiento,item.importe_soles,item.importe_dolares]
           if(item.moneda == 'MN'){
             worksheet.getCell(`E${row}`).numFmt = '"S\/\."#,##0.00;[Red]\-"S\/\."#,##0.00';
-            totalMN += parseFloat(item.importe)
+            totalMN += parseFloat(item.importe_soles)
           }else{
-            worksheet.getCell(`E${row}`).numFmt = '"$\/."#,##0.00;[Red]\-"$\/."#,##0.00';
-            totalUSD += parseFloat(item.importe)
+            worksheet.getCell(`F${row}`).numFmt = '"$\/."#,##0.00;[Red]\-"$\/."#,##0.00';
+            totalUSD += parseFloat(item.importe_dolares)
           }
           row+=1
         })
@@ -43,16 +43,16 @@ export default class ReportController{
       })
 
       row+=1
-      worksheet.getRow(row).values = ['','','','TOTAL SOLES:',totalMN]
+      worksheet.getRow(row).values = ['','','','TOTAL SOLES:',totalMN,totalUSD]
       worksheet.getCell(`E${row}`).numFmt = '"S\/\."#,##0.00;[Red]\-"S\/\."#,##0.00'
       worksheet.getCell(`E${row}`).font = {
         size: 16,
         bold: true
       };
-      row+=1
-      worksheet.getRow(row).values = ['','','','TOTAL DOLARES:',totalUSD]
-      worksheet.getCell(`E${row}`).numFmt = '"$\/."#,##0.00;[Red]\-"$\/."#,##0.00'
-      worksheet.getCell(`E${row}`).font = {
+      // row+=1
+      // worksheet.getRow(row).values = ['','','','TOTAL DOLARES:',totalUSD]
+      worksheet.getCell(`F${row}`).numFmt = '"$\/."#,##0.00;[Red]\-"$\/."#,##0.00'
+      worksheet.getCell(`F${row}`).font = {
         size: 16,
         bold: true
       };
