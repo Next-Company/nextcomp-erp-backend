@@ -8,12 +8,24 @@ export class LetrasService{
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect()
-      let [result] = await conn.query(`SELECT tlc.*,COALESCE(DATEDIFF(STR_TO_DATE(tlc.fec_vencimiento,'%Y-%m-%d'),date(now())),0) as dias_pendientes FROM tbl2_letras_cab tlc WHERE 1=1 ORDER BY tlc.idx DESC LIMIT 100`)
-      console.log(result)
+      // let [result] = await conn.query(`SELECT tlc.*,COALESCE(DATEDIFF(STR_TO_DATE(tlc.fec_vencimiento,'%Y-%m-%d'),date(now())),0) as dias_pendientes FROM tbl2_letras_cab tlc WHERE 1=1 ORDER BY tlc.idx DESC LIMIT 100`)
+      let [result] = await conn.query(`
+        SELECT tlc.idx,tlc.id_proveedor_CAB,tlc.proveedor,tlc.documentos_ref,tlc.num_letra,tlc.moneda,DATE_FORMAT(tlc.fec_emision,'%d/%m/%Y') as fec_emision,DATE_FORMAT(tlc.fec_vencimiento,'%d/%m/%Y') as fec_vencimiento,
+        tlc.importe,tlc.estado,tlc.observaciones,
+        COALESCE(DATEDIFF(STR_TO_DATE(tlc.fec_vencimiento,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
+        COALESCE(GROUP_CONCAT(CONCAT(CASE WHEN tda.tipodoc = 1 THEN 'FT' WHEN tda.tipodoc = 2 THEN 'NC' ELSE 'ND' END,tda.serie,tda.numero)),'') as facturas_ref
+        FROM tbl2_letras_cab tlc 
+        LEFT JOIN tbl2_letras_adi tla on tlc.idx = tla.id_letra_CAB 
+        LEFT JOIN tbl2_despachos_adi tda on tda.idx = tla.id_factura_CAB 
+        WHERE 1=1 
+        group by tlc.idx,tlc.id_proveedor_CAB,tlc.proveedor,tlc.documentos_ref,tlc.num_letra,tlc.moneda,tlc.fec_emision,tlc.fec_vencimiento,tlc.importe,tlc.estado,tlc.observaciones
+        ORDER BY tlc.idx DESC
+        LIMIT 100
+        `)
+      // console.log(result)
 
       // await conn.end()
       return result 
-
     } catch (error) {
       console.log(error)
     } finally {
@@ -58,7 +70,8 @@ export class LetrasService{
     const results = {ok:true,message:'test'}
     const cabecera = JSON.parse(data.info)
     const detalle = JSON.parse(data.registros)
-    console.log("Muestra info cabecera :",detalle)
+    console.log("Muestra info cabecera :",cabecera)
+    console.log("Muestra info detalle :",detalle)
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
@@ -135,14 +148,27 @@ export class LetrasService{
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect()
+      // let [result] = await conn.query(`
+      //   SELECT tp.nom,tpic.orden_ref,tdc.nro_guia as guia_ingreso,tda.* 
+      //   FROM tbl2_proveedor tp 
+      //   JOIN tbl2_pedidos_insumos_cab tpic ON tp.idx = tpic.id_proveedor_CAB 
+      //   JOIN tbl2_despachos_cab tdc ON tdc.id_pedido_origen = tpic.idx
+      //   JOIN tbl2_despachos_adi tda ON tdc.idx = tda.id_despacho_CAB 
+      //   WHERE tp.idx = ?
+      // `,[idproveedor])
       let [result] = await conn.query(`
-        SELECT tp.nom,tpic.orden_ref,tdc.nro_guia as guia_ingreso,tda.* 
+        SELECT tp.nom,tpic.orden_ref,tdc.nro_guia as guia_ingreso,tda.*,
+        (
+          SELECT COALESCE(sum(tlc.importe),0) FROM tbl2_letras_cab tlc 
+          JOIN tbl2_letras_adi tla ON tlc.idx = tla.id_letra_CAB
+          WHERE tla.id_factura_CAB = tda.idx
+        ) as cancelado
         FROM tbl2_proveedor tp 
         JOIN tbl2_pedidos_insumos_cab tpic ON tp.idx = tpic.id_proveedor_CAB 
         JOIN tbl2_despachos_cab tdc ON tdc.id_pedido_origen = tpic.idx
         JOIN tbl2_despachos_adi tda ON tdc.idx = tda.id_despacho_CAB 
         WHERE tp.idx = ?
-      `,[idproveedor])
+        `,[idproveedor])
       return result 
     } catch (error) {
       console.log(error)
