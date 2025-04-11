@@ -36,9 +36,6 @@ app.set('view engine', 'handlebars');
 app.set('views', './views');
 app.use(express.static('public'));
 
-
-
-
 app.use(json())
 app.use(cors({
   origin: ORIGINS,
@@ -91,6 +88,7 @@ app.use((req, resp, next) => {
   }
 })
 
+// app.use('/public', express.static('public'))
 app.use('/login', loginRouter)
 app.use('/home', homeRouter)
 app.use('/soporte', soporteRouter)
