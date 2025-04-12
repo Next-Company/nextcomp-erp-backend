@@ -13,7 +13,12 @@ export class LetrasService{
         SELECT tlc.idx,tlc.id_proveedor_CAB,tlc.proveedor,tlc.documentos_ref,tlc.num_letra,tlc.moneda,DATE_FORMAT(tlc.fec_emision,'%d/%m/%Y') as fec_emision,DATE_FORMAT(tlc.fec_vencimiento,'%d/%m/%Y') as fec_vencimiento,
         tlc.importe,tlc.estado,tlc.observaciones,
         COALESCE(DATEDIFF(STR_TO_DATE(tlc.fec_vencimiento,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
-        COALESCE(GROUP_CONCAT(CONCAT(CASE WHEN tda.tipodoc = 1 THEN 'FT' WHEN tda.tipodoc = 2 THEN 'NC' ELSE 'ND' END,tda.serie,tda.numero)),'') as facturas_ref
+        COALESCE(GROUP_CONCAT(CONCAT(CASE WHEN tda.tipodoc = 1 THEN 'FT' WHEN tda.tipodoc = 2 THEN 'NC' ELSE 'ND' END,tda.serie,tda.numero)),'') as facturas_ref,
+        (
+          SELECT COALESCE(sum(COALESCE(importe,0)),0) as cancelado FROM tbl2_conciliaciones tc  
+          JOIN tbl2_abonos ta on ta.idx = tc.id_abono_CAB 
+          WHERE tlc.idx = tc.id_letra_CAB
+        ) as cancelado
         FROM tbl2_letras_cab tlc 
         LEFT JOIN tbl2_letras_adi tla on tlc.idx = tla.id_letra_CAB 
         LEFT JOIN tbl2_despachos_adi tda on tda.idx = tla.id_factura_CAB 
