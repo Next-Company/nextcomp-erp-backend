@@ -12,6 +12,11 @@ export default class AbonoController {
     const servicios = await AbonoServicio.getServiciosStatus(limit)
     res.json(servicios)
   }
+  static async getLetrasStatus(req, res) {
+    // const { limit } = req.params
+    const servicios = await AbonoServicio.getLetrasStatus()
+    res.json(servicios)
+  }
   static async getServiciosStatusDetalle(req, res) {
     const { idguia } = req.params
     const servicios = await AbonoServicio.getServiciosStatusDetalle(idguia)
@@ -34,9 +39,14 @@ export default class AbonoController {
     const saldos = await AbonoServicio.getSaldosServicios(idproveedor)
     res.json(saldos)
   }
-  static async saveAbono(req, res) {
+  static async saveAbonoServicio(req, res) {
     const params = req.body
-    const resp = await AbonoServicio.saveAbono(params)
+    const resp = await AbonoServicio.saveAbonoServicio(params)
+    res.json(resp)
+  }
+  static async saveAbonoLetra(req, res) {
+    const params = req.body
+    const resp = await AbonoServicio.saveAbonoLetra(params)
     res.json(resp)
   }
   static async deleteAbono(req, res) {

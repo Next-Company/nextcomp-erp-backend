@@ -3,6 +3,7 @@ import { configs } from '../../Main/utils.js'
 import { OtherTarget } from 'puppeteer-core'
 export default class AbonoServicio{
   static async getAbonosList(limit){
+    console.log("Dentro de la busqueda de abonos")
     let conn
     try {
       conn = await mysql2.createConnection(configs[1])
@@ -59,6 +60,41 @@ export default class AbonoServicio{
       if(conn) conn.end()
     }
   }
+  static async getLetrasStatus(){
+      let conn = undefined
+      try {
+        conn = await mysql2.createConnection(configs[1])
+        await conn.connect()
+        // let [result] = await conn.query(`SELECT tlc.*,COALESCE(DATEDIFF(STR_TO_DATE(tlc.fec_vencimiento,'%Y-%m-%d'),date(now())),0) as dias_pendientes FROM tbl2_letras_cab tlc WHERE 1=1 ORDER BY tlc.idx DESC LIMIT 100`)
+        let [result] = await conn.query(`
+          SELECT tlc.idx,tlc.id_proveedor_CAB,tlc.proveedor,tlc.documentos_ref,tlc.num_letra,tlc.moneda,DATE_FORMAT(tlc.fec_emision,'%d/%m/%Y') as fec_emision,DATE_FORMAT(tlc.fec_vencimiento,'%d/%m/%Y') as fec_vencimiento,
+          tlc.importe,tlc.estado,tlc.observaciones,
+          COALESCE(DATEDIFF(STR_TO_DATE(tlc.fec_vencimiento,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
+          COALESCE(GROUP_CONCAT(CONCAT(CASE WHEN tda.tipodoc = 1 THEN 'FT' WHEN tda.tipodoc = 2 THEN 'NC' ELSE 'ND' END,tda.serie,tda.numero)),'') as facturas_ref,
+          (
+            SELECT COALESCE(sum(COALESCE(importe,0)),0) as cancelado FROM tbl2_conciliaciones tc  
+            JOIN tbl2_abonos ta on ta.idx = tc.id_abono_CAB 
+            WHERE tlc.idx = tc.id_letra_CAB
+          ) as cancelado
+          FROM tbl2_letras_cab tlc 
+          LEFT JOIN tbl2_letras_adi tla on tlc.idx = tla.id_letra_CAB 
+          LEFT JOIN tbl2_despachos_adi tda on tda.idx = tla.id_factura_CAB 
+          WHERE 1=1 
+          group by tlc.idx,tlc.id_proveedor_CAB,tlc.proveedor,tlc.documentos_ref,tlc.num_letra,tlc.moneda,tlc.fec_emision,tlc.fec_vencimiento,tlc.importe,tlc.estado,tlc.observaciones
+          ORDER BY tlc.idx DESC
+          LIMIT 100
+          `)
+        // console.log(result)
+  
+        // await conn.end()
+        return result 
+      } catch (error) {
+        console.log(error)
+      } finally {
+        if(conn) await conn.end()
+        // return 0
+      }
+    }
   static async getAbono(idabono){
     let conn
     try {
@@ -151,7 +187,7 @@ export default class AbonoServicio{
       if(conn) conn
     }
   }
-  static async saveAbono(data){
+  static async saveAbonoServicio(data){
     let conn
     const results = {ok:true,message:'test'}
     const cabecera = JSON.parse(data.info)
@@ -230,8 +266,55 @@ export default class AbonoServicio{
       return [err]
     } finally {
       if (conn) {
-        conn.commit()
-        // conn.rollback()
+        // conn.commit()
+        conn.rollback()
+        await conn.end();
+      }
+    }
+  }
+  static async saveAbonoLetra(data){
+    let conn
+    const results = {ok:true,message:'test'}
+    const cabecera = JSON.parse(data.info)
+    const articulos = JSON.parse(data.detalle)
+
+    console.log("Informacion cabecera:",cabecera)
+    console.log("Informacion detalle:",articulos)
+    try {
+      conn = await mysql2.createConnection(configs[1])
+      await conn.connect(); 
+      conn.beginTransaction()
+      if(data.id){
+        console.log("Actualizando cabecera")
+        await conn.query('UPDATE tbl2_abonos SET entidad_bancaria=NULLIF(?, ""),cuenta_corriente=NULLIF(?, ""),id_proveedor=NULLIF(?, ""),num_operacion=NULLIF(?, ""),moneda=NULLIF(?, ""),fec_pago=NULLIF(?, ""),importe=NULLIF(?, ""),tipo=NULLIF(?, ""),tipo_operacion=NULLIF(?, "") WHERE idx = ?',[cabecera.entidad_bancaria,cabecera.cuenta_corriente,cabecera.id_proveedor_CAB,cabecera.num_operacion,cabecera.moneda,cabecera.fec_pago,cabecera.importe,cabecera.tipo,cabecera.tipo_operacion,parseInt(data.id)])
+
+      }else{     
+        console.log("Insertando cabecera")   
+        try{
+          const [res,fields] = await conn.query('INSERT INTO tbl2_abonos(ruc_,entidad_bancaria,cuenta_corriente,id_proveedor,num_operacion,moneda,fec_pago,importe,tipo,tipo_operacion) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',cabecera.entidad_bancaria,cabecera.cuenta_corriente,cabecera.id_proveedor_CAB,cabecera.num_operacion,cabecera.moneda,cabecera.fec_pago,cabecera.pago,cabecera.tipo,cabecera.tipo_operacion])
+
+          const [results] = await conn.query('INSERT INTO tbl2_conciliaciones(ruc_,letra_CAB,id_abono_CAB) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',articulos[0].id_guia,res.insertId]);
+
+        }catch(err){
+          console.log("error en la consulta",err)
+        }
+      }
+      console.log("Terminando consultas")
+      // await conn.end();
+      return {ok:true,message:'Se ha guardado el registros'}
+
+    } catch (err) {
+      console.log("Error en la transaccion",err)
+      if (conn) {
+        console.log(err)
+        conn.rollback()
+        await conn.end();
+      }
+      return [err]
+    } finally {
+      if (conn) {
+        // conn.commit()
+        conn.rollback()
         await conn.end();
       }
     }
