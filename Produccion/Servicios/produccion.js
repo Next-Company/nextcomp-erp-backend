@@ -1226,7 +1226,7 @@ export class ProduccionModel {
             const fila = articulos.shift()
             if (fila) {
               // const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,precio,despacho,caidos) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.idx, fila.precio, parseFloat(fila.despacho), parseFloat(fila.caidos ?? 0)])
-              const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,precio,despacho,caidos) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.id_item, fila.precio, parseFloat(fila.despacho), parseFloat(fila.caidos ?? 0)]);
+              const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,precio,despacho,caidos) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.id_item, fila.precio, parseFloat(fila.despacho ?? 0), parseFloat(fila.caidos ?? 0)]);
 
               await insert()
             } else {

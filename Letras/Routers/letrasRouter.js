@@ -7,5 +7,6 @@ LetrasRouter.get('/',LetrasController.getLetrasLista)
 LetrasRouter.put('/saveLetra',LetrasController.saveInfoLetra)
 LetrasRouter.get('/getLetraById/:id',LetrasController.getLetraById)
 LetrasRouter.get('/getfacturasbyproveedor/:idproveedor',LetrasController.getFacturasByProveedor)
+LetrasRouter.get('/getpedidosbyproveedor/:idproveedor',LetrasController.getPedidosByProveedor)
 LetrasRouter.delete('/borrarletra/:id',LetrasController.deleteLetraById)
 

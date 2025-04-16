@@ -78,7 +78,8 @@ export default class AbonoServicio{
           ) as cancelado
           FROM tbl2_letras_cab tlc 
           LEFT JOIN tbl2_letras_adi tla on tlc.idx = tla.id_letra_CAB 
-          LEFT JOIN tbl2_despachos_adi tda on tda.idx = tla.id_factura_CAB 
+          LEFT JOIN tbl2_despachos_cab tdc on tdc.id_pedido_origen =  tla.id_pedido_CAB
+          LEFT JOIN tbl2_despachos_adi tda on tda.id_despacho_CAB = tdc.idx
           WHERE 1=1 
           group by tlc.idx,tlc.id_proveedor_CAB,tlc.proveedor,tlc.documentos_ref,tlc.num_letra,tlc.moneda,tlc.fec_emision,tlc.fec_vencimiento,tlc.importe,tlc.estado,tlc.observaciones
           ORDER BY tlc.idx DESC
@@ -367,6 +368,53 @@ export default class AbonoServicio{
         GROUP BY tgtc.idx,tgtc.servicio,tgtc.id_proveedor_CAB,tgtc.proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,tpid.cantidad,tgtc.costo,tpid.isprototipo
       `,[idguia])
 
+      await conn.end()
+      return resultado
+    } catch (error) {
+      console.log(error)
+    } finally {
+      if(conn) conn.end()
+    }
+  }
+  static async getLetrasStatusDetalle(idletra){
+    let conn
+    try {
+      conn = await mysql2.createConnection(configs[1])
+      await conn.connect()
+
+      console.log("EL id de la letra es: ",idletra)
+      
+      const [resultado, fields] = await conn.query(`
+        SELECT tla.idx,tb1.idx as idpedido,tb1.orden_ref,tb1.tipo,tb1.proveedor,tb1.fec_emision,tb1.fec_retorno,COALESCE(DATEDIFF(tb1.fec_retorno,tb1.fec_emision),'') as tiempo_produccion,
+        COALESCE(DATEDIFF(STR_TO_DATE(tb1.fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,tb1.forma_pago,tb1.estado,
+        (
+          SELECT SUM(COALESCE(cantidad,0)) FROM tbl2_pedidos_insumos_det tpid 
+          WHERE tpid.id_pedido_CAB = tb1.idx
+        ) as cantidad,
+        (
+          SELECT SUM(COALESCE(cantidad,0)*COALESCE(precio,0)) FROM tbl2_pedidos_insumos_det tpid 
+          WHERE tpid.id_pedido_CAB = tb1.idx
+        ) as importe,
+        (
+          SELECT COALESCE(sum(despacho),0) as despacho FROM tbl2_despachos_cab tdc
+          JOIN tbl2_despachos_det tdd ON tdc.idx = tdd.id_despacho_CAB
+          WHERE tdc.id_pedido_origen = tb1.idx
+        ) as despacho,
+        ( 
+          select COALESCE(SUM(COALESCE(importe_total,0)),0) FROM tbl2_despachos_cab tdc
+          JOIN tbl2_despachos_adi tda ON tda.id_despacho_CAB = tdc.idx
+          where tdc.id_pedido_origen = tb1.idx 
+        ) as importe_despacho,
+        (
+          SELECT COALESCE(sum(COALESCE(tlc.importe,0)),0) 
+          FROM tbl2_letras_cab tlc 
+          JOIN tbl2_letras_adi tla on tlc.idx = tla.id_letra_CAB
+          WHERE tla.id_pedido_CAB = tb1.idx
+        ) as cancelado
+        FROM tbl2_pedidos_insumos_cab tb1
+        JOIN tbl2_letras_adi tla ON tla.id_pedido_CAB = tb1.idx
+        WHERE tla.id_letra_CAB = ?
+        `,[idletra]);
       await conn.end()
       return resultado
     } catch (error) {

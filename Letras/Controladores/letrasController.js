@@ -13,6 +13,12 @@ export class LetrasController{
     console.log(busqueda)
     resp.json(busqueda)
   }
+  static async getPedidosByProveedor(req,resp){
+    const idproveedor = req.params.idproveedor ?? ''
+    const busqueda = await LetrasService.getPedidosByProveedor(idproveedor)
+    console.log(busqueda)
+    resp.json(busqueda)
+  }
   static async getLetraById(req,resp){
     const id = req.params.id ?? ''
     const busqueda = await LetrasService.getLetraById(id)
