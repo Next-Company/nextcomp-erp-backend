@@ -294,14 +294,14 @@ export default class AbonoServicio{
         try{
           const [res,fields] = await conn.query('INSERT INTO tbl2_abonos(ruc_,entidad_bancaria,cuenta_corriente,id_proveedor,num_operacion,moneda,fec_pago,importe,tipo,tipo_operacion) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',cabecera.entidad_bancaria,cabecera.cuenta_corriente,cabecera.id_proveedor_CAB,cabecera.num_operacion,cabecera.moneda,cabecera.fec_pago,cabecera.pago,cabecera.tipo,cabecera.tipo_operacion])
 
-          const [results] = await conn.query('INSERT INTO tbl2_conciliaciones(ruc_,letra_CAB,id_abono_CAB) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',articulos[0].id_guia,res.insertId]);
+          const [results] = await conn.query('INSERT INTO tbl2_conciliaciones(ruc_,id_letra_CAB,id_abono_CAB) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',cabecera.idletra,res.insertId]);
 
         }catch(err){
           console.log("error en la consulta",err)
         }
       }
       console.log("Terminando consultas")
-      // await conn.end();
+      // await conn.end()
       return {ok:true,message:'Se ha guardado el registros'}
 
     } catch (err) {
@@ -314,8 +314,8 @@ export default class AbonoServicio{
       return [err]
     } finally {
       if (conn) {
-        // conn.commit()
-        conn.rollback()
+        conn.commit()
+        // conn.rollback()
         await conn.end();
       }
     }
@@ -385,16 +385,12 @@ export default class AbonoServicio{
       console.log("EL id de la letra es: ",idletra)
       
       const [resultado, fields] = await conn.query(`
-        SELECT tla.idx,tb1.idx as idpedido,tb1.orden_ref,tb1.tipo,tb1.proveedor,tb1.fec_emision,tb1.fec_retorno,COALESCE(DATEDIFF(tb1.fec_retorno,tb1.fec_emision),'') as tiempo_produccion,
+        SELECT tlc.importe,tla.idx,tb1.idx as idpedido,tb1.orden_ref,tb1.tipo,tb1.proveedor,tb1.fec_emision,tb1.fec_retorno,COALESCE(DATEDIFF(tb1.fec_retorno,tb1.fec_emision),'') as tiempo_produccion,tlc.idx as idletra,
         COALESCE(DATEDIFF(STR_TO_DATE(tb1.fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,tb1.forma_pago,tb1.estado,
         (
           SELECT SUM(COALESCE(cantidad,0)) FROM tbl2_pedidos_insumos_det tpid 
           WHERE tpid.id_pedido_CAB = tb1.idx
         ) as cantidad,
-        (
-          SELECT SUM(COALESCE(cantidad,0)*COALESCE(precio,0)) FROM tbl2_pedidos_insumos_det tpid 
-          WHERE tpid.id_pedido_CAB = tb1.idx
-        ) as importe,
         (
           SELECT COALESCE(sum(despacho),0) as despacho FROM tbl2_despachos_cab tdc
           JOIN tbl2_despachos_det tdd ON tdc.idx = tdd.id_despacho_CAB
@@ -406,15 +402,18 @@ export default class AbonoServicio{
           where tdc.id_pedido_origen = tb1.idx 
         ) as importe_despacho,
         (
-          SELECT COALESCE(sum(COALESCE(tlc.importe,0)),0) 
-          FROM tbl2_letras_cab tlc 
-          JOIN tbl2_letras_adi tla on tlc.idx = tla.id_letra_CAB
-          WHERE tla.id_pedido_CAB = tb1.idx
+          SELECT COALESCE(SUM(COALESCE(ta.importe,0)),0) FROM tbl2_conciliaciones tc
+          JOIN tbl2_abonos ta ON tc.id_abono_CAB = ta.idx
+          WHERE tc.id_letra_CAB = tla.idx  
         ) as cancelado
         FROM tbl2_pedidos_insumos_cab tb1
         JOIN tbl2_letras_adi tla ON tla.id_pedido_CAB = tb1.idx
+        JOIN tbl2_letras_cab tlc ON tlc.idx = tla.id_letra_CAB
         WHERE tla.id_letra_CAB = ?
         `,[idletra]);
+
+      console.log("Resultado lestras status detalle:",resultado)
+
       await conn.end()
       return resultado
     } catch (error) {

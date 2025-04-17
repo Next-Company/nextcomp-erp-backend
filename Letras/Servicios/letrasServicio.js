@@ -186,14 +186,6 @@ export class LetrasService{
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect()
-      // let [result] = await conn.query(`
-      //   SELECT tp.nom,tpic.orden_ref,tdc.nro_guia as guia_ingreso,tda.* 
-      //   FROM tbl2_proveedor tp 
-      //   JOIN tbl2_pedidos_insumos_cab tpic ON tp.idx = tpic.id_proveedor_CAB 
-      //   JOIN tbl2_despachos_cab tdc ON tdc.id_pedido_origen = tpic.idx
-      //   JOIN tbl2_despachos_adi tda ON tdc.idx = tda.id_despacho_CAB 
-      //   WHERE tp.idx = ?
-      // `,[idproveedor])
       let extra = idproveedor !== '' ? `and tp.idx = ${idproveedor}` : ''
       let [result] = await conn.query(`
         SELECT tp.nom,tpic.orden_ref,tdc.nro_guia as guia_ingreso,tda.*,
@@ -208,6 +200,34 @@ export class LetrasService{
         JOIN tbl2_despachos_adi tda ON tdc.idx = tda.id_despacho_CAB 
         WHERE 1=1 ${extra} LIMIT 100
         `,[idproveedor])
+      return result 
+    } catch (error) {
+      console.log(error)
+    } finally {
+      if(conn) await conn.end()
+      // return 0
+    }
+  }
+  static async getFacturasByPedido(idpedido){
+    let conn = undefined
+    console.log("Consultando facturas por proveedor:",idpedido)
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect()
+      let extra = idpedido !== '' ? `and tpic.idx = ${idpedido}` : ''
+      let [result] = await conn.query(`
+        SELECT tp.nom,tpic.orden_ref,tdc.nro_guia as guia_ingreso,tda.*,
+        (
+          SELECT COALESCE(sum(tlc.importe),0) FROM tbl2_letras_cab tlc 
+          JOIN tbl2_letras_adi tla ON tlc.idx = tla.id_letra_CAB
+          WHERE tla.id_factura_CAB = tda.idx
+        ) as cancelado
+        FROM tbl2_proveedor tp 
+        JOIN tbl2_pedidos_insumos_cab tpic ON tp.idx = tpic.id_proveedor_CAB 
+        JOIN tbl2_despachos_cab tdc ON tdc.id_pedido_origen = tpic.idx
+        JOIN tbl2_despachos_adi tda ON tdc.idx = tda.id_despacho_CAB 
+        WHERE 1=1 ${extra} LIMIT 100
+        `,[idpedido])
       return result 
     } catch (error) {
       console.log(error)
