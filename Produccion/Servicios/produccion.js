@@ -503,8 +503,8 @@ export class ProduccionModel {
       }
     }
   }
-  static async getListaMuestras(search) {
-    console.log("Obteniendo listado de guais de trasladosssssssssssss")
+  static async getListaMuestras_(search) {
+    console.log("Obteniendo listado de guais de trasladosssssssssssss", search)
     let conn
     try {
       conn = await mysql.createConnection(configs[1])
@@ -549,16 +549,52 @@ export class ProduccionModel {
       }
     }
   }
+  static async getListaMuestras(search) {
+    console.log("Obteniendo listado de guais de trasladossssssssssss", search)
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+
+      let extra = search.split(" ").length > 0 ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(TRIM(COALESCE(tipo,'')),' ',TRIM(idx),' ',TRIM(COALESCE(orden_ref,'')),' ',TRIM(COALESCE(servicio,'')),' ',TRIM(COALESCE(producto,'')),' ',TRIM(COALESCE(proveedor,'')),' ',TRIM(COALESCE(responsable,'')),' ',TRIM(COALESCE(modelo,'')),' ',TRIM(COALESCE(estado,'')))) > 0").join(" ") : ""
+
+      let query = `SELECT idx,orden_ref,producto,responsable,modelo,marca,estado,tipo,servicio,id_proveedor_CAB,proveedor,fec_emision,DATE_FORMAT(fec_emision,'%d/%m/%Y') as fec_emision_guia,fec_retorno,DATE_FORMAT(fec_retorno,'%d/%m/%Y') as fec_retorno_guia,fec_recepcion,costo,COALESCE(DATEDIFF(fec_retorno,fec_emision),'') as tiempo_produccion,COALESCE(DATEDIFF(STR_TO_DATE(fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
+      (
+        select sum(cantidad) from tbl2_guias_traslado_det tgtd where tgtd.id_guia_CAB = tbl2_guias_traslado_cab.idx
+      ) as cantidad_servicio,
+      (
+        select COALESCE(sum(COALESCE(tdd.despacho,0) + COALESCE(tdd.caidos,0)),0) as total from tbl2_despachos_cab tdc 
+        join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
+        where tdc.id_guia_origen = tbl2_guias_traslado_cab.idx
+      ) as ingresos
+      FROM tbl2_guias_traslado_cab where tipo <> 'SERVICIOS' ${search !== '' ? extra : ''} order by created_at desc limit 100`
+      console.log("Query de busqueda:", query)
+
+      const [results, fields] = await conn.query(query);
+
+      await conn.end();
+      return results
+    } catch (err) {
+      console.log(err)
+      return [err]
+    } finally {
+      if (conn) {
+        // console.log("Cerrando session")
+        // await conn.end();
+        await conn.end();
+      }
+    }
+  }
   static async putANewLetras(id) {
     let conn
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect()
-      const [results,fields] = await conn.query(`SELECT *FROM tbl2_letras_cab where ruc_ = ?`,['20522094120'])
+      const [results, fields] = await conn.query(`SELECT *FROM tbl2_letras_cab where ruc_ = ?`, ['20522094120'])
     } catch (error) {
-      
+
     }
-    return {ok:true,message:'Datos generados correctamente'}
+    return { ok: true, message: 'Datos generados correctamente' }
   }
   // static async getInfoGuias(id){
   //   let conn
@@ -856,14 +892,14 @@ export class ProduccionModel {
   //seccion guias traslado interno
   //////////////////////////////////
   static async getListaPedidos(search = '') {
-    console.log("Obteniendo lista de pedidos",search)
+    console.log("Obteniendo lista de pedidos", search)
     let conn
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
       let extra = (search !== '' && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(TRIM(orden_ref),' ',TRIM(proveedor),' ',TRIM(produccion),' ',TRIM(estado))) > 0").join(" ") : ""
 
-      console.log("Consulta extra :",extra)
+      console.log("Consulta extra :", extra)
       const [results, fields] = await conn.query(`
         SELECT tb1.idx,tb1.orden_ref,tb1.tipo,tb1.proveedor,tb1.fec_emision,tb1.fec_retorno,COALESCE(DATEDIFF(tb1.fec_retorno,tb1.fec_emision),'') as tiempo_produccion,
         COALESCE(DATEDIFF(STR_TO_DATE(tb1.fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,tb1.forma_pago,tb1.estado,
