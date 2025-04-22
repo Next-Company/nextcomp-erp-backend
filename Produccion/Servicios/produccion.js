@@ -462,7 +462,7 @@ export class ProduccionModel {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
 
-      let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(TRIM(tipo),' ',TRIM(idx),' ',TRIM(orden_ref),' ',TRIM(servicio),' ',TRIM(producto),' ',TRIM(proveedor),' ',TRIM(modelo))) > 0").join(" ") : ""
+      let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(TRIM(tipo),' ',TRIM(idx),' ',TRIM(orden_ref),' ',TRIM(servicio),' ',TRIM(producto),' ',TRIM(proveedor),' ',TRIM(modelo),' ',TRIM(estado))) > 0").join(" ") : ""
 
       // let query = `SELECT idx,orden_ref,producto,modelo,marca,estado,tipo,servicio,id_proveedor_CAB,proveedor,fec_emision,DATE_FORMAT(fec_emision,'%d/%m/%Y') as fec_emision_guia,fec_retorno,DATE_FORMAT(fec_retorno,'%d/%m/%Y') as fec_retorno_guia,fec_recepcion,costo,COALESCE(DATEDIFF(fec_retorno,fec_emision),'') as tiempo_produccion,COALESCE(DATEDIFF(STR_TO_DATE(fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
       // (
@@ -692,7 +692,7 @@ export class ProduccionModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-
+      conn.beginTransaction()
       if (data.id) {
         await conn.query('UPDATE tbl2_guias_traslado_cab SET orden_ref=NULLIF(?, ""),tipo=NULLIF(?, ""),id_proveedor_CAB=NULLIF(?, ""),proveedor=NULLIF(?, ""),servicio=NULLIF(?, ""),fec_emision=NULLIF(?, ""),fec_retorno=NULLIF(?, ""),fec_recepcion=NULLIF(?, ""),costo=NULLIF(?, ""),observaciones=NULLIF(?, ""),estado=NULLIF(?, ""),motivo_traslado=NULLIF(?, ""),responsable=NULLIF(?, ""),modelo=NULLIF(?, ""),marca=NULLIF(?, ""),producto=NULLIF(?, ""),destino=NULLIF(?, "") WHERE idx = ?', [cabecera.orden_ref, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.servicio, cabecera.fec_emision, cabecera.fec_retorno, cabecera.fec_recepcion, cabecera.costo, cabecera.observaciones, cabecera.estado, cabecera.motivo_traslado, cabecera.responsable, cabecera.modelo, cabecera.marca, cabecera.producto, cabecera.destino, parseInt(data.id)])
         const [res, fld] = await conn.query("SELECT *FROM tbl2_guias_traslado_det WHERE id_guia_CAB = " + parseInt(data.id))
@@ -770,16 +770,20 @@ export class ProduccionModel {
         }
 
         // console.log("filas afectadas :",res)
-        await conn.end();
+        // await conn.end();
         return results
       }
-
     } catch (err) {
       console.log(err)
+      if (conn) {
+        conn.rollback()
+        await conn.end()
+      }
       return [err]
     } finally {
       if (conn) {
-        console.log("Terminando consultas")
+        conn.commit()
+        // conn.rollback()
         await conn.end();
       }
     }
@@ -1035,6 +1039,9 @@ export class ProduccionModel {
         }
         await eliminar()
 
+        // const [test,otro] = await conn.query("select *from tbl2_pedidos_insumos_det tpid where id_pedido_CAB = 13")
+        // console.log("Comprueba actualizacion:",test)
+
       } else {
         console.log("Creandsssso")
         try {
@@ -1269,10 +1276,33 @@ export class ProduccionModel {
         }
         await eliminar2()
 
+        if(cabecera.tipo !== 'PEDIDOS'){
+          // let valida = await this.validaSaldoGuia(parseInt(cabecera.id_guia_origen))
+          // console.log("Resultado busqueda saldo guia:",valida)
+
+          let [result,fields] = await conn.query(`
+            SELECT idx,orden_ref,producto,responsable,modelo,marca,estado,tipo,servicio,id_proveedor_CAB,proveedor,fec_emision,DATE_FORMAT(fec_emision,'%d/%m/%Y') as fec_emision_guia,fec_retorno,DATE_FORMAT(fec_retorno,'%d/%m/%Y') as fec_retorno_guia,fec_recepcion,costo,COALESCE(DATEDIFF(fec_retorno,fec_emision),'') as tiempo_produccion,COALESCE(DATEDIFF(STR_TO_DATE(fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
+            (
+              select sum(cantidad) from tbl2_guias_traslado_det tgtd where tgtd.id_guia_CAB = tbl2_guias_traslado_cab.idx
+            ) as cantidad_servicio,
+            (
+              select COALESCE(sum(COALESCE(tdd.despacho,0) + COALESCE(tdd.caidos,0)),0) as total from tbl2_despachos_cab tdc 
+              join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
+              where tdc.id_guia_origen = tbl2_guias_traslado_cab.idx
+            ) as ingresos
+            FROM tbl2_guias_traslado_cab where idx = ?
+            `,[parseInt(cabecera.id_guia_origen)])
+          let valida = result[0].ingresos >= result[0].cantidad_servicio ? 1 : 0
+          if(valida){
+            await conn.query("UPDATE tbl2_guias_traslado_cab SET estado = 'FINALIZADO' WHERE idx = ?",[parseInt(cabecera.id_guia_origen)])
+          }
+        }
+
       } else {
         try {
           const [res, fields] = await conn.query('INSERT INTO tbl2_despachos_cab(fec_emision_guia,fec_despacho,tipo,id_proveedor_CAB,proveedor,responsable,id_guia_origen,nro_guia_origen,id_pedido_origen,nro_pedido_origen,observaciones,nro_guia,nro_factura,imp_factura) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [cabecera.fec_emision_guia, cabecera.fec_despacho, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.id_guia_origen, cabecera.nro_guia_origen, cabecera.id_pedido_origen, cabecera.nro_pedido_origen, cabecera.observaciones, cabecera.nro_guia, cabecera.nro_factura, cabecera.imp_factura])
 
+          console.log("Inicia insertado detalle despacho")
           const insert = async () => {
             const fila = articulos.shift()
             if (fila) {
@@ -1285,6 +1315,7 @@ export class ProduccionModel {
             }
           }
           await insert()
+          console.log("Termina insertado detalle despacho")
 
           const insert2 = async () => {
             const fila = facturas.shift()
@@ -1297,6 +1328,30 @@ export class ProduccionModel {
             }
           }
           (cabecera.id_pedido_origen ?? false) && await insert2()
+
+          if(cabecera.tipo !== 'PEDIDOS'){
+            console.log("Comienza validacion del saldo de articulos")
+            // let valida = await this.validaSaldoGuia(parseInt(cabecera.id_guia_origen))
+            // console.log("Resultado busqueda saldo guia:",valida)
+            let [result,fields] = await conn.query(`
+              SELECT idx,orden_ref,producto,responsable,modelo,marca,estado,tipo,servicio,id_proveedor_CAB,proveedor,fec_emision,DATE_FORMAT(fec_emision,'%d/%m/%Y') as fec_emision_guia,fec_retorno,DATE_FORMAT(fec_retorno,'%d/%m/%Y') as fec_retorno_guia,fec_recepcion,costo,COALESCE(DATEDIFF(fec_retorno,fec_emision),'') as tiempo_produccion,COALESCE(DATEDIFF(STR_TO_DATE(fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
+              (
+                select sum(cantidad) from tbl2_guias_traslado_det tgtd where tgtd.id_guia_CAB = tbl2_guias_traslado_cab.idx
+              ) as cantidad_servicio,
+              (
+                select COALESCE(sum(COALESCE(tdd.despacho,0) + COALESCE(tdd.caidos,0)),0) as total from tbl2_despachos_cab tdc 
+                join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
+                where tdc.id_guia_origen = tbl2_guias_traslado_cab.idx
+              ) as ingresos
+              FROM tbl2_guias_traslado_cab where idx = ?
+              `,[parseInt(cabecera.id_guia_origen)])
+        
+              // return result[0].ingresos >= result[0].cantidad_servicio ? 1 : 0
+            let valida = result[0].ingresos >= result[0].cantidad_servicio ? 1 : 0
+            if(valida){
+              await conn.query("UPDATE tbl2_guias_traslado_cab SET estado = 'FINALIZADO' WHERE idx = ?",[parseInt(cabecera.id_guia_origen)])
+            }
+          }
 
         } catch (err) {
           console.log("error en la consulta", err)
@@ -1529,6 +1584,41 @@ export class ProduccionModel {
     } finally {
       if (conn) {
         await conn.end();
+      }
+    }
+  }
+  static async validaSaldoGuia(idguia){
+    let conn = undefined
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect()
+
+      console.log("Id guia a validar:",idguia)
+
+      let [result,fields] = await conn.query(`
+      SELECT idx,orden_ref,producto,responsable,modelo,marca,estado,tipo,servicio,id_proveedor_CAB,proveedor,fec_emision,DATE_FORMAT(fec_emision,'%d/%m/%Y') as fec_emision_guia,fec_retorno,DATE_FORMAT(fec_retorno,'%d/%m/%Y') as fec_retorno_guia,fec_recepcion,costo,COALESCE(DATEDIFF(fec_retorno,fec_emision),'') as tiempo_produccion,COALESCE(DATEDIFF(STR_TO_DATE(fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
+      (
+        select sum(cantidad) from tbl2_guias_traslado_det tgtd where tgtd.id_guia_CAB = tbl2_guias_traslado_cab.idx
+      ) as cantidad_servicio,
+      (
+        select COALESCE(sum(COALESCE(tdd.despacho,0) + COALESCE(tdd.caidos,0)),0) as total from tbl2_despachos_cab tdc 
+        join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
+        where tdc.id_guia_origen = tbl2_guias_traslado_cab.idx
+      ) as ingresos
+      FROM tbl2_guias_traslado_cab where idx = ?
+      `,[idguia])
+
+      console.log("COnsulta saldo guia:",result)
+
+      return result[0].ingresos >= result[0].cantidad_servicio ? 1 : 0
+
+    } catch (error) {
+      if(conn){
+        await conn.end()
+      }
+    } finally {
+      if(conn){
+        await conn.end()
       }
     }
   }
