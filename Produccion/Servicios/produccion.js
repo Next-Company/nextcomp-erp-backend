@@ -635,7 +635,23 @@ export class ProduccionModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      const [results, fields] = await conn.query('SELECT tb2.servicio,tb2.marca,tb2.modelo,tb1.*FROM tbl2_guias_traslado_det tb1 join tbl2_guias_traslado_cab tb2 on tb1.id_guia_CAB = tb2.idx where id_guia_CAB = ?', [id]);
+      // const [results, fields] = await conn.query(`
+      //   SELECT tb2.servicio,tb2.marca,tb2.modelo,tb1.*FROM tbl2_guias_traslado_det tb1 join tbl2_guias_traslado_cab tb2 on tb1.id_guia_CAB = tb2.idx where id_guia_CAB = ?
+      // `, [id]);
+      // const ids = results.map(row => row.idx)
+      const [results, fields] = await conn.query(`
+      SELECT tb2.servicio,tb2.marca,tb2.modelo,tb1.idx,tb1.id_guia_CAB,tb1.articulo,tb1.talla,tb1.categoria,tb1.cantidad,tb1.cantidad_obs,tb1.isprototipo,
+      (COALESCE(sum(ingresos.despacho),0) + COALESCE(sum(ingresos.caidos),0)) as ingresos
+      FROM tbl2_guias_traslado_det tb1 
+      JOIN tbl2_guias_traslado_cab tb2 on tb1.id_guia_CAB = tb2.idx
+      LEFT JOIN (
+        select tdc.idx,tdc.id_guia_origen,tdd.id_item,tdd.despacho,tdd.caidos
+        from tbl2_despachos_cab tdc
+        join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
+      ) as ingresos on ingresos.id_guia_origen = tb2.idx and tb1.idx = ingresos.id_item
+      WHERE id_guia_CAB = ?
+      GROUP BY tb2.servicio,tb2.marca,tb2.modelo,tb1.idx,tb1.id_guia_CAB,tb1.articulo,tb1.talla,tb1.categoria,tb1.cantidad,tb1.cantidad_obs,tb1.isprototipo
+      `, [id]);
       const ids = results.map(row => row.idx)
 
       const [results2] = await conn.query("select id_guia_DET,concat('({',GROUP_CONCAT(concat(talla,':',CAST(cantidad as unsigned))),'})') as fracciones from tbl2_guias_traslado_det_fracciones where id_guia_DET in (?) group by id_guia_DET", [ids])
@@ -1249,7 +1265,9 @@ export class ProduccionModel {
         const [res2] = await conn.query("SELECT *FROM tbl2_despachos_adi WHERE id_despacho_CAB = " + parseInt(data.id))
         const ids_delete2 = res2.filter(row => row.idx !== '' && !facturas.map(fila => parseInt(fila.idx)).includes(parseInt(row.idx)))
         console.log("Lista de filas a eliminar:", ids_delete2)
+        console.log("Las facturas a insertar son:",facturas)
         const insert2 = async () => {
+          console.log("Hola mundo facturas")
           const fila = facturas.shift()
           console.log("Dentro de insertado facturas", fila)
           if (fila) {
@@ -1318,11 +1336,12 @@ export class ProduccionModel {
           console.log("Termina insertado detalle despacho")
 
           const insert2 = async () => {
+            console.log("Insertado de factura bucle contador")
             const fila = facturas.shift()
             if (fila) {
               const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_adi(id_despacho_CAB,tipodoc,moneda,serie,numero,fec_emision,unidades,importe_bruto,base_imponible,monto_inafecto,igv,importe_total) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.tipodoc, fila.moneda, fila.serie, fila.numero, fila.fec_emision, parseFloat(fila.unidades), parseFloat(fila.importe_bruto), parseFloat(fila.base_imponible), parseFloat(fila.monto_inafecto), parseFloat(fila.igv), parseFloat(fila.importe_total)]);
 
-              await insert()
+              await insert2()
             } else {
               return Promise.resolve('')
             }

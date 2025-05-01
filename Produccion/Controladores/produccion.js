@@ -575,6 +575,7 @@ export class ProduccionController {
     const data = await ProduccionModel.getInfoGuiaCab(id)
     const data2 = await ProduccionModel.getInfoGuiaDet(id)
     console.log("Info guia by id:", data)
+    console.log("Info guia by id detalle:", data2)
     res.json([data[0], data2])
   }
   static async searchGuia(req, res) {

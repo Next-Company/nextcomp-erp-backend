@@ -16,6 +16,7 @@ import { PORT_DEFAULT, SECRET_JWT_KEY, SECRET_JWT_KEY2, ORIGINS } from './Main/c
 import { jwt } from './Main/utils.js';
 import { produccionRouter } from "./Produccion/Routers/produccion.js";
 import { ProductosRouter } from "./Productos/Routers/productosRouter.js";
+import { prestamoRouter } from "./Prestamos/Routers/prestamo.js";
 import { AbonoRouter } from "./Abonos/Routers/abonoRouter.js";
 import { LetrasRouter } from "./Letras/Routers/letrasRouter.js";
 import { ReportRouter } from "./Reports/Routers/reportRouter.js";
@@ -94,6 +95,7 @@ app.use('/home', homeRouter)
 app.use('/soporte', soporteRouter)
 app.use('/directorio', directorioRouter)
 app.use('/produccion', produccionRouter)
+app.use('/prestamos', prestamoRouter)
 app.use('/productos', ProductosRouter)
 app.use('/abonos', AbonoRouter)
 app.use('/letras', LetrasRouter)
