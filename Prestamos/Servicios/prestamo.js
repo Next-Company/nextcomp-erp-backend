@@ -2,6 +2,7 @@ import mysql from 'mysql2/promise'
 import { configs } from '../../Main/utils.js'
 export default class PrestamoService {
   static async getListaPrestamos() {
+    console.log("Obteniendo listado de prestamos")
     let conn
     try {
       conn = await mysql.createConnection(configs[1])
@@ -100,13 +101,15 @@ export default class PrestamoService {
             },{})
             return new_object
           })
-          console.log(info_sanitized)
+          console.log("Info detalla prestamo sanitized:", info_sanitized)
 
           let keys_ = info_sanitized.filter(row=>row.idx).map(row=>{return row.idx})
 
           list_articulos_delete = rows.filter(row=>!keys_.includes(row.idx)).map(row=>{return row.idx})
           list_articulos_update = info_sanitized.filter(row=>row.idx && row.idx !== '').map(row=>{return row.idx})
           list_articulos_insert = info_sanitized.filter(row=>!row.idx)
+
+          console.log("Mastedes de arrays :",list_articulos_delete,list_articulos_update,list_articulos_insert)
 
           ////////////////////////////////////
           // COMIENZA EL ELIMINADO DE DATOS
@@ -123,7 +126,7 @@ export default class PrestamoService {
             console.log("Ejecutando insertado de datos")
             let values_insert = []
             list_articulos_insert.forEach(item=>{
-              values_insert.push([id_inventario,item.id_prestamo_CAB,item.nro_cuota,item.fec_vencimiento,item.monto_cuota])
+              values_insert.push([data.id,item.nro_cuota,item.fec_vencimiento,item.monto_cuota])
             })
             try {
               await conn.query("INSERT INTO tbl2_prestamos_det(id_prestamo_CAB,nro_cuota,fec_vencimiento,monto_cuota) VALUES ?",[values_insert])
@@ -215,7 +218,7 @@ export default class PrestamoService {
       
       conn.commit()
       // conn.rollback()
-      // return results
+      // return results 
     } catch (error) {
       if (conn) {
         conn.rollback()
@@ -252,5 +255,4 @@ export default class PrestamoService {
       }
     }
   }
-
 }

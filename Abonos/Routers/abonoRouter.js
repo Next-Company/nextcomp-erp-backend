@@ -23,6 +23,7 @@ AbonoRouter.delete('/deleteabono/:idabono',AbonoController.deleteAbono)
 
 AbonoRouter.get('/serviciostatusdetalle/:idguia',AbonoController.getServiciosStatusDetalle)
 AbonoRouter.get('/letrastatusdetalle/:idletra',AbonoController.getLetrasStatusDetalle)
+AbonoRouter.get('/prestamostatusdetalle/:idprestamo',AbonoController.getPrestamoStatusDetalle)
 
 AbonoRouter.get('/getsaldos/:idproveedor',AbonoController.getSaldosServicio)
 AbonoRouter.get('/listacuentasbancos/:search', AbonoController.getCuentasList)

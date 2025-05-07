@@ -27,6 +27,11 @@ export default class AbonoController {
     const servicios = await AbonoServicio.getLetrasStatusDetalle(idletra)
     res.json(servicios)
   }
+  static async getPrestamoStatusDetalle(req, res) {
+    const { idprestamo } = req.params
+    const prestamos = await AbonoServicio.getPrestamoStatusDetalle(idprestamo)
+    res.json(prestamos)
+  }
   static async getAbonoById(req, res) {
     const { idabono } = req.params
     // const abonos = await req.container.resolve('AbonoRepository').getAbonosList(limit)

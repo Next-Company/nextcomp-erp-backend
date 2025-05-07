@@ -422,6 +422,34 @@ export default class AbonoServicio{
       if(conn) conn.end()
     }
   }
+  static async getPrestamoStatusDetalle(idprestamo){
+    let conn
+    try {
+      conn = await mysql2.createConnection(configs[1])
+      await conn.connect()
+      
+      const [resultado, fields] = await conn.query(`
+        SELECT 
+        tpd.*,
+        (
+          SELECT COALESCE(sum(ta.importe),0) FROM tbl2_abonos ta 
+          JOIN tbl2_conciliaciones tc ON ta.idx = tc.id_abono_CAB
+          WHERE tc.id_prestamo_CAB = tpd.idx
+        ) as abono
+        FROM tbl2_prestamos_cab tb1
+        JOIN tbl2_prestamos_det tpd on tb1.idx = tpd.id_prestamo_CAB 
+        WHERE tb1.idx = ?
+        `,[idprestamo]);
+
+      console.log("Resultado lestras status detalle:",resultado)
+      await conn.end()
+      return resultado
+    } catch (error) {
+      console.log(error)
+    } finally {
+      if(conn) conn.end()
+    }
+  }
   static async getCuentasList(search = ''){
     let conn
     try {
