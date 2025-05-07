@@ -7,8 +7,8 @@ export default class PrestamoController{
     res.json([info])
   }
   static async getInfoPrestamoById(req,res){
-    let datos = req.params
-    let info = await PrestamoService.getInfoPrestamoById()
+    let id_prestamo = req.params.id
+    let info = await PrestamoService.getInfoPrestamoById(id_prestamo)
     res.json([info])
   }
   static async updatePrestamo(req,res){
@@ -17,8 +17,8 @@ export default class PrestamoController{
     res.json([info])
   }
   static async deletePrestamoById(req,res){
-    let datos = req.params
-    let info = await PrestamoService.deletePrestamoById()
+    let idprestamo = req.params.id
+    let info = await PrestamoService.deletePrestamoById(idprestamo)
     res.json([info])
   }
 }
