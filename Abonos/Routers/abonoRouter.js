@@ -17,7 +17,7 @@ AbonoRouter.get('/getabonobyservicio/:idservicio',AbonoController.getAbonoByServ
 // AbonoRouter.put('/saveabono',AbonoController.saveAbono)
 AbonoRouter.put('/saveabonoServicio',AbonoController.saveAbonoServicio)
 AbonoRouter.put('/saveabonoLetra',AbonoController.saveAbonoLetra)
-// AbonoRouter.put('/saveabonoPrestamp',AbonoController.saveAbono)
+AbonoRouter.put('/saveabonoPrestamo',AbonoController.saveAbonoPrestamo)
 
 AbonoRouter.delete('/deleteabono/:idabono',AbonoController.deleteAbono)
 

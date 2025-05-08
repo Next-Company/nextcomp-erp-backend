@@ -59,6 +59,11 @@ export default class AbonoController {
     const resp = await AbonoServicio.saveAbonoLetra(params)
     res.json(resp)
   }
+  static async saveAbonoPrestamo(req, res) {
+    const params = req.body
+    const resp = await AbonoServicio.saveAbonoPrestamo(params)
+    res.json(resp)
+  }
   static async deleteAbono(req, res) {
     const { idabono } = req.params
     const resp = await AbonoServicio.deleteAbono(idabono)
