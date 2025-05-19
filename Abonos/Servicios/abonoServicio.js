@@ -1,6 +1,7 @@
 import mysql2 from 'mysql2/promise'
 import { configs } from '../../Main/utils.js'
 import { OtherTarget } from 'puppeteer-core'
+import { count } from 'node:console'
 export default class AbonoServicio{
   static async getAbonosList(limit){
     console.log("Dentro de la busqueda de abonos")
@@ -14,7 +15,8 @@ export default class AbonoServicio{
         JOIN tbl2_conciliaciones tc on ta.idx = tc.id_abono_CAB 
         LEFT JOIN tbl2_guias_traslado_cab tgtc on tc.id_servicio_CAB = tgtc.idx
         LEFT JOIN tbl2_pedidos_insumos_cab tpic on tc.id_pedido_CAB = tpic.idx
-        WHERE ta.tipo in ('SERV') ORDER BY ta.idx DESC
+        WHERE ta.tipo in ('SERV','PRES','CRED') and ta.ruc_ = '20522094120' 
+        ORDER BY ta.idx DESC
       `, [limit])
       await conn.end()
       return cabecera
@@ -334,18 +336,29 @@ export default class AbonoServicio{
       conn.beginTransaction()
       if(data.id){
         console.log("Actualizando cabecera")
-        // await conn.query('UPDATE tbl2_abonos SET entidad_bancaria=NULLIF(?, ""),cuenta_corriente=NULLIF(?, ""),id_proveedor=NULLIF(?, ""),num_operacion=NULLIF(?, ""),moneda=NULLIF(?, ""),fec_pago=NULLIF(?, ""),importe=NULLIF(?, ""),tipo=NULLIF(?, ""),tipo_operacion=NULLIF(?, "") WHERE idx = ?',[cabecera.entidad_bancaria,cabecera.cuenta_corriente,cabecera.id_proveedor_CAB,cabecera.num_operacion,cabecera.moneda,cabecera.fec_pago,cabecera.importe,cabecera.tipo,cabecera.tipo_operacion,parseInt(data.id)])
+        await conn.query('UPDATE tbl2_abonos SET entidad_bancaria=NULLIF(?, ""),cuenta_corriente=NULLIF(?, ""),id_proveedor=NULLIF(?, ""),num_operacion=NULLIF(?, ""),moneda=NULLIF(?, ""),fec_pago=NULLIF(?, ""),importe=NULLIF(?, ""),tipo=NULLIF(?, ""),tipo_operacion=NULLIF(?, "") WHERE idx = ?',[cabecera.entidad_bancaria,cabecera.cuenta_corriente,cabecera.id_proveedor_CAB,cabecera.num_operacion,cabecera.moneda,cabecera.fec_pago,cabecera.importe,cabecera.tipo,cabecera.tipo_operacion,parseInt(data.id)])
 
       }else{     
-        console.log("Insertando cabecera nuevo abono")   
-        // try{
-        //   const [res,fields] = await conn.query('INSERT INTO tbl2_abonos(ruc_,entidad_bancaria,cuenta_corriente,id_proveedor,num_operacion,moneda,fec_pago,importe,tipo,tipo_operacion) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',cabecera.entidad_bancaria,cabecera.cuenta_corriente,cabecera.id_proveedor_CAB,cabecera.num_operacion,cabecera.moneda,cabecera.fec_pago,cabecera.pago,cabecera.tipo,cabecera.tipo_operacion])
+        console.log("Insertando cabecera nuevo abono")
+        try{
+          const [res,fields] = await conn.query('INSERT INTO tbl2_abonos(ruc_,entidad_bancaria,cuenta_corriente,id_proveedor,num_operacion,moneda,fec_pago,importe,tipo,tipo_operacion) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',cabecera.entidad_bancaria,cabecera.cuenta_corriente,cabecera.id_proveedor_CAB,cabecera.num_operacion,cabecera.moneda,cabecera.fec_pago,cabecera.pago,cabecera.tipo,cabecera.tipo_operacion])
 
-        //   const [results] = await conn.query('INSERT INTO tbl2_conciliaciones(ruc_,id_prestamo_CAB,id_abono_CAB) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',cabecera.idletra,res.insertId]);
+          const [results] = await conn.query('INSERT INTO tbl2_conciliaciones(ruc_,id_prestamo_CAB,id_abono_CAB) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',articulos[0].idx,res.insertId]);
 
-        // }catch(err){
-        //   console.log("error en la consulta",err)
-        // }
+          if(parseFloat(articulos[0].monto_cuota) == parseFloat(cabecera.pago)){
+            console.log("Realizando la actualizacion del estado de la cuota a cancelado")
+            await conn.query("UPDATE tbl2_prestamos_det tb1 SET tb1.estado_cuota = 'Pagada' where tb1.id_prestamo_CAB = ? and tb1.idx = ?",[articulos[0].id_prestamo_CAB,articulos[0].idx])
+          }
+
+          ///////////////////////////////////////////////
+          //// GENERANDO MOVIMIENTOS DE CAJA POR EGRESO
+          //////////////////////////////////////////////
+          let result_mov_caja = await this.saveMovimientoCaja('EGRE',cabecera)
+          //////////////////////////////////////////////
+          //////////////////////////////////////////////
+        }catch(err){
+          console.log("error en la consulta",err)
+        }
       }
       // conn.commit()
       conn.rollback()
@@ -362,14 +375,19 @@ export default class AbonoServicio{
     let conn
     let resp
     try {
+      console.log("Comienza la eliminacion de la cuota del prestamo")
       conn = await mysql2.createConnection(configs[1])
       await conn.connect()
       conn.beginTransaction()
       await conn.query('DELETE FROM tbl2_abonos WHERE idx = ?',[idabono])
       await conn.query(`DELETE FROM tbl2_conciliaciones WHERE ruc_ = ? and id_abono_CAB = ?`,['20522094120',idabono])
 
-      // await conn.end()
+      await conn.query(`UPDATE tbl2_prestamos_det JOIN tbl2_conciliaciones on tbl2_prestamos_det.idx = tbl2_conciliaciones.id_prestamo_CAB
+      set tbl2_prestamos_det.estado_cuota = 'Pendiente'
+      WHERE tbl2_conciliaciones.id_abono_CAB = ?`,[idabono])
+
       conn.commit()
+      // conn.rollback()
       resp = {ok:true,message:'Se ha eliminado el registro'}
     } catch (error) {
       resp = error
@@ -476,8 +494,8 @@ export default class AbonoServicio{
         ) as abono
         FROM tbl2_prestamos_cab tb1
         JOIN tbl2_prestamos_det tpd on tb1.idx = tpd.id_prestamo_CAB 
-        WHERE tb1.idx = ?
-        `,[idprestamo]);
+        WHERE tb1.idx = ? and tpd.estado_cuota <> ?
+        `,[idprestamo,'Pagada']);
 
       console.log("Resultado lestras status detalle:",resultado)
       await conn.end()
@@ -501,6 +519,119 @@ export default class AbonoServicio{
       
     } finally {
       if(conn) conn.end()
+    }
+  }
+  static async saveMovimientoCaja(tipo,data){
+    let conn
+    console.log("Informacion movimiento:",data)
+    try {
+      conn = await mysql2.createConnection(configs[1])
+      await conn.connect(); 
+      conn.beginTransaction()
+
+      try {
+        /////////////////////////////////////////////////////////////////////////////
+        // Verificamos el estap de ultima caja anterior a la fechad preoceso
+        // en caso de que este abierta se proede con su cirrere y la obtencion del saldo final
+        ///////////////////////////////////////////////////////////////////////////
+        console.log("Empieza la seccion A del registro de movimiento de caja")
+
+        let monto = 0;
+        let movcaja_anterior = await conn.query(`SELECT *from tbl2_caja_movimientos_cab tcmc JOIN tbl2_caja tc on tc.idx = tcmc.id_caja_CAB WHERE tc.ruc_ = '20522094120' AND tcmc.fec_operacion < ? AND tc.id_cuenta_corriente = ? ORDER BY tcmc.idx DESC LIMIT 1`,[data.fec_pago,parseInt(data.id_cuenta_CAB)])
+
+        if (movcaja_anterior.length > 0) monto = parseFloat(movcaja_anterior[0].saldo_final);
+
+
+        ///////////////////////////////////////////////////////////////////////////////
+        // Verificamos si existe la caja para la fecha de ejecucion actual del abono
+        // en caso de que no existiea se precede con su creacion
+        ////////////////////////////////////////////////////////////////
+        console.log("Empieza la seccion B del registro de movimiento de caja")
+
+        let idcajamov_cab = null
+        let info_caja = await conn.query("SELECT *FROM tbl2_caja WHERE id_cuenta_corriente = ? LIMIT 1",[parseInt(data.id_cuenta_CAB)])
+        let busqueda_movcaja = await conn.query(`SELECT *FROM tbl2_caja_movimientos_cab tcmc JOIN tbl2_caja tc on tc.idx = tcmc.id_caja_CAB WHERE tc.ruc_ = '20522094120' AND tcmc.fec_operacion = ? AND tc.id_cuenta_corriente = ?`,[data.fec_pago,parseInt(data.id_cuenta_CAB)])
+        
+        if(!(busqueda_movcaja.length > 0)){
+          let insertcaja = await conn.query(`INSERT INTO tbl2_caja_movimientos_cab(id_caja_CAB,ruc_,fec_operacion,saldo_inicial,ingresos,egresos,saldo_final,referencia,usuario,sucursal) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))`,[info_caja[0].idx,'20522094120',data.fec_pago,monto,0,0,0,'MOV CAJA AL' + data.fec_pago,'NEXT',390])
+          idcajamov_cab = insertcaja.insertId
+        } else{
+          idcajamov_cab = busqueda_movcaja[0].idx
+        }
+
+        ////////////////////////////////////////////////////////////////
+        // Se precede con el registro del movimietno de caja en realcion
+        // al abono realizado
+        ////////////////////////////////////////////////////////////////
+        console.log("Empieza la seccion C del registro de movimiento de caja")
+
+        let ingresos = 0;
+        let egresos = 0;
+        if(tipo == 'EGRE'){
+          egresos = parseFloat(data.pago)*-1 + (busqueda_movcaja.length > 0 ? parseFloat(busqueda_movcaja[0].egresos) : 0)
+        } else if(tipo == 'INGR'){
+          ingresos = parseFloat(data.pago) + (busqueda_movcaja.length > 0 ? parseFloat(busqueda_movcaja[0].ingresos) : 0)
+        }
+
+        await conn.query(`INSERT INTO tbl2_caja_movimientos_det(ruc_,id_cajamov_CAB,fec_operacion,monto,usuario,sucursal,detalle_mov,doc_cliente,nom_cliente,tipodoc_ref,serie,numero,documento_ref,vta_no_gra,vta_gra,tot_igv,no_gravado,id_abono_ref) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),)`,['20522094120',idcajamov_cab,data.fec_pago,egresos,18,390,data.concepto,'id proveedor del prestamo','proveedor del prestamo','CP',0,0,data.num_operacion,'',0,0,0,0,data.idx])
+
+        await conn.query("UPDATE tbl2_caja_movimientos_cab SET ingresos = ?, egresos = ? WHERE ruc_ = ? and id_caja_cab = ?",[ingresos,egresos,'20522094120',idcajamov_cab])
+
+      } catch (error) {
+        console.log("Se produjo un error durane el registro del movimiento de caja",error)
+      }
+
+      // conn.commit()
+      conn.rollback()
+      return {ok:true,message:'Se ha guardado el registros'}
+    } catch (err) {
+      console.log("Error en la transaccion",err)
+      if (conn) conn.rollback()
+      return {ok:false,message:'Se produjo el siguiente error :' + err}
+    } finally {
+      if (conn) await conn.end()
+    }
+  }
+  static async deleteMovimientoCaja(data){
+    let conn
+    const results = {ok:true,message:'test'}
+    const cabecera = JSON.parse(data.info)
+    const articulos = JSON.parse(data.detalle)
+
+    console.log("Informacion cabecera:",cabecera)
+    console.log("Informacion detalle:",articulos)
+    try {
+      conn = await mysql2.createConnection(configs[1])
+      await conn.connect(); 
+      conn.beginTransaction()
+      if(data.id){
+        console.log("Actualizando cabecera")
+        // await conn.query('UPDATE tbl2_abonos SET entidad_bancaria=NULLIF(?, ""),cuenta_corriente=NULLIF(?, ""),id_proveedor=NULLIF(?, ""),num_operacion=NULLIF(?, ""),moneda=NULLIF(?, ""),fec_pago=NULLIF(?, ""),importe=NULLIF(?, ""),tipo=NULLIF(?, ""),tipo_operacion=NULLIF(?, "") WHERE idx = ?',[cabecera.entidad_bancaria,cabecera.cuenta_corriente,cabecera.id_proveedor_CAB,cabecera.num_operacion,cabecera.moneda,cabecera.fec_pago,cabecera.importe,cabecera.tipo,cabecera.tipo_operacion,parseInt(data.id)])
+
+      }else{     
+        console.log("Insertando cabecera nuevo abono")
+        try{
+          // const [res,fields] = await conn.query('INSERT INTO tbl2_abonos(ruc_,entidad_bancaria,cuenta_corriente,id_proveedor,num_operacion,moneda,fec_pago,importe,tipo,tipo_operacion) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',cabecera.entidad_bancaria,cabecera.cuenta_corriente,cabecera.id_proveedor_CAB,cabecera.num_operacion,cabecera.moneda,cabecera.fec_pago,cabecera.pago,cabecera.tipo,cabecera.tipo_operacion])
+
+          // const [results] = await conn.query('INSERT INTO tbl2_conciliaciones(ruc_,id_prestamo_CAB,id_abono_CAB) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',articulos[0].idx,res.insertId]);
+
+          // if(parseFloat(articulos[0].monto_cuota) == parseFloat(cabecera.pago)){
+          //   console.log("Realizando la actualizacion del estado de la cuota a cancelado")
+          //   await conn.query("UPDATE tbl2_prestamos_det tb1 SET tb1.estado_cuota = 'Pagada' where tb1.id_prestamo_CAB = ? and tb1.idx = ?",[articulos[0].id_prestamo_CAB,articulos[0].idx])
+          // }
+        }catch(err){
+          console.log("error en la consulta",err)
+        }
+      }
+      conn.commit()
+      // conn.rollback()
+      return {ok:true,message:'Se ha guardado el registros'}
+    } catch (err) {
+      console.log("Error en la transaccion",err)
+      if (conn) conn.rollback()
+      return {ok:false,message:'Se produjo el siguiente error :' + err}
+    } finally {
+      if (conn) await conn.end()
     }
   }
 }

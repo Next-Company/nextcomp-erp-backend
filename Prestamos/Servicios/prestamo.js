@@ -7,7 +7,18 @@ export default class PrestamoService {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect()
-      let [result] = await conn.query("SELECT *FROM tbl2_prestamos_cab LIMIT 100")
+      let [result] = await conn.query(`
+        SELECT 
+          tb1.*,
+          (
+            SELECT COALESCE(sum(ta.importe),0) FROM tbl2_abonos ta 
+            JOIN tbl2_conciliaciones tc ON ta.idx = tc.id_abono_CAB
+            JOIN tbl2_prestamos_det tpd on tpd.idx = tc.id_prestamo_CAB
+            WHERE tpd.id_prestamo_CAB = tb1.idx
+          ) as abono
+        FROM tbl2_prestamos_cab tb1
+        LIMIT 100
+      `)
       return result
     } catch (error) {
       if (conn) {

@@ -74,4 +74,19 @@ export default class AbonoController {
     const abonos = await AbonoServicio.getCuentasList(search)
     res.json(abonos)
   }
+  static async saveMovimientoCaja(req, res) {
+    const params = req.body
+    const resp = await AbonoServicio.saveMovimientoCaja(params)
+    res.json(resp)
+  }
+  static async updateMovimientoCaja(req, res) {
+    const params = req.body
+    const resp = await AbonoServicio.saveMovimientoCaja(params)
+    res.json(resp)
+  }
+  static async deleteMovimientoCaja(req, res) {
+    const params = req.body
+    const resp = await AbonoServicio.deleteMovimientoCaja(params)
+    res.json(resp)
+  }
 }

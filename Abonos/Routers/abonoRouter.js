@@ -29,3 +29,7 @@ AbonoRouter.get('/getsaldos/:idproveedor',AbonoController.getSaldosServicio)
 AbonoRouter.get('/listacuentasbancos/:search', AbonoController.getCuentasList)
 AbonoRouter.get('/listacuentasbancos', AbonoController.getCuentasList)
 AbonoRouter.get('/test', AbonoController.getServiciosStatus)
+
+AbonoRouter.get('/saveMovimientoCaja',AbonoController.saveMovimientoCaja)
+AbonoRouter.get('/updateMovimientoCaja',AbonoController.updateMovimientoCaja)
+AbonoRouter.get('/deleteMovimientoCaja',AbonoController.deleteMovimientoCaja)

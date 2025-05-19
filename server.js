@@ -20,6 +20,7 @@ import { prestamoRouter } from "./Prestamos/Routers/prestamo.js";
 import { AbonoRouter } from "./Abonos/Routers/abonoRouter.js";
 import { LetrasRouter } from "./Letras/Routers/letrasRouter.js";
 import { ReportRouter } from "./Reports/Routers/reportRouter.js";
+import { ordenesRouter } from "./Ordenes/Routers/ordenes.js";
 const app = express()
 
 
@@ -95,6 +96,7 @@ app.use('/home', homeRouter)
 app.use('/soporte', soporteRouter)
 app.use('/directorio', directorioRouter)
 app.use('/produccion', produccionRouter)
+app.use('/ordenes', ordenesRouter)
 app.use('/prestamos', prestamoRouter)
 app.use('/productos', ProductosRouter)
 app.use('/abonos', AbonoRouter)
@@ -102,5 +104,5 @@ app.use('/letras', LetrasRouter)
 app.use('/reports', ReportRouter)
 
 app.listen(PORT_DEFAULT, () => {
-  console.log('Servidor corriendo en el puerto 4000')
+  console.log('Servidor corriendo en el puerto ' + PORT_DEFAULT)
 })
