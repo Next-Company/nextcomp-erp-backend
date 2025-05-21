@@ -100,75 +100,17 @@ export class OrdenesModel {
     }
   }
 
-  static async pushItems_back(info, user_data) {
-    let conn
-    try {
-      conn = await mysql.createConnection(configs[1])
-      await conn.connect();
-      console.log("La conexion creada :", conn)
-      let sql = ''
-      const table = info.table
-      const id = info.idx
-      console.log("Empezando push item")
-
-      if (id == '') {
-        sql = 'SELECT *FROM `' + table + '` LIMIT 1';
-      } else {
-        sql = 'SELECT *FROM `' + table + '` WHERE ' + (table !== 'tbl2_fases_prod_ordenes' ? 'id_cab_orden' : 'idx') + ' = ' + id + ' LIMIT 1';
-      }
-      const [consulta, fields] = await conn.execute(sql)
-
-      // const [consulta, fields] = await conn_jsjfact.query('SELECT *FROM `'+ table +'` WHERE ' + (table !== 'tbl2_fases_prod_ordenes' ? 'id_cab_orden' : 'idx') + ' = ' + id +' LIMIT 1');
-      // const [consulta, fields] = await conn_jsjfact.query('SELECT *FROM `'+ table +'` LIMIT 1');
-      console.log("La primera busqueda es: ", consulta, fields)
-      if (id == '') {
-        const campos = Object.keys(info).reduce((carry, current) => {
-          fields.map(row => row.name).includes(current) && carry.push(current)
-          return carry
-        }, [])
-        const values = campos.map(row => info[row])
-        sql = 'INSERT INTO `' + table + '`(' + campos.toString() + ') VALUES (' + campos.map(row => "NULLIF(?, '')").toString() + ')';
-        const [result] = await conn.execute(sql, values)
-
-      } else {
-
-        const campos = Object.keys(info).reduce((carry, current) => {
-          fields.filter(row => row.name !== 'idx').map(row => row.name).includes(current) && carry.push(current)
-          return carry
-        }, [])
-        const values = campos.map(row => info[row])
-
-        if (consulta.length > 0) {
-          sql = 'UPDATE `' + table + '` SET ' + campos.map(row => row + " = NULLIF(?,'')").toString() + ' WHERE `' + (table == 'tbl2_fases_prod_ordenes' ? 'idx' : 'id_cab_orden') + '` = ' + id;
-        } else {
-          sql = 'INSERT INTO `' + table + '`(id_cab_orden,' + campos.toString() + ') VALUES (' + id + ',' + campos.map(row => "NULLIF(?, '')").toString() + ')';
-        }
-        console.log(sql)
-        const [result] = await conn.execute(sql, values)
-        // console.log(sql)
-      }
-      await conn.end();
-      return [{ ok: true, mensaje: 'Guardado con exito' }]
-    } catch (err) {
-      // return [{ok:false,mensaje:'Guardado con xito'}]
-      return [err]
-    } finally {
-      if (conn) {
-        console.log("Cerrando session")
-        await conn.end();
-      }
-    }
-  }
-
   static async saveInfoOrdenes(info, user_data) {
     let conn
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
+      conn.beginTransaction()
+
       let sql = ''
       const table = info.table
       const id = info.idx
-      console.log("Empezando push item")
+      console.log("Empezando guardado de orodenes")
 
       if (id == '') {
         sql = 'SELECT *FROM `' + table + '` LIMIT 1';
@@ -205,17 +147,14 @@ export class OrdenesModel {
         const [result] = await conn.execute(sql, values)
         // console.log(sql)
       }
-      await conn.end();
+      // conn.rollback()
+      conn.commit()
       return [{ ok: true, mensaje: 'Guardado con exito' }]
     } catch (err) {
-      // return [{ok:false,mensaje:'Guardado con xito'}]
+      if (conn) conn.rollback()
       return [err]
     } finally {
-      if (conn) {
-        // console.log("Cerrando session")
-        // await conn.end();
-        await conn.end();
-      }
+      if (conn) await conn.end();
     }
   }
   static async getAll(user_data) {

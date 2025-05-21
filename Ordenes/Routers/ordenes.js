@@ -4,4 +4,6 @@ import { OrdenesController } from "../Controladores/ordenes.js";
 export const ordenesRouter = Router()
 
 ordenesRouter.get("/",OrdenesController.getOrdenes)
+ordenesRouter.get('/:id', OrdenesController.getOrdenesById) 
 ordenesRouter.post("/",OrdenesController.saveInfoOrdenes)
+ordenesRouter.delete('/:id', OrdenesController.deleteOrden)
