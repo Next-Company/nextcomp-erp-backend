@@ -26,34 +26,72 @@ export default class AbonoServicio{
       if(conn) conn.end()
     }
   }
-  static async getServiciosStatus(limit){
+  static async getServiciosStatus(search){
     let conn
     try {
       conn = await mysql2.createConnection(configs[1])
       await conn.connect()
+
+      // let [rows] = await conn.execute(`
+      //   SELECT resumen.id_guia as idx,resumen.servicio,resumen.proveedor,resumen.producto,resumen.marca,resumen.modelo,resumen.costo,SUM(resumen.cantidad) as cantidad,
+      //   SUM(resumen.despacho) as despacho,sum(resumen.total) as importe,
+      //   (
+      //     SELECT sum(importe) as cancelado FROM tbl2_conciliaciones tc  
+      //     JOIN tbl2_abonos ta on ta.idx = tc.id_abono_CAB 
+      //     WHERE resumen.id_guia = tc.id_servicio_CAB
+      //   ) as cancelado
+      //   FROM
+      //   (
+      //     SELECT tgtc.idx as id_guia,tgtc.servicio,COALESCE(tgtc.proveedor,'') as proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,'' as color,IF(COALESCE(tpid.isprototipo),0,tpid.cantidad) as cantidad,tgtc.costo,GROUP_CONCAT(dp.nro_guia) as id_despacho,SUM(COALESCE(IF(COALESCE(tpid.isprototipo),0,dp.despacho),0)-COALESCE(dp.caidos,0)) as despacho,SUM(IF(COALESCE(tpid.isprototipo,0) = 1,0,tgtc.costo*(COALESCE(dp.despacho,0)-COALESCE(dp.caidos,0)))) as total
+      //     FROM tbl2_guias_traslado_det tpid 
+      //     JOIN tbl2_guias_traslado_cab tgtc on tgtc.idx = tpid.id_guia_CAB 
+      //     LEFT JOIN(
+      //       SELECT tdc.id_guia_origen,tdc.nro_guia,tdc.idx,tdd.id_item,tdd.precio,tdd.despacho,tdd.caidos
+      //       FROM tbl2_despachos_cab tdc 
+      //       LEFT JOIN tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
+      //     ) AS dp on tpid.id_guia_CAB = dp.id_guia_origen and tpid.idx = dp.id_item
+      //     WHERE tgtc.costo > 0 and tgtc.tipo = 'SERVICIOS' and tgtc.servicio <> 'ACABADOS'
+      //     GROUP BY tgtc.idx,tgtc.servicio,tgtc.proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,tpid.cantidad,tgtc.costo
+      //   ) as resumen
+      //   GROUP BY resumen.id_guia,resumen.servicio,resumen.proveedor,resumen.producto,resumen.marca,resumen.modelo,resumen.costo
+      // `, [limit])
+      console.log("Buscando por dato envaido del frontent ",search)
+      const busqueda = search.length > 0 ? search.split(" ").map(item=>`AND LOCATE('${item}',CONCAT(TRIM(COALESCE(ruc,'')),TRIM(COALESCE(proveedor,'')))) > 0`).join(" ") : ""
+
+
+      console.log("Busqueda de servicios, filtro",busqueda)
+
       let [rows] = await conn.execute(`
-        SELECT resumen.id_guia as idx,resumen.servicio,resumen.proveedor,resumen.producto,resumen.marca,resumen.modelo,resumen.costo,SUM(resumen.cantidad) as cantidad,
-        SUM(resumen.despacho) as despacho,sum(resumen.total) as importe,
-        (
-          SELECT sum(importe) as cancelado FROM tbl2_conciliaciones tc  
-          JOIN tbl2_abonos ta on ta.idx = tc.id_abono_CAB 
-          WHERE resumen.id_guia = tc.id_servicio_CAB
-        ) as cancelado
+        SELECT
+          resumen.id_proveedor as idx,resumen.ruc,resumen.proveedor,sum(COALESCE(resumen.cantidad,0)) as cantidad,sum(COALESCE(resumen.despacho,0)) as despacho,sum(COALESCE(resumen.cancelado,0)) as cancelado,sum(COALESCE(resumen.importe,0)) as importe
         FROM
         (
-          SELECT tgtc.idx as id_guia,tgtc.servicio,tgtc.proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,'' as color,IF(COALESCE(tpid.isprototipo),0,tpid.cantidad) as cantidad,tgtc.costo,GROUP_CONCAT(dp.nro_guia) as id_despacho,SUM(COALESCE(IF(COALESCE(tpid.isprototipo),0,dp.despacho),0)-COALESCE(dp.caidos,0)) as despacho,SUM(IF(COALESCE(tpid.isprototipo,0) = 1,0,tgtc.costo*(COALESCE(dp.despacho,0)-COALESCE(dp.caidos,0)))) as total
-          FROM tbl2_guias_traslado_det tpid 
-          JOIN tbl2_guias_traslado_cab tgtc on tgtc.idx = tpid.id_guia_CAB 
-          LEFT JOIN(
-            SELECT tdc.id_guia_origen,tdc.nro_guia,tdc.idx,tdd.id_item,tdd.precio,tdd.despacho,tdd.caidos
-            FROM tbl2_despachos_cab tdc 
-            LEFT JOIN tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
-          ) AS dp on tpid.id_guia_CAB = dp.id_guia_origen and tpid.idx = dp.id_item
-          WHERE tgtc.estado <> 'FINALIZADO' and tgtc.costo > 0 and tgtc.tipo = 'SERVICIOS' and tgtc.servicio <> 'ACABADOS'
-          GROUP BY tgtc.idx,tgtc.servicio,tgtc.proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,tpid.cantidad,tgtc.costo
+          SELECT resumen.id_guia as idx,resumen.id_proveedor,resumen.servicio,resumen.ruc,resumen.proveedor,resumen.producto,resumen.marca,resumen.modelo,resumen.costo,SUM(resumen.cantidad) as cantidad,
+            SUM(resumen.despacho) as despacho,sum(resumen.total) as importe,
+            (
+              SELECT sum(importe) as cancelado FROM tbl2_conciliaciones tc  
+              JOIN tbl2_abonos ta on ta.idx = tc.id_abono_CAB 
+              WHERE resumen.id_guia = tc.id_servicio_CAB
+            ) as cancelado
+            FROM
+            (
+              SELECT tgtc.idx as id_guia,tp.idx as id_proveedor,tgtc.servicio,COALESCE(tp.ruc,'') as ruc,COALESCE(tgtc.proveedor,'OTROS') as proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,'' as color,IF(COALESCE(tpid.isprototipo),0,tpid.cantidad) as cantidad,tgtc.costo,GROUP_CONCAT(dp.nro_guia) as id_despacho,SUM(COALESCE(IF(COALESCE(tpid.isprototipo),0,dp.despacho),0)-COALESCE(dp.caidos,0)) as despacho,SUM(IF(COALESCE(tpid.isprototipo,0) = 1,0,tgtc.costo*(COALESCE(dp.despacho,0)-COALESCE(dp.caidos,0)))) as total
+              FROM tbl2_guias_traslado_det tpid 
+              JOIN tbl2_guias_traslado_cab tgtc on tgtc.idx = tpid.id_guia_CAB 
+              LEFT JOIN tbl2_proveedor tp on tp.idx = tgtc.id_proveedor_CAB
+              LEFT JOIN(
+                SELECT tdc.id_guia_origen,tdc.nro_guia,tdc.idx,tdd.id_item,tdd.precio,tdd.despacho,tdd.caidos
+                FROM tbl2_despachos_cab tdc 
+                LEFT JOIN tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
+              ) AS dp on tpid.id_guia_CAB = dp.id_guia_origen and tpid.idx = dp.id_item
+              WHERE tgtc.costo > 0 and tgtc.tipo = 'SERVICIOS' and tgtc.servicio <> 'ACABADOS'
+              GROUP BY tgtc.idx,tp.idx,tgtc.servicio,tp.ruc,tgtc.proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,tpid.cantidad,tgtc.costo
+            ) as resumen
+            GROUP BY resumen.id_guia,resumen.id_proveedor,resumen.servicio,resumen.proveedor,resumen.producto,resumen.marca,resumen.modelo,resumen.costo
         ) as resumen
-        GROUP BY resumen.id_guia,resumen.servicio,resumen.proveedor,resumen.producto,resumen.marca,resumen.modelo,resumen.costo
-      `, [limit])
+        WHERE 1=1 ${busqueda}
+        GROUP BY resumen.ruc,resumen.id_proveedor,resumen.proveedor
+      `)
       await conn.end()
       return rows
     } catch (error) {
@@ -203,76 +241,63 @@ export default class AbonoServicio{
       await conn.connect(); 
       conn.beginTransaction()
       if(data.id){
-        console.log("Actualizando cabecera")
+        console.log("Actualizando nuevo abono a servicio")
         await conn.query('UPDATE tbl2_abonos SET entidad_bancaria=NULLIF(?, ""),cuenta_corriente=NULLIF(?, ""),id_proveedor=NULLIF(?, ""),num_operacion=NULLIF(?, ""),moneda=NULLIF(?, ""),fec_pago=NULLIF(?, ""),importe=NULLIF(?, ""),tipo=NULLIF(?, ""),tipo_operacion=NULLIF(?, "") WHERE idx = ?',[cabecera.entidad_bancaria,cabecera.cuenta_corriente,cabecera.id_proveedor_CAB,cabecera.num_operacion,cabecera.moneda,cabecera.fec_pago,cabecera.importe,cabecera.tipo,cabecera.tipo_operacion,parseInt(data.id)])
 
-        // const [res,fld] = await conn.query("SELECT *FROM tbl2_conciliaciones WHERE id_abono_CAB = "+ parseInt(data.id))
-        // const ids_delete = res.filter(row=> row.idx !== ''  && !articulos.map(fila=>parseInt(fila.idx)).includes(parseInt(row.idx)) )
-        // const insert = async ()=>{
-        //   const fila = articulos.shift()
-        //   if(fila){
-        //     if(!fila.idx || fila.idx == ''){
-        //       const [results,fields] = await conn.query('INSERT INTO tbl2_conciliaciones(ruc_,id_servicio_CAB,id_abono_CAB) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',fila.idx,parseInt(data.id)]);
-        //     }
-        //     await insert()
-        //   }else{
-        //     return Promise.resolve('')
-        //   }
-        // }
-        // await insert()
-        // const eliminar = async ()=>{
-        //   console.log("Dentro de elimiado")
-        //   const fila = ids_delete.shift()
-        //   if(fila){
-        //     await conn.query('DELETE FROM `tbl2_conciliaciones` WHERE `id_abono_CAB` = ? and `idx` = ?',[parseInt(data.id),parseInt(fila.idx)])
-        //     await eliminar()
-        //   }else{
-        //     return Promise.resolve('')
-        //   }
-        // }
-        // await eliminar()
-
       }else{     
-        console.log("Insertando cabecera")   
+        console.log("Insertando nuevo a bonno")  
         try{
           const [res,fields] = await conn.query('INSERT INTO tbl2_abonos(ruc_,entidad_bancaria,cuenta_corriente,id_proveedor,num_operacion,moneda,fec_pago,importe,tipo,tipo_operacion) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',cabecera.entidad_bancaria,cabecera.cuenta_corriente,cabecera.id_proveedor_CAB,cabecera.num_operacion,cabecera.moneda,cabecera.fec_pago,cabecera.pago,cabecera.tipo,cabecera.tipo_operacion])
 
           const [results] = await conn.query('INSERT INTO tbl2_conciliaciones(ruc_,id_servicio_CAB,id_abono_CAB) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',articulos[0].id_guia,res.insertId]);
 
-          // const insert = async ()=>{
-          //   const fila = articulos.shift()
-          //   if(fila){  
-          //     const [results,fields] = await conn.query('INSERT INTO tbl2_conciliaciones(ruc_,id_servicio_CAB,id_abono_CAB) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',fila.idx,res.insertId]);
+          ///////////////////////////////////////////////
+          //// GENERANDO MOVIMIENTOS DE CAJA POR EGRESO
+          //////////////////////////////////////////////
+          let [infocaja] = await conn.query(`SELECT *FROM tbl2_caja tc JOIN tbl2_caja_movimientos_cab tcmc ON tc.idx = tcmc.id_caja_CAB WHERE tc.id_cuenta_corriente = ? AND tc.ruc_ = ? and tcmc.fec_operacion = ?`,[cabecera.id_cuenta_CAB,'20522094120',cabecera.fec_pago])
+          if(infocaja.length > 0){
 
-          //     await insert()
-          //   }else{
-          //     return Promise.resolve('')
-          //   }
-          // }
-          // await insert()
+            let data_mov_caja = {
+              id_cuenta_CAB:cabecera.id_cuenta_CAB,
+              fec_pago:cabecera.fec_pago,
+              usuario:18,
+              sucursal:390,
+              detalle_mov:cabecera.tipo == 'SERV' ? 'ABONO POR SERVICIO' : 'ABONO OTRO',
+              doc_cliente:'0000000000',
+              nom_cliente:cabecera.entidad_bancaria,
+              tipdoc_ref:'CP',
+              serie:'000',
+              numero:'00000',
+              documento_ref:cabecera.num_operacion,
+              vta_no_gra:cabecera.pago*-1,
+              vta_gra:'0',
+              tot_igv:'0',
+              no_gravado:'0',
+              pago:cabecera.pago,
+              idabono:res.insertId,
+            }
+            let result_mov_caja = await this.saveMovimientoCaja('EGRE', data_mov_caja)
+          }else{
+            throw new Error("No se dectecto un movimiento de caja para la fecha seleccionada")
+          }
+          //////////////////////////////////////////////
+          //////////////////////////////////////////////
 
         }catch(err){
           console.log("error en la consulta",err)
         }
       }
-      console.log("Terminando consultas")
-      // await conn.end();
-      return {ok:true,message:'Se ha guardado el registros'}
 
+      // await conn.end();
+      // conn.rollback()
+      conn.commit()
+      return {ok:true,message:'Se ha guardado el registros'}
     } catch (err) {
       console.log("Error en la transaccion",err)
-      if (conn) {
-        console.log(err)
-        conn.rollback()
-        await conn.end();
-      }
+      conn.rollback()
       return [err]
     } finally {
-      if (conn) {
-        // conn.commit()
-        conn.rollback()
-        await conn.end();
-      }
+      if (conn) await conn.end();
     }
   }
   static async saveAbonoLetra(data){
@@ -335,43 +360,74 @@ export default class AbonoServicio{
       await conn.connect(); 
       conn.beginTransaction()
       if(data.id){
-        console.log("Actualizando cabecera")
+        console.log("Actualizando cabecera,data.id")
         await conn.query('UPDATE tbl2_abonos SET entidad_bancaria=NULLIF(?, ""),cuenta_corriente=NULLIF(?, ""),id_proveedor=NULLIF(?, ""),num_operacion=NULLIF(?, ""),moneda=NULLIF(?, ""),fec_pago=NULLIF(?, ""),importe=NULLIF(?, ""),tipo=NULLIF(?, ""),tipo_operacion=NULLIF(?, "") WHERE idx = ?',[cabecera.entidad_bancaria,cabecera.cuenta_corriente,cabecera.id_proveedor_CAB,cabecera.num_operacion,cabecera.moneda,cabecera.fec_pago,cabecera.importe,cabecera.tipo,cabecera.tipo_operacion,parseInt(data.id)])
 
       }else{     
         console.log("Insertando cabecera nuevo abono")
-        try{
-          const [res,fields] = await conn.query('INSERT INTO tbl2_abonos(ruc_,entidad_bancaria,cuenta_corriente,id_proveedor,num_operacion,moneda,fec_pago,importe,tipo,tipo_operacion) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',cabecera.entidad_bancaria,cabecera.cuenta_corriente,cabecera.id_proveedor_CAB,cabecera.num_operacion,cabecera.moneda,cabecera.fec_pago,cabecera.pago,cabecera.tipo,cabecera.tipo_operacion])
+        const [res,fields] = await conn.query('INSERT INTO tbl2_abonos(ruc_,entidad_bancaria,cuenta_corriente,id_proveedor,num_operacion,moneda,fec_pago,importe,tipo,tipo_operacion) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',cabecera.entidad_bancaria,cabecera.cuenta_corriente,cabecera.id_proveedor_CAB,cabecera.num_operacion,cabecera.moneda,cabecera.fec_pago,cabecera.pago,cabecera.tipo,cabecera.tipo_operacion])
 
-          const [results] = await conn.query('INSERT INTO tbl2_conciliaciones(ruc_,id_prestamo_CAB,id_abono_CAB) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',articulos[0].idx,res.insertId]);
+        const [results] = await conn.query('INSERT INTO tbl2_conciliaciones(ruc_,id_prestamo_CAB,id_abono_CAB) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',articulos[0].idx,res.insertId]);
 
-          if(parseFloat(articulos[0].monto_cuota) == parseFloat(cabecera.pago)){
-            console.log("Realizando la actualizacion del estado de la cuota a cancelado")
-            await conn.query("UPDATE tbl2_prestamos_det tb1 SET tb1.estado_cuota = 'Pagada' where tb1.id_prestamo_CAB = ? and tb1.idx = ?",[articulos[0].id_prestamo_CAB,articulos[0].idx])
+        if(parseFloat(articulos[0].monto_cuota) == parseFloat(cabecera.pago)){
+          console.log("Realizando la actualizacion del estado de la cuota a cancelado")
+          await conn.query("UPDATE tbl2_prestamos_det tb1 SET tb1.estado_cuota = 'Pagada' where tb1.id_prestamo_CAB = ? and tb1.idx = ?",[articulos[0].id_prestamo_CAB,articulos[0].idx])
+        }
+        // try{
+        // }catch(err){
+        //   console.log("error en la consulta",err)
+        // }
+
+        ///////////////////////////////////////////////
+        //// GENERANDO MOVIMIENTOS DE CAJA POR EGRESO
+        //////////////////////////////////////////////
+
+        console.log("Generando movimiento de caja :",cabecera.id_cuenta_CAB,cabecera.fec_pago)
+        let [infocaja] = await conn.query(`SELECT *FROM tbl2_caja tc JOIN tbl2_caja_movimientos_cab tcmc ON tc.idx = tcmc.id_caja_CAB WHERE tc.id_cuenta_corriente = ? AND tc.ruc_ = ? and tcmc.fec_operacion = ?`,[cabecera.id_cuenta_CAB,'20522094120',cabecera.fec_pago])
+        if(infocaja.length > 0){
+
+          let data_mov_caja = {
+            id_cuenta_CAB:cabecera.id_cuenta_CAB,
+            fec_pago:cabecera.fec_pago,
+            usuario:18,
+            sucursal:390,
+            detalle_mov:cabecera.tipo == 'PRES' ? 'ABONO DE CUOTA POR PRESTAMO' : 'ABONO OTRO',
+            doc_cliente:'0000000000',
+            nom_cliente:cabecera.entidad_bancaria,
+            tipdoc_ref:'CP',
+            serie:'000',
+            numero:'00000',
+            documento_ref:cabecera.num_operacion,
+            vta_no_gra:cabecera.pago*-1,
+            vta_gra:'0',
+            tot_igv:'0',
+            no_gravado:'0',
+            pago:cabecera.pago,
+            idabono:res.insertId,
           }
 
-          ///////////////////////////////////////////////
-          //// GENERANDO MOVIMIENTOS DE CAJA POR EGRESO
-          //////////////////////////////////////////////
-          let result_mov_caja = await this.saveMovimientoCaja('EGRE',cabecera)
-          //////////////////////////////////////////////
-          //////////////////////////////////////////////
-        }catch(err){
-          console.log("error en la consulta",err)
+
+          let result_mov_caja = await this.saveMovimientoCaja('EGRE', data_mov_caja)
+        }else{
+          throw new Error("No se dectecto un movimiento de caja para la fecha seleccionada")
         }
+        //////////////////////////////////////////////
+        //////////////////////////////////////////////
+
+
       }
       // conn.commit()
       conn.rollback()
       return {ok:true,message:'Se ha guardado el registros'}
     } catch (err) {
-      console.log("Error en la transaccion",err)
+      console.log("Error en la transaccion pedro palotes",err)
       if (conn) conn.rollback()
       return {ok:false,message:'Se produjo el siguiente error :' + err}
     } finally {
       if (conn) await conn.end()
     }
   }
-  static async deleteAbono(idabono){
+  static async deleteAbonoServicio(idabono){
     let conn
     let resp
     try {
@@ -379,12 +435,62 @@ export default class AbonoServicio{
       conn = await mysql2.createConnection(configs[1])
       await conn.connect()
       conn.beginTransaction()
+
       await conn.query('DELETE FROM tbl2_abonos WHERE idx = ?',[idabono])
       await conn.query(`DELETE FROM tbl2_conciliaciones WHERE ruc_ = ? and id_abono_CAB = ?`,['20522094120',idabono])
+
+      conn.commit()
+      // conn.rollback()
+      resp = {ok:true,message:'Se ha eliminado el registro'}
+    } catch (error) {
+      resp = error
+      if(conn) conn.rollback()
+    } finally {
+      if(conn) conn.end()
+      return resp
+
+    }
+  }
+  static async deleteAbonoLetra(idabono){
+    let conn
+    let resp
+    try {
+      console.log("Comienza la eliminacion de la cuota del prestamo")
+      conn = await mysql2.createConnection(configs[1])
+      await conn.connect()
+      conn.beginTransaction()
+
+      await conn.query('DELETE FROM tbl2_abonos WHERE idx = ?',[idabono])
+      await conn.query(`DELETE FROM tbl2_conciliaciones WHERE ruc_ = ? and id_abono_CAB = ?`,['20522094120',idabono])
+
+      conn.commit()
+      // conn.rollback()
+      resp = {ok:true,message:'Se ha eliminado el registro'}
+    } catch (error) {
+      resp = error
+      if(conn) conn.rollback()
+    } finally {
+      if(conn) conn.end()
+      return resp
+
+    }
+  }
+  static async deleteAbonoPrestamo(idabono){
+    let conn
+    let resp
+    try {
+      console.log("Comienza la eliminacion de la cuota del prestamo")
+      conn = await mysql2.createConnection(configs[1])
+      await conn.connect()
+      conn.beginTransaction()
 
       await conn.query(`UPDATE tbl2_prestamos_det JOIN tbl2_conciliaciones on tbl2_prestamos_det.idx = tbl2_conciliaciones.id_prestamo_CAB
       set tbl2_prestamos_det.estado_cuota = 'Pendiente'
       WHERE tbl2_conciliaciones.id_abono_CAB = ?`,[idabono])
+
+      await conn.query(`DELETE FROM tbl2_caja_movimientos_det WHERE id_abono_ref = ?`,[idabono])
+      await conn.query('DELETE FROM tbl2_abonos WHERE idx = ?',[idabono])
+      await conn.query(`DELETE FROM tbl2_conciliaciones WHERE ruc_ = ? and id_abono_CAB = ?`,['20522094120',idabono])
 
       conn.commit()
       // conn.rollback()
@@ -420,9 +526,67 @@ export default class AbonoServicio{
           FROM tbl2_despachos_cab tdc 
           LEFT JOIN tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
         ) AS dp on tpid.id_guia_CAB = dp.id_guia_origen and tpid.idx = dp.id_item
-        WHERE tgtc.estado <> 'FINALIZADO' and tgtc.idx = ?
+        WHERE tgtc.idx = ?
         GROUP BY tgtc.idx,tgtc.servicio,tgtc.id_proveedor_CAB,tgtc.proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,tpid.cantidad,tgtc.costo,tpid.isprototipo
       `,[idguia])
+      // const [resultado] = await conn.query(`
+      //   SELECT tgtc.idx as id_guia,tgtc.servicio,tgtc.id_proveedor_CAB,tgtc.proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,'' as color,tpid.cantidad,tgtc.costo,COALESCE(tpid.isprototipo,0) as isprototipo,GROUP_CONCAT(dp.nro_guia) as id_despacho,sum(COALESCE(dp.despacho,0)) as despacho,sum(COALESCE(dp.caidos,0)) as caidos,
+      //   (
+      //     SELECT sum(importe) as cancelado FROM tbl2_conciliaciones tc  
+      //     JOIN tbl2_abonos ta on ta.idx = tc.id_abono_CAB 
+      //     WHERE tgtc.idx = tc.id_servicio_CAB
+      //   ) as cancelado
+      //   FROM tbl2_guias_traslado_det tpid 
+      //   JOIN tbl2_guias_traslado_cab tgtc on tgtc.idx = tpid.id_guia_CAB 
+      //   JOIN(
+      //     SELECT tdc.id_guia_origen,tdc.nro_guia,tdc.idx,tdd.id_item,tdd.precio,tdd.despacho,tdd.caidos
+      //     FROM tbl2_despachos_cab tdc 
+      //     LEFT JOIN tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
+      //   ) AS dp on tpid.id_guia_CAB = dp.id_guia_origen and tpid.idx = dp.id_item
+      //   WHERE tgtc.estado <> 'FINALIZADO' and tgtc.idx = ?
+      //   GROUP BY tgtc.idx,tgtc.servicio,tgtc.id_proveedor_CAB,tgtc.proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,tpid.cantidad,tgtc.costo,tpid.isprototipo
+      // `,[idguia])
+
+      await conn.end()
+      return resultado
+    } catch (error) {
+      console.log(error)
+    } finally {
+      if(conn) conn.end()
+    }
+  }
+  static async getProveedorServiciosStatusDetalle(idproveedor){
+    let conn
+    try {
+      conn = await mysql2.createConnection(configs[1])
+      await conn.connect()
+
+      const [cabecera,fields] = await conn.query(`SELECT sum(importe) as cancelado FROM tbl2_guias_traslado_cab tgtc JOIN tbl2_conciliaciones tc ON tgtc.idx = tc.id_servicio_CAB JOIN tbl2_abonos ta ON ta.idx = tc.id_abono_CAB WHERE tgtc.idx = ?`,[idproveedor])
+
+      let [resultado] = await conn.execute(`
+        SELECT resumen.id_guia as idx,resumen.servicio,resumen.proveedor,resumen.producto,resumen.marca,resumen.modelo,resumen.costo,SUM(resumen.cantidad) as cantidad,
+        SUM(resumen.despacho) as despacho,sum(resumen.total) as importe,
+        (
+          SELECT sum(importe) as cancelado FROM tbl2_conciliaciones tc  
+          JOIN tbl2_abonos ta on ta.idx = tc.id_abono_CAB 
+          WHERE resumen.id_guia = tc.id_servicio_CAB
+        ) as cancelado
+        FROM
+        (
+          SELECT tgtc.idx as id_guia,tgtc.servicio,COALESCE(tgtc.proveedor,'') as proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,'' as color,IF(COALESCE(tpid.isprototipo),0,tpid.cantidad) as cantidad,tgtc.costo,GROUP_CONCAT(dp.nro_guia) as id_despacho,SUM(COALESCE(IF(COALESCE(tpid.isprototipo),0,dp.despacho),0)-COALESCE(dp.caidos,0)) as despacho,SUM(IF(COALESCE(tpid.isprototipo,0) = 1,0,tgtc.costo*(COALESCE(dp.despacho,0)-COALESCE(dp.caidos,0)))) as total
+          FROM tbl2_guias_traslado_det tpid 
+          JOIN tbl2_guias_traslado_cab tgtc on tgtc.idx = tpid.id_guia_CAB 
+          LEFT JOIN(
+            SELECT tdc.id_guia_origen,tdc.nro_guia,tdc.idx,tdd.id_item,tdd.precio,tdd.despacho,tdd.caidos
+            FROM tbl2_despachos_cab tdc 
+            LEFT JOIN tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
+          ) AS dp on tpid.id_guia_CAB = dp.id_guia_origen and tpid.idx = dp.id_item
+          WHERE tgtc.costo > 0 and tgtc.tipo = 'SERVICIOS' and tgtc.servicio <> 'ACABADOS' and tgtc.id_proveedor_CAB = ?
+          GROUP BY tgtc.idx,tgtc.servicio,tgtc.proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,tpid.cantidad,tgtc.costo
+        ) as resumen
+        GROUP BY resumen.id_guia,resumen.servicio,resumen.proveedor,resumen.producto,resumen.marca,resumen.modelo,resumen.costo
+      `, [idproveedor])
+
 
       await conn.end()
       return resultado
@@ -523,7 +687,7 @@ export default class AbonoServicio{
   }
   static async saveMovimientoCaja(tipo,data){
     let conn
-    console.log("Informacion movimiento:",data)
+    console.log("Informacion movimiento de caja:",data)
     try {
       conn = await mysql2.createConnection(configs[1])
       await conn.connect(); 
@@ -549,13 +713,17 @@ export default class AbonoServicio{
         console.log("Empieza la seccion B del registro de movimiento de caja")
 
         let idcajamov_cab = null
-        let info_caja = await conn.query("SELECT *FROM tbl2_caja WHERE id_cuenta_corriente = ? LIMIT 1",[parseInt(data.id_cuenta_CAB)])
-        let busqueda_movcaja = await conn.query(`SELECT *FROM tbl2_caja_movimientos_cab tcmc JOIN tbl2_caja tc on tc.idx = tcmc.id_caja_CAB WHERE tc.ruc_ = '20522094120' AND tcmc.fec_operacion = ? AND tc.id_cuenta_corriente = ?`,[data.fec_pago,parseInt(data.id_cuenta_CAB)])
+        let [info_caja] = await conn.query("SELECT *FROM tbl2_caja WHERE id_cuenta_corriente = ? LIMIT 1",[parseInt(data.id_cuenta_CAB)])
+        let [busqueda_movcaja] = await conn.query(`SELECT tcmc.* FROM tbl2_caja_movimientos_cab tcmc JOIN tbl2_caja tc on tc.idx = tcmc.id_caja_CAB WHERE tc.ruc_ = '20522094120' AND tcmc.fec_operacion = ? AND tc.id_cuenta_corriente = ?`,[data.fec_pago,parseInt(data.id_cuenta_CAB)])
+
+        console.log("El resultado de la busqueda de la caja es:",info_caja, busqueda_movcaja)
         
         if(!(busqueda_movcaja.length > 0)){
-          let insertcaja = await conn.query(`INSERT INTO tbl2_caja_movimientos_cab(id_caja_CAB,ruc_,fec_operacion,saldo_inicial,ingresos,egresos,saldo_final,referencia,usuario,sucursal) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))`,[info_caja[0].idx,'20522094120',data.fec_pago,monto,0,0,0,'MOV CAJA AL' + data.fec_pago,'NEXT',390])
+          console.log("Dentro de generacon caja movimiento cabecera 1")
+          let [insertcaja] = await conn.query(`INSERT INTO tbl2_caja_movimientos_cab(id_caja_CAB,ruc_,fec_operacion,saldo_inicial,ingresos,egresos,saldo_final,referencia,usuario,sucursal) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))`,[info_caja[0].idx,'20522094120',data.fec_pago,monto,0,0,0,'MOV CAJA AL' + data.fec_pago,'NEXT',390])
           idcajamov_cab = insertcaja.insertId
         } else{
+          console.log("Dentro de generacion caja movimiento cabecera 2",busqueda_movcaja[0])
           idcajamov_cab = busqueda_movcaja[0].idx
         }
 
@@ -569,11 +737,15 @@ export default class AbonoServicio{
         let egresos = 0;
         if(tipo == 'EGRE'){
           egresos = parseFloat(data.pago)*-1 + (busqueda_movcaja.length > 0 ? parseFloat(busqueda_movcaja[0].egresos) : 0)
+          // egresos = parseFloat(data.pago)*-1
         } else if(tipo == 'INGR'){
           ingresos = parseFloat(data.pago) + (busqueda_movcaja.length > 0 ? parseFloat(busqueda_movcaja[0].ingresos) : 0)
+          // ingresos = parseFloat(data.pago)
         }
+        console.log("El valor de los ingresos es:",ingresos)
+        console.log("El valor de los egresos es:",egresos)
 
-        await conn.query(`INSERT INTO tbl2_caja_movimientos_det(ruc_,id_cajamov_CAB,fec_operacion,monto,usuario,sucursal,detalle_mov,doc_cliente,nom_cliente,tipodoc_ref,serie,numero,documento_ref,vta_no_gra,vta_gra,tot_igv,no_gravado,id_abono_ref) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),)`,['20522094120',idcajamov_cab,data.fec_pago,egresos,18,390,data.concepto,'id proveedor del prestamo','proveedor del prestamo','CP',0,0,data.num_operacion,'',0,0,0,0,data.idx])
+        await conn.query(`INSERT INTO tbl2_caja_movimientos_det(ruc_,id_cajamov_CAB,fec_operacion,monto,usuario,sucursal,detalle_mov,doc_cliente,nom_cliente,tipdoc_ref,serie,numero,documento_ref,vta_no_gra,vta_gra,tot_igv,no_gravado,id_abono_ref) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))`,['20522094120',idcajamov_cab,data.fec_pago,parseFloat(data.pago)*-1,data.usuario,data.sucursal,data.detalle_mov,data.doc_cliente,data.nom_cliente,data.tipdoc_ref,data.serie,data.numero,data.documento_ref,data.vta_no_gra,data.vta_gra,data.tot_igv,data.no_gravado,data.idabono])  
 
         await conn.query("UPDATE tbl2_caja_movimientos_cab SET ingresos = ?, egresos = ? WHERE ruc_ = ? and id_caja_cab = ?",[ingresos,egresos,'20522094120',idcajamov_cab])
 
@@ -581,8 +753,8 @@ export default class AbonoServicio{
         console.log("Se produjo un error durane el registro del movimiento de caja",error)
       }
 
-      // conn.commit()
-      conn.rollback()
+      conn.commit()
+      // conn.rollback()
       return {ok:true,message:'Se ha guardado el registros'}
     } catch (err) {
       console.log("Error en la transaccion",err)
@@ -632,6 +804,23 @@ export default class AbonoServicio{
       return {ok:false,message:'Se produjo el siguiente error :' + err}
     } finally {
       if (conn) await conn.end()
+    }
+  }
+  static async getPenalidadBygGuia(idguia){
+    console.log("Dentro de la busqueda del las penalidades por guia")
+    let conn
+    try {
+      conn = await mysql2.createConnection(configs[1])
+      await conn.connect()
+      const [cabecera] = await conn.execute(`
+        SELECT *FROM tbl2_guias_traslado_adi WHERE id_guia_CAB = ?
+      `,[idguia])
+      await conn.end()
+      return cabecera
+    } catch (error) {
+      
+    } finally {
+      if(conn) conn.end()
     }
   }
 }

@@ -8,8 +8,8 @@ export default class AbonoController {
     res.json(abonos)
   }
   static async getServiciosStatus(req, res) {
-    const { limit } = req.params
-    const servicios = await AbonoServicio.getServiciosStatus(limit)
+    const search = req.params.search ?? ""
+    const servicios = await AbonoServicio.getServiciosStatus(search)
     res.json(servicios)
   }
   static async getLetrasStatus(req, res) {
@@ -20,6 +20,11 @@ export default class AbonoController {
   static async getServiciosStatusDetalle(req, res) {
     const { idguia } = req.params
     const servicios = await AbonoServicio.getServiciosStatusDetalle(idguia)
+    res.json(servicios)
+  }
+  static async getProveedorServiciosStatusDetalle(req, res) {
+    const { idproveedor } = req.params
+    const servicios = await AbonoServicio.getProveedorServiciosStatusDetalle(idproveedor)
     res.json(servicios)
   }
   static async getLetrasStatusDetalle(req, res) {
@@ -64,9 +69,19 @@ export default class AbonoController {
     const resp = await AbonoServicio.saveAbonoPrestamo(params)
     res.json(resp)
   }
-  static async deleteAbono(req, res) {
+  static async deleteAbonoServicio(req, res) {
     const { idabono } = req.params
-    const resp = await AbonoServicio.deleteAbono(idabono)
+    const resp = await AbonoServicio.deleteAbonoServicio(idabono)
+    res.json(resp)
+  }
+  static async deleteAbonoLetra(req, res) {
+    const { idabono } = req.params
+    const resp = await AbonoServicio.deleteAbonoLetra(idabono)
+    res.json(resp)
+  }
+  static async deleteAbonoPrestamo(req, res) {
+    const { idabono } = req.params
+    const resp = await AbonoServicio.deleteAbonoPrestamo(idabono)
     res.json(resp)
   }
   static async getCuentasList(req, res) {
@@ -88,5 +103,10 @@ export default class AbonoController {
     const params = req.body
     const resp = await AbonoServicio.deleteMovimientoCaja(params)
     res.json(resp)
+  }
+  static async getPenalidadBygGuia(req, res) {
+    const idguia = req.params.idguia ?? ""
+    const servicios = await AbonoServicio.getPenalidadBygGuia(idguia)
+    res.json(servicios)
   }
 }

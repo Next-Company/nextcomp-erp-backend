@@ -5,7 +5,8 @@ export const AbonoRouter = new Router();
 
 
 AbonoRouter.get('/letras',AbonoController.getLetrasStatus)
-AbonoRouter.get('/servicios/:limit',AbonoController.getServiciosStatus)
+AbonoRouter.get('/servicios/:search',AbonoController.getServiciosStatus)
+AbonoRouter.get('/servicios/',AbonoController.getServiciosStatus)
 
 
 
@@ -19,9 +20,12 @@ AbonoRouter.put('/saveabonoServicio',AbonoController.saveAbonoServicio)
 AbonoRouter.put('/saveabonoLetra',AbonoController.saveAbonoLetra)
 AbonoRouter.put('/saveabonoPrestamo',AbonoController.saveAbonoPrestamo)
 
-AbonoRouter.delete('/deleteabono/:idabono',AbonoController.deleteAbono)
+AbonoRouter.delete('/deleteabonoServicio/:idabono',AbonoController.deleteAbonoServicio)
+AbonoRouter.delete('/deleteabonoLetra/:idabono',AbonoController.deleteAbonoLetra)
+AbonoRouter.delete('/deleteabonoPrestamo/:idabono',AbonoController.deleteAbonoPrestamo)
 
 AbonoRouter.get('/serviciostatusdetalle/:idguia',AbonoController.getServiciosStatusDetalle)
+AbonoRouter.get('/proveedorserviciostatusdetalle/:idproveedor',AbonoController.getProveedorServiciosStatusDetalle)
 AbonoRouter.get('/letrastatusdetalle/:idletra',AbonoController.getLetrasStatusDetalle)
 AbonoRouter.get('/prestamostatusdetalle/:idprestamo',AbonoController.getPrestamoStatusDetalle)
 
@@ -33,3 +37,5 @@ AbonoRouter.get('/test', AbonoController.getServiciosStatus)
 AbonoRouter.get('/saveMovimientoCaja',AbonoController.saveMovimientoCaja)
 AbonoRouter.get('/updateMovimientoCaja',AbonoController.updateMovimientoCaja)
 AbonoRouter.get('/deleteMovimientoCaja',AbonoController.deleteMovimientoCaja)
+
+AbonoRouter.get('/getpenalidadbyguia/:idguia',AbonoController.getPenalidadBygGuia)
