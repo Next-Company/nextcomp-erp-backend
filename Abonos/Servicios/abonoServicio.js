@@ -233,6 +233,7 @@ export default class AbonoServicio{
     const results = {ok:true,message:'test'}
     const cabecera = JSON.parse(data.info)
     const articulos = JSON.parse(data.detalle)
+    const penalidades = articulos.penalidades ?? []
 
     console.log("Informacion cabecera:",cabecera)
     console.log("Informacion detalle:",articulos)
@@ -254,32 +255,32 @@ export default class AbonoServicio{
           ///////////////////////////////////////////////
           //// GENERANDO MOVIMIENTOS DE CAJA POR EGRESO
           //////////////////////////////////////////////
-          let [infocaja] = await conn.query(`SELECT *FROM tbl2_caja tc JOIN tbl2_caja_movimientos_cab tcmc ON tc.idx = tcmc.id_caja_CAB WHERE tc.id_cuenta_corriente = ? AND tc.ruc_ = ? and tcmc.fec_operacion = ?`,[cabecera.id_cuenta_CAB,'20522094120',cabecera.fec_pago])
-          if(infocaja.length > 0){
+          // let [infocaja] = await conn.query(`SELECT *FROM tbl2_caja tc JOIN tbl2_caja_movimientos_cab tcmc ON tc.idx = tcmc.id_caja_CAB WHERE tc.id_cuenta_corriente = ? AND tc.ruc_ = ? and tcmc.fec_operacion = ?`,[cabecera.id_cuenta_CAB,'20522094120',cabecera.fec_pago])
+          // if(infocaja.length > 0){
 
-            let data_mov_caja = {
-              id_cuenta_CAB:cabecera.id_cuenta_CAB,
-              fec_pago:cabecera.fec_pago,
-              usuario:18,
-              sucursal:390,
-              detalle_mov:cabecera.tipo == 'SERV' ? 'ABONO POR SERVICIO' : 'ABONO OTRO',
-              doc_cliente:'0000000000',
-              nom_cliente:cabecera.entidad_bancaria,
-              tipdoc_ref:'CP',
-              serie:'000',
-              numero:'00000',
-              documento_ref:cabecera.num_operacion,
-              vta_no_gra:cabecera.pago*-1,
-              vta_gra:'0',
-              tot_igv:'0',
-              no_gravado:'0',
-              pago:cabecera.pago,
-              idabono:res.insertId,
-            }
-            let result_mov_caja = await this.saveMovimientoCaja('EGRE', data_mov_caja)
-          }else{
-            throw new Error("No se dectecto un movimiento de caja para la fecha seleccionada")
-          }
+          //   let data_mov_caja = {
+          //     id_cuenta_CAB:cabecera.id_cuenta_CAB,
+          //     fec_pago:cabecera.fec_pago,
+          //     usuario:18,
+          //     sucursal:390,
+          //     detalle_mov:cabecera.tipo == 'SERV' ? 'ABONO POR SERVICIO' : 'ABONO OTRO',
+          //     doc_cliente:'0000000000',
+          //     nom_cliente:cabecera.entidad_bancaria,
+          //     tipdoc_ref:'CP',
+          //     serie:'000',
+          //     numero:'00000',
+          //     documento_ref:cabecera.num_operacion,
+          //     vta_no_gra:cabecera.pago*-1,
+          //     vta_gra:'0',
+          //     tot_igv:'0',
+          //     no_gravado:'0',
+          //     pago:cabecera.pago,
+          //     idabono:res.insertId,
+          //   }
+          //   let result_mov_caja = await this.saveMovimientoCaja('EGRE', data_mov_caja)
+          // }else{
+          //   throw new Error("No se dectecto un movimiento de caja para la fecha seleccionada")
+          // }
           //////////////////////////////////////////////
           //////////////////////////////////////////////
 
@@ -289,8 +290,8 @@ export default class AbonoServicio{
       }
 
       // await conn.end();
-      // conn.rollback()
-      conn.commit()
+      conn.rollback()
+      // conn.commit()
       return {ok:true,message:'Se ha guardado el registros'}
     } catch (err) {
       console.log("Error en la transaccion",err)
@@ -570,7 +571,11 @@ export default class AbonoServicio{
           SELECT sum(importe) as cancelado FROM tbl2_conciliaciones tc  
           JOIN tbl2_abonos ta on ta.idx = tc.id_abono_CAB 
           WHERE resumen.id_guia = tc.id_servicio_CAB
-        ) as cancelado
+        ) as cancelado,
+        (
+          SELECT COALESCE(sum(tgta.importe),0) FROM tbl2_guias_traslado_adi tgta 
+          WHERE tgta.id_guia_CAB = resumen.id_guia
+        ) as descuentos
         FROM
         (
           SELECT tgtc.idx as id_guia,tgtc.servicio,COALESCE(tgtc.proveedor,'') as proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,'' as color,IF(COALESCE(tpid.isprototipo),0,tpid.cantidad) as cantidad,tgtc.costo,GROUP_CONCAT(dp.nro_guia) as id_despacho,SUM(COALESCE(IF(COALESCE(tpid.isprototipo),0,dp.despacho),0)-COALESCE(dp.caidos,0)) as despacho,SUM(IF(COALESCE(tpid.isprototipo,0) = 1,0,tgtc.costo*(COALESCE(dp.despacho,0)-COALESCE(dp.caidos,0)))) as total
@@ -815,6 +820,22 @@ export default class AbonoServicio{
       const [cabecera] = await conn.execute(`
         SELECT *FROM tbl2_guias_traslado_adi WHERE id_guia_CAB = ?
       `,[idguia])
+      await conn.end()
+      return cabecera
+    } catch (error) {
+      
+    } finally {
+      if(conn) conn.end()
+    }
+  }
+  static async getPenalidadesList(){
+    let conn
+    try {
+      conn = await mysql2.createConnection(configs[1])
+      await conn.connect()
+      const [cabecera] = await conn.execute(`SELECT *FROM tbl2_penalidades_servicios`)
+
+      console.log("Resultado de la busqueda de penalidades:",cabecera)
       await conn.end()
       return cabecera
     } catch (error) {

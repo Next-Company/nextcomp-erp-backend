@@ -39,3 +39,4 @@ AbonoRouter.get('/updateMovimientoCaja',AbonoController.updateMovimientoCaja)
 AbonoRouter.get('/deleteMovimientoCaja',AbonoController.deleteMovimientoCaja)
 
 AbonoRouter.get('/getpenalidadbyguia/:idguia',AbonoController.getPenalidadBygGuia)
+AbonoRouter.get('/getpenalidadeslist/',AbonoController.getPenalidadesList)

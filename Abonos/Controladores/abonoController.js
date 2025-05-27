@@ -109,4 +109,8 @@ export default class AbonoController {
     const servicios = await AbonoServicio.getPenalidadBygGuia(idguia)
     res.json(servicios)
   }
+  static async getPenalidadesList(req, res) {
+    const penalidades = await AbonoServicio.getPenalidadesList()
+    res.json(penalidades)
+  }
 }
