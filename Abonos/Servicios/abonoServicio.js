@@ -69,7 +69,7 @@ export default class AbonoServicio{
           SELECT resumen.id_guia as idx,resumen.id_proveedor,resumen.servicio,resumen.ruc,resumen.proveedor,resumen.producto,resumen.marca,resumen.modelo,resumen.costo,SUM(resumen.cantidad) as cantidad,
             SUM(resumen.despacho) as despacho,sum(resumen.total) as importe,
             (
-              SELECT sum(importe) as cancelado FROM tbl2_conciliaciones tc  
+              SELECT COALESCE(sum(tc.importe_conciliacion),0) as cancelado FROM tbl2_conciliaciones tc  
               JOIN tbl2_abonos ta on ta.idx = tc.id_abono_CAB 
               WHERE resumen.id_guia = tc.id_servicio_CAB
             ) as cancelado
@@ -237,6 +237,7 @@ export default class AbonoServicio{
 
     console.log("Informacion cabecera:",cabecera)
     console.log("Informacion detalle:",articulos)
+    console.log("Informacion penalidades:",penalidades)
     try {
       conn = await mysql2.createConnection(configs[1])
       await conn.connect(); 
@@ -250,7 +251,34 @@ export default class AbonoServicio{
         try{
           const [res,fields] = await conn.query('INSERT INTO tbl2_abonos(ruc_,entidad_bancaria,cuenta_corriente,id_proveedor,num_operacion,moneda,fec_pago,importe,tipo,tipo_operacion) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',cabecera.entidad_bancaria,cabecera.cuenta_corriente,cabecera.id_proveedor_CAB,cabecera.num_operacion,cabecera.moneda,cabecera.fec_pago,cabecera.pago,cabecera.tipo,cabecera.tipo_operacion])
 
-          const [results] = await conn.query('INSERT INTO tbl2_conciliaciones(ruc_,id_servicio_CAB,id_abono_CAB) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',articulos[0].id_guia,res.insertId]);
+          // row.penalidades.length > 0
+
+          let conciliaciones_data = articulos.map(row=>['20522094120',row.idx,res.insertId,row.importe])
+          // console.log("Info filter:",articulos.filter(row=>row.penalidades && row.penalidades.length > 0).map(row=>row.penalidades))
+          // let penalidades_data = articulos.filter(row=>row.penalidades && row.penalidades.length > 0).map(row=>row.penalidades)
+
+          console.log("Data conciliaciones :",conciliaciones_data)
+          
+
+          let penalidades_data = []
+
+          // new Promsise((resolve,reject)=>{
+
+          // })
+          articulos.filter(row=>row.penalidades && row.penalidades.length > 0).map(row=>row.penalidades).forEach(element => {
+            element.forEach(row=>{
+              penalidades_data.push([row.idguia,row.idx,row.observacion,row.importe])
+            })
+          });
+          console.log("Data penalidades :",penalidades_data)
+
+          // const [results] = await conn.query('INSERT INTO tbl2_conciliaciones(ruc_,id_servicio_CAB,id_abono_CAB) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',articulos[0].id_guia,res.insertId]);
+          await conn.query('INSERT INTO tbl2_conciliaciones(ruc_,id_servicio_CAB,id_abono_CAB,importe_conciliacion) VALUES ?',[conciliaciones_data]);
+
+          await conn.query('INSERT INTO tbl2_guias_traslado_adi(id_guia_CAB,id_penalidad_CAB,observaciones,importe) VALUES ?',[penalidades_data])
+
+
+          // await conn.query(`INSERT INTO tbl2_guias_traslado_adi(id_guia_CAB,id_penalidad_CAB,observaciones,importe) VALUES ?`,[penalidades])
 
           ///////////////////////////////////////////////
           //// GENERANDO MOVIMIENTOS DE CAJA POR EGRESO
@@ -290,8 +318,8 @@ export default class AbonoServicio{
       }
 
       // await conn.end();
-      conn.rollback()
-      // conn.commit()
+      // conn.rollback()
+      conn.commit()
       return {ok:true,message:'Se ha guardado el registros'}
     } catch (err) {
       console.log("Error en la transaccion",err)
@@ -568,7 +596,7 @@ export default class AbonoServicio{
         SELECT resumen.id_guia as idx,resumen.servicio,resumen.proveedor,resumen.producto,resumen.marca,resumen.modelo,resumen.costo,SUM(resumen.cantidad) as cantidad,
         SUM(resumen.despacho) as despacho,sum(resumen.total) as importe,
         (
-          SELECT sum(importe) as cancelado FROM tbl2_conciliaciones tc  
+          SELECT COALESCE(sum(importe_conciliacion),0) as cancelado FROM tbl2_conciliaciones tc  
           JOIN tbl2_abonos ta on ta.idx = tc.id_abono_CAB 
           WHERE resumen.id_guia = tc.id_servicio_CAB
         ) as cancelado,
@@ -591,10 +619,26 @@ export default class AbonoServicio{
         ) as resumen
         GROUP BY resumen.id_guia,resumen.servicio,resumen.proveedor,resumen.producto,resumen.marca,resumen.modelo,resumen.costo
       `, [idproveedor])
+      
+      console.log("Otro resultado adicional")
+      console.log("Resultado preliminar de busqueda de status abono:",resultado)
 
+      let resultado_new = resultado.reduce((ca,item)=>{
+
+        let cc = async ()=>{
+          let bb = []
+          let [penalidades_list] = await conn.execute(`SELECT id_guia_CAB as idguia,id_penalidad_CAB as idx,observaciones as observacion,importe FROM tbl2_guias_traslado_adi WHERE id_guia_CAB = `+item.idx)  
+          penalidades_list.length > 0 ? ca.push({...item,penalidades:penalidades_list}) : ca.push(item)
+          return ca
+        }
+        cc()
+        return ca
+      },[])
+      console.log("Infor en procesar :",resultado_new)
 
       await conn.end()
-      return resultado
+      // return resultado
+      return resultado_new
     } catch (error) {
       console.log(error)
     } finally {
