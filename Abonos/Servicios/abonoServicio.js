@@ -9,14 +9,30 @@ export default class AbonoServicio{
     try {
       conn = await mysql2.createConnection(configs[1])
       await conn.connect()
+      // const [cabecera] = await conn.execute(`
+      //   SELECT IF(ISNULL(tc.id_servicio_CAB),tpic.idx,tgtc.idx) as idref,IF(ISNULL(tc.id_servicio_CAB),tpic.proveedor,tgtc.proveedor) as proveedor,ta.* 
+      //   FROM tbl2_abonos ta 
+      //   JOIN tbl2_conciliaciones tc on ta.idx = tc.id_abono_CAB 
+      //   LEFT JOIN tbl2_guias_traslado_cab tgtc on tc.id_servicio_CAB = tgtc.idx
+      //   LEFT JOIN tbl2_pedidos_insumos_cab tpic on tc.id_pedido_CAB = tpic.idx
+      //   WHERE ta.tipo in ('SERV','PRES','CRED') and ta.ruc_ = '20522094120' 
+      //   ORDER BY ta.idx DESC
+      // `, [limit])
       const [cabecera] = await conn.execute(`
-        SELECT IF(ISNULL(tc.id_servicio_CAB),tpic.idx,tgtc.idx) as idref,IF(ISNULL(tc.id_servicio_CAB),tpic.proveedor,tgtc.proveedor) as proveedor,ta.* 
+        select 
+          cc.idx,GROUP_CONCAT(cc.idref) as idref,cc.proveedor,cc.entidad_bancaria,cc.tipo,cc.tipo_operacion,cc.num_operacion,cc.moneda,cc.importe,cc.fec_pago
+        from
+        (
+        SELECT ta.idx,IF(ISNULL(tc.id_servicio_CAB),tpic.idx,tgtc.idx) as idref,IF(ISNULL(tc.id_servicio_CAB),tpic.proveedor,tgtc.proveedor) as proveedor,
+        ta.entidad_bancaria,ta.tipo,ta.tipo_operacion,ta.num_operacion,ta.moneda,ta.importe,ta.fec_pago
         FROM tbl2_abonos ta 
         JOIN tbl2_conciliaciones tc on ta.idx = tc.id_abono_CAB 
         LEFT JOIN tbl2_guias_traslado_cab tgtc on tc.id_servicio_CAB = tgtc.idx
         LEFT JOIN tbl2_pedidos_insumos_cab tpic on tc.id_pedido_CAB = tpic.idx
         WHERE ta.tipo in ('SERV','PRES','CRED') and ta.ruc_ = '20522094120' 
-        ORDER BY ta.idx DESC
+        ) as cc
+        group by cc.idx,cc.proveedor,cc.entidad_bancaria,cc.tipo,cc.tipo_operacion,cc.num_operacion,cc.moneda,cc.fec_pago
+        order by cc.idx desc
       `, [limit])
       await conn.end()
       return cabecera
@@ -249,11 +265,11 @@ export default class AbonoServicio{
       }else{     
         console.log("Insertando nuevo a bonno")  
         try{
-          const [res,fields] = await conn.query('INSERT INTO tbl2_abonos(ruc_,entidad_bancaria,cuenta_corriente,id_proveedor,num_operacion,moneda,fec_pago,importe,tipo,tipo_operacion) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',cabecera.entidad_bancaria,cabecera.cuenta_corriente,cabecera.id_proveedor_CAB,cabecera.num_operacion,cabecera.moneda,cabecera.fec_pago,cabecera.pago,cabecera.tipo,cabecera.tipo_operacion])
+          const [res,fields] = await conn.query('INSERT INTO tbl2_abonos(ruc_,entidad_bancaria,cuenta_corriente,id_proveedor,num_operacion,moneda,fec_pago,importe,tipo,tipo_operacion) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',cabecera.entidad_bancaria,cabecera.cuenta_corriente,cabecera.id_proveedor_CAB,cabecera.num_operacion,cabecera.moneda,cabecera.fec_pago,cabecera.importe,cabecera.tipo,cabecera.tipo_operacion])
 
           // row.penalidades.length > 0
 
-          let conciliaciones_data = articulos.map(row=>['20522094120',row.idx,res.insertId,row.importe])
+          let conciliaciones_data = articulos.map(row=>['20522094120',row.idx,res.insertId,row.pago])
           // console.log("Info filter:",articulos.filter(row=>row.penalidades && row.penalidades.length > 0).map(row=>row.penalidades))
           // let penalidades_data = articulos.filter(row=>row.penalidades && row.penalidades.length > 0).map(row=>row.penalidades)
 
@@ -261,13 +277,9 @@ export default class AbonoServicio{
           
 
           let penalidades_data = []
-
-          // new Promsise((resolve,reject)=>{
-
-          // })
           articulos.filter(row=>row.penalidades && row.penalidades.length > 0).map(row=>row.penalidades).forEach(element => {
             element.forEach(row=>{
-              penalidades_data.push([row.idguia,row.idx,row.observacion,row.importe])
+              penalidades_data.push([row.idguia,row.idx,row.observacion,row.pago])
             })
           });
           console.log("Data penalidades :",penalidades_data)
@@ -275,7 +287,7 @@ export default class AbonoServicio{
           // const [results] = await conn.query('INSERT INTO tbl2_conciliaciones(ruc_,id_servicio_CAB,id_abono_CAB) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',articulos[0].id_guia,res.insertId]);
           await conn.query('INSERT INTO tbl2_conciliaciones(ruc_,id_servicio_CAB,id_abono_CAB,importe_conciliacion) VALUES ?',[conciliaciones_data]);
 
-          await conn.query('INSERT INTO tbl2_guias_traslado_adi(id_guia_CAB,id_penalidad_CAB,observaciones,importe) VALUES ?',[penalidades_data])
+          // await conn.query('INSERT INTO tbl2_guias_traslado_adi(id_guia_CAB,id_penalidad_CAB,observaciones,importe) VALUES ?',[penalidades_data])
 
 
           // await conn.query(`INSERT INTO tbl2_guias_traslado_adi(id_guia_CAB,id_penalidad_CAB,observaciones,importe) VALUES ?`,[penalidades])

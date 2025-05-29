@@ -672,6 +672,25 @@ export class ProduccionModel {
       }
     }
   }
+  static async getInfoGuiaPenalidades(id) {
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      const [results, fields] = await conn.query(`
+      SELECT tgta.id_guia_CAB as idguia,tgta.id_penalidad_CAB as idx,tgta.observaciones as observacion,tgta.importe FROM tbl2_guias_traslado_adi tgta WHERE tgta.id_guia_CAB = ? 
+      `, [id]);
+
+      return results
+    } catch (err) {
+      console.log(err)
+      return [err]
+    } finally {
+      if (conn) {
+        await conn.end();
+      }
+    }
+  }
   static async searchGuia(search) {
     let conn
     try {
@@ -704,7 +723,11 @@ export class ProduccionModel {
     const results = { ok: true, message: 'test' }
     const cabecera = JSON.parse(data.info)
     const articulos = JSON.parse(data.detalle)
+    const penalidades = data.penalidades ? JSON.parse(data.penalidades) : []
+
     console.log('Detalle multiple:', cabecera)
+    console.log('Detalle penalidads:', penalidades)
+
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
@@ -758,6 +781,12 @@ export class ProduccionModel {
         }
         await eliminar()
 
+        if(penalidades.length > 0){
+          let penalidadesinsert = penalidades.map(row=>[row.idguia,row.idx,row.observacion,row.importe])
+          await conn.query("DELETE FROM tbl2_guias_traslado_adi WHERE id_guia_CAB = ?",[parseInt(data.id)])
+          await conn.query("INSERT INTO tbl2_guias_traslado_adi(id_guia_CAB,id_penalidad_CAB,observaciones,importe) VALUES ?",[penalidadesinsert])
+        }
+
       } else {
         try {
           const [res, fields] = await conn.query('INSERT INTO tbl2_guias_traslado_cab(orden_ref,tipo,id_proveedor_CAB,proveedor,servicio,fec_emision,fec_retorno,costo,observaciones,motivo_traslado,responsable,modelo,marca,producto,destino,id_orden_CAB) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [cabecera.orden_ref, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.servicio, cabecera.fec_emision, cabecera.fec_retorno, cabecera.costo, cabecera.observaciones, cabecera.motivo_traslado, cabecera.responsable, cabecera.modelo, cabecera.marca, cabecera.producto, cabecera.destino,33])
@@ -780,28 +809,22 @@ export class ProduccionModel {
             }
           }
           await insert()
-
         } catch (err) {
           console.log("error en la consulta", err)
         }
-
         // console.log("filas afectadas :",res)
         // await conn.end();
-        return results
+        // return results
       }
+      conn.commit()
+      // conn.rollback()
+      return {ok:true,message:'Registro completo'}
     } catch (err) {
       console.log(err)
-      if (conn) {
-        conn.rollback()
-        await conn.end()
-      }
+      if (conn) conn.rollback()
       return [err]
     } finally {
-      if (conn) {
-        conn.commit()
-        // conn.rollback()
-        await conn.end();
-      }
+      if (conn) await conn.end();
     }
   }
   static async eliminarInfoGuias(id) {
@@ -1640,6 +1663,22 @@ export class ProduccionModel {
     } finally {
       if(conn){
         await conn.end()
+      }
+    }
+  }
+  static async getListaPenalidades() {
+    let conn
+    try {
+      let conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      const [resultado] = await conn.query(`SELECT *FROM tbl2_penalidades_servicios`)
+      await conn.end();
+      return resultado;
+    } catch (err) {
+      return err
+    } finally {
+      if (conn) {
+        await conn.end();
       }
     }
   }

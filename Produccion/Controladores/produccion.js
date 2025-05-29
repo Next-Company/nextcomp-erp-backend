@@ -571,12 +571,11 @@ export class ProduccionController {
   }
   static async getInfoGuias(req, res) {
     const id = req.params.id
-    // const data = await ProduccionModel.getInfoGuias(id)
     const data = await ProduccionModel.getInfoGuiaCab(id)
     const data2 = await ProduccionModel.getInfoGuiaDet(id)
-    console.log("Info guia by id:", data)
-    console.log("Info guia by id detalle:", data2)
-    res.json([data[0], data2])
+    const data3 = await ProduccionModel.getInfoGuiaPenalidades(id)
+    const data4 = await ProduccionModel.getListaPenalidades()
+    res.json([data[0], data2, data3, data4])
   }
   static async searchGuia(req, res) {
     const { info } = req.params
@@ -1292,5 +1291,8 @@ export class ProduccionController {
     const data = await ProduccionModel.validaInventario()
     res.json(data)
   }
-
+  static async getPenalidadesServicios(req, res) {
+    const data = await ProduccionModel.getPenalidadesServicios()
+    res.json(data)
+  }
 }
