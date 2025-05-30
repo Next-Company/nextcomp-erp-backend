@@ -1,3 +1,4 @@
+import { response } from "express"
 import AbonoServicio from "../Servicios/abonoServicio.js"
 
 export default class AbonoController {
@@ -62,7 +63,11 @@ export default class AbonoController {
   static async saveAbonoLetra(req, res) {
     const params = req.body
     const resp = await AbonoServicio.saveAbonoLetra(params)
-    res.json(resp)
+    res.json(resp)  
+    // if(resp.ok){
+    // }else{
+    //   res.http json(resp)
+    // }
   }
   static async saveAbonoPrestamo(req, res) {
     const params = req.body

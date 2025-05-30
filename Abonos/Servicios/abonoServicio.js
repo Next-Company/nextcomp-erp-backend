@@ -264,79 +264,78 @@ export default class AbonoServicio{
 
       }else{     
         console.log("Insertando nuevo a bonno")  
-        try{
-          const [res,fields] = await conn.query('INSERT INTO tbl2_abonos(ruc_,entidad_bancaria,cuenta_corriente,id_proveedor,num_operacion,moneda,fec_pago,importe,tipo,tipo_operacion) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',cabecera.entidad_bancaria,cabecera.cuenta_corriente,cabecera.id_proveedor_CAB,cabecera.num_operacion,cabecera.moneda,cabecera.fec_pago,cabecera.importe,cabecera.tipo,cabecera.tipo_operacion])
+        const [res,fields] = await conn.query('INSERT INTO tbl2_abonos(ruc_,entidad_bancaria,cuenta_corriente,id_proveedor,num_operacion,moneda,fec_pago,importe,tipo,tipo_operacion) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',cabecera.entidad_bancaria,cabecera.cuenta_corriente,cabecera.id_proveedor_CAB,cabecera.num_operacion,cabecera.moneda,cabecera.fec_pago,cabecera.importe,cabecera.tipo,cabecera.tipo_operacion])
 
-          // row.penalidades.length > 0
+        // row.penalidades.length > 0
 
-          let conciliaciones_data = articulos.map(row=>['20522094120',row.idx,res.insertId,row.pago])
-          // console.log("Info filter:",articulos.filter(row=>row.penalidades && row.penalidades.length > 0).map(row=>row.penalidades))
-          // let penalidades_data = articulos.filter(row=>row.penalidades && row.penalidades.length > 0).map(row=>row.penalidades)
+        let conciliaciones_data = articulos.map(row=>['20522094120',row.idx,res.insertId,row.pago])
+        // console.log("Info filter:",articulos.filter(row=>row.penalidades && row.penalidades.length > 0).map(row=>row.penalidades))
+        // let penalidades_data = articulos.filter(row=>row.penalidades && row.penalidades.length > 0).map(row=>row.penalidades)
 
-          console.log("Data conciliaciones :",conciliaciones_data)
-          
+        console.log("Data conciliaciones :",conciliaciones_data)
+        
 
-          let penalidades_data = []
-          articulos.filter(row=>row.penalidades && row.penalidades.length > 0).map(row=>row.penalidades).forEach(element => {
-            element.forEach(row=>{
-              penalidades_data.push([row.idguia,row.idx,row.observacion,row.pago])
-            })
-          });
-          console.log("Data penalidades :",penalidades_data)
+        let penalidades_data = []
+        articulos.filter(row=>row.penalidades && row.penalidades.length > 0).map(row=>row.penalidades).forEach(element => {
+          element.forEach(row=>{
+            penalidades_data.push([row.idguia,row.idx,row.observacion,row.pago])
+          })
+        });
+        console.log("Data penalidades :",penalidades_data)
 
-          // const [results] = await conn.query('INSERT INTO tbl2_conciliaciones(ruc_,id_servicio_CAB,id_abono_CAB) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',articulos[0].id_guia,res.insertId]);
-          await conn.query('INSERT INTO tbl2_conciliaciones(ruc_,id_servicio_CAB,id_abono_CAB,importe_conciliacion) VALUES ?',[conciliaciones_data]);
+        // const [results] = await conn.query('INSERT INTO tbl2_conciliaciones(ruc_,id_servicio_CAB,id_abono_CAB) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',articulos[0].id_guia,res.insertId]);
+        await conn.query('INSERT INTO tbl2_conciliaciones(ruc_,id_servicio_CAB,id_abono_CAB,importe_conciliacion) VALUES ?',[conciliaciones_data]);
 
-          // await conn.query('INSERT INTO tbl2_guias_traslado_adi(id_guia_CAB,id_penalidad_CAB,observaciones,importe) VALUES ?',[penalidades_data])
+        // await conn.query('INSERT INTO tbl2_guias_traslado_adi(id_guia_CAB,id_penalidad_CAB,observaciones,importe) VALUES ?',[penalidades_data])
 
 
-          // await conn.query(`INSERT INTO tbl2_guias_traslado_adi(id_guia_CAB,id_penalidad_CAB,observaciones,importe) VALUES ?`,[penalidades])
+        // await conn.query(`INSERT INTO tbl2_guias_traslado_adi(id_guia_CAB,id_penalidad_CAB,observaciones,importe) VALUES ?`,[penalidades])
 
-          ///////////////////////////////////////////////
-          //// GENERANDO MOVIMIENTOS DE CAJA POR EGRESO
-          //////////////////////////////////////////////
-          // let [infocaja] = await conn.query(`SELECT *FROM tbl2_caja tc JOIN tbl2_caja_movimientos_cab tcmc ON tc.idx = tcmc.id_caja_CAB WHERE tc.id_cuenta_corriente = ? AND tc.ruc_ = ? and tcmc.fec_operacion = ?`,[cabecera.id_cuenta_CAB,'20522094120',cabecera.fec_pago])
-          // if(infocaja.length > 0){
+        /////////////////////////////////////////////
+        // GENERANDO MOVIMIENTOS DE CAJA POR EGRESO
+        ////////////////////////////////////////////
+        let [infocaja] = await conn.query(`SELECT *FROM tbl2_caja tc JOIN tbl2_caja_movimientos_cab tcmc ON tc.idx = tcmc.id_caja_CAB WHERE tc.id_cuenta_corriente = ? AND tc.ruc_ = ? and tcmc.fec_operacion = ?`,[cabecera.id_cuenta_CAB,'20522094120',cabecera.fec_pago])
+        if(infocaja.length > 0){
 
-          //   let data_mov_caja = {
-          //     id_cuenta_CAB:cabecera.id_cuenta_CAB,
-          //     fec_pago:cabecera.fec_pago,
-          //     usuario:18,
-          //     sucursal:390,
-          //     detalle_mov:cabecera.tipo == 'SERV' ? 'ABONO POR SERVICIO' : 'ABONO OTRO',
-          //     doc_cliente:'0000000000',
-          //     nom_cliente:cabecera.entidad_bancaria,
-          //     tipdoc_ref:'CP',
-          //     serie:'000',
-          //     numero:'00000',
-          //     documento_ref:cabecera.num_operacion,
-          //     vta_no_gra:cabecera.pago*-1,
-          //     vta_gra:'0',
-          //     tot_igv:'0',
-          //     no_gravado:'0',
-          //     pago:cabecera.pago,
-          //     idabono:res.insertId,
-          //   }
-          //   let result_mov_caja = await this.saveMovimientoCaja('EGRE', data_mov_caja)
-          // }else{
-          //   throw new Error("No se dectecto un movimiento de caja para la fecha seleccionada")
-          // }
-          //////////////////////////////////////////////
-          //////////////////////////////////////////////
-
-        }catch(err){
-          console.log("error en la consulta",err)
+          let data_mov_caja = {
+            id_cuenta_CAB:cabecera.id_cuenta_CAB,
+            fec_pago:cabecera.fec_pago,
+            usuario:18,
+            sucursal:390,
+            detalle_mov:'ABONO POR SERVICIO',
+            doc_cliente:'0000000000',
+            nom_cliente:cabecera.entidad_bancaria,
+            tipdoc_ref:'CP',
+            serie:'000',
+            numero:'00000',
+            documento_ref:cabecera.num_operacion,
+            vta_no_gra:cabecera.pago*-1,
+            vta_gra:'0',
+            tot_igv:'0',
+            no_gravado:'0',
+            pago:cabecera.pago,
+            idabono:res.insertId,
+          }
+          let result_mov_caja = await this.saveMovimientoCaja('EGRE', data_mov_caja)
+        }else{
+          throw new Error("No se dectecto un movimiento de caja para la fecha seleccionada")
         }
+        ////////////////////////////////////////////
+        ////////////////////////////////////////////
+        // try{
+
+        // }catch(err){
+        //   console.log("error en la consulta",err)
+        // }
       }
 
-      // await conn.end();
-      // conn.rollback()
-      conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return {ok:true,message:'Se ha guardado el registros'}
     } catch (err) {
       console.log("Error en la transaccion",err)
-      conn.rollback()
-      return [err]
+      if (conn) conn.rollback()
+      return {ok:false,message:err.message}
     } finally {
       if (conn) await conn.end();
     }
@@ -364,28 +363,56 @@ export default class AbonoServicio{
 
           const [results] = await conn.query('INSERT INTO tbl2_conciliaciones(ruc_,id_letra_CAB,id_abono_CAB) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',cabecera.idletra,res.insertId]);
 
+          ///////////////////////////////////////////////
+          //// GENERANDO MOVIMIENTOS DE CAJA POR EGRESO
+          //////////////////////////////////////////////
+          console.log("Generando movimiento de caja :",cabecera.id_cuenta_CAB,cabecera.fec_pago)
+          let [infocaja] = await conn.query(`SELECT *FROM tbl2_caja tc JOIN tbl2_caja_movimientos_cab tcmc ON tc.idx = tcmc.id_caja_CAB WHERE tc.id_cuenta_corriente = ? AND tc.ruc_ = ? and tcmc.fec_operacion = ?`,[cabecera.id_cuenta_CAB,'20522094120',cabecera.fec_pago])
+          if(infocaja.length > 0){
+
+            let data_mov_caja = {
+              id_cuenta_CAB:cabecera.id_cuenta_CAB,
+              fec_pago:cabecera.fec_pago,
+              usuario:18,
+              sucursal:390,
+              detalle_mov:'ABONO DE LETRA PEDIDO',
+              doc_cliente:'0000000000',
+              nom_cliente:cabecera.entidad_bancaria,
+              tipdoc_ref:'CP',
+              serie:'000',
+              numero:'00000',
+              documento_ref:cabecera.num_operacion,
+              vta_no_gra:cabecera.pago*-1,
+              vta_gra:'0',
+              tot_igv:'0',
+              no_gravado:'0',
+              pago:cabecera.pago,
+              idabono:res.insertId
+            }
+            console.log("Ejecutando registro de movimiento de caja")
+            let result_mov_caja = await this.saveMovimientoCaja('EGRE', data_mov_caja)
+          }else{
+            // throw Error("No se dectecto un movimiento de caja para la fecha seleccionada")
+            throw 'No se dectecto un movimiento de caja para la fecha seleccionada'
+          }
+          //////////////////////////////////////////////
+          //////////////////////////////////////////////
+
         }catch(err){
           console.log("error en la consulta",err)
         }
+        
       }
       console.log("Terminando consultas")
-      // await conn.end()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return {ok:true,message:'Se ha guardado el registros'}
-
     } catch (err) {
       console.log("Error en la transaccion",err)
-      if (conn) {
-        console.log(err)
-        conn.rollback()
-        await conn.end();
-      }
-      return [err]
+      if (conn) conn.rollback()
+      return {ok:false,message:err}
     } finally {
-      if (conn) {
-        conn.commit()
-        // conn.rollback()
-        await conn.end();
-      }
+      if (conn) await conn.end();
     }
   }
   static async saveAbonoPrestamo(data){
@@ -432,7 +459,7 @@ export default class AbonoServicio{
             fec_pago:cabecera.fec_pago,
             usuario:18,
             sucursal:390,
-            detalle_mov:cabecera.tipo == 'PRES' ? 'ABONO DE CUOTA POR PRESTAMO' : 'ABONO OTRO',
+            detalle_mov:'ABONO DE CUOTA POR PRESTAMO',
             doc_cliente:'0000000000',
             nom_cliente:cabecera.entidad_bancaria,
             tipdoc_ref:'CP',
@@ -446,8 +473,6 @@ export default class AbonoServicio{
             pago:cabecera.pago,
             idabono:res.insertId,
           }
-
-
           let result_mov_caja = await this.saveMovimientoCaja('EGRE', data_mov_caja)
         }else{
           throw new Error("No se dectecto un movimiento de caja para la fecha seleccionada")
@@ -457,8 +482,8 @@ export default class AbonoServicio{
 
 
       }
-      // conn.commit()
-      conn.rollback()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return {ok:true,message:'Se ha guardado el registros'}
     } catch (err) {
       console.log("Error en la transaccion pedro palotes",err)
@@ -479,17 +504,16 @@ export default class AbonoServicio{
 
       await conn.query('DELETE FROM tbl2_abonos WHERE idx = ?',[idabono])
       await conn.query(`DELETE FROM tbl2_conciliaciones WHERE ruc_ = ? and id_abono_CAB = ?`,['20522094120',idabono])
+      await this.deleteMovimientoCaja(idabono)
 
-      conn.commit()
-      // conn.rollback()
-      resp = {ok:true,message:'Se ha eliminado el registro'}
+      // if(conn) conn.rollback()
+      if(conn) conn.commit()
+      return {ok:true,message:'Se ha eliminado el registro'}
     } catch (error) {
-      resp = error
       if(conn) conn.rollback()
+      return {ok:false,message:'Se produjo un error durante el eliminado del abono'}
     } finally {
       if(conn) conn.end()
-      return resp
-
     }
   }
   static async deleteAbonoLetra(idabono){
@@ -503,17 +527,18 @@ export default class AbonoServicio{
 
       await conn.query('DELETE FROM tbl2_abonos WHERE idx = ?',[idabono])
       await conn.query(`DELETE FROM tbl2_conciliaciones WHERE ruc_ = ? and id_abono_CAB = ?`,['20522094120',idabono])
+      await this.deleteMovimientoCaja(idabono)
 
-      conn.commit()
-      // conn.rollback()
-      resp = {ok:true,message:'Se ha eliminado el registro'}
+      // if(conn) conn.rollback()
+      if(conn) conn.commit()
+      return {ok:true,message:'Se ha eliminado el registro'}
     } catch (error) {
       resp = error
       if(conn) conn.rollback()
+      return {ok:false,message:'Error en el eliminado del movimiento de caja'}
     } finally {
       if(conn) conn.end()
-      return resp
-
+      // return res
     }
   }
   static async deleteAbonoPrestamo(idabono){
@@ -529,20 +554,19 @@ export default class AbonoServicio{
       set tbl2_prestamos_det.estado_cuota = 'Pendiente'
       WHERE tbl2_conciliaciones.id_abono_CAB = ?`,[idabono])
 
-      await conn.query(`DELETE FROM tbl2_caja_movimientos_det WHERE id_abono_ref = ?`,[idabono])
       await conn.query('DELETE FROM tbl2_abonos WHERE idx = ?',[idabono])
       await conn.query(`DELETE FROM tbl2_conciliaciones WHERE ruc_ = ? and id_abono_CAB = ?`,['20522094120',idabono])
+      await this.deleteMovimientoCaja(idabono)
 
-      conn.commit()
-      // conn.rollback()
-      resp = {ok:true,message:'Se ha eliminado el registro'}
+      // if(conn) conn.rollback()
+      if(conn) conn.commit()
+      return {ok:true,message:'Se ha eliminado el pago con éxito'}
     } catch (error) {
       resp = error
       if(conn) conn.rollback()
+      return {ok:false,message:'Se produjo un error durante la eliminacion del pago'}
     } finally {
       if(conn) conn.end()
-      return resp
-
     }
   }
   static async getServiciosStatusDetalle(idguia){
@@ -666,7 +690,7 @@ export default class AbonoServicio{
       console.log("EL id de la letra es: ",idletra)
       
       const [resultado, fields] = await conn.query(`
-        SELECT tlc.importe,tla.idx,tb1.idx as idpedido,tb1.orden_ref,tb1.tipo,tb1.proveedor,tb1.fec_emision,tb1.fec_retorno,COALESCE(DATEDIFF(tb1.fec_retorno,tb1.fec_emision),'') as tiempo_produccion,tlc.idx as idletra,
+        SELECT tlc.importe,tlc.idx,tlc.num_letra,tb1.idx as idpedido,tb1.orden_ref,tb1.tipo,tb1.proveedor,tb1.fec_emision,tb1.fec_retorno,COALESCE(DATEDIFF(tb1.fec_retorno,tb1.fec_emision),'') as tiempo_produccion,tlc.idx as idletra,
         COALESCE(DATEDIFF(STR_TO_DATE(tb1.fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,tb1.forma_pago,tb1.estado,
         (
           SELECT SUM(COALESCE(cantidad,0)) FROM tbl2_pedidos_insumos_det tpid 
@@ -803,19 +827,22 @@ export default class AbonoServicio{
           ingresos = parseFloat(data.pago) + (busqueda_movcaja.length > 0 ? parseFloat(busqueda_movcaja[0].ingresos) : 0)
           // ingresos = parseFloat(data.pago)
         }
-        console.log("El valor de los ingresos es:",ingresos)
-        console.log("El valor de los egresos es:",egresos)
+        
 
         await conn.query(`INSERT INTO tbl2_caja_movimientos_det(ruc_,id_cajamov_CAB,fec_operacion,monto,usuario,sucursal,detalle_mov,doc_cliente,nom_cliente,tipdoc_ref,serie,numero,documento_ref,vta_no_gra,vta_gra,tot_igv,no_gravado,id_abono_ref) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))`,['20522094120',idcajamov_cab,data.fec_pago,parseFloat(data.pago)*-1,data.usuario,data.sucursal,data.detalle_mov,data.doc_cliente,data.nom_cliente,data.tipdoc_ref,data.serie,data.numero,data.documento_ref,data.vta_no_gra,data.vta_gra,data.tot_igv,data.no_gravado,data.idabono])  
 
-        await conn.query("UPDATE tbl2_caja_movimientos_cab SET ingresos = ?, egresos = ? WHERE ruc_ = ? and id_caja_cab = ?",[ingresos,egresos,'20522094120',idcajamov_cab])
+        console.log("El valor de los ingresos es:",ingresos)
+        console.log("El valor de los egresos es:",egresos)
+        console.log("Id del movimiento de caja:",idcajamov_cab)
+
+        await conn.query("UPDATE tbl2_caja_movimientos_cab SET ingresos = ?, egresos = ? WHERE ruc_ = ? and idx = ?",[ingresos,egresos,'20522094120',idcajamov_cab])
 
       } catch (error) {
         console.log("Se produjo un error durane el registro del movimiento de caja",error)
       }
 
-      conn.commit()
-      // conn.rollback()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return {ok:true,message:'Se ha guardado el registros'}
     } catch (err) {
       console.log("Error en la transaccion",err)
@@ -825,39 +852,26 @@ export default class AbonoServicio{
       if (conn) await conn.end()
     }
   }
-  static async deleteMovimientoCaja(data){
+  static async deleteMovimientoCaja(idabono){
     let conn
-    const results = {ok:true,message:'test'}
-    const cabecera = JSON.parse(data.info)
-    const articulos = JSON.parse(data.detalle)
-
-    console.log("Informacion cabecera:",cabecera)
-    console.log("Informacion detalle:",articulos)
     try {
       conn = await mysql2.createConnection(configs[1])
       await conn.connect(); 
       conn.beginTransaction()
-      if(data.id){
-        console.log("Actualizando cabecera")
-        // await conn.query('UPDATE tbl2_abonos SET entidad_bancaria=NULLIF(?, ""),cuenta_corriente=NULLIF(?, ""),id_proveedor=NULLIF(?, ""),num_operacion=NULLIF(?, ""),moneda=NULLIF(?, ""),fec_pago=NULLIF(?, ""),importe=NULLIF(?, ""),tipo=NULLIF(?, ""),tipo_operacion=NULLIF(?, "") WHERE idx = ?',[cabecera.entidad_bancaria,cabecera.cuenta_corriente,cabecera.id_proveedor_CAB,cabecera.num_operacion,cabecera.moneda,cabecera.fec_pago,cabecera.importe,cabecera.tipo,cabecera.tipo_operacion,parseInt(data.id)])
 
-      }else{     
-        console.log("Insertando cabecera nuevo abono")
-        try{
-          // const [res,fields] = await conn.query('INSERT INTO tbl2_abonos(ruc_,entidad_bancaria,cuenta_corriente,id_proveedor,num_operacion,moneda,fec_pago,importe,tipo,tipo_operacion) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',cabecera.entidad_bancaria,cabecera.cuenta_corriente,cabecera.id_proveedor_CAB,cabecera.num_operacion,cabecera.moneda,cabecera.fec_pago,cabecera.pago,cabecera.tipo,cabecera.tipo_operacion])
+      try{
 
-          // const [results] = await conn.query('INSERT INTO tbl2_conciliaciones(ruc_,id_prestamo_CAB,id_abono_CAB) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',articulos[0].idx,res.insertId]);
+        let [info_movimiento] = await conn.query(`SELECT *FROM tbl2_caja_movimientos_det WHERE id_abono_ref = ?`,[idabono])
+        await conn.query(`DELETE FROM tbl2_caja_movimientos_det WHERE id_abono_ref = ${idabono} and ruc_ = '20522094120'`)
+        await conn.query("UPDATE tbl2_caja_movimientos_cab SET egresos = egresos - ? WHERE ruc_ = ? and idx = ?",[info_movimiento[0].monto,'20522094120',info_movimiento[0].id_cajamov_CAB])
+        console.log("Infomacion del movuimiento de caja :",info_movimiento)
 
-          // if(parseFloat(articulos[0].monto_cuota) == parseFloat(cabecera.pago)){
-          //   console.log("Realizando la actualizacion del estado de la cuota a cancelado")
-          //   await conn.query("UPDATE tbl2_prestamos_det tb1 SET tb1.estado_cuota = 'Pagada' where tb1.id_prestamo_CAB = ? and tb1.idx = ?",[articulos[0].id_prestamo_CAB,articulos[0].idx])
-          // }
-        }catch(err){
-          console.log("error en la consulta",err)
-        }
+      }catch(err){
+        console.log("error en la consulta",err)
       }
-      conn.commit()
-      // conn.rollback()
+  
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return {ok:true,message:'Se ha guardado el registros'}
     } catch (err) {
       console.log("Error en la transaccion",err)

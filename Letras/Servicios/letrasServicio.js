@@ -78,6 +78,7 @@ export class LetrasService{
         ) as cancelado
         FROM tbl2_pedidos_insumos_cab tb1
         JOIN tbl2_letras_adi tla ON tla.id_pedido_CAB = tb1.idx
+        WHERE tla.id_letra_CAB = ?
         `,[id]);
         console.log("Consultando info cancela pedido:",result2)
 
@@ -272,7 +273,7 @@ export class LetrasService{
           WHERE tla.id_pedido_CAB = tb1.idx
         ) as cancelado
         FROM tbl2_pedidos_insumos_cab tb1
-        WHERE tb1.id_proveedor_CAB = ?
+        WHERE tb1.id_proveedor_CAB = ? AND tb1.estado <> 'ANULADO'
         ORDER BY created_at DESC 
         LIMIT 100
         `,[idproveedor]);
