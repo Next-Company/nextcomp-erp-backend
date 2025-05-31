@@ -110,7 +110,7 @@ export class OrdenesModel {
       let sql = ''
       const table = info.table
       const id = info.idx
-      console.log("Empezando guardado de orodenes")
+      console.log("Empezando guardado de orodenses",info,user_data)
 
       if (id == '') {
         sql = 'SELECT *FROM `' + table + '` LIMIT 1';
@@ -137,6 +137,8 @@ export class OrdenesModel {
           return carry
         }, [])
         const values = campos.map(row => info[row])
+
+        console.log("Lista de valores a insertar:",values)
 
         if (consulta.length > 0) {
           sql = 'UPDATE `' + table + '` SET ' + campos.map(row => row + " = NULLIF(?,'')").toString() + ' WHERE `' + (table == 'tbl2_fases_prod_ordenes' ? 'idx' : 'id_cab_orden') + '` = ' + id;
