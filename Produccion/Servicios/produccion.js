@@ -10,7 +10,15 @@ export class ProduccionModel {
 
       let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(COALESCE(TRIM(oc),''),' ',COALESCE(TRIM(cliente),''),' ',COALESCE(TRIM(marca),''),' ',COALESCE(TRIM(producto),''),' ',COALESCE(TRIM(modelos),''))) > 0").join(" ") : ""
 
-      const [results, fields] = await conn.query(`select * from viewProduccionOrdenes where 1=1 ${extra} order by idx desc`);
+      const [results, fields] = await conn.query(`
+        select 
+        *,
+        DATE_FORMAT(fec_emitida,'%d/%m/%Y') as fec_emitida_orden,
+        DATE_FORMAT(fec_entrega,'%d/%m/%Y') as fec_entrega_orden,
+        COALESCE(DATEDIFF(STR_TO_DATE(fec_entrega,'%Y-%m-%d'),STR_TO_DATE(fec_emitida,'%Y-%m-%d') ),0) as dias_produccion,
+        1COALESCE(DATEDIFF(STR_TO_DATE(fec_entrega,'%Y-%m-%d'),date(now())),0) as dias_pendientes 
+        from viewProduccionOrdenes 
+        where 1=1 ${extra} order by idx desc`);
       await conn.end();
 
       return results
@@ -34,7 +42,10 @@ export class ProduccionModel {
         let formateo = JSON.parse(info).map(filter => {
           return `${Object.keys(filter)[0]} like '%` + Object.values(filter)[0] + `%'`
         }).join(' and ')
-        query = 'SELECT * FROM `viewProduccionOrdenes` where ' + formateo
+        query = `SELECT 
+        *
+        FROM viewProduccionOrdenes 
+        where ` + formateo
       }
       console.log('Busqueda de ordenes produccion :', query)
       const [results, fields] = await conn.query(query)

@@ -7,6 +7,7 @@ produccionRouter.get('/inventario/:numero', ProduccionController.validaInventari
 
 produccionRouter.get('/', ProduccionController.getOrdenes)
 produccionRouter.get('/getordenes/:search', ProduccionController.getOrdenes)
+produccionRouter.get('/getordenes/', ProduccionController.getOrdenes)
 produccionRouter.get('/print', ProduccionController.printOrdenes)
 produccionRouter.post('/exportavios', ProduccionController.exportPedidoAvios)
 produccionRouter.post('/exporttelas', ProduccionController.exportPedidoTelas)

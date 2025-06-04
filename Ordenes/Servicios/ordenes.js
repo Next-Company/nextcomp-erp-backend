@@ -2,12 +2,23 @@ import { configs } from "../../Main/utils.js";
 import mysql from "mysql2/promise";
 // import { inventario } from "../../Main/config.js";
 export class OrdenesModel {
-  static async getOrdenes(user_data) {
+  static async getOrdenes(search) {
     let conn
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      const [results, fields] = await conn.query("SELECT *FROM viewProduccionOrdenes WHERE estado_orden <> 'OTRO' ORDER BY idx desc");
+
+      let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(COALESCE(TRIM(oc),''),' ',COALESCE(TRIM(cliente),''),' ',COALESCE(TRIM(marca),''),' ',COALESCE(TRIM(producto),''),' ',COALESCE(TRIM(modelos),''),' ',COALESCE(TRIM(estado_orden),''))) > 0").join(" ") : ""
+
+      const [results, fields] = await conn.query(`
+        SELECT *,
+        DATE_FORMAT(fec_emitida,'%d/%m/%Y') as fec_emitida_orden,
+        DATE_FORMAT(fec_entrega,'%d/%m/%Y') as fec_entrega_orden,
+        COALESCE(DATEDIFF(STR_TO_DATE(fec_entrega,'%Y-%m-%d'),STR_TO_DATE(fec_emitida,'%Y-%m-%d') ),0) as dias_produccion,
+        COALESCE(DATEDIFF(STR_TO_DATE(fec_entrega,'%Y-%m-%d'),date(now())),0) as dias_pendientes
+        FROM viewProduccionOrdenes 
+        WHERE 1=1 ${extra} ORDER BY idx desc
+      `);
       await conn.end();
 
       return results
@@ -297,7 +308,17 @@ export class OrdenesModel {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
 
-      const [ordenes] = await conn.query(`SELECT *,COALESCE(DATEDIFF(STR_TO_DATE(fec_entrega,'%Y-%m-%d'),date(now())),0) as dias_pendientes FROM tbl2_fases_prod_ordenes WHERE idx = ?`, [id]);
+      
+      const [ordenes] = await conn.query(`
+        SELECT tfpo.*,
+        ( COALESCE(tfpo.combo1_orden,0) + COALESCE(tfpo.combo2_orden,0) + COALESCE(tfpo.combo3_orden,0) + COALESCE(tfpo.combo4_orden,0) + COALESCE(tfpo.combo5_orden,0) + COALESCE(tfpo.combo6_orden,0) + COALESCE(tfpo.combo7_orden,0) + COALESCE(tfpo.combo8_orden,0) + COALESCE(tfpo.combo9_orden,0) ) as total_orden,
+        (COALESCE(tfph.combo1_corte,0) + COALESCE(tfph.combo2_corte,0) + COALESCE(tfph.combo3_corte,0) + COALESCE(tfph.combo4_corte,0) + COALESCE(tfph.combo5_corte,0) + COALESCE(tfph.combo6_corte,0) + COALESCE(tfph.combo7_corte,0) + COALESCE(tfph.combo8_corte,0) + COALESCE(tfph.combo9_corte,0) ) as total_corte,
+        COALESCE(DATEDIFF(STR_TO_DATE(fec_entrega,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
+        tfph.numero_corte,tfph.ruta_proceso
+        FROM tbl2_fases_prod_ordenes tfpo 
+        LEFT JOIN tbl2_fases_prod_hojacorte tfph on tfpo.idx = tfph.id_cab_orden 
+        where tfpo.idx = ?
+      `, [id]);
 
       let query = `SELECT idx,id_orden_CAB,orden_ref,producto,modelo,marca,estado,tipo,servicio,id_proveedor_CAB,proveedor,fec_emision,DATE_FORMAT(fec_emision,'%d/%m/%Y') as fec_emision_guia,fec_retorno,DATE_FORMAT(fec_retorno,'%d/%m/%Y') as fec_retorno_guia,fec_recepcion,costo,COALESCE(DATEDIFF(fec_retorno,fec_emision),'') as tiempo_produccion,COALESCE(DATEDIFF(STR_TO_DATE(fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
       (
@@ -308,7 +329,7 @@ export class OrdenesModel {
         join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
         where tdc.id_guia_origen = tbl2_guias_traslado_cab.idx
       ) as ingresos, DATE_FORMAT(created_at,'%Y-%m-%d') as created_at
-      FROM tbl2_guias_traslado_cab where tipo = 'SERVICIOS' and id_orden_cab = ? order by created_at desc`
+      FROM tbl2_guias_traslado_cab where tipo = 'SERVICIOS' and estado <> 'ANULADO' and id_orden_cab = ? order by created_at desc`
       
       let [infoguias] = await conn.query(query,[id])
       infoguias = Object.groupBy(infoguias,(item)=>item.created_at)

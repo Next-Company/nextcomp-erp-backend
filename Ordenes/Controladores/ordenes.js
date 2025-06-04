@@ -7,8 +7,9 @@ import { OrdenesModel } from "../Servicios/ordenes.js";
 
 export class OrdenesController {
   static async getOrdenes(req, reply) {
-    const user_data = req.session
-    const data = await OrdenesModel.getOrdenes(user_data)
+    // const user_data = req.session
+    const search = req.params.search ?? ''
+    const data = await OrdenesModel.getOrdenes(search)
     // console.log(data)
     reply.json(data)
   }
