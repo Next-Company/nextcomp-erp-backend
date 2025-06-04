@@ -2,30 +2,23 @@ import { configs } from "../../Main/utils.js";
 import mysql from "mysql2/promise";
 // import { inventario } from "../../Main/config.js";
 export class ProduccionModel {
-  static async getOrdenes(user_data) {
+  static async getOrdenes(search) {
     let conn
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      console.log(conn)
-      const [results, fields] = await conn.query("select * from viewProduccionOrdenes order by idx desc");
+
+      let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(COALESCE(TRIM(oc),''),' ',COALESCE(TRIM(cliente),''),' ',COALESCE(TRIM(marca),''),' ',COALESCE(TRIM(producto),''),' ',COALESCE(TRIM(modelos),''))) > 0").join(" ") : ""
+
+      const [results, fields] = await conn.query(`select * from viewProduccionOrdenes where 1=1 ${extra} order by idx desc`);
       await conn.end();
-      // conn = await conn_jsjfact.getConnection()
-      // console.log("Mostrando connect de busqueda ordens total:",conn)
-      // const sql = "select * from viewProduccionOrdenes"
-      // const [results, fields] = await conn.query(sql);
-      // console.log("MOstrando total ordenes:",results[0])s
 
       return results
     } catch (err) {
       console.log(err);
       return { 'msg': err }
     } finally {
-      if (conn) {
-        // console.log("Cerrando sessio")
-        // conn.release()
-        await conn.end();
-      }
+      if (conn) await conn.end();
     }
   }
   static async getOrdenesByParams(info) {

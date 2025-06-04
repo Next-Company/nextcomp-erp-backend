@@ -6,6 +6,7 @@ export const produccionRouter = Router()
 produccionRouter.get('/inventario/:numero', ProduccionController.validaInventario)
 
 produccionRouter.get('/', ProduccionController.getOrdenes)
+produccionRouter.get('/getordenes/:search', ProduccionController.getOrdenes)
 produccionRouter.get('/print', ProduccionController.printOrdenes)
 produccionRouter.post('/exportavios', ProduccionController.exportPedidoAvios)
 produccionRouter.post('/exporttelas', ProduccionController.exportPedidoTelas)
@@ -49,7 +50,7 @@ produccionRouter.delete('/borrarestampado/:id', ProduccionController.eliminarInf
 produccionRouter.post('/exportdespacho/:id/:idguia', ProduccionController.exportInfoDespacho)
 
 produccionRouter.post('/busqueda', ProduccionController.getOrdenesByParams)
-produccionRouter.get('/:id', ProduccionController.getOrdenesById)
+produccionRouter.get('/getordenesbyid/:id', ProduccionController.getOrdenesById)
 produccionRouter.get('/traer', ProduccionController.traerMultiSelect)
 produccionRouter.post('/multi', ProduccionController.testMultiSelect)
 produccionRouter.post('/', ProduccionController.pushItems)

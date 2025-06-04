@@ -121,15 +121,23 @@ export class OrdenesModel {
 
       console.log("La primera busqueda es: ", consulta, fields)
       if (id == '') {
-        const campos = Object.keys(info).reduce((carry, current) => {
-          fields.map(row => row.name).includes(current) && carry.push(current)
-          return carry
-        }, [])
-        const values = campos.map(row => info[row])
-        sql = 'INSERT INTO `' + table + '`(' + campos.toString() + ') VALUES (' + campos.map(row => "NULLIF(?, '')").toString() + ')';
-        console.log(sql, values)
-        const [result] = await conn.execute(sql, values)
 
+        try {
+          console.log("Dentro de nueva orden de produccion")
+          const campos = Object.keys(info).reduce((carry, current) => {
+            fields.filter(row => row.name !== 'idx').map(row => row.name).includes(current) && carry.push(current)
+            return carry
+          }, [])
+          const values = campos.map(row => info[row])
+          sql = 'INSERT INTO `' + table + '`(' + campos.toString() + ') VALUES (' + campos.map(row => "NULLIF(?, '')").toString() + ')';
+          console.log(sql, values)
+          const [result] = await conn.execute(sql, values)
+          
+        } catch (error) {
+          console.log(error)
+        }
+
+  
       } else {
 
         const campos = Object.keys(info).reduce((carry, current) => {
@@ -149,8 +157,8 @@ export class OrdenesModel {
         const [result] = await conn.execute(sql, values)
         // console.log(sql)
       }
-      // conn.rollback()
-      conn.commit()
+      if (conn) conn.commit()
+      // if (conn) conn.rollback()
       return [{ ok: true, mensaje: 'Guardado con exito' }]
     } catch (err) {
       if (conn) conn.rollback()
@@ -283,6 +291,37 @@ export class OrdenesModel {
       }
     }
   }
+  static async getStatusGeneral(id) {
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
 
- 
+      const [ordenes] = await conn.query(`SELECT *,COALESCE(DATEDIFF(STR_TO_DATE(fec_entrega,'%Y-%m-%d'),date(now())),0) as dias_pendientes FROM tbl2_fases_prod_ordenes WHERE idx = ?`, [id]);
+
+      let query = `SELECT idx,id_orden_CAB,orden_ref,producto,modelo,marca,estado,tipo,servicio,id_proveedor_CAB,proveedor,fec_emision,DATE_FORMAT(fec_emision,'%d/%m/%Y') as fec_emision_guia,fec_retorno,DATE_FORMAT(fec_retorno,'%d/%m/%Y') as fec_retorno_guia,fec_recepcion,costo,COALESCE(DATEDIFF(fec_retorno,fec_emision),'') as tiempo_produccion,COALESCE(DATEDIFF(STR_TO_DATE(fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
+      (
+        select sum(cantidad) from tbl2_guias_traslado_det tgtd where tgtd.id_guia_CAB = tbl2_guias_traslado_cab.idx
+      ) as cantidad_servicio,
+      (
+        select COALESCE(sum(COALESCE(tdd.despacho,0) + COALESCE(tdd.caidos,0)),0) as total from tbl2_despachos_cab tdc 
+        join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
+        where tdc.id_guia_origen = tbl2_guias_traslado_cab.idx
+      ) as ingresos, DATE_FORMAT(created_at,'%Y-%m-%d') as created_at
+      FROM tbl2_guias_traslado_cab where tipo = 'SERVICIOS' and id_orden_cab = ? order by created_at desc`
+      
+      let [infoguias] = await conn.query(query,[id])
+      infoguias = Object.groupBy(infoguias,(item)=>item.created_at)
+
+      // console.log("Informcion agrupada",Object.groupBy(infoguias,(created_at)=>created_at))
+
+
+      return [ordenes,infoguias]
+    } catch (err) {
+      console.log(err)
+      return [err]
+    } finally {
+      if (conn) await conn.end();
+    }
+  }
 }

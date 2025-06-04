@@ -10,8 +10,9 @@ import { concat } from "puppeteer-core/lib/esm/third_party/rxjs/rxjs.js";
 
 export class ProduccionController {
   static async getOrdenes(req, reply) {
-    const user_data = req.session
-    const data = await ProduccionModel.getOrdenes(user_data)
+    // const user_data = req.session
+    const search = req.params.search ?? ''
+    const data = await ProduccionModel.getOrdenes(search)
     // console.log(data)
     reply.json(data)
     // reply.send(JSON.stringify({"nombre":'juan'}))

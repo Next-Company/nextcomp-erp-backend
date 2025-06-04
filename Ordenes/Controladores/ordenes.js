@@ -72,5 +72,9 @@ export class OrdenesController {
     const data = await OrdenesModel.searchProveedorById(info)
     res.json(data)
   }
-
+  static async getStatusGeneral(req, res) {
+    const id = req.params.id
+    const data = await OrdenesModel.getStatusGeneral(id)
+    res.json(data)
+  }
 }
