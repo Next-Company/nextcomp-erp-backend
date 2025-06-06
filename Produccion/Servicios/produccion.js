@@ -908,7 +908,7 @@ export class ProduccionModel {
       // const [results, fields] = await conn.query('SELECT *FROM tbl2_proveedor where ruc_ = "20522094120" ' + (search !== '_' ? 'and ( ruc like ? or nom like ? )' : '') + ' limit 50',[`%${search}%`,`%${search}%`]);
       console.log("Busqueda de proveedores:", extra)
       // const [results, fields] = await conn.query('SELECT *FROM tbl2_proveedor where ruc_ = "20522094120" ' + (search !== '_' ? extra : '') + ' limit 50');
-      const [results, fields] = await conn.query('SELECT *FROM tbl2_proveedor where 1=1 ' + (search !== '_' ? extra : '') + ' limit 50');
+      const [results, fields] = await conn.query('SELECT *FROM tbl2_proveedor where ruc_ = "20522094120" ' + (search !== '_' ? extra : '') + ' limit 50');
       await conn.end();
       return results
     } catch (err) {

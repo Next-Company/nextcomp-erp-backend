@@ -1,3 +1,4 @@
+import { createRequire } from "node:module";
 import { configs } from "../../Main/utils.js";
 import mysql from "mysql2/promise";
 // import { inventario } from "../../Main/config.js";
@@ -10,7 +11,7 @@ export class OrdenesModel {
 
       let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(COALESCE(TRIM(oc),''),' ',COALESCE(TRIM(cliente),''),' ',COALESCE(TRIM(marca),''),' ',COALESCE(TRIM(producto),''),' ',COALESCE(TRIM(modelos),''),' ',COALESCE(TRIM(estado_orden),''))) > 0").join(" ") : ""
 
-      const [results, fields] = await conn.query(`
+      let [results] = await conn.query(`
         SELECT *,
         DATE_FORMAT(fec_emitida,'%d/%m/%Y') as fec_emitida_orden,
         DATE_FORMAT(fec_entrega,'%d/%m/%Y') as fec_entrega_orden,
@@ -20,6 +21,45 @@ export class OrdenesModel {
         WHERE 1=1 ${extra} ORDER BY idx desc
       `);
       await conn.end();
+
+      // console.log("Info ruta proceso",results[0].ruta_proceso,eval(results[0].ruta_proceso),JSON.parse(results[0].ruta_proceso))
+
+      results = results.reduce((carry,value)=>{
+
+        // const RUTA_COLOR = {'MOLDES':'bg-orange-400','CORTE':'bg-rose-400','CONFECCION':'bg-purple-400','OJAL':'bg-blue-400','ESTAMPADO':'bg-gray-400','LAVANDERIA':'bg-green-400','BORDADO':'bg-yellow-400','ACABADOS':'bg-red-400'}
+        const RUTA_COLOR = {'MOLDES':'bg-gray-500','CORTE':'bg-gray-500','CONFECCION':'bg-gray-500','OJAL':'bg-gray-500','ESTAMPADO':'bg-gray-500','LAVANDERIA':'bg-gray-500','BORDADO':'bg-gray-500','ACABADOS':'bg-gray-500'}
+        let ruta_ordenada = ['MOLDES','CORTE','CONFECCION','OJAL','ESTAMPADO','LAVANDERIA','BORDADO','ACABADOS']
+        let ruta_actual = JSON.parse(value.ruta_proceso)
+        let servicios = value.lista_servicios ? value.lista_servicios.split(',') : []
+
+        if(servicios.length > 0){
+          let generado = ruta_actual.concat(servicios).reduce((carry,value)=>{!carry.includes(value) && carry.push(value);return carry;},['MOLDES','CORTE'])
+          value.ruta_final = ruta_ordenada.filter(fase=>generado.includes(fase))
+          value.ruta_test = ruta_ordenada.filter(fase=>generado.includes(fase)).map(row=>{
+            return {
+              fase: row,
+              color: RUTA_COLOR[row],
+              estado: value.nro_guias > 0
+                ? value.lista_servicios.split(',').concat(['MOLDES','CORTE']).includes(row)
+                : row == value.status
+            }
+          })
+
+        }else{
+          value.ruta_final = ['MOLDES','CORTE']
+          value.ruta_test = ['MOLDES','CORTE'].map(row=>{
+            return {
+              fase:row,
+              color:RUTA_COLOR[row],
+              estado:   true
+            }
+          })
+        }
+        carry.push(value)
+        return carry
+      },[])
+
+      console.log("EL valor devuelto es : ",results)
 
       return results
     } catch (err) {

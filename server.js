@@ -21,6 +21,7 @@ import { AbonoRouter } from "./Abonos/Routers/abonoRouter.js";
 import { LetrasRouter } from "./Letras/Routers/letrasRouter.js";
 import { ReportRouter } from "./Reports/Routers/reportRouter.js";
 import { ordenesRouter } from "./Ordenes/Routers/ordenes.js";
+import { COBROS_ROUTER } from "./Cobros/Routers/cobros.js";
 const app = express()
 
 
@@ -102,6 +103,7 @@ app.use('/productos', ProductosRouter)
 app.use('/abonos', AbonoRouter)
 app.use('/letras', LetrasRouter)
 app.use('/reports', ReportRouter)
+app.use('/cobros', COBROS_ROUTER)
 
 app.listen(PORT_DEFAULT, () => {
   console.log('Servidor corriendo en el puerto ' + PORT_DEFAULT)
