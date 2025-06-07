@@ -612,9 +612,11 @@ export class ProduccionController {
 
     })
   }
-
-
-
+  static async getListaClientes(req, res) {
+    const search = req.params.search ?? ''
+    const data = await ProduccionModel.getListaClientes(search)
+    res.json(data)
+  }
   static async getListaProveedores(req, res) {
     const limit = req.params.limit
     const data = await ProduccionModel.getListaProveedores(limit)

@@ -64,6 +64,9 @@ produccionRouter.get('/proveedoreslist/:limit', ProduccionController.getListaPro
 produccionRouter.get('/searchproveedor/:info', ProduccionController.searchProveedor)
 produccionRouter.get('/searchproveedorbyid/:id', ProduccionController.searchProveedorById)
 
+produccionRouter.get('/clienteslist', ProduccionController.getListaClientes)
+produccionRouter.get('/clienteslist/:search', ProduccionController.getListaClientes)
+
 // produccionRouter.get('/guiaslist/:limit',ProduccionController.getListaGuias)
 // produccionRouter.get('/searchproveedor/:info',ProduccionController.searchProveedor)
 // produccionRouter.get('/searchproveedorbyid/:id',ProduccionController.searchProveedorById)

@@ -879,6 +879,26 @@ export class ProduccionModel {
       }
     }
   }
+  static async getListaClientes(search) {
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+
+      let extra = search.split(" ").length > 0 ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(TRIM(COALESCE(nro,'')),' ',TRIM(COALESCE(nom,'')),' ',TRIM(COALESCE(direccion,'')))) > 0").join(" ") : ""
+
+      const [results, fields] = await conn.query(`SELECT *FROM tbl2_cliente where ruc_ = "20522094120" ${extra} limit 50`);
+      await conn.end();
+      return results
+    } catch (err) {
+      console.log(err)
+      return [err]
+    } finally {
+      if (conn) {
+        await conn.end();
+      }
+    }
+  }
   static async getListaProveedores(limit) {
     let conn
     try {
