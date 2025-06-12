@@ -1,6 +1,7 @@
 import { createRequire } from "node:module";
 import { configs } from "../../Main/utils.js";
 import mysql from "mysql2/promise";
+import { workerData } from "node:worker_threads";
 // import { inventario } from "../../Main/config.js";
 export class OrdenesModel {
   static async getOrdenes(search) {
@@ -32,26 +33,40 @@ export class OrdenesModel {
         let ruta_actual = JSON.parse(value.ruta_proceso)
         let servicios = value.lista_servicios ? value.lista_servicios.split(',') : []
 
+        console.log("La lista de servicios es:",servicios)
+        console.log("La ruta actual es :",ruta_actual)
+
         if(servicios.length > 0){
           let generado = ruta_actual.concat(servicios).reduce((carry,value)=>{!carry.includes(value) && carry.push(value);return carry;},['MOLDES','CORTE'])
           value.ruta_final = ruta_ordenada.filter(fase=>generado.includes(fase))
-          value.ruta_test = ruta_ordenada.filter(fase=>generado.includes(fase)).map(row=>{
+
+          let pp = ruta_ordenada.filter(fase=>generado.includes(fase)).map(row=>{
             return {
               fase: row,
               color: RUTA_COLOR[row],
               estado: value.nro_guias > 0
                 ? value.lista_servicios.split(',').concat(['MOLDES','CORTE']).includes(row)
-                : row == value.status
+                : row == value.status,
+              pendiente: value.status_servicio.split('-').includes(row),
+              cadudo: value.servicios_caducos && value.servicios_caducos.split(',').includes(row)
             }
           })
 
+          // value.ruta_test = [...pp.filter(item=>item.estado),...pp.filter(item=>!item.estado)]
+          value.ruta_test = [...[...pp.filter(item=>item.estado && !item.pendiente),...pp.filter(item=>item.estado && item.pendiente)],...pp.filter(item=>!item.estado)]
+          // value.ruta_test = [...pp.filter(item=>item.estado && !value.status_servicio.split('-').includes(item.fase)),...pp.filter(item=>!item.estado || value.status_servicio.split('-').includes(item.fase))]
+
         }else{
           value.ruta_final = ['MOLDES','CORTE']
-          value.ruta_test = ['MOLDES','CORTE'].map(row=>{
+          value.ruta_test = ['MOLDES','CORTE'].concat(ruta_actual).reduce((carry,item)=>{if(!carry.includes(item)) carry.push(item); return carry;},[]).map(row=>{
             return {
               fase:row,
               color:RUTA_COLOR[row],
-              estado:   true
+              estado: ['MOLDES','CORTE'].includes(row)
+                ? row == 'MOLDES' ? (value.estado_molde == 'FINALIZADO' ? true : false) : (value.estado_corte == 'FINALIZADO' ? true : false)
+                : false,
+              pendiente: false
+                
             }
           })
         }
@@ -208,8 +223,8 @@ export class OrdenesModel {
         const [result] = await conn.execute(sql, values)
         // console.log(sql)
       }
-      if (conn) conn.commit()
-      // if (conn) conn.rollback()
+      // if (conn) conn.commit()
+      if (conn) conn.rollback()
       return [{ ok: true, mensaje: 'Guardado con exito' }]
     } catch (err) {
       if (conn) conn.rollback()
