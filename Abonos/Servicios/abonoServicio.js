@@ -329,8 +329,8 @@ export default class AbonoServicio{
         // }
       }
 
-      // if (conn) conn.rollback()
-      if (conn) conn.commit()
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return {ok:true,message:'Se ha guardado el registros'}
     } catch (err) {
       console.log("Error en la transaccion",err)
@@ -841,8 +841,8 @@ export default class AbonoServicio{
         console.log("Se produjo un error durane el registro del movimiento de caja",error)
       }
 
-      // if (conn) conn.rollback()
-      if (conn) conn.commit()
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return {ok:true,message:'Se ha guardado el registros'}
     } catch (err) {
       console.log("Error en la transaccion",err)

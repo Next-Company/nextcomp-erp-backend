@@ -223,8 +223,8 @@ export class OrdenesModel {
         const [result] = await conn.execute(sql, values)
         // console.log(sql)
       }
-      // if (conn) conn.commit()
-      if (conn) conn.rollback()
+      if (conn) conn.commit()
+      // if (conn) conn.rollback()
       return [{ ok: true, mensaje: 'Guardado con exito' }]
     } catch (err) {
       if (conn) conn.rollback()
