@@ -28,8 +28,8 @@ export class OrdenesModel {
       results = results.reduce((carry,value)=>{
 
         // const RUTA_COLOR = {'MOLDES':'bg-orange-400','CORTE':'bg-rose-400','CONFECCION':'bg-purple-400','OJAL':'bg-blue-400','ESTAMPADO':'bg-gray-400','LAVANDERIA':'bg-green-400','BORDADO':'bg-yellow-400','ACABADOS':'bg-red-400'}
-        const RUTA_COLOR = {'MOLDES':'bg-gray-500','CORTE':'bg-gray-500','CONFECCION':'bg-gray-500','OJAL':'bg-gray-500','ESTAMPADO':'bg-gray-500','LAVANDERIA':'bg-gray-500','BORDADO':'bg-gray-500','ACABADOS':'bg-gray-500'}
-        let ruta_ordenada = ['MOLDES','CORTE','CONFECCION','OJAL','ESTAMPADO','LAVANDERIA','BORDADO','ACABADOS']
+        const RUTA_COLOR = {'AVIOS':'bg-gray-500','MOLDE':'bg-gray-500','CORTE':'bg-gray-500','CONFECCION':'bg-gray-500','OJAL':'bg-gray-500','ESTAMPADO':'bg-gray-500','LAVANDERIA':'bg-gray-500','BORDADO':'bg-gray-500','ACABADOS':'bg-gray-500'}
+        let ruta_ordenada = ['MOLDE','CORTE','AVIOS','CONFECCION','OJAL','ESTAMPADO','LAVANDERIA','BORDADO','ACABADOS']
         let ruta_actual = JSON.parse(value.ruta_proceso)
         let servicios = value.lista_servicios ? value.lista_servicios.split(',') : []
 
@@ -37,7 +37,7 @@ export class OrdenesModel {
         console.log("La ruta actual es :",ruta_actual)
 
         if(servicios.length > 0){
-          let generado = ruta_actual.concat(servicios).reduce((carry,value)=>{!carry.includes(value) && carry.push(value);return carry;},['MOLDES','CORTE'])
+          let generado = ruta_actual.concat(servicios).reduce((carry,value)=>{!carry.includes(value) && carry.push(value);return carry;},['MOLDE','CORTE','AVIOS'])
           value.ruta_final = ruta_ordenada.filter(fase=>generado.includes(fase))
 
           let pp = ruta_ordenada.filter(fase=>generado.includes(fase)).map(row=>{
@@ -45,7 +45,7 @@ export class OrdenesModel {
               fase: row,
               color: RUTA_COLOR[row],
               estado: value.nro_guias > 0
-                ? value.lista_servicios.split(',').concat(['MOLDES','CORTE']).includes(row)
+                ? value.lista_servicios.split(',').concat(['MOLDE','CORTE','AVIOS']).includes(row)
                 : row == value.status,
               pendiente: value.status_servicio.split('-').includes(row),
               cadudo: value.servicios_caducos && value.servicios_caducos.split(',').includes(row)
@@ -57,13 +57,13 @@ export class OrdenesModel {
           // value.ruta_test = [...pp.filter(item=>item.estado && !value.status_servicio.split('-').includes(item.fase)),...pp.filter(item=>!item.estado || value.status_servicio.split('-').includes(item.fase))]
 
         }else{
-          value.ruta_final = ['MOLDES','CORTE']
-          value.ruta_test = ['MOLDES','CORTE'].concat(ruta_actual).reduce((carry,item)=>{if(!carry.includes(item)) carry.push(item); return carry;},[]).map(row=>{
+          value.ruta_final = ['MOLDE','CORTE','AVIOS']
+          value.ruta_test = ['MOLDE','CORTE','AVIOS'].concat(ruta_actual).reduce((carry,item)=>{if(!carry.includes(item)) carry.push(item); return carry;},[]).map(row=>{
             return {
               fase:row,
               color:RUTA_COLOR[row],
-              estado: ['MOLDES','CORTE'].includes(row)
-                ? row == 'MOLDES' ? (value.estado_molde == 'FINALIZADO' ? true : false) : (value.estado_corte == 'FINALIZADO' ? true : false)
+              estado: ['MOLDE','CORTE','AVIOS'].includes(row)
+                ? row == 'MOLDE' ? (value.estado_molde == 'FINALIZADO' ? true : false) : (value.estado_corte == 'FINALIZADO' ? true : false)
                 : false,
               pendiente: false
                 

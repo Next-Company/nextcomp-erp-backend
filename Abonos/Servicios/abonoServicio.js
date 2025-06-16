@@ -309,13 +309,14 @@ export default class AbonoServicio{
             serie:'000',
             numero:'00000',
             documento_ref:cabecera.num_operacion,
-            vta_no_gra:cabecera.pago*-1,
+            vta_no_gra:cabecera.importe*-1,
             vta_gra:'0',
             tot_igv:'0',
             no_gravado:'0',
-            pago:cabecera.pago,
+            pago:cabecera.importe*-1,
             idabono:res.insertId,
           }
+          // console.log("Info del abono de servicio:", data_mov)
           let result_mov_caja = await this.saveMovimientoCaja('EGRE', data_mov_caja)
         }else{
           throw new Error("No se dectecto un movimiento de caja para la fecha seleccionada")
@@ -329,8 +330,8 @@ export default class AbonoServicio{
         // }
       }
 
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return {ok:true,message:'Se ha guardado el registros'}
     } catch (err) {
       console.log("Error en la transaccion",err)
@@ -386,7 +387,7 @@ export default class AbonoServicio{
               vta_gra:'0',
               tot_igv:'0',
               no_gravado:'0',
-              pago:cabecera.pago,
+              pago:cabecera.pago*-1,
               idabono:res.insertId
             }
             console.log("Ejecutando registro de movimiento de caja")
@@ -470,7 +471,7 @@ export default class AbonoServicio{
             vta_gra:'0',
             tot_igv:'0',
             no_gravado:'0',
-            pago:cabecera.pago,
+            pago:cabecera.pago*-1,
             idabono:res.insertId,
           }
           let result_mov_caja = await this.saveMovimientoCaja('EGRE', data_mov_caja)
@@ -639,7 +640,8 @@ export default class AbonoServicio{
         (
           SELECT COALESCE(sum(tgta.importe),0) FROM tbl2_guias_traslado_adi tgta 
           WHERE tgta.id_guia_CAB = resumen.id_guia
-        ) as descuentos
+        ) as descuentos,
+        0 as pago
         FROM
         (
           SELECT tgtc.idx as id_guia,tgtc.servicio,COALESCE(tgtc.proveedor,'') as proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,'' as color,IF(COALESCE(tpid.isprototipo),0,tpid.cantidad) as cantidad,tgtc.costo,GROUP_CONCAT(dp.nro_guia) as id_despacho,SUM(COALESCE(IF(COALESCE(tpid.isprototipo),0,dp.despacho),0)-COALESCE(dp.caidos,0)) as despacho,SUM(IF(COALESCE(tpid.isprototipo,0) = 1,0,tgtc.costo*(COALESCE(dp.despacho,0)-COALESCE(dp.caidos,0)))) as total
@@ -820,29 +822,31 @@ export default class AbonoServicio{
 
         let ingresos = 0;
         let egresos = 0;
+        let saldo_final = 0;
         if(tipo == 'EGRE'){
-          egresos = parseFloat(data.pago)*-1 + (busqueda_movcaja.length > 0 ? parseFloat(busqueda_movcaja[0].egresos) : 0)
+          egresos = parseFloat(data.pago) + (busqueda_movcaja.length > 0 ? parseFloat(busqueda_movcaja[0].egresos) : 0)
           // egresos = parseFloat(data.pago)*-1
         } else if(tipo == 'INGR'){
           ingresos = parseFloat(data.pago) + (busqueda_movcaja.length > 0 ? parseFloat(busqueda_movcaja[0].ingresos) : 0)
           // ingresos = parseFloat(data.pago)
         }
-        
+        saldo_final = (busqueda_movcaja.length > 0 ? parseFloat(busqueda_movcaja[0].saldo_inicial) : 0) + ingresos + egresos
 
-        await conn.query(`INSERT INTO tbl2_caja_movimientos_det(ruc_,id_cajamov_CAB,fec_operacion,monto,usuario,sucursal,detalle_mov,doc_cliente,nom_cliente,tipdoc_ref,serie,numero,documento_ref,vta_no_gra,vta_gra,tot_igv,no_gravado,id_abono_ref) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))`,['20522094120',idcajamov_cab,data.fec_pago,parseFloat(data.pago)*-1,data.usuario,data.sucursal,data.detalle_mov,data.doc_cliente,data.nom_cliente,data.tipdoc_ref,data.serie,data.numero,data.documento_ref,data.vta_no_gra,data.vta_gra,data.tot_igv,data.no_gravado,data.idabono])  
+        await conn.query(`INSERT INTO tbl2_caja_movimientos_det(ruc_,id_cajamov_CAB,fec_operacion,monto,usuario,sucursal,detalle_mov,doc_cliente,nom_cliente,tipdoc_ref,serie,numero,documento_ref,vta_no_gra,vta_gra,tot_igv,no_gravado,id_abono_ref) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))`,['20522094120',idcajamov_cab,data.fec_pago,parseFloat(data.pago),data.usuario,data.sucursal,data.detalle_mov,data.doc_cliente,data.nom_cliente,data.tipdoc_ref,data.serie,data.numero,data.documento_ref,data.vta_no_gra,data.vta_gra,data.tot_igv,data.no_gravado,data.idabono])  
 
         console.log("El valor de los ingresos es:",ingresos)
         console.log("El valor de los egresos es:",egresos)
+        console.log("El valor de los egresos es:",saldo_final)
         console.log("Id del movimiento de caja:",idcajamov_cab)
 
-        await conn.query("UPDATE tbl2_caja_movimientos_cab SET ingresos = ?, egresos = ? WHERE ruc_ = ? and idx = ?",[ingresos,egresos,'20522094120',idcajamov_cab])
+        await conn.query("UPDATE tbl2_caja_movimientos_cab SET ingresos = ?, egresos = ?, saldo_final = ? WHERE ruc_ = ? and idx = ?",[ingresos,egresos,saldo_final,'20522094120',idcajamov_cab])
 
       } catch (error) {
         console.log("Se produjo un error durane el registro del movimiento de caja",error)
       }
 
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return {ok:true,message:'Se ha guardado el registros'}
     } catch (err) {
       console.log("Error en la transaccion",err)
@@ -863,7 +867,24 @@ export default class AbonoServicio{
 
         let [info_movimiento] = await conn.query(`SELECT *FROM tbl2_caja_movimientos_det WHERE id_abono_ref = ?`,[idabono])
         await conn.query(`DELETE FROM tbl2_caja_movimientos_det WHERE id_abono_ref = ${idabono} and ruc_ = '20522094120'`)
-        await conn.query("UPDATE tbl2_caja_movimientos_cab SET egresos = egresos - ? WHERE ruc_ = ? and idx = ?",[info_movimiento[0].monto,'20522094120',info_movimiento[0].id_cajamov_CAB])
+
+        $info_cabecera = await conn.query(`select *from tbl2_caja_movimientos_cab where idx = ${info_movimiento[0].id_cajamov_CAB}`)
+        $info_detalle = await conn.query(`select *from tbl2_caja_movimientos_det where id_cajamov_CAB = ${info_movimiento[0].id_cajamov_CAB}`)
+
+        let ingresos = 0, egresos = 0, saldo_inicial = parseFloat($info_cabecera[0].saldo_final)
+        array.forEach(element => {
+          if(element.monto > 0){
+            ingresos += parseFloat(element.monto)
+          }else{
+            egresos += parseFloat(element.monto)
+          }
+        });
+
+        await conn.query("UPDATE tbl2_caja_movimientos_cab SET ingresos = ?, egresos = ?, saldo_final = ? WHERE ruc_ = ? and idx = ?",[ingresos,egresos,saldo_inicial + ingresos + egresos, '20522094120',info_movimiento[0].id_cajamov_CAB])
+
+        // await conn.query("UPDATE tbl2_caja_movimientos_cab SET egresos = egresos - ? WHERE ruc_ = ? and idx = ?",[info_movimiento[0].monto,'20522094120',info_movimiento[0].id_cajamov_CAB])
+
+
         console.log("Infomacion del movuimiento de caja :",info_movimiento)
 
       }catch(err){
