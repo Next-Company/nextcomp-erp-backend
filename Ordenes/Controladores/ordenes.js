@@ -28,6 +28,7 @@ export class OrdenesController {
     const user_data = req.session
     console.log("Por aqui vamos!")
     const data = await OrdenesModel.saveInfoOrdenes(info, user_data)
+    // console.log("Respuesta de services",data)
     resp.json(data)
   }
   static async testMultiSelect(req, resp) {

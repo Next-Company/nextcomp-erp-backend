@@ -188,6 +188,11 @@ export class OrdenesModel {
       console.log("La primera busqueda es: ", consulta, fields)
       if (id == '') {
 
+        let busqueda = `select *from tbl2_fases_prod_ordenes tfpo where tfpo.oc = ${info.oc}`
+        console.log("La busqueda de duplicados :",busqueda)
+        let [validacion] = await conn.query(`select *from tbl2_fases_prod_ordenes tfpo where tfpo.oc = ?`,[info.oc])
+        if(validacion.length > 0) throw new Error("La oc ingresada ya se encuentra registrada. Por favor verifique.")
+
         try {
           console.log("Dentro de nueva orden de produccion")
           const campos = Object.keys(info).reduce((carry, current) => {
@@ -223,12 +228,12 @@ export class OrdenesModel {
         const [result] = await conn.execute(sql, values)
         // console.log(sql)
       }
-      if (conn) conn.commit()
       // if (conn) conn.rollback()
-      return [{ ok: true, mensaje: 'Guardado con exito' }]
+      if (conn) conn.commit()
+      return { ok: true, mensaje: 'Guardado con exito' }
     } catch (err) {
       if (conn) conn.rollback()
-      return [err]
+      return { ok: false, mensaje: err.message }
     } finally {
       if (conn) await conn.end();
     }

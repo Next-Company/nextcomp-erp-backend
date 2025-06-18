@@ -820,8 +820,8 @@ export class ProduccionModel {
         // await conn.end();
         // return results
       }
-      conn.commit()
-      // conn.rollback()
+      // conn.commit()
+      conn.rollback()
       return {ok:true,message:'Registro completo'}
     } catch (err) {
       console.log(err)
