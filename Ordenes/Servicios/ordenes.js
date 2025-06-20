@@ -14,6 +14,8 @@ export class OrdenesModel {
 
       let [results] = await conn.query(`
         SELECT *,
+        (COALESCE(combo1_orden,0) + COALESCE(combo2_orden,0) + COALESCE(combo3_orden,0) + COALESCE(combo4_orden,0) + COALESCE(combo5_orden,0) + COALESCE(combo6_orden,0) + COALESCE(combo7_orden,0) + COALESCE(combo8_orden,0) + COALESCE(combo9_orden,0)) as total_orden,
+        (COALESCE(combo1_corte,0) + COALESCE(combo2_corte,0) + COALESCE(combo3_corte,0) + COALESCE(combo4_corte,0) + COALESCE(combo5_corte,0) + COALESCE(combo6_corte,0) + COALESCE(combo7_corte,0) + COALESCE(combo8_corte,0) + COALESCE(combo9_corte,0)) as total_corte,
         DATE_FORMAT(fec_emitida,'%d/%m/%Y') as fec_emitida_orden,
         DATE_FORMAT(fec_entrega,'%d/%m/%Y') as fec_entrega_orden,
         COALESCE(DATEDIFF(STR_TO_DATE(fec_entrega,'%Y-%m-%d'),STR_TO_DATE(fec_emitida,'%Y-%m-%d') ),0) as dias_produccion,
@@ -57,16 +59,21 @@ export class OrdenesModel {
           // value.ruta_test = [...pp.filter(item=>item.estado && !value.status_servicio.split('-').includes(item.fase)),...pp.filter(item=>!item.estado || value.status_servicio.split('-').includes(item.fase))]
 
         }else{
+          let lista_pre = value.status == 'CORTE' ? ['MOLDE','CORTE'] : ( value.status == 'MOLDE' ? ['MOLDE'] : [] )
           value.ruta_final = ['MOLDE','CORTE','AVIOS']
           value.ruta_test = ['MOLDE','CORTE','AVIOS'].concat(ruta_actual).reduce((carry,item)=>{if(!carry.includes(item)) carry.push(item); return carry;},[]).map(row=>{
             return {
               fase:row,
               color:RUTA_COLOR[row],
-              estado: ['MOLDE','CORTE','AVIOS'].includes(row)
-                ? row == 'MOLDE' ? (value.estado_molde == 'FINALIZADO' ? true : false) : (value.estado_corte == 'FINALIZADO' ? true : false)
-                : false,
-              pendiente: false
-                
+              estado: lista_pre.includes(row),
+                // ? row == 'MOLDE' ? (value.estado_molde == 'FINALIZADO' ? true : false) : (value.estado_corte == 'FINALIZADO' ? true : false)
+                // : false,
+              // estado: ['MOLDE','CORTE','AVIOS'].includes(row)
+              //   ? row == 'MOLDE' ? (value.estado_molde == 'FINALIZADO' ? true : false) : (value.estado_corte == 'FINALIZADO' ? true : false)
+              //   : false,
+              // pendiente: false,
+              pendiente: row == 'MOLDE' ? (value.estado_molde == 'PENDIENTE' ? true : false) : (value.estado_corte == 'PENDIENTE' ? true : false),
+              caduco: false
             }
           })
         }
