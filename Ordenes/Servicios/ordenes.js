@@ -1,7 +1,5 @@
-import { createRequire } from "node:module";
 import { configs } from "../../Main/utils.js";
 import mysql from "mysql2/promise";
-import { workerData } from "node:worker_threads";
 // import { inventario } from "../../Main/config.js";
 export class OrdenesModel {
   static async getOrdenes(search) {
@@ -175,6 +173,7 @@ export class OrdenesModel {
 
   static async saveInfoOrdenes(info, user_data) {
     let conn
+    let nameimg = null
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
@@ -210,6 +209,8 @@ export class OrdenesModel {
           sql = 'INSERT INTO `' + table + '`(' + campos.toString() + ') VALUES (' + campos.map(row => "NULLIF(?, '')").toString() + ')';
           console.log(sql, values)
           const [result] = await conn.execute(sql, values)
+          const idinsert = result.insertId
+          nameimg = `op_${idinsert}.jpg`
           
         } catch (error) {
           console.log(error)
@@ -233,14 +234,15 @@ export class OrdenesModel {
         }
         console.log("Consulta de insertado:", sql)
         const [result] = await conn.execute(sql, values)
+        nameimg = `op_${id}.jpg`
         // console.log(sql)
       }
       // if (conn) conn.rollback()
       if (conn) conn.commit()
-      return { ok: true, mensaje: 'Guardado con exito' }
+      return { ok: true, mensaje: 'Guardado con exito', filename: nameimg }
     } catch (err) {
       if (conn) conn.rollback()
-      return { ok: false, mensaje: err.message }
+      return { ok: false, mensaje: err.message, filename: nameimg }
     } finally {
       if (conn) await conn.end();
     }
