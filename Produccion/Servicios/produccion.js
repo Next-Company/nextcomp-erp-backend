@@ -636,6 +636,7 @@ export class ProduccionModel {
   }
   static async getInfoGuiaDet(id) {
     let conn
+    console.log("Dentro de get info guia det")
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
@@ -658,9 +659,41 @@ export class ProduccionModel {
       `, [id]);
       const ids = results.map(row => row.idx)
 
+      const [cruce] = await conn.query("select tdc.idx as id_despacho,DATE_FORMAT(tdc.fec_despacho,'%d/%m') as fec_despacho,tdd.id_item as idx,tdd.despacho from tbl2_despachos_cab tdc join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB where tdc.tipo = 'SERVICIOS' and tdc.id_guia_origen = ?",[id])
+
+      console.log("iNfo del creuce uomo es.:",cruce)
+
+      // let lista_despachos = [...new Set(cruce.reduce((carry, valor) => { return [...carry, valor.id_despacho] }, []))]
+      let lista_despachos = cruce.reduce((carry,value)=>{
+        if(!Object.keys(carry).includes(value.id_despacho)){
+          carry[value.id_despacho] = value.fec_despacho
+        }
+        return carry 
+      },{})
+
+      let pp = results.reduce((carry,value)=>{
+        value['despachos'] = Object.keys(lista_despachos).reduce((carry,valor)=>{
+          let info = cruce.filter(item=>item.id_despacho == valor && item.idx == value.idx)
+
+          carry.push({
+            'id_despacho':info.length > 0 ? info[0].id_despacho : parseInt(valor),
+            'fec_despacho':info.length > 0 ? info[0].fec_despacho : lista_despachos[valor], 
+            'cantidad_despacho':info.length > 0 ? info[0].despacho : 0,
+          })
+          return carry
+        },[])
+        carry.push(value)
+        return carry
+      },[])
+      // ste am es asi tu no
+      // yo te sp tu nunc vend
+      // yo te llorar tu don estaras
+
+      console.log("La info completa es:",pp)
+      
       const [results2] = await conn.query("select id_guia_DET,concat('({',GROUP_CONCAT(concat(talla,':',CAST(cantidad as unsigned))),'})') as fracciones from tbl2_guias_traslado_det_fracciones where id_guia_DET in (?) group by id_guia_DET", [ids])
 
-      let new_articulos = results.map(row => {
+      let new_articulos = pp.map(row => {
         let add = eval(results2.filter(row2 => row2.id_guia_DET == row.idx)[0].fracciones)
         return { ...row, ...add }
       })
@@ -736,6 +769,28 @@ export class ProduccionModel {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
       conn.beginTransaction()
+
+      /////////////////////////////////////
+      ///// validacion estado guias ///////
+      let service_position = []
+      let [orden] = await conn.query("SELECT *FROM tbl2_fases_prod_ordenes WHERE idx = ?", [parseInt(cabecera.id_orden_CAB)]);
+
+      const RUTA = JSON.parse(orden[0].ruta_proceso).filter(row => !['AVIOS','MOLDE','CORTE'].includes(row))
+
+      let [info_guias] = await conn.query("select *from tbl2_guias_traslado_cab where id_orden_CAB = ? and estado = 'FINALIZADO' ORDER BY fec_emision DESC LIMIT 1", [parseInt(cabecera.id_orden_CAB)]);
+
+      if(info_guias.length > 0){
+        service_position = [RUTA.indexOf(info_guias[0].servicio) + 1, RUTA.indexOf(info_guias[0].servicio)]
+      }else{
+        service_position = [0]
+      }
+      // if( RUTA[service_position] !== cabecera.servicio)
+      if( !service_position.includes(RUTA[cabecera.servicio]) ) throw new Error("El servicio a generar esta fuera de la ruta establecida. Por favor verifique.")
+
+
+      /////////////////////////////////////
+      /////////////////////////////////////
+
       if (data.id) {
         await conn.query('UPDATE tbl2_guias_traslado_cab SET orden_ref=NULLIF(?, ""),tipo=NULLIF(?, ""),id_proveedor_CAB=NULLIF(?, ""),proveedor=NULLIF(?, ""),servicio=NULLIF(?, ""),fec_emision=NULLIF(?, ""),fec_retorno=NULLIF(?, ""),fec_recepcion=NULLIF(?, ""),costo=NULLIF(?, ""),observaciones=NULLIF(?, ""),estado=NULLIF(?, ""),motivo_traslado=NULLIF(?, ""),responsable=NULLIF(?, ""),modelo=NULLIF(?, ""),marca=NULLIF(?, ""),producto=NULLIF(?, ""),destino=NULLIF(?, ""),id_orden_CAB=NULLIF(?, "") WHERE idx = ?', [cabecera.orden_ref, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.servicio, cabecera.fec_emision, cabecera.fec_retorno, cabecera.fec_recepcion, cabecera.costo, cabecera.observaciones, cabecera.estado, cabecera.motivo_traslado, cabecera.responsable, cabecera.modelo, cabecera.marca, cabecera.producto, cabecera.destino, cabecera.id_orden_CAB ?? 1 , parseInt(data.id)])
         const [res, fld] = await conn.query("SELECT *FROM tbl2_guias_traslado_det WHERE id_guia_CAB = " + parseInt(data.id))
@@ -820,13 +875,13 @@ export class ProduccionModel {
         // await conn.end();
         // return results
       }
-      conn.commit()
-      // conn.rollback()
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return {ok:true,message:'Registro completo'}
     } catch (err) {
       console.log(err)
       if (conn) conn.rollback()
-      return [err]
+      return {ok:false,message:err.message}
     } finally {
       if (conn) await conn.end();
     }
@@ -1037,25 +1092,21 @@ export class ProduccionModel {
       }
     }
   }
-  static async getNuevoPedido() {
+  static async getNuevoPedido(tipo) {
     let conn
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
       // const [results, fields] = await conn.query("SELECT (orden_ref + 1) as correlativo FROM tbl2_pedidos_insumos_cab tpic WHERE estado <> 'ANULADO' ORDER BY idx DESC LIMIT 1");
-      const [results, fields] = await conn.query("SELECT (orden_ref + 1) as correlativo FROM tbl2_pedidos_insumos_cab tpic ORDER BY idx DESC LIMIT 1");
+      // const [results, fields] = await conn.query("SELECT (orden_ref + 1) as correlativo FROM tbl2_pedidos_insumos_cab tpic ORDER BY idx DESC LIMIT 1");
 
-      await conn.end();
-      return results
+      const [results] = await conn.query("SELECT (codigo_num + 1) as correlativo FROM tbl2_pedidos_insumos_correlativo WHERE ruc_ = ? AND anio = YEAR(NOW()) AND tipo = ?",['20522094120',tipo])
+
+      return results[0].correlativo
     } catch (err) {
-      console.log(err)
       return [err]
     } finally {
-      if (conn) {
-        // console.log("Cerrando session")
-        // await conn.end();
-        await conn.end();
-      }
+      if (conn) await conn.end();
     }
   }
   static async saveInfoPedidos(data) {
@@ -1115,7 +1166,10 @@ export class ProduccionModel {
       } else {
         console.log("Creandsssso")
         try {
-          const [res, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_cab(orden_ref,fec_emision,fec_retorno,tipo,id_proveedor_CAB,proveedor,responsable,forma_pago,nro_contacto,observaciones,estado,moneda,igv,produccion,afec_retencion) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [cabecera.orden_ref, cabecera.fec_emision, cabecera.fec_retorno, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.forma_pago, cabecera.nro_contacto, cabecera.observaciones, cabecera.estado, cabecera.moneda, cabecera.igv, cabecera.produccion, cabecera.afec_retencion])
+
+          const correlativo = await this.getNuevoPedido(cabecera.tipo)
+
+          const [res, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_cab(orden_ref,fec_emision,fec_retorno,tipo,id_proveedor_CAB,proveedor,responsable,forma_pago,nro_contacto,observaciones,estado,moneda,igv,produccion,afec_retencion) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [correlativo, cabecera.fec_emision, cabecera.fec_retorno, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.forma_pago, cabecera.nro_contacto, cabecera.observaciones, cabecera.estado, cabecera.moneda, cabecera.igv, cabecera.produccion, cabecera.afec_retencion])
 
           const insert = async () => {
             const fila = articulos.shift()
@@ -1128,6 +1182,8 @@ export class ProduccionModel {
           }
           await insert()
 
+          await conn.query("update tbl2_pedidos_insumos_correlativo set codigo_num = codigo_num + 1 where ruc_ = ? and anio = YEAR(NOW()) and tipo = ?",['20522094120',cabecera.tipo])
+
         } catch (err) {
           console.log("error en la consulta", err)
         }
@@ -1135,19 +1191,14 @@ export class ProduccionModel {
         // return results
       }
 
+      // if(conn) conn.rollback()
+      if(conn) conn.commit()
+      return {ok:true,message:'Registro completo'}
     } catch (err) {
-      console.log(err)
-      if (conn) {
-        conn.rollback()
-        await conn.end();
-      }
-      return [err]
+      if (conn) conn.rollback()
+      return {ok:false,message:err}
     } finally {
-      if (conn) {
-        // conn.rollback()
-        conn.commit()
-        await conn.end();
-      }
+      if (conn) await conn.end();
     }
   }
   static async getInfoPedidoCab(id) {
@@ -1221,16 +1272,22 @@ export class ProduccionModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
+      conn.beginTransaction()
+
+      let [info_pedido] = await conn.query("SELECT *FROM tbl2_pedidos_insumos_cab WHERE idx = ?",[id])
+
       await conn.query('DELETE FROM `tbl2_pedidos_insumos_cab` WHERE `idx` = "' + id + '"');
       await conn.query('DELETE FROM `tbl2_pedidos_insumos_det` WHERE `id_pedido_CAB` = "' + id + '"');
-      await conn.end();
+      await conn.query('UPDATE tbl2_pedidos_insumos_correlativo SET codigo_num = codigo_num - 1 WHERE ruc_ = ? AND anio = YEAR(NOW()) AND tipo = ?',['20522094120',info_pedido[0].tipo]);
+      
+      if(conn) conn.rollback()
+      // if(conn) conn.commit()
       return results
     } catch (err) {
+      if(conn) conn.rollback()
       return [err]
     } finally {
-      if (conn) {
-        await conn.end();
-      }
+      if (conn) await conn.end();
     }
   }
   //////////////////////////////////
@@ -1328,7 +1385,7 @@ export class ProduccionModel {
             if (fila.idx && fila.idx !== '') {
               const [results, fields] = await conn.query('UPDATE tbl2_despachos_adi SET tipodoc=NULLIF(?, ""),moneda=NULLIF(?, ""),serie=NULLIF(?, ""),numero=NULLIF(?, ""),fec_emision=NULLIF(?, ""),unidades=NULLIF(?, ""),importe_bruto=NULLIF(?, ""),base_imponible=NULLIF(?, ""),monto_inafecto=NULLIF(?, ""),igv=NULLIF(?, ""),importe_total=NULLIF(?, "") WHERE idx = ? and id_despacho_CAB = ?', [fila.tipodoc, fila.moneda, fila.serie, fila.numero, fila.fec_emision, fila.unidades, fila.importe_bruto, fila.base_imponible, fila.monto_inafecto, fila.igv, fila.importe_total, fila.idx, parseInt(data.id)]);
             } else {
-              const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_adi(id_despacho_CAB,tipodoc,moneda,serie,numero,fec_emision,unidades,importe_bruto,base_imponible,monto_inafecto,igv,importe_total) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [parseInt(data.id), fila.tipodoc, fila.moneda, fila.serie, fila.numero, fila.fec_emision, parseFloat(fila.unidades), parseFloat(fila.importe_bruto), parseFloat(fila.base_imponible), parseFloat(fila.monto_inafecto), parseFloat(fila.igv), parseFloat(fila.importe_total)]);
+              const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_adi(id_despacho_CAB,tipodoc,moneda,serie,numero,fec_emision,unidades,importe_bruto,base_imponible,monto_inafecto,igv,importe_total) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [parseInt(data.id), fila.tipodoc, fila.moneda, fila.serie, fila.numero, fila.fec_emision, parseFloat(fila.unidades), parseFloat(fila.importe_bruto), parseFloat(fila.base_imponible), parseFloat(fila.monto_inafecto), parseFloat(fila.igv), parseFloat(fila.importe_total)]);
             }
             await insert2()
           } else {

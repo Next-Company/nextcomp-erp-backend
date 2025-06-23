@@ -586,7 +586,8 @@ export class ProduccionController {
 
   static async saveInfoGuias(req, res) {
     const data = await ProduccionModel.saveInfoGuias(req.body)
-    res.json({ ok: true, message: 'datos guardados' })
+    res.json(data)
+    // res.json({ ok: true, message: 'datos guardados' })
   }
   static async eliminarInfoGuias(req, res) {
     const id = req.params.id
