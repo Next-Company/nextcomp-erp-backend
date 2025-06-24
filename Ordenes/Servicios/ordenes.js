@@ -79,9 +79,15 @@ export class OrdenesModel {
         return carry
       },[])
 
-      console.log("EL valor devuelto es : ",results)
+      let bb = Object.groupBy(results,(item)=>item.nro_guias)
+      let kk = Object.keys(bb).reduce((carry,item)=>{
+        console.log(`La info de bb(${item}) es :`,bb[item].map(row=>({idx:row.idx,modelos:row.modelos})))
+        carry = [...carry,...bb[item]]
+        return carry
+      },[])
 
-      return results
+      // return results
+      return kk
     } catch (err) {
       console.log(err);
       return { 'msg': err }
