@@ -1,3 +1,4 @@
+import { raceWith } from "puppeteer-core/lib/esm/third_party/rxjs/rxjs.js";
 import { configs } from "../../Main/utils.js";
 import mysql from "mysql2/promise";
 // import { inventario } from "../../Main/config.js";
@@ -190,6 +191,13 @@ export class OrdenesModel {
       const id = info.idx
       console.log("Empezando guardado de orodenses",info,user_data)
 
+      const info_combos_orden = info.combos_orden && JSON.parse(info.combos_orden)
+      const info_combos_corte = info.combos_corte && JSON.parse(info.combos_corte)
+      // if(info.combos_corte){
+      //   console.log("Parsando combos corte")
+      // }
+      console.log("Monstrando combos orden:",JSON.parse(info.combos_orden))
+
       if (id == '') {
         sql = 'SELECT *FROM `' + table + '` LIMIT 1';
       } else {
@@ -199,7 +207,6 @@ export class OrdenesModel {
 
       console.log("La primera busqueda es: ", consulta, fields)
       if (id == '') {
-
         let busqueda = `select *from tbl2_fases_prod_ordenes tfpo where tfpo.oc = ${info.oc}`
         console.log("La busqueda de duplicados :",busqueda)
         let [validacion] = await conn.query(`select *from tbl2_fases_prod_ordenes tfpo where tfpo.oc = ?`,[info.oc])
@@ -216,15 +223,23 @@ export class OrdenesModel {
           console.log(sql, values)
           const [result] = await conn.execute(sql, values)
           const idinsert = result.insertId
+
+          if(table == 'tbl2_fases_prod_ordenes' && info_combos_orden){
+            
+            let combos_orden = info_combos_orden.map(row=>{
+              return [idinsert,row.color_combo,row.cantidad_combo]
+            })
+            await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos(id_orden_CAB,color_combo,cantidad_combo) VALUES ?",[combos_orden])
+          }
+
           nameimg = `op_${idinsert}.jpg`
           
         } catch (error) {
           console.log(error)
         }
-
   
       } else {
-
+        let newid = null
         const campos = Object.keys(info).reduce((carry, current) => {
           fields.filter(row => row.name !== 'idx').map(row => row.name).includes(current) && carry.push(current)
           return carry
@@ -240,6 +255,23 @@ export class OrdenesModel {
         }
         console.log("Consulta de insertado:", sql)
         const [result] = await conn.execute(sql, values)
+
+
+        if(table == 'tbl2_fases_prod_ordenes' && info_combos_orden){
+          let new_combos_orden = info_combos_orden.map(row=>{
+            return [id,row.color_combo,row.cantidad_combo]
+          })
+          await conn.query("delete from tbl2_fases_prod_ordenes_combos where id_orden_CAB = ?",[id])
+          await conn.query("insert into tbl2_fases_prod_ordenes_combos(id_orden_CAB,color_combo,cantidad_combo) values ?",[new_combos_orden])
+        }
+        if(table == 'tbl2_fases_prod_hojacorte' && info_combos_corte){
+          let infocorte = await conn.query(`select *from tbl2_fases_prod_hojacorte where id_cab_orden = ?`,[id])
+          let new_combos_corte = info_combos_corte.map(row=>{
+            return [infocorte[0].idx,row.color_combo,row.cantidad_combo]
+          })
+          await conn.query("delete from tbl2_fases_prod_hojacorte_combos where id_hojacorte_CAB = ?",[id])
+          await conn.query("insert into tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB,color_combo,cantidad_combo) values ?",[new_combos_corte])
+        }
         nameimg = `op_${id}.jpg`
         // console.log(sql)
       }
@@ -247,6 +279,7 @@ export class OrdenesModel {
       if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito', filename: nameimg }
     } catch (err) {
+      console.log(err)
       if (conn) conn.rollback()
       return { ok: false, mensaje: err.message, filename: nameimg }
     } finally {
@@ -415,6 +448,37 @@ export class OrdenesModel {
       return [ordenes,infoguias]
     } catch (err) {
       console.log(err)
+      return [err]
+    } finally {
+      if (conn) await conn.end();
+    }
+  }
+  static async ActualizaCombos(){
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      conn.beginTransaction()
+
+      let info = await conn.query("select *from tbl2_fases_prod_ordenes")
+      let contador = 1
+
+      let actualiza = async ()=>{
+        let orden = lista_ordenes.shift()
+        if(orden){
+          await conn.query("insert into tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB,color_combo,cantidad_combo) values(?,?,?)",[info.id_hojacorte,'NEGRO',info[0][`combo${contador}_orden`]])
+          contador += 1
+          await actualiza()
+        }else{
+
+        }
+      }
+    
+
+      if (conn) conn.rollback();
+      // if (conn) conn.commit();
+    } catch (err) {
+      if (conn) conn.rollback();
       return [err]
     } finally {
       if (conn) await conn.end();

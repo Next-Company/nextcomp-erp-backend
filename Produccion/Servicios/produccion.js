@@ -62,18 +62,21 @@ export class ProduccionModel {
   }
   static async getOrdenesById(info) {
     let conn
+    // ppd
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
       const [results, fields] = await conn.query('SELECT * FROM `viewProduccionOrdenes` where idx = ' + info.id + ' order by idx desc');
-      await conn.end();
-      return results
+      const [combos_orden] = await conn.query("SELECT *FROM tbl2_fases_prod_ordenes_combos WHERE id_orden_CAB = ?",[info.id])
+      const [combos_corte] = await conn.query("SELECT tb1.* FROM tbl2_fases_prod_hojacorte_combos tb1 JOIN tbl2_fases_prod_hojacorte tb2 ON tb1.id_hojacorte_CAB = tb2.idx WHERE tb2.id_cab_orden = ?",[info.id])
+      console.log("Informacion consultadado de combos:",combos_orden,combos_corte)
+
+      return [results,combos_orden,combos_corte]
     } catch (err) {
       console.log("Estamos en error:", err);
+      return err
     } finally {
-      if (conn) {
-        await conn.end();
-      }
+      if (conn) await conn.end()
     }
   }
   static async testMultiSelect(info) {
