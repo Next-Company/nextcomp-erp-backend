@@ -286,6 +286,128 @@ export class OrdenesModel {
       if (conn) await conn.end();
     }
   }
+  static async saveFaseOrden(info, user_data) {
+    let conn
+    let nameimg = null
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      conn.beginTransaction()
+
+      let sql = ''
+      const id = info.idx
+      const combos = JSON.parse(info.combos)
+      console.log("Empezando guardado de orodenses",info,user_data)
+
+      const [consulta,fields] = await conn.execute("SELECT *FROM tbl2_fases_prod_ordenes WHERE idx = ?",[id])
+      if (id == '') {
+        // let busqueda = `select *from tbl2_fases_prod_ordenes tfpo where tfpo.oc = ${info.oc}`
+        // console.log("La busqueda de duplicados :",busqueda)
+        let [validacion] = await conn.query(`SELECT *FROM tbl2_fases_prod_ordenes tfpo WHERE tfpo.oc = ?`,[info.oc])
+        if(validacion.length > 0) throw new Error("La oc ingresada ya se encuentra registrada. Por favor verifique.")
+
+        try {
+          console.log("Dentro de nueva orden de produccion")
+          const campos = Object.keys(info).reduce((carry, current) => {
+            fields.filter(row => row.name !== 'idx').map(row => row.name).includes(current) && carry.push(current)
+            return carry
+          }, [])
+          const values = campos.map(row => info[row])
+          const [result] = await conn.execute('INSERT INTO tbl2_fases_prod_ordenes(' + campos.toString() + ') VALUES (' + campos.map(row => "NULLIF(?, '')").toString() + ')', values)
+          const idinsert = result.insertId
+
+          let combos_formateado = combos.map(row=>{
+            return [idinsert,row.color_combo,row.cantidad_combo]
+          })
+          await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos(id_orden_CAB,color_combo,cantidad_combo) VALUES ?",[combos_formateado])
+
+          // nameimg = `op_${idinsert}.jpg`
+        } catch (error) {
+          console.log(error)
+        }
+  
+      } else {
+        let newid = null
+        const campos = Object.keys(info).reduce((carry, current) => {
+          fields.filter(row => row.name !== 'idx').map(row => row.name).includes(current) && carry.push(current)
+          return carry
+        }, [])
+        const values = campos.map(row => info[row])
+        console.log("Informacion de campos :",campos)
+        await conn.query('UPDATE tbl2_fases_prod_ordenes SET ' + campos.map(row => row + " = NULLIF(?,'')").toString() + ' WHERE idx = ' + id,values)
+
+        let combos_formateo = combos.map(row=>{
+          return [id,row.color_combo,row.cantidad_combo]
+        })
+        await conn.query("DELETE FROM tbl2_fases_prod_ordenes_combos WHERE id_orden_CAB = ?",[id])
+        await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos(id_orden_CAB,color_combo,cantidad_combo) VALUES ?",[combos_formateo])
+
+        // nameimg = `op_${id}.jpg`
+        // console.log(sql)
+      }
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
+      return { ok: true, mensaje: 'Guardado con exito' }
+    } catch (err) {
+      console.log(err)
+      if (conn) conn.rollback()
+      return { ok: false, mensaje: err.message }
+    } finally {
+      if (conn) await conn.end();
+    }
+  }
+  static async saveFaseMolde(info, user_data) {
+    let conn
+    let nameimg = null
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      conn.beginTransaction()
+
+      let sql = ''
+      const id = info.idx
+      console.log("Empezando guardado de molde",info,user_data)
+
+      const [consulta,fields] = await conn.execute("SELECT *FROM tbl2_fases_prod_molde WHERE idx = ?",[id])
+      if (id == '') {
+        try {
+          const campos = Object.keys(info).reduce((carry, current) => {
+            fields.filter(row => row.name !== 'idx').map(row => row.name).includes(current) && carry.push(current)
+            return carry
+          }, [])
+          const values = campos.map(row => info[row])
+          const [result] = await conn.execute('INSERT INTO tbl2_fases_prod_molde(' + campos.toString() + ') VALUES (' + campos.map(row => "NULLIF(?, '')").toString() + ')', values)
+          const idinsert = result.insertId
+
+          // nameimg = `op_${idinsert}.jpg`
+        } catch (error) {
+          console.log(error)
+        }
+  
+      } else {
+        let newid = null
+        const campos = Object.keys(info).reduce((carry, current) => {
+          fields.filter(row => row.name !== 'idx').map(row => row.name).includes(current) && carry.push(current)
+          return carry
+        }, [])
+        const values = campos.map(row => info[row])
+        console.log("Informacion de campos :",campos)
+        await conn.query('UPDATE tbl2_fases_prod_molde SET ' + campos.map(row => row + " = NULLIF(?,'')").toString() + ' WHERE idx = ' + id,values)
+
+        // nameimg = `op_${id}.jpg`
+        // console.log(sql)
+      }
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
+      return { ok: true, mensaje: 'Guardado con exito' }
+    } catch (err) {
+      console.log(err)
+      if (conn) conn.rollback()
+      return { ok: false, mensaje: err.message }
+    } finally {
+      if (conn) await conn.end();
+    }
+  }
   static async getAll(user_data) {
     let conn
     try {
@@ -460,26 +582,45 @@ export class OrdenesModel {
       await conn.connect();
       conn.beginTransaction()
 
-      let info = await conn.query("select *from tbl2_fases_prod_ordenes")
+      let [info] = await conn.query("SELECT *FROM tbl2_fases_prod_ordenes tb1 WHERE estado_orden <> 'OTRO' AND idx NOT IN (SELECT DISTINCT id_orden_CAB FROM tbl2_fases_prod_ordenes_combos)")
       let contador = 1
 
-      let actualiza = async ()=>{
-        let orden = lista_ordenes.shift()
-        if(orden){
-          await conn.query("insert into tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB,color_combo,cantidad_combo) values(?,?,?)",[info.id_hojacorte,'NEGRO',info[0][`combo${contador}_orden`]])
-          contador += 1
-          await actualiza()
-        }else{
+      let grupo_combos = [1,2,3,4,5,6,7,8,9,10,11,12,13,14]
 
-        }
-      }
+      // console.log("Info de ordenes :",info)
+      let pp = info.reduce((carry,value)=>{
+        // console.log("Info de orden: ",value)
+        let array_combos = grupo_combos.reduce((c,v)=>{
+          value[`combo${v}_orden`] && c.push([value.idx,'NEGRO',value[`combo${v}_orden`]])
+          return c
+        },carry)
+        // console.log("Array de combos:",array_combos)
+        // carry.push({idx:value.idx,array_combos})
+        return carry
+      },[])
+
+      await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos(id_orden_CAB,color_combo,cantidad_combo) VALUES ? ",[pp])
+
+      console.log("Lista de ordene formateado para combos :",pp)
+
+      // let actualiza = async ()=>{
+      //   let orden = lista_ordenes.shift()
+      //   if(orden){
+      //     await conn.query("insert into tbl2_fases_prod_ordenes_combos(id_orden_CAB,color_combo,cantidad_combo) values(?,?,?)",[info.id_hojacorte,'NEGRO',info[0][`combo${contador}_orden`]])
+      //     contador += 1
+      //     await actualiza()
+      //   }else{
+
+      //   }
+      // }
     
 
-      if (conn) conn.rollback();
-      // if (conn) conn.commit();
+      // if (conn) conn.rollback();
+      if (conn) conn.commit();
+      return {ok:true,message:'aja'}
     } catch (err) {
       if (conn) conn.rollback();
-      return [err]
+      return {ok:false,message:err}
     } finally {
       if (conn) await conn.end();
     }

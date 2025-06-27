@@ -66,12 +66,21 @@ export class ProduccionModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      const [results, fields] = await conn.query('SELECT * FROM `viewProduccionOrdenes` where idx = ' + info.id + ' order by idx desc');
-      const [combos_orden] = await conn.query("SELECT *FROM tbl2_fases_prod_ordenes_combos WHERE id_orden_CAB = ?",[info.id])
-      const [combos_corte] = await conn.query("SELECT tb1.* FROM tbl2_fases_prod_hojacorte_combos tb1 JOIN tbl2_fases_prod_hojacorte tb2 ON tb1.id_hojacorte_CAB = tb2.idx WHERE tb2.id_cab_orden = ?",[info.id])
-      console.log("Informacion consultadado de combos:",combos_orden,combos_corte)
 
-      return [results,combos_orden,combos_corte]
+      const [ordenes] = await conn.query("SELECT tb1.*,(select JSON_ARRAYAGG(JSON_OBJECT('id_orden_CAB',tb2.id_orden_CAB,'color_combo',tb2.color_combo,'cantidad_combo',tb2.cantidad_combo)) from tbl2_fases_prod_ordenes_combos tb2 where tb2.id_orden_CAB = tb1.idx) as combos FROM tbl2_fases_prod_ordenes tb1 WHERE tb1.idx = ? ORDER BY tb1.idx desc",[info.id]);
+
+      console.log("INfo ordnes es: ",ordenes)
+      const [moldes] = await conn.query('SELECT tb1.* FROM tbl2_fases_prod_molde tb1 WHERE tb1.id_cab_orden = ?',[info.id]);
+
+      const [cortes] = await conn.query("SELECT tb1.*,(select JSON_ARRAYAGG(JSON_ARRAY(tb2.id_orden_CAB,tb2.color_combo,tb2.cantidad_combo)) from tbl2_fases_prod_hojacorte_combos tb2 where tb2.id_hojacorte_CAB = tb1.idx) as combos FROM tbl2_fases_prod_hojacorte tb1 WHERE tb1.id_cab_orden = ?",[info.id]);
+
+      const [adi,fields] = await conn.query("select *from tbl2_almacen where ruc_ = '2052209120'")
+    
+      // const [results, fields] = await conn.query('SELECT * FROM `viewProduccionOrdenes` where idx = ' + info.id + ' order by idx desc')
+      // const [combos_orden] = await conn.query("SELECT *FROM tbl2_fases_prod_ordenes_combos WHERE id_orden_CAB = ?",[info.id])
+      // const [combos_corte] = await conn.query("SELECT tb1.* FROM tbl2_fases_prod_hojacorte_combos tb1 JOIN tbl2_fases_prod_hojacorte tb2 ON tb1.id_hojacorte_CAB = tb2.idx WHERE tb2.id_cab_orden = ?",[info.id])
+
+      return [ordenes,moldes,cortes]
     } catch (err) {
       console.log("Estamos en error:", err);
       return err

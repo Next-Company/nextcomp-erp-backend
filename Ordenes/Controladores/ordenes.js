@@ -80,6 +80,25 @@ export class OrdenesController {
     }
     // console.log("Respuesta de services",data)
   }
+  static async saveFaseOrden(req, resp) {
+    const info = req.body
+    const user_data = req.session
+    const data = await OrdenesModel.saveFaseOrden(info, user_data)
+
+    resp.json(data)
+  }
+  static async saveFaseMolde(req, resp) {
+    const info = req.body
+    const user_data = req.session
+    const data = await OrdenesModel.saveFaseMolde(info, user_data)
+    resp.json(data)
+  }
+  static async saveFaseCorte(req, resp) {
+    const info = req.body
+    const user_data = req.session
+    const data = await OrdenesModel.saveFaseOrden(info, user_data)
+    resp.json(data)
+  }
   static async testMultiSelect(req, resp) {
     const info = req.body
     const data = await OrdenesModel.testMultiSelect(info)
@@ -127,5 +146,9 @@ export class OrdenesController {
     const id = req.params.id
     const data = await OrdenesModel.getStatusGeneral(id)
     res.json(data)
+  }
+  static async updateCombos(req, reply) {
+    const data = await OrdenesModel.ActualizaCombos()
+    reply.json(data)
   }
 }
