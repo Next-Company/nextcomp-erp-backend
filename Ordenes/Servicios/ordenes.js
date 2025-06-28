@@ -408,6 +408,95 @@ export class OrdenesModel {
       if (conn) await conn.end();
     }
   }
+  static async saveFaseCorte(info, user_data) {
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      conn.beginTransaction()
+
+      console.log("Empezando guardado de corte",info,user_data)
+      let data = JSON.parse(info.info)
+      let id_orden = info.id
+      let [base_cortes] = await conn.query("SELECT *FROM tbl2_fases_prod_hojacorte WHERE id_cab_orden = ?",[id_orden])
+      let base_ids = base_cortes.map(row=>row.idx)
+
+      let base_add = data.filter(row=>row.idx == '' || !row.idx)
+      let base_update = data.filter(row=>base_ids.includes(row.idx))
+      let base_delete = base_cortes.filter(row=>!data.map(item=>item.idx).includes(row.idx))
+
+      console.log("Info formateada :",base_add,base_update,base_delete)
+
+      // ///////////////////////////////////////
+      // INFORMARCCION DE NUEVAS HOJAS DE CORTE
+      // ///////////////////////////////////////
+      if(base_add.length > 0){
+        console.log("Dentro de seccion 1")
+        let base_combos = base_add.map(row=>row.combos).filter(item=>item)
+        console.log("INfo combos seccion 1",base_combos)
+        let formateo = base_add.map(row=>[id_orden,row.numero_corte,row.estado_corte])
+        let [resp] = await conn.query("INSERT INTO tbl2_fases_prod_hojacorte(id_cab_orden,numero_corte,estado_corte) values ?",[formateo])
+        
+        let formateo_combos = base_combos.reduce((c,v)=>{
+          v.reduce((ca,va)=>{
+            ca.push([resp.insertId,va.color_combo,va.cantidad_combo])
+            return ca
+          },c)
+        },[])
+
+        console.log("INfo combos seccion 1",formateo_combos)
+
+        await conn.query("INSER INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB,color_combo,cantidad_combo) VALUES ?",[formateo_combos])
+      }
+      // ///////////////////////////////////////
+      // INFORMARCCION DE HOJAS DE CORTE ACTUALES
+      // ///////////////////////////////////////
+      if(base_update.length > 0){
+        console.log("Dentro de seccion 2")
+        let base_combos = base_update.map(row=>row.combos).filter(item=>item)
+
+        let base = ['numero_corte','estado_corte']
+        let acumulado = []
+        base.forEach(campo=>{
+          let text = `${campo} = CASE `
+          base_update.forEach(row=>{
+            text += `WHEN idx = ${parseInt(row['idx'])} THEN '${row[campo]}' `
+          })
+          text += `ELSE ${campo} END`
+          acumulado.push(text)
+        })
+        await conn.query(`UPDATE tbl2_fases_prod_hojacorte SET ${acumulado.join(',')} WHERE id_cab_orden = ?`,[id_orden])
+
+        let formateo_combos = base_combos.reduce((c,v)=>{
+          v.reduce((ca,va)=>{
+            ca.push([va.id_hojacorte_CAB,va.color_combo,va.cantidad_combo])
+            return ca
+          },c)
+        },[])
+        await conn.query('DELETE FROM tbl2_fases_prod_hojacorte_combos WHERE id_hojacorte_CAB in (' + base_combos.map(row=>row.id_hojacorte_CAB).join(',') + ')')
+        await conn.query('INSER INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB,color_combo,cantidad_combo) VALUES ?',[formateo_combos])
+      }
+      // ///////////////////////////////////////////
+      // INFORMARCCION DE HOJAS DE CORTE A ELIMINAR
+      // //////////////////////////////////////////
+      if(base_delete.length > 0){
+        console.log("Dentro de seccion 3")
+        let formateo = base_delete.map(row=>row.idx)
+        await conn.query('DELETE FROM tbl2_fases_prod_hojacorte WHERE idx in (' + formateo.join(',') + ')')
+        await conn.query('DELETE FROM tbl2_fases_prod_hojacorte_combos WHERRE id_hojacorte_CAB in (' + formateo.join(',') + ')')
+      }
+
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
+      return { ok: true, mensaje: 'Guardado con exito' }
+    } catch (err) {
+      console.log(err)
+      if (conn) conn.rollback()
+      return { ok: false, mensaje: err.message }
+    } finally {
+      if (conn) await conn.end();
+    }
+  }
   static async getAll(user_data) {
     let conn
     try {

@@ -96,7 +96,7 @@ export class OrdenesController {
   static async saveFaseCorte(req, resp) {
     const info = req.body
     const user_data = req.session
-    const data = await OrdenesModel.saveFaseOrden(info, user_data)
+    const data = await OrdenesModel.saveFaseCorte(info, user_data)
     resp.json(data)
   }
   static async testMultiSelect(req, resp) {
