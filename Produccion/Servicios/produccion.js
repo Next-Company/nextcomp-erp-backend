@@ -66,13 +66,84 @@ export class ProduccionModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
+      // sddssss
+      // let [ordenes] = await conn.query("SELECT tb1.*,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('id_orden_CAB',tb2.id_orden_CAB,'color_combo',tb2.color_combo,'cantidad_combo',tb2.cantidad_combo)) from tbl2_fases_prod_ordenes_combos tb2 where tb2.id_orden_CAB = tb1.idx),JSON_ARRAY()) as combos FROM tbl2_fases_prod_ordenes tb1 WHERE tb1.idx = ? ORDER BY tb1.idx desc",[info.id]);
 
-      const [ordenes] = await conn.query("SELECT tb1.*,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('id_orden_CAB',tb2.id_orden_CAB,'color_combo',tb2.color_combo,'cantidad_combo',tb2.cantidad_combo)) from tbl2_fases_prod_ordenes_combos tb2 where tb2.id_orden_CAB = tb1.idx),JSON_ARRAY()) as combos FROM tbl2_fases_prod_ordenes tb1 WHERE tb1.idx = ? ORDER BY tb1.idx desc",[info.id]);
+      // let [ordenes] = await conn.query("SELECT tb1.*,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('id_orden_CAB',cc.id_orden_CAB,'color_combo',cc.color_combo,'cantidad_combo',cc.cantidad_combo,'fracciones',cc.fracciones)) from (select tb2.idx,tb2.id_orden_CAB,tb2.color_combo,tb2.cantidad_combo,(select JSON_ARRAYAGG(JSON_OBJECT('talla',talla,'cantidad',cantidad)) from tbl2_fases_prod_ordenes_combos_fracciones tfr where tfr.id_combo_CAB = tb2.idx) as fracciones from tbl2_fases_prod_ordenes_combos tb2 where tb2.id_orden_CAB = tb1.idx) as cc),JSON_ARRAY()) as combos FROM tbl2_fases_prod_ordenes tb1 WHERE tb1.idx = ? ORDER BY tb1.idx desc", [info.id]);
 
-      console.log("INfo ordnes es: ",ordenes)
+      let [ordenes] = await conn.query(`SELECT
+          tb1.*,
+          COALESCE(
+              (
+                  SELECT
+                      JSON_ARRAYAGG(
+                          JSON_OBJECT(
+                              'id_orden_CAB', tb2.id_orden_CAB,
+                              'color_combo', tb2.color_combo,
+                              'cantidad_combo', tb2.cantidad_combo,
+                              'fracciones', (SELECT JSON_ARRAYAGG(JSON_OBJECT('talla', tfr.talla, 'cantidad', tfr.cantidad))
+                                            FROM tbl2_fases_prod_ordenes_combos_fracciones tfr
+                                            WHERE tfr.id_combo_CAB = tb2.idx)
+                          )
+                      )
+                  FROM
+                      tbl2_fases_prod_ordenes_combos tb2
+                  WHERE
+                      tb2.id_orden_CAB = tb1.idx -- <--- ¡Aquí tb1.idx SÍ es visible!
+              ),
+              JSON_ARRAY()
+          ) AS combos
+      FROM
+          tbl2_fases_prod_ordenes tb1
+      WHERE
+          tb1.idx = ?
+      ORDER BY
+          tb1.idx DESC`, [info.id]);
+
+      ordenes = ordenes.reduce((c,v)=>{
+        let new_combo = v.combos.map(combo=>{
+          console.log("Info del combo :",combo)
+          let fracciones = combo.fracciones.reduce((cc,vv)=>{
+            cc[vv.talla] = vv.cantidad 
+            return cc
+          },{})
+          return {...combo,...fracciones}
+        })
+        c.push({...v,combos:new_combo})
+        return c
+      },[])
+      console.log("INfo ordnes eSs: ",ordenes)
+      
       const [moldes] = await conn.query('SELECT tb1.* FROM tbl2_fases_prod_molde tb1 WHERE tb1.id_cab_orden = ?',[info.id]);
 
-      const [cortes] = await conn.query("SELECT tb1.*,(select JSON_ARRAYAGG(JSON_OBJECT('id_hojacorte_CAB',tb2.id_hojacorte_CAB,'id_orden_CAB',tb2.id_orden_CAB,'color_combo',tb2.color_combo,'cantidad_combo',tb2.cantidad_combo)) from tbl2_fases_prod_hojacorte_combos tb2 where tb2.id_hojacorte_CAB = tb1.idx) as combos FROM tbl2_fases_prod_hojacorte tb1 WHERE tb1.id_cab_orden = ?",[info.id]);
+      // const [cortes] = await conn.query("SELECT tb1.*,(select JSON_ARRAYAGG(JSON_OBJECT('id_hojacorte_CAB',tb2.id_hojacorte_CAB,'id_orden_CAB',tb2.id_orden_CAB,'color_combo',tb2.color_combo,'cantidad_combo',tb2.cantidad_combo)) from tbl2_fases_prod_hojacorte_combos tb2 where tb2.id_hojacorte_CAB = tb1.idx) as combos FROM tbl2_fases_prod_hojacorte tb1 WHERE tb1.id_cab_orden = ?",[info.id]);
+
+      let [cortes] = await conn.query(`SELECT
+          tb1.*,
+          COALESCE(
+              (
+                  SELECT
+                      JSON_ARRAYAGG(
+                          JSON_OBJECT(
+                              'id_orden_CAB', tb2.id_orden_CAB,
+                              'color_combo', tb2.color_combo,
+                              'cantidad_combo', tb2.cantidad_combo,
+                              'fracciones', (SELECT JSON_ARRAYAGG(JSON_OBJECT('talla', tfr.talla, 'cantidad', tfr.cantidad))
+                                            FROM tbl2_fases_prod_hojacorte_combos_fracciones tfr
+                                            WHERE tfr.id_combo_CAB = tb2.idx)
+                          )
+                      )
+                  FROM
+                      tbl2_fases_prod_hojacorte_combos tb2
+                  WHERE
+                      tb2.id_orden_CAB = tb1.idx -- <--- ¡Aquí tb1.idx SÍ es visible!
+              ),
+              JSON_ARRAY()
+          ) AS combos
+      FROM
+          tbl2_fases_prod_hojacorte tb1
+      WHERE
+          tb1.id_cab_orden = ?`, [info.id]);
   
       return [ordenes,moldes,cortes]
     } catch (err) {

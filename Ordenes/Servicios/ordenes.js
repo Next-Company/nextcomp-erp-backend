@@ -1,6 +1,7 @@
 import { raceWith } from "puppeteer-core/lib/esm/third_party/rxjs/rxjs.js";
 import { configs } from "../../Main/utils.js";
 import mysql from "mysql2/promise";
+import { ConsoleMessage } from "puppeteer-core";
 // import { inventario } from "../../Main/config.js";
 export class OrdenesModel {
   static async getOrdenes(search) {
@@ -316,10 +317,41 @@ export class OrdenesModel {
           const [result] = await conn.execute('INSERT INTO tbl2_fases_prod_ordenes(' + campos.toString() + ') VALUES (' + campos.map(row => "NULLIF(?, '')").toString() + ')', values)
           const idinsert = result.insertId
 
-          let combos_formateado = combos.map(row=>{
-            return [idinsert,row.color_combo,row.cantidad_combo]
-          })
-          await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos(id_orden_CAB,color_combo,cantidad_combo) VALUES ?",[combos_formateado])
+
+          let recursive = async()=>{
+            let combo_data = combos.shift()
+            if(combo_data){
+              console.log("Ejecutando nuevamente",combo_data)
+              let [insert_combo] = await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos(id_orden_CAB,color_combo,cantidad_combo) VALUES (?,?,?)",[idinsert,combo_data.color_combo,combo_data.cantidad_combo])
+
+              let fraccionado = [];
+              ['xs','s','m','l','xl','xxl'].reduce((c,v)=>{
+                // if(parseInt(combo_data[v]) > 0) c.push([insert_combo.insertId,v,parseInt(combo_data[v])])
+                c.push([insert_combo.insertId,v,parseInt(combo_data[v]) > 0 ? parseInt(combo_data[v]) : 0])
+                return c
+              },fraccionado)
+              console.log("Imprimiento fraccionado",fraccionado)
+
+              await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos_fracciones(id_combo_CAB,talla,cantidad) values ?",[fraccionado])
+              await recursive()
+            }else{
+              return Promise.resolve()
+            }
+          }
+          await recursive()
+          console.log("Finalizando recursive")
+          // let combos_formateado = combos.map(row=>{
+          //   return [idinsert,row.color_combo,row.cantidad_combo]
+          // })
+          // let [info_insert] = await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos(id_orden_CAB,color_combo,cantidad_combo) VALUES ?",[combos_formateado])
+
+          // let fracciones_orden = combos.reduce((carry,row)=>{
+          //   return ['xs','s','m','l','xl','xxl'].reduce((c,v)=>{
+          //     if(row[v] > 0) c.push([info_insert.insertId,v,parseInt(row[v])])
+          //     return c
+          //   },carry)
+          // },[])
+          // await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos_fracciones(id_combo_CAB,talla,cantidad) values ?",[fracciones_orden])
 
           nameimg = `op_${idinsert}.jpg`
         } catch (error) {
@@ -338,11 +370,33 @@ export class OrdenesModel {
 
         console.log("Resultado de la actualziaoo : ",result_update)
 
-        let combos_formateo = combos.map(row=>{
-          return [id,row.color_combo,row.cantidad_combo]
-        })
+
         await conn.query("DELETE FROM tbl2_fases_prod_ordenes_combos WHERE id_orden_CAB = ?",[id])
-        await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos(id_orden_CAB,color_combo,cantidad_combo) VALUES ?",[combos_formateo])
+        await conn.query("DELETE FROM tbl2_fases_prod_ordenes_combos_fracciones WHERE id_combo_CAB in (select idx from tbl2_fases_prod_ordenes_combos where id_orden_CAB = ?)",[id])
+        let recursive = async ()=>{
+          let rdata = combos.shift()
+          if(rdata){
+            // rdata --> {color_combo:'',cantidad_combo:3,xs:3,s:3,m:2,l:4,xl:1,xxl:9}
+            let [insert_info] = await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos(id_orden_CAB,color_combo,cantidad_combo) VALUES (?,?,?)",[id,rdata.color_combo,rdata.cantidad_combo])
+
+            let fracciones = ['xs','s','m','l','xl','xxl'].reduce((c,v)=>{
+              // if(parseInt(rdata[v]) > 0) c.push([insert_info.insertId,v,parseInt(rdata[v])])
+              c.push([insert_info.insertId,v,parseInt(rdata[v]) > 0 ? parseInt(rdata[v]) : 0])
+              return c
+            },[])
+            await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos_fracciones(id_combo_CAB,talla,cantidad) VALUES ?",[fracciones])
+
+            await recursive()
+          }else{
+            return Promise.resolve()
+          }
+        }
+        await recursive()
+        // let combos_formateo = combos.map(row=>{
+        //   return [id,row.color_combo,row.cantidad_combo]
+        // })
+        // await conn.query("DELETE FROM tbl2_fases_prod_ordenes_combos WHERE id_orden_CAB = ?",[id])
+        // await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos(id_orden_CAB,color_combo,cantidad_combo) VALUES ?",[combos_formateo])
 
         nameimg = `op_${id}.jpg`
         // console.log(sql)
@@ -428,24 +482,86 @@ export class OrdenesModel {
       // ///////////////////////////////////////
       // INFORMARCCION DE NUEVAS HOJAS DE CORTE
       // ///////////////////////////////////////
+
       if(base_add.length > 0){
         console.log("Dentro de seccion 1")
-        let base_combos = base_add.map(row=>row.combos).filter(item=>item)
-        console.log("INfo combos seccion 1",base_combos)
-        let formateo = base_add.map(row=>[id_orden,row.numero_corte,row.estado_corte])
-        let [resp] = await conn.query("INSERT INTO tbl2_fases_prod_hojacorte(id_cab_orden,numero_corte,estado_corte) values ?",[formateo])
-        
-        let formateo_combos = base_combos.reduce((c,v)=>{
-          v.reduce((ca,va)=>{
-            ca.push([resp.insertId,va.color_combo,va.cantidad_combo])
-            return ca
-          },c)
-          return c
-        },[])
 
-        console.log("INfo fomateo seccion 1",formateo_combos)
+        let recursive = async ()=>{
+          let corte = base_add.shift()
+          if(corte){
 
-        await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB,color_combo,cantidad_combo) VALUES ?",[formateo_combos])
+            let [resp] = await conn.query("INSERT INTO tbl2_fases_prod_hojacorte(id_cab_orden,numero_corte,estado_corte) values (?,?,?)",[id_orden,corte.numero_corte,corte.estado_corte])
+
+            let recursive2 = async ()=>{
+              let combo = corte.combos.shift()
+              if(combo){
+                let [insert_combo] = await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB,color_combo,cantidad_combo) VALUES (?,?,?)",[resp.insertId,combo.color_combo,combo.cantidad_combo])
+
+                let fraccionado = [];
+                  ['xs','s','m','l','xl','xxl'].reduce((c,v)=>{
+                    c.push([insert_combo.insertId,v,parseInt(combo[v]) > 0 ? parseInt(combo[v]) : 0])
+                    return c
+                  },fraccionado)
+
+                console.log("La info del fraccionado es:",fraccionado)
+
+                await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos_fracciones(id_combo_CAB,talla,cantidad) values ?",[fraccionado])
+                await recursive2()
+              }else{
+                return Promise.resolve()
+              }
+            }
+            await recursive2()
+            console.log("La info del shift es:",corte)
+            
+            await recursive()
+          }else{
+            return Promise.resolve()
+          }
+        }
+        await recursive()
+      }
+
+      if(base_add.length > 0){
+        // console.log("Dentro de seccion 1")
+        // let base_combos = base_add.map(row=>row.combos).filter(item=>item)
+        // console.log("INfo combos seccion 1",base_combos)
+        // let formateo = base_add.map(row=>[id_orden,row.numero_corte,row.estado_corte])
+        // let [resp] = await conn.query("INSERT INTO tbl2_fases_prod_hojacorte(id_cab_orden,numero_corte,estado_corte) values ?",[formateo])
+
+
+        // let recursive = async ()=>{
+        //   let rec_data = base_combos.shift()
+        //   if(rec_data){
+        //     console.log("La info del shift es:",rec_data)
+
+        //     let [insert_combo] = await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB,color_combo,cantidad_combo) VALUES (?,?,?)",[resp.insertId,rec_data.color_combo,rec_data.cantidad_combo])
+
+        //     let fraccionado = [];
+        //       ['xs','s','m','l','xl','xxl'].reduce((c,v)=>{
+        //         c.push([insert_combo.insertId,v,parseInt(rec_data[v]) > 0 ? parseInt(rec_data[v]) : 0])
+        //         return c
+        //       },fraccionado)
+
+        //     console.log("La info del fraccionado es:",fraccionado)
+
+        //     await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos_fracciones(id_combo_CAB,talla,cantidad) values ?",[fraccionado])
+        //     await recursive()
+        //   }else{
+        //     return Promise.resolve()
+        //   }
+        // }
+        // await recursive()
+
+        // let formateo_combos = base_combos.reduce((c,v)=>{
+        //   v.reduce((ca,va)=>{
+        //     ca.push([resp.insertId,va.color_combo,va.cantidad_combo])
+        //     return ca
+        //   },c)
+        //   return c
+        // },[])
+        // console.log("INfo fomateo seccion 1",formateo_combos)
+        // await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB,color_combo,cantidad_combo) VALUES ?",[formateo_combos])
       }
       // ///////////////////////////////////////
       // INFORMARCCION DE HOJAS DE CORTE ACTUALES
