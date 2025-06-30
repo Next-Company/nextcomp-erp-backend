@@ -296,8 +296,8 @@ export class OrdenesModel {
 
       let sql = ''
       const id = info.idx
-      const combos = JSON.parse(info.combos)
       console.log("Empezando guardado de orodenses",info,user_data)
+      const combos = JSON.parse(info.combos)
 
       const [consulta,fields] = await conn.execute("SELECT *FROM tbl2_fases_prod_ordenes WHERE idx = ?",[id])
       if (id == '') {
@@ -321,7 +321,7 @@ export class OrdenesModel {
           })
           await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos(id_orden_CAB,color_combo,cantidad_combo) VALUES ?",[combos_formateado])
 
-          // nameimg = `op_${idinsert}.jpg`
+          nameimg = `op_${idinsert}.jpg`
         } catch (error) {
           console.log(error)
         }
@@ -334,7 +334,9 @@ export class OrdenesModel {
         }, [])
         const values = campos.map(row => info[row])
         console.log("Informacion de campos :",campos)
-        await conn.query('UPDATE tbl2_fases_prod_ordenes SET ' + campos.map(row => row + " = NULLIF(?,'')").toString() + ' WHERE idx = ' + id,values)
+        let result_update = await conn.query('UPDATE tbl2_fases_prod_ordenes SET ' + campos.map(row => row + " = NULLIF(?,'')").toString() + ' WHERE idx = ' + id,values)
+
+        console.log("Resultado de la actualziaoo : ",result_update)
 
         let combos_formateo = combos.map(row=>{
           return [id,row.color_combo,row.cantidad_combo]
@@ -342,16 +344,16 @@ export class OrdenesModel {
         await conn.query("DELETE FROM tbl2_fases_prod_ordenes_combos WHERE id_orden_CAB = ?",[id])
         await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos(id_orden_CAB,color_combo,cantidad_combo) VALUES ?",[combos_formateo])
 
-        // nameimg = `op_${id}.jpg`
+        nameimg = `op_${id}.jpg`
         // console.log(sql)
       }
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
-      return { ok: true, mensaje: 'Guardado con exito' }
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
+      return { ok: true, mensaje: 'Guardado con exito',filename: nameimg }
     } catch (err) {
       console.log(err)
       if (conn) conn.rollback()
-      return { ok: false, mensaje: err.message }
+      return { ok: false, mensaje: err.message,filename: nameimg }
     } finally {
       if (conn) await conn.end();
     }
@@ -378,8 +380,6 @@ export class OrdenesModel {
           const values = campos.map(row => info[row])
           const [result] = await conn.execute('INSERT INTO tbl2_fases_prod_molde(' + campos.toString() + ') VALUES (' + campos.map(row => "NULLIF(?, '')").toString() + ')', values)
           const idinsert = result.insertId
-
-          // nameimg = `op_${idinsert}.jpg`
         } catch (error) {
           console.log(error)
         }
@@ -393,12 +393,10 @@ export class OrdenesModel {
         const values = campos.map(row => info[row])
         console.log("Informacion de campos :",campos)
         await conn.query('UPDATE tbl2_fases_prod_molde SET ' + campos.map(row => row + " = NULLIF(?,'')").toString() + ' WHERE idx = ' + id,values)
-
-        // nameimg = `op_${id}.jpg`
         // console.log(sql)
       }
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito' }
     } catch (err) {
       console.log(err)
@@ -442,17 +440,19 @@ export class OrdenesModel {
             ca.push([resp.insertId,va.color_combo,va.cantidad_combo])
             return ca
           },c)
+          return c
         },[])
 
-        console.log("INfo combos seccion 1",formateo_combos)
+        console.log("INfo fomateo seccion 1",formateo_combos)
 
-        await conn.query("INSER INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB,color_combo,cantidad_combo) VALUES ?",[formateo_combos])
+        await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB,color_combo,cantidad_combo) VALUES ?",[formateo_combos])
       }
       // ///////////////////////////////////////
       // INFORMARCCION DE HOJAS DE CORTE ACTUALES
       // ///////////////////////////////////////
       if(base_update.length > 0){
         console.log("Dentro de seccion 2")
+        console.log("otroasd sdaf :",base_update.map(row=>row.combos))
         let base_combos = base_update.map(row=>row.combos).filter(item=>item)
 
         let base = ['numero_corte','estado_corte']
@@ -465,16 +465,21 @@ export class OrdenesModel {
           text += `ELSE ${campo} END`
           acumulado.push(text)
         })
-        await conn.query(`UPDATE tbl2_fases_prod_hojacorte SET ${acumulado.join(',')} WHERE id_cab_orden = ?`,[id_orden])
+        await conn.query(`UPDATE tbl2_fases_prod_hojacorte SET ${acumulado.join(',')} WHERE idx in (${base_update.map(row=>row.idx).join(',')}) and id_cab_orden = ?`,[id_orden])
 
+        console.log("Info de los combos :",base_combos)
         let formateo_combos = base_combos.reduce((c,v)=>{
           v.reduce((ca,va)=>{
             ca.push([va.id_hojacorte_CAB,va.color_combo,va.cantidad_combo])
             return ca
           },c)
+          return c
         },[])
-        await conn.query('DELETE FROM tbl2_fases_prod_hojacorte_combos WHERE id_hojacorte_CAB in (' + base_combos.map(row=>row.id_hojacorte_CAB).join(',') + ')')
-        await conn.query('INSER INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB,color_combo,cantidad_combo) VALUES ?',[formateo_combos])
+        console.log("INfo formateo de combos :",formateo_combos)
+        let lista_
+        await conn.query('DELETE FROM tbl2_fases_prod_hojacorte_combos WHERE id_hojacorte_CAB in (' + base_update.map(row=>row.idx).join(',') + ')')
+        // await conn.query('DELETE FROM tbl2_fases_prod_hojacorte_combos WHERE id_hojacorte_CAB in (select idx from tbl2_fases_prod_hojacorte where id_cab_orden = ?)',[id_orden])
+        await conn.query('INSERT INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB,color_combo,cantidad_combo) VALUES ?',[formateo_combos])
       }
       // ///////////////////////////////////////////
       // INFORMARCCION DE HOJAS DE CORTE A ELIMINAR
@@ -482,12 +487,13 @@ export class OrdenesModel {
       if(base_delete.length > 0){
         console.log("Dentro de seccion 3")
         let formateo = base_delete.map(row=>row.idx)
+        console.log("Ifor formateo combos seccoin 3:",formateo)
         await conn.query('DELETE FROM tbl2_fases_prod_hojacorte WHERE idx in (' + formateo.join(',') + ')')
-        await conn.query('DELETE FROM tbl2_fases_prod_hojacorte_combos WHERRE id_hojacorte_CAB in (' + formateo.join(',') + ')')
+        await conn.query('DELETE FROM tbl2_fases_prod_hojacorte_combos WHERE id_hojacorte_CAB in (' + formateo.join(',') + ')')
       }
 
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito' }
     } catch (err) {
       console.log(err)
@@ -550,18 +556,23 @@ export class OrdenesModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      const [results, fields] = await conn.query('DELETE FROM `tbl2_fases_prod_ordenes` WHERE `idx` = "' + id + '"');
-      await conn.end();
-      return [{ ok: true, mensaje: 'Registro Eliminado con exito' }]
+      conn.beginTransaction()
+
+      console.log("El id dela orden es :",id)
+      await conn.query('DELETE FROM `tbl2_fases_prod_ordenes` WHERE `idx` = "' + id + '"');
+      await conn.query('DELETE FROM `tbl2_fases_prod_ordenes_combos` WHERE `id_orden_CAB` = "' + id + '"');
+      await conn.query('DELETE FROM `tbl2_fases_prod_molde` WHERE `id_cab_orden` = ? ',[id]);
+      await conn.query('DELETE FROM `tbl2_fases_prod_hojacorte` WHERE `id_cab_orden` = ? ',[id]);
+      await conn.query('DELETE FROM `tbl2_fases_prod_hojacorte_combos` WHERE id_hojacorte_CAB in (select idx FROM tbl2_fases_prod_hojacorte WHERE `id_cab_orden` = ? )',[id]);
+      
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
+      return { ok: true, mensaje: 'Registro Eliminado con exito' }
     } catch (err) {
-      // return [{ok:false,mensaje:'Guardado con exito'}]
+      if (conn) conn.rollback()
       return [err]
     } finally {
-      if (conn) {
-        // console.log("Cerrando session")
-        // await conn.end();
-        await conn.end();
-      }
+      if (conn) await conn.end();
     }
   }
 
@@ -628,16 +639,22 @@ export class OrdenesModel {
       await conn.connect();
 
       
-      const [ordenes] = await conn.query(`
-        SELECT tfpo.*,
-        ( COALESCE(tfpo.combo1_orden,0) + COALESCE(tfpo.combo2_orden,0) + COALESCE(tfpo.combo3_orden,0) + COALESCE(tfpo.combo4_orden,0) + COALESCE(tfpo.combo5_orden,0) + COALESCE(tfpo.combo6_orden,0) + COALESCE(tfpo.combo7_orden,0) + COALESCE(tfpo.combo8_orden,0) + COALESCE(tfpo.combo9_orden,0) ) as total_orden,
-        (COALESCE(tfph.combo1_corte,0) + COALESCE(tfph.combo2_corte,0) + COALESCE(tfph.combo3_corte,0) + COALESCE(tfph.combo4_corte,0) + COALESCE(tfph.combo5_corte,0) + COALESCE(tfph.combo6_corte,0) + COALESCE(tfph.combo7_corte,0) + COALESCE(tfph.combo8_corte,0) + COALESCE(tfph.combo9_corte,0) ) as total_corte,
-        COALESCE(DATEDIFF(STR_TO_DATE(fec_entrega,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
-        tfph.numero_corte,tfph.ruta_proceso
-        FROM tbl2_fases_prod_ordenes tfpo 
-        LEFT JOIN tbl2_fases_prod_hojacorte tfph on tfpo.idx = tfph.id_cab_orden 
-        where tfpo.idx = ?
-      `, [id]);
+      // const [ordenes] = await conn.query(`
+      //   SELECT tfpo.*,
+      //   ( COALESCE(tfpo.combo1_orden,0) + COALESCE(tfpo.combo2_orden,0) + COALESCE(tfpo.combo3_orden,0) + COALESCE(tfpo.combo4_orden,0) + COALESCE(tfpo.combo5_orden,0) + COALESCE(tfpo.combo6_orden,0) + COALESCE(tfpo.combo7_orden,0) + COALESCE(tfpo.combo8_orden,0) + COALESCE(tfpo.combo9_orden,0) ) as total_orden,
+      //   (COALESCE(tfph.combo1_corte,0) + COALESCE(tfph.combo2_corte,0) + COALESCE(tfph.combo3_corte,0) + COALESCE(tfph.combo4_corte,0) + COALESCE(tfph.combo5_corte,0) + COALESCE(tfph.combo6_corte,0) + COALESCE(tfph.combo7_corte,0) + COALESCE(tfph.combo8_corte,0) + COALESCE(tfph.combo9_corte,0) ) as total_corte,
+      //   COALESCE(DATEDIFF(STR_TO_DATE(fec_entrega,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
+      //   tfph.numero_corte,tfph.ruta_proceso
+      //   FROM tbl2_fases_prod_ordenes tfpo 
+      //   LEFT JOIN tbl2_fases_prod_hojacorte tfph on tfpo.idx = tfph.id_cab_orden 
+      //   where tfpo.idx = ?
+      // `, [id]);
+
+      const [ordenes] = await conn.query("SELECT tb1.*,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('id_orden_CAB',tb2.id_orden_CAB,'color_combo',tb2.color_combo,'cantidad_combo',tb2.cantidad_combo)) from tbl2_fases_prod_ordenes_combos tb2 where tb2.id_orden_CAB = tb1.idx),JSON_ARRAY()) as combos,COALESCE(DATEDIFF(STR_TO_DATE(tb1.fec_entrega,'%Y-%m-%d'),date(now())),0) as dias_pendientes FROM tbl2_fases_prod_ordenes tb1 WHERE tb1.idx = ? ORDER BY tb1.idx desc",[id]);
+
+      const [moldes] = await conn.query('SELECT tb1.* FROM tbl2_fases_prod_molde tb1 WHERE tb1.id_cab_orden = ?',[id]);
+
+      const [cortes] = await conn.query("SELECT tb1.*,(select JSON_ARRAYAGG(JSON_OBJECT('id_hojacorte_CAB',tb2.id_hojacorte_CAB,'id_orden_CAB',tb2.id_orden_CAB,'color_combo',tb2.color_combo,'cantidad_combo',tb2.cantidad_combo)) from tbl2_fases_prod_hojacorte_combos tb2 where tb2.id_hojacorte_CAB = tb1.idx) as combos FROM tbl2_fases_prod_hojacorte tb1 WHERE tb1.id_cab_orden = ?",[id]);
 
       let query = `SELECT idx,id_orden_CAB,orden_ref,producto,modelo,marca,estado,tipo,servicio,id_proveedor_CAB,proveedor,fec_emision,DATE_FORMAT(fec_emision,'%d/%m/%Y') as fec_emision_guia,fec_retorno,DATE_FORMAT(fec_retorno,'%d/%m/%Y') as fec_retorno_guia,fec_recepcion,costo,COALESCE(DATEDIFF(fec_retorno,fec_emision),'') as tiempo_produccion,COALESCE(DATEDIFF(STR_TO_DATE(fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
       (
@@ -655,8 +672,7 @@ export class OrdenesModel {
 
       // console.log("Informcion agrupada",Object.groupBy(infoguias,(created_at)=>created_at))
 
-
-      return [ordenes,infoguias]
+      return [ordenes,moldes,cortes,infoguias]
     } catch (err) {
       console.log(err)
       return [err]
@@ -666,12 +682,13 @@ export class OrdenesModel {
   }
   static async ActualizaCombos(){
     let conn
+    console.log("Comienza la actualizadoin")
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
       conn.beginTransaction()
 
-      let [info] = await conn.query("SELECT *FROM tbl2_fases_prod_ordenes tb1 WHERE estado_orden <> 'OTRO' AND idx NOT IN (SELECT DISTINCT id_orden_CAB FROM tbl2_fases_prod_ordenes_combos)")
+      let [info] = await conn.query("SELECT *FROM tbl2_fases_prod_hojacorte tb1 WHERE idx NOT IN (SELECT DISTINCT id_orden_CAB FROM tbl2_fases_prod_hojacorte_combos)")
       let contador = 1
 
       let grupo_combos = [1,2,3,4,5,6,7,8,9,10,11,12,13,14]
@@ -680,7 +697,7 @@ export class OrdenesModel {
       let pp = info.reduce((carry,value)=>{
         // console.log("Info de orden: ",value)
         let array_combos = grupo_combos.reduce((c,v)=>{
-          value[`combo${v}_orden`] && c.push([value.idx,'NEGRO',value[`combo${v}_orden`]])
+          value[`combo${v}_corte`] && c.push([value.idx,'NEGRO',value[`combo${v}_corte`]])
           return c
         },carry)
         // console.log("Array de combos:",array_combos)
@@ -688,7 +705,7 @@ export class OrdenesModel {
         return carry
       },[])
 
-      await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos(id_orden_CAB,color_combo,cantidad_combo) VALUES ? ",[pp])
+      await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB,color_combo,cantidad_combo) VALUES ? ",[pp])
 
       console.log("Lista de ordene formateado para combos :",pp)
 
