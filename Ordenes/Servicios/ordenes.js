@@ -14,20 +14,38 @@ export class OrdenesModel {
 
       let [results] = await conn.query(`
         SELECT *,
-        (COALESCE(combo1_orden,0) + COALESCE(combo2_orden,0) + COALESCE(combo3_orden,0) + COALESCE(combo4_orden,0) + COALESCE(combo5_orden,0) + COALESCE(combo6_orden,0) + COALESCE(combo7_orden,0) + COALESCE(combo8_orden,0) + COALESCE(combo9_orden,0)) as total_orden,
-        (COALESCE(combo1_corte,0) + COALESCE(combo2_corte,0) + COALESCE(combo3_corte,0) + COALESCE(combo4_corte,0) + COALESCE(combo5_corte,0) + COALESCE(combo6_corte,0) + COALESCE(combo7_corte,0) + COALESCE(combo8_corte,0) + COALESCE(combo9_corte,0)) as total_corte,
         DATE_FORMAT(fec_emitida,'%d/%m/%Y') as fec_emitida_orden,
         DATE_FORMAT(fec_entrega,'%d/%m/%Y') as fec_entrega_orden,
         COALESCE(DATEDIFF(STR_TO_DATE(fec_entrega,'%Y-%m-%d'),STR_TO_DATE(fec_emitida,'%Y-%m-%d') ),0) as dias_produccion,
         COALESCE(DATEDIFF(STR_TO_DATE(fec_entrega,'%Y-%m-%d'),date(now())),0) as dias_pendientes
-        FROM viewProduccionOrdenes 
+        FROM viewProduccionOrdenesV2
         WHERE 1=1 ${extra} ORDER BY idx desc
       `);
       await conn.end();
 
-      // console.log("Info ruta proceso",results[0].ruta_proceso,eval(results[0].ruta_proceso),JSON.parse(results[0].ruta_proceso))
+      console.log("Info general:",results)
 
       results = results.reduce((carry,value)=>{
+        value['total_orden'] = value.ordenes_combos.length == 0 ? 0 : value.ordenes_combos.reduce((c,v)=>{
+          c += parseInt(v.cantidad_combo)
+          return c
+        },0)
+        // value['total_orden'] = value.ordenes_combos.length == 0 ? 0 : value.ordenes_combos.map(row=>row.fracciones).reduce((c,v)=>{
+        //   return v.reduce((cc,vv)=>{
+        //     cc += parseInt(vv.cantidad)
+        //     return cc
+        //   },c)
+        // },0)
+        value['total_corte'] = value.cortes_combos.length == 0 ? 0 : value.cortes_combos.reduce((c,v)=>{
+          c += parseInt(v.cantidad_combo)
+          return c
+        },0)
+        // value['total_corte'] = value.cortes_combos.length == 0 ? 0 : value.cortes_combos.map(row=>row.fracciones).reduce((c,v)=>{
+        //   return v.reduce((cc,vv)=>{
+        //     cc += parseInt(vv.cantidad)
+        //     return cc
+        //   },c)
+        // },0)
 
         // const RUTA_COLOR = {'MOLDES':'bg-orange-400','CORTE':'bg-rose-400','CONFECCION':'bg-purple-400','OJAL':'bg-blue-400','ESTAMPADO':'bg-gray-400','LAVANDERIA':'bg-green-400','BORDADO':'bg-yellow-400','ACABADOS':'bg-red-400'}
         const RUTA_COLOR = {'AVIOS':'bg-gray-500','MOLDE':'bg-gray-500','CORTE':'bg-gray-500','CONFECCION':'bg-gray-500','OJAL':'bg-gray-500','ESTAMPADO':'bg-gray-500','LAVANDERIA':'bg-gray-500','BORDADO':'bg-gray-500','ACABADOS':'bg-gray-500'}
@@ -59,7 +77,9 @@ export class OrdenesModel {
           // value.ruta_test = [...pp.filter(item=>item.estado && !value.status_servicio.split('-').includes(item.fase)),...pp.filter(item=>!item.estado || value.status_servicio.split('-').includes(item.fase))]
 
         }else{
-          let lista_pre = value.status == 'CORTE' ? ['MOLDE','CORTE'] : ( value.status == 'MOLDE' ? ['MOLDE'] : [] )
+
+          // let lista_pre = value.status == 'CORTE' ? ['MOLDE','CORTE'] : ( value.status == 'MOLDE' ? ['MOLDE'] : [] )
+          let lista_pre = ['MOLDE','CORTE']
           value.ruta_final = ['MOLDE','CORTE','AVIOS']
           value.ruta_test = ['MOLDE','CORTE','AVIOS'].concat(ruta_actual).reduce((carry,item)=>{if(!carry.includes(item)) carry.push(item); return carry;},[]).map(row=>{
             return {
@@ -486,126 +506,124 @@ export class OrdenesModel {
       if(base_add.length > 0){
         console.log("Dentro de seccion 1")
 
-        let recursive = async ()=>{
-          let corte = base_add.shift()
-          if(corte){
+        const processCortes = async (id_orden, base_add, conn) => {
+          try {
+              // Itera sobre cada 'corte' en base_add
+              // Crea una copia del array para no mutar el original si 'base_add' viene de fuera
+              for (const corte of [...base_add]) {
+                  // Asegúrate de que 'base_add' se pase como un array de objetos,
+                  // y que 'corte.combos' también lo sea.
 
-            let [resp] = await conn.query("INSERT INTO tbl2_fases_prod_hojacorte(id_cab_orden,numero_corte,estado_corte) values (?,?,?)",[id_orden,corte.numero_corte,corte.estado_corte])
+                  console.log(`Procesando corte número: ${corte.numero_corte}`);
 
-            let recursive2 = async ()=>{
-              let combo = corte.combos.shift()
-              if(combo){
-                let [insert_combo] = await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB,color_combo,cantidad_combo) VALUES (?,?,?)",[resp.insertId,combo.color_combo,combo.cantidad_combo])
+                  // Insertar hoja de corte
+                  const [hojaCorteResult] = await conn.query(
+                      "INSERT INTO tbl2_fases_prod_hojacorte(id_cab_orden, numero_corte, estado_corte) VALUES (?,?,?)",
+                      [id_orden, corte.numero_corte, corte.estado_corte]
+                  );
+                  const idHojaCorte = hojaCorteResult.insertId;
 
-                let fraccionado = [];
-                  ['xs','s','m','l','xl','xxl'].reduce((c,v)=>{
-                    c.push([insert_combo.insertId,v,parseInt(combo[v]) > 0 ? parseInt(combo[v]) : 0])
-                    return c
-                  },fraccionado)
+                  // Itera sobre los 'combos' de este corte
+                  // También creamos una copia de los combos para el bucle
+                  for (const combo of [...corte.combos]) {
+                      console.log(`  Procesando combo: ${combo.color_combo}, Cantidad: ${combo.cantidad_combo}`);
 
-                console.log("La info del fraccionado es:",fraccionado)
+                      // Insertar combo de hoja de corte
+                      const [comboInsertResult] = await conn.query(
+                          "INSERT INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB, color_combo, cantidad_combo) VALUES (?,?,?)",
+                          [idHojaCorte, combo.color_combo, combo.cantidad_combo]
+                      );
+                      const idComboCorte = comboInsertResult.insertId;
 
-                await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos_fracciones(id_combo_CAB,talla,cantidad) values ?",[fraccionado])
-                await recursive2()
-              }else{
-                return Promise.resolve()
+                      // Preparar los datos de fraccionado
+                      const fraccionado = [];
+                      ['xs', 's', 'm', 'l', 'xl', 'xxl'].forEach(talla => {
+                          const cantidad = parseInt(combo[talla]);
+                          fraccionado.push([idComboCorte, talla, isNaN(cantidad) ? 0 : cantidad > 0 ? cantidad : 0]);
+                      });
+
+                      console.log("  La info del fraccionado es:", fraccionado);
+
+                      // Insertar fracciones
+                      await conn.query(
+                          "INSERT INTO tbl2_fases_prod_hojacorte_combos_fracciones(id_combo_CAB, talla, cantidad) VALUES ?",
+                          [fraccionado]
+                      );
+                  }
+                  console.log("Corte procesado completamente:", corte.numero_corte);
               }
-            }
-            await recursive2()
-            console.log("La info del shift es:",corte)
-            
-            await recursive()
-          }else{
-            return Promise.resolve()
+              console.log("Todos los cortes y sus combos/fracciones procesados.");
+              return true;
+          } catch (error) {
+              console.error("Error en el proceso de inserción recursiva:", error);
+              throw error; // Propaga el error para que la función que llama lo maneje
           }
-        }
-        await recursive()
+        };
+        await processCortes(id_orden,base_add,conn)
       }
 
-      if(base_add.length > 0){
-        // console.log("Dentro de seccion 1")
-        // let base_combos = base_add.map(row=>row.combos).filter(item=>item)
-        // console.log("INfo combos seccion 1",base_combos)
-        // let formateo = base_add.map(row=>[id_orden,row.numero_corte,row.estado_corte])
-        // let [resp] = await conn.query("INSERT INTO tbl2_fases_prod_hojacorte(id_cab_orden,numero_corte,estado_corte) values ?",[formateo])
-
-
-        // let recursive = async ()=>{
-        //   let rec_data = base_combos.shift()
-        //   if(rec_data){
-        //     console.log("La info del shift es:",rec_data)
-
-        //     let [insert_combo] = await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB,color_combo,cantidad_combo) VALUES (?,?,?)",[resp.insertId,rec_data.color_combo,rec_data.cantidad_combo])
-
-        //     let fraccionado = [];
-        //       ['xs','s','m','l','xl','xxl'].reduce((c,v)=>{
-        //         c.push([insert_combo.insertId,v,parseInt(rec_data[v]) > 0 ? parseInt(rec_data[v]) : 0])
-        //         return c
-        //       },fraccionado)
-
-        //     console.log("La info del fraccionado es:",fraccionado)
-
-        //     await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos_fracciones(id_combo_CAB,talla,cantidad) values ?",[fraccionado])
-        //     await recursive()
-        //   }else{
-        //     return Promise.resolve()
-        //   }
-        // }
-        // await recursive()
-
-        // let formateo_combos = base_combos.reduce((c,v)=>{
-        //   v.reduce((ca,va)=>{
-        //     ca.push([resp.insertId,va.color_combo,va.cantidad_combo])
-        //     return ca
-        //   },c)
-        //   return c
-        // },[])
-        // console.log("INfo fomateo seccion 1",formateo_combos)
-        // await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB,color_combo,cantidad_combo) VALUES ?",[formateo_combos])
-      }
       // ///////////////////////////////////////
       // INFORMARCCION DE HOJAS DE CORTE ACTUALES
       // ///////////////////////////////////////
       if(base_update.length > 0){
-        console.log("Dentro de seccion 2")
+        console.log("Dentro de seccion 2",base_update)
         console.log("otroasd sdaf :",base_update.map(row=>row.combos))
         let base_combos = base_update.map(row=>row.combos).filter(item=>item)
 
-        let base = ['numero_corte','estado_corte']
-        let acumulado = []
-        base.forEach(campo=>{
-          let text = `${campo} = CASE `
-          base_update.forEach(row=>{
-            text += `WHEN idx = ${parseInt(row['idx'])} THEN '${row[campo]}' `
-          })
-          text += `ELSE ${campo} END`
-          acumulado.push(text)
-        })
-        await conn.query(`UPDATE tbl2_fases_prod_hojacorte SET ${acumulado.join(',')} WHERE idx in (${base_update.map(row=>row.idx).join(',')}) and id_cab_orden = ?`,[id_orden])
+        let recursive = async (id_orden,base_update,conn)=>{
 
-        console.log("Info de los combos :",base_combos)
-        let formateo_combos = base_combos.reduce((c,v)=>{
-          v.reduce((ca,va)=>{
-            ca.push([va.id_hojacorte_CAB,va.color_combo,va.cantidad_combo])
-            return ca
-          },c)
-          return c
-        },[])
-        console.log("INfo formateo de combos :",formateo_combos)
-        let lista_
-        await conn.query('DELETE FROM tbl2_fases_prod_hojacorte_combos WHERE id_hojacorte_CAB in (' + base_update.map(row=>row.idx).join(',') + ')')
-        // await conn.query('DELETE FROM tbl2_fases_prod_hojacorte_combos WHERE id_hojacorte_CAB in (select idx from tbl2_fases_prod_hojacorte where id_cab_orden = ?)',[id_orden])
-        await conn.query('INSERT INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB,color_combo,cantidad_combo) VALUES ?',[formateo_combos])
+          try {
+            for(let corte of [...base_update]){
+
+              console.log("Info del corte",corte)
+
+              let base = ['numero_corte','estado_corte']
+              let acumulado = []
+
+              base.forEach(campo=>{
+                let text = `${campo} = CASE `
+                text += `WHEN idx = ${parseInt(corte['idx'])} THEN '${corte[campo]}'`
+                text += `ELSE ${campo} END`
+                acumulado.push(text)
+              })
+              console.log("Imprimiendo acumulado :",acumulado)
+              await conn.query(`UPDATE tbl2_fases_prod_hojacorte SET ${acumulado.join(',')} WHERE idx in (${base_update.map(row=>row.idx).join(',')}) and id_cab_orden = ?`,[id_orden])
+
+              
+              for(let combo of [...corte.combos]){
+                console.log("La info del combo es:",combo)
+
+                await conn.query("delete from tbl2_fases_prod_hojacorte_combos where idx = ?",[combo.idx])
+                await conn.query("delete from tbl2_fases_prod_hojacorte_combos_fracciones where id_combo_CAB = ?",[combo.idx])
+
+                let [info_insert] = await conn.query("insert into tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB,color_combo,cantidad_combo) values (?,?,?)",[corte.idx,combo.color_combo,combo.cantidad_combo])
+
+                const fraccionado = combo.fracciones.reduce((c,v)=>{
+                  c.push([info_insert.insertId,v.talla,v.cantidad])
+                  return c
+                },[])
+                console.log("Info del fraccionado:",fraccionado)
+                await conn.query("insert into tbl2_fases_prod_hojacorte_combos_fracciones(id_combo_CAB,talla,cantidad) values ? ",[fraccionado])
+              }
+
+  
+            }
+            return true
+          } catch (error) {
+            throw error
+          }
+
+        }
+        await recursive(id_orden,base_update,conn)
       }
       // ///////////////////////////////////////////
       // INFORMARCCION DE HOJAS DE CORTE A ELIMINAR
-      // //////////////////////////////////////////
+      // ///////////////////////////////////////////
       if(base_delete.length > 0){
         console.log("Dentro de seccion 3")
-        let formateo = base_delete.map(row=>row.idx)
-        console.log("Ifor formateo combos seccoin 3:",formateo)
-        await conn.query('DELETE FROM tbl2_fases_prod_hojacorte WHERE idx in (' + formateo.join(',') + ')')
-        await conn.query('DELETE FROM tbl2_fases_prod_hojacorte_combos WHERE id_hojacorte_CAB in (' + formateo.join(',') + ')')
+        for(let corte of [...base_delete]){
+          await conn.query("DELETE t1,t2,t3 FROM tbl2_fases_prod_hojacorte t1 JOIN tbl2_fases_prod_hojacorte_combos t2 ON t1.idx = t2.id_hojacorte_CAB JOIN tbl2_fases_prod_hojacorte_combos_fracciones t3 ON t2.idx = t3.id_combo_CAB WHERE t1.idx = ? and t1.id_cab_orden = ?",[corte.idx,id_orden])
+        }
       }
 
       // if (conn) conn.rollback()

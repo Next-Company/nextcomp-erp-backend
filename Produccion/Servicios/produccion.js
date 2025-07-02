@@ -125,6 +125,7 @@ export class ProduccionModel {
                   SELECT
                       JSON_ARRAYAGG(
                           JSON_OBJECT(
+                              'idx', tb2.idx,
                               'id_orden_CAB', tb2.id_orden_CAB,
                               'color_combo', tb2.color_combo,
                               'cantidad_combo', tb2.cantidad_combo,
@@ -136,7 +137,7 @@ export class ProduccionModel {
                   FROM
                       tbl2_fases_prod_hojacorte_combos tb2
                   WHERE
-                      tb2.id_orden_CAB = tb1.idx -- <--- ¡Aquí tb1.idx SÍ es visible!
+                      tb2.id_hojacorte_CAB = tb1.idx
               ),
               JSON_ARRAY()
           ) AS combos
@@ -144,6 +145,19 @@ export class ProduccionModel {
           tbl2_fases_prod_hojacorte tb1
       WHERE
           tb1.id_cab_orden = ?`, [info.id]);
+
+      cortes = cortes.reduce((c,v)=>{
+        let new_combo = v.combos.map(combo=>{
+          console.log("Info del combo :",combo)
+          let fracciones = combo.fracciones.reduce((cc,vv)=>{
+            cc[vv.talla] = vv.cantidad 
+            return cc
+          },{})
+          return {...combo,...fracciones}
+        })
+        c.push({...v,combos:new_combo})
+        return c
+      },[])
   
       return [ordenes,moldes,cortes]
     } catch (err) {
