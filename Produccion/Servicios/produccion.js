@@ -736,7 +736,7 @@ export class ProduccionModel {
       // `, [id]);
       // const ids = results.map(row => row.idx)
       const [results, fields] = await conn.query(`
-      SELECT tb2.servicio,tb2.marca,tb2.modelo,tb1.idx,tb1.id_guia_CAB,tb1.articulo,tb1.talla,tb1.categoria,tb1.cantidad,tb1.cantidad_obs,tb1.isprototipo,
+      SELECT tb2.servicio,tb2.marca,tb2.modelo,tb1.idx,tb1.id_combo,tb1.id_guia_CAB,tb1.articulo,tb1.talla,tb1.categoria,tb1.cantidad,tb1.cantidad_obs,tb1.isprototipo,
       (COALESCE(sum(ingresos.despacho),0) + COALESCE(sum(ingresos.caidos),0)) as ingresos
       FROM tbl2_guias_traslado_det tb1 
       JOIN tbl2_guias_traslado_cab tb2 on tb1.id_guia_CAB = tb2.idx
@@ -861,22 +861,31 @@ export class ProduccionModel {
       await conn.connect();
       conn.beginTransaction()
 
+      //////////////////////////////////////
+      //////// respaldo info guias /////////
+      const [backup_articulos] = await conn.query(`SELECT tgtd.*,COALESCE((SELECT JSON_ARRAYAGG(JSON_OBJECT('talla',tgtdf.talla,'cantidad',tgtdf.cantidad)) 
+        FROM tbl2_guias_traslado_det_fracciones tgtdf WHERE tgtdf.id_guia_DET = tgtd.idx),JSON_ARRAY()) AS fracciones
+      FROM tbl2_guias_traslado_det tgtd WHERE tgtd.id_guia_CAB = ?`,[data.id])
+
+      //////////////////////////////////////
+      //////////////////////////////////////
+
       /////////////////////////////////////
       ///// validacion estado guias ///////
       if(cabecera.tipo == 'SERVICIOS'){
-        let service_position = []
-        let [orden] = await conn.query("SELECT *FROM tbl2_fases_prod_ordenes WHERE idx = ?", [parseInt(cabecera.id_orden_CAB)]);
+        // let service_position = []
+        // let [orden] = await conn.query("SELECT *FROM tbl2_fases_prod_ordenes WHERE idx = ?", [parseInt(cabecera.id_orden_CAB)]);
   
-        const RUTA = JSON.parse(orden[0].ruta_proceso).filter(row => !['AVIOS','MOLDE','CORTE'].includes(row))
+        // const RUTA = JSON.parse(orden[0].ruta_proceso).filter(row => !['AVIOS','MOLDE','CORTE'].includes(row))
   
-        let [info_guias] = await conn.query("select *from tbl2_guias_traslado_cab where id_orden_CAB = ? and estado = 'FINALIZADO' ORDER BY fec_emision DESC LIMIT 1", [parseInt(cabecera.id_orden_CAB)]);
+        // let [info_guias] = await conn.query("select *from tbl2_guias_traslado_cab where id_orden_CAB = ? and estado = 'FINALIZADO' ORDER BY fec_emision DESC LIMIT 1", [parseInt(cabecera.id_orden_CAB)]);
   
-        if(info_guias.length > 0){
-          service_position = [RUTA.indexOf(info_guias[0].servicio) + 1, RUTA.indexOf(info_guias[0].servicio)]
-        }else{
-          service_position = [0]
-        }
-        if( !service_position.includes(RUTA[cabecera.servicio]) ) throw new Error("El servicio a generar esta fuera de la ruta establecida. Por favor verifique.")
+        // if(info_guias.length > 0){
+        //   service_position = [RUTA.indexOf(info_guias[0].servicio) + 1, RUTA.indexOf(info_guias[0].servicio)]
+        // }else{
+        //   service_position = [0]
+        // }
+        // if( !service_position.includes(RUTA[cabecera.servicio]) ) throw new Error("El servicio a generar esta fuera de la ruta establecida. Por favor verifique.")
       }
 
       /////////////////////////////////////
@@ -945,7 +954,7 @@ export class ProduccionModel {
             const fila = articulos.shift()
             console.log("Nueva fila detalle juan :", fila)
             if (fila) {
-              const [results, fields] = await conn.query('INSERT INTO tbl2_guias_traslado_det(id_guia_CAB,articulo,cantidad,isprototipo) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.articulo, fila.cantidad, fila.isprototipo]);
+              const [results, fields] = await conn.query('INSERT INTO tbl2_guias_traslado_det(id_guia_CAB,articulo,cantidad,isprototipo,id_combo) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.articulo, fila.cantidad, fila.isprototipo, fila.id_combo]);
 
               const fracciones = Object.keys(fila).filter(valor => ['xs', 's', 'm', 'l', 'xl', 'xxl'].includes(valor)).reduce((carry, value) => {
                 carry.push([results.insertId, value, parseInt(fila[value])])
@@ -966,15 +975,52 @@ export class ProduccionModel {
         // await conn.end();
         // return results
       }
-      // if (conn) conn.rollback()
-      if (conn) conn.commit()
+      let respuesta = await this.UpdateMasterProduccion(backup_articulos,JSON.parse(data.detalle),cabecera.id_orden_CAB,data.id,conn,0)
+      if(!respuesta.ok) throw respuesta.message
+
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return {ok:true,message:'Registro completo'}
     } catch (err) {
       console.log(err)
       if (conn) conn.rollback()
-      return {ok:false,message:err.message}
+      // return {ok:false,message:err.message}
+      return {ok:false,message:err}
     } finally {
       if (conn) await conn.end();
+    }
+  }
+  static async UpdateMasterProduccion(backup_articulos,articulos,orden,guia,conn,tipo){
+    console.log("La informacion a trabajar es:",backup_articulos,articulos,orden,guia)
+    try {
+      if(guia){
+        backup_articulos = backup_articulos.reduce((c,v)=>{
+          v = v.fracciones.reduce((cc,vv)=>{
+            return {...cc,[vv.talla]:parseInt(vv.cantidad)}
+          },v)
+          c.push(v)
+          return c
+        },[])
+        for(let combo of [...backup_articulos]){
+          for(let talla of ['xs','s','m','l','xl','xxl']){
+            await conn.query(`UPDATE tbl2_fases_prod_hojacorte_combos_fracciones SET produccion_total = produccion_total + (?) WHERE id_combo_CAB = ? and talla = ?`,[tipo ? -1*parseInt(combo[talla]) : parseInt(combo[talla]),combo.idcombo,talla])
+          }
+        }
+      }
+      if(articulos.length > 0){
+        for(let combo of [...articulos]){
+          // console.log("El combo del for es:",combo)
+          for(let talla of ['xs','s','m','l','xl','xxl']){
+            await conn.query(`UPDATE tbl2_fases_prod_hojacorte_combos_fracciones SET produccion_total = produccion_total + (?) WHERE id_combo_CAB = ? and talla = ?`,[tipo ? parseInt(combo[talla]) : -1*parseInt(combo[talla]),combo.idcombo,talla])
+          }
+        }
+      }
+      const [validacion] = await conn.query(`SELECT *FROM tbl2_fases_prod_hojacorte_combos_fracciones tfphcf WHERE tfphcf.id_combo_CAB IN (SELECT t1.idx FROM tbl2_fases_prod_hojacorte_combos t1 JOIN tbl2_fases_prod_hojacorte t2 ON t1.id_hojacorte_CAB = t2.idx WHERE t2.id_cab_orden = ?) AND (tfphcf.produccion_total > tfphcf.cantidad OR tfphcf.produccion_total < 0)`,[parseInt(orden)])
+      if(validacion.length > 0) throw "La informacion ingresada supera el limite permitido"
+
+      return {ok:true,message:''}
+    } catch (error) {
+      return {ok:false,message:error}
     }
   }
   static async eliminarInfoGuias(id) {

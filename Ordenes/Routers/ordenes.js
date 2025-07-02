@@ -5,11 +5,14 @@ export const ordenesRouter = Router()
 
 ordenesRouter.get("/getordenes/",OrdenesController.getOrdenes)
 ordenesRouter.get("/getordenes/:search",OrdenesController.getOrdenes)
+ordenesRouter.get("/getordenescorte/",OrdenesController.getOrdenesCorte)
+ordenesRouter.get("/getordenescorte/:search",OrdenesController.getOrdenesCorte)
 ordenesRouter.get('/:id', OrdenesController.getOrdenesById) 
 ordenesRouter.post("/",OrdenesController.saveInfoOrdenes)
 ordenesRouter.post("/getstatusgeneral/:id",OrdenesController.getStatusGeneral)
 ordenesRouter.delete('/:id', OrdenesController.deleteOrden)
 ordenesRouter.get('/updatecombos/combos', OrdenesController.updateCombos)
+ordenesRouter.get('/extraeritemscaja/:id', OrdenesController.ExtraerItemsCaja)
 
 
 ordenesRouter.post("/saveFaseOrden",OrdenesController.saveFaseOrden)

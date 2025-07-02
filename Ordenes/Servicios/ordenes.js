@@ -120,6 +120,78 @@ export class OrdenesModel {
       }
     }
   }
+  static async getOrdenesCorte(search) {
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+
+      let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(COALESCE(TRIM(oc),''),' ',COALESCE(TRIM(cliente),''),' ',COALESCE(TRIM(marca),''),' ',COALESCE(TRIM(producto),''),' ',COALESCE(TRIM(modelos),''),' ',COALESCE(TRIM(estado_orden),''))) > 0").join(" ") : ""
+
+      let [results] = await conn.query(`
+        SELECT *,
+        DATE_FORMAT(fec_emitida,'%d/%m/%Y') as fec_emitida_orden,
+        DATE_FORMAT(fec_entrega,'%d/%m/%Y') as fec_entrega_orden,
+        COALESCE(DATEDIFF(STR_TO_DATE(fec_entrega,'%Y-%m-%d'),STR_TO_DATE(fec_emitida,'%Y-%m-%d') ),0) as dias_produccion,
+        COALESCE(DATEDIFF(STR_TO_DATE(fec_entrega,'%Y-%m-%d'),date(now())),0) as dias_pendientes
+        FROM viewProduccionOrdenes
+        WHERE 1=1 ${extra} ORDER BY idx desc
+      `);
+      await conn.end();
+
+      return results
+    } catch (err) {
+      console.log(err);
+      return { 'msg': err }
+    } finally {
+      if (conn) {
+        await conn.end();
+      }
+    }
+  }
+  static async ExtraerItemsCaja(idorden) {
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+
+      let [results] = await conn.query(`SELECT 
+        tfphc.idx as idcombo,
+        CONCAT(tfpo.producto,' ',tfpo.marca,' ',tfpo.modelos,' ',tfphc.color_combo) as articulo,
+        COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',tfphcf.talla,'cantidad',tfphcf.cantidad,'produccion_total',tfphcf.produccion_total,'caidos_total',tfphcf.caidos_total)) FROM tbl2_fases_prod_hojacorte_combos_fracciones tfphcf
+        where tfphcf.id_combo_CAB = tfphc.idx),JSON_ARRAY()) as fracciones,tfphc.cantidad_combo
+      from tbl2_fases_prod_hojacorte_combos tfphc 
+      join tbl2_fases_prod_hojacorte tfph on tfphc.id_hojacorte_CAB = tfph.idx
+      join tbl2_fases_prod_ordenes tfpo on tfph.id_cab_orden = tfpo.idx
+      where tfpo.idx = ?`,[idorden])
+
+      results = results.reduce((c,v)=>{
+        let total = 0
+        let pp = undefined
+        if(v.fracciones.length > 0){
+          pp = v.fracciones.reduce((cc,vv)=>{
+            total += parseInt(vv.produccion_total)
+            return {...cc,[vv.talla]:parseInt(vv.cantidad),cantidad:parseInt(total)}
+          },v)
+        }else{
+          pp = {...v,'xs':0,'s':0,'m':0,'l':0,'xl':0,'xxl':0,cantidad:parseInt(v.cantidad_combo)}
+        }
+        c.push(pp)
+        return c
+      },[])
+
+      console.log("Nuevo result:",results)
+
+      return results
+    } catch (err) {
+      console.log(err);
+      return { 'msg': err }
+    } finally {
+      if (conn) {
+        await conn.end();
+      }
+    }
+  }
   static async getOrdenesByParams(info) {
     let conn
     let query = ''
