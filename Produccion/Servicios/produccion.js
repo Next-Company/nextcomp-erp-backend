@@ -81,9 +81,9 @@ export class ProduccionModel {
                               'id_orden_CAB', tb2.id_orden_CAB,
                               'color_combo', tb2.color_combo,
                               'cantidad_combo', tb2.cantidad_combo,
-                              'fracciones', (SELECT JSON_ARRAYAGG(JSON_OBJECT('talla', tfr.talla, 'cantidad', tfr.cantidad))
+                              'fracciones', COALESCE((SELECT JSON_ARRAYAGG(JSON_OBJECT('talla', tfr.talla, 'cantidad', tfr.cantidad))
                                             FROM tbl2_fases_prod_ordenes_combos_fracciones tfr
-                                            WHERE tfr.id_combo_CAB = tb2.idx)
+                                            WHERE tfr.id_combo_CAB = tb2.idx),JSON_ARRAY())
                           )
                       )
                   FROM
@@ -129,9 +129,9 @@ export class ProduccionModel {
                               'id_orden_CAB', tb2.id_orden_CAB,
                               'color_combo', tb2.color_combo,
                               'cantidad_combo', tb2.cantidad_combo,
-                              'fracciones', (SELECT JSON_ARRAYAGG(JSON_OBJECT('talla', tfr.talla, 'cantidad', tfr.cantidad))
+                              'fracciones', COALESCE((SELECT JSON_ARRAYAGG(JSON_OBJECT('talla', tfr.talla, 'cantidad', tfr.cantidad))
                                             FROM tbl2_fases_prod_hojacorte_combos_fracciones tfr
-                                            WHERE tfr.id_combo_CAB = tb2.idx)
+                                            WHERE tfr.id_combo_CAB = tb2.idx),JSON_ARRAY())
                           )
                       )
                   FROM
