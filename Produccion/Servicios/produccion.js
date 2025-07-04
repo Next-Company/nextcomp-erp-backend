@@ -737,7 +737,7 @@ export class ProduccionModel {
       // const ids = results.map(row => row.idx)
       const [results, fields] = await conn.query(`
       SELECT tb2.servicio,tb2.marca,tb2.modelo,tb1.idx,tb1.id_combo,tb1.id_guia_CAB,tb1.articulo,tb1.talla,tb1.categoria,tb1.cantidad,tb1.cantidad_obs,tb1.isprototipo,
-      (COALESCE(sum(ingresos.despacho),0) + COALESCE(sum(ingresos.caidos),0)) as ingresos
+      (COALESCE(sum(ingresos.despacho),0) + COALESCE(sum(ingresos.caidos),0)) as ingresos,JSON_ARRAY() as fracciones
       FROM tbl2_guias_traslado_det tb1 
       JOIN tbl2_guias_traslado_cab tb2 on tb1.id_guia_CAB = tb2.idx
       LEFT JOIN (
@@ -968,15 +968,35 @@ export class ProduccionModel {
             }
           }
           await insert()
-        } catch (err) {
+        } catch (err) { 
           console.log("error en la consulta", err)
         }
         // console.log("filas afectadas :",res)
         // await conn.end();
         // return results
       }
-      let respuesta = await this.UpdateMasterProduccion(backup_articulos,JSON.parse(data.detalle),cabecera.id_orden_CAB,data.id,conn,0)
-      if(!respuesta.ok) throw respuesta.message
+      if(cabecera.tipo == 'SERVICIOS'){
+        // UpdateMasterProduccion(backup_articulos,articulos,orden,conn,tipo)
+        // formato de data : [ {idcombo:22,xs:[13,1],s:[13,1],m:[13,1],l:[13,1],xl:[13,1],xxl:[13,1]},{},{},... ]
+        let param1 = backup_articulos.reduce((c,v)=>{
+          let info = {idcombo:v.id_combo}
+          info = v.fracciones.reduce((cc,vv)=>{
+            return {...cc,[vv.talla]:[parseInt(vv.cantidad),0]}
+          },info)
+          c.push(info)
+          return c
+        },[])
+        let param2 = JSON.parse(data.detalle).reduce((c,v)=>{
+          let info = {idcombo:v.id_combo}
+          info = v.fracciones.reduce((cc,vv)=>{
+            return {...cc,[vv.talla]:[parseInt(vv.cantidad),0]}
+          },info)
+          c.push(info)
+          return c
+        },[])
+        let respuesta = await this.UpdateMasterProduccion(param1,param2,cabecera.id_orden_CAB,conn,0)
+        if(!respuesta.ok) throw respuesta.message
+      }
 
       if (conn) conn.rollback()
       // if (conn) conn.commit()
@@ -990,7 +1010,7 @@ export class ProduccionModel {
       if (conn) await conn.end();
     }
   }
-  static async UpdateMasterProduccion(backup_articulos,articulos,orden,guia,conn,tipo){
+  static async UpdateMasterProduccion_backup(backup_articulos,articulos,orden,guia,conn,tipo){
     console.log("La informacion a trabajar es:",backup_articulos,articulos,orden,guia)
     try {
       if(guia){
@@ -1012,6 +1032,54 @@ export class ProduccionModel {
           // console.log("El combo del for es:",combo)
           for(let talla of ['xs','s','m','l','xl','xxl']){
             await conn.query(`UPDATE tbl2_fases_prod_hojacorte_combos_fracciones SET produccion_total = produccion_total + (?) WHERE id_combo_CAB = ? and talla = ?`,[tipo ? parseInt(combo[talla]) : -1*parseInt(combo[talla]),combo.idcombo,talla])
+          }
+        }
+      }
+      const [validacion] = await conn.query(`SELECT *FROM tbl2_fases_prod_hojacorte_combos_fracciones tfphcf WHERE tfphcf.id_combo_CAB IN (SELECT t1.idx FROM tbl2_fases_prod_hojacorte_combos t1 JOIN tbl2_fases_prod_hojacorte t2 ON t1.id_hojacorte_CAB = t2.idx WHERE t2.id_cab_orden = ?) AND (tfphcf.produccion_total > tfphcf.cantidad OR tfphcf.produccion_total < 0)`,[parseInt(orden)])
+      if(validacion.length > 0) throw "La informacion ingresada supera el limite permitido"
+
+      return {ok:true,message:''}
+    } catch (error) {
+      return {ok:false,message:error}
+    }
+  }
+  static async UpdateMasterProduccion(backup_articulos,articulos,orden,conn,tipo){
+    console.log("La informacion a trabajar es:",backup_articulos,articulos,orden)
+    ////////////////////////////////////
+    // formato de data : [ {idcombo:22,xs:[13,1],s:[13,1],m:[13,1],l:[13,1],xl:[13,1],xxl:[13,1]},{},{},... ]
+    ////////////////////////////////////
+    try {
+      if(backup_articulos.length > 0){
+        for(let combo of [...backup_articulos]){
+          for(let talla of ['xs','s','m','l','xl','xxl']){
+            await conn.query(`UPDATE tbl2_fases_prod_hojacorte_combos_fracciones 
+              SET 
+                produccion_total = produccion_total + (?),
+                caidos_total = produccion_total + (?) 
+              WHERE id_combo_CAB = ? AND talla = ?,
+            `,[
+                tipo ? -1*parseInt(combo[talla][0]) : parseInt(combo[talla][0]),
+                tipo ? -1*parseInt(combo[talla][1]) : parseInt(combo[talla][1]),
+                combo.idcombo,
+                talla
+              ])
+          }
+        }
+      }
+      if(articulos.length > 0){
+        for(let combo of [...articulos]){
+          for(let talla of ['xs','s','m','l','xl','xxl']){
+            await conn.query(`UPDATE tbl2_fases_prod_hojacorte_combos_fracciones 
+              SET 
+                produccion_total = produccion_total + (?), 
+                caidos_total = caidos_total + (?) 
+              WHERE id_combo_CAB = ? AND talla = ?
+            `,[
+                tipo ? parseInt(combo[talla][0]) : -1*parseInt(combo[talla][0]),
+                tipo ? parseInt(combo[talla][1]) : -1*parseInt(combo[talla][1]),
+                combo.idcombo,
+                talla
+              ])
           }
         }
       }
@@ -1568,20 +1636,57 @@ export class ProduccionModel {
         try {
           const [res, fields] = await conn.query('INSERT INTO tbl2_despachos_cab(fec_emision_guia,fec_despacho,tipo,id_proveedor_CAB,proveedor,responsable,id_guia_origen,nro_guia_origen,id_pedido_origen,nro_pedido_origen,observaciones,nro_guia,nro_factura,imp_factura,facturado) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [cabecera.fec_emision_guia, cabecera.fec_despacho, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.id_guia_origen, cabecera.nro_guia_origen, cabecera.id_pedido_origen, cabecera.nro_pedido_origen, cabecera.observaciones, cabecera.nro_guia, cabecera.nro_factura, cabecera.imp_factura,cabecera.facturado])
 
-          console.log("Inicia insertado detalle despacho")
-          const insert = async () => {
-            const fila = articulos.shift()
-            if (fila) {
-              // const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,precio,despacho,caidos) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.idx, fila.precio, parseFloat(fila.despacho), parseFloat(fila.caidos ?? 0)])
-              const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,precio,despacho,caidos) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.id_item, fila.precio, parseFloat(fila.despacho ?? 0), parseFloat(fila.caidos ?? 0)]);
 
-              await insert()
-            } else {
-              return Promise.resolve('')
+          console.log("Inicia insertado detalle despacho")
+          // const insert = async () => {
+          //   const fila = articulos.shift()
+          //   if (fila) {
+          //     // const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,precio,despacho,caidos) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.idx, fila.precio, parseFloat(fila.despacho), parseFloat(fila.caidos ?? 0)])
+          //     const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,precio,despacho,caidos) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.id_item, fila.precio, parseFloat(fila.despacho ?? 0), parseFloat(fila.caidos ?? 0)]);
+
+          //     await insert()
+          //   } else {
+          //     return Promise.resolve('')
+          //   }
+          // }
+          // await insert()
+          // console.log("Termina insertado detalle despacho")
+
+          for(let detalle of [...articulos]){
+
+            const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,precio,despacho,caidos) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, detalle.id_item, detalle.precio, parseFloat(detalle.despacho ?? 0), parseFloat(detalle.caidos ?? 0)]);
+
+            if(detalle.fracciones.length > 0){
+              console.log("Informacion de la fraccion :",detalle.fracciones)
+              let fracciones = ['xs','s','m','l','xl','xxl'].reduce((c,v)=>{
+                c.push([results.insertId,v,detalle.fracciones[0][v],detalle.fracciones[1][v]])
+                return c
+              },[])
+              console.log("La informacion a insertar es:",fracciones)
+              await conn.query(`INSERT INTO tbl2_despachos_det_fracciones(id_despacho_DET,talla,despachos,caidos) values ?`,[fracciones])
+
             }
+
           }
-          await insert()
-          console.log("Termina insertado detalle despacho")
+
+          if(1==1){
+
+            await conn.query("SELECT JSON_ARRAYAGG(JSON_OBJECT()) FROM tbl2_despachos_det_fracciones WHERE id_despacho_det in (select *from tbl2_despacho_det where id_despacho_CAB = ?)",[])
+            // articulos = [
+            //   {idcombo:22,xs:0,s:0,m:0,l:0,xl:0,xxl:0},
+            //   {idcombo:33,xs:0,s:0,m:0,l:0,xl:0,xxl:0},
+            //   {idcombo:44,xs:0,s:0,m:0,l:0,xl:0,xxl:0}
+            // ]
+            let backup_articulos = await conn.query("SELECT *FROM tbl2_guias_traslado_cab where idx = ?",[])
+            // this.UpdateMasterProduccion(backup_articulos,articulos,orden,guia,conn,tipo)
+            this.UpdateMasterProduccion(backup_articulos,articulos,orden,guia,conn,tipo)
+          }
+
+
+
+
+
+
 
           const insert2 = async () => {
             console.log("Insertado de factura bucle contador")
@@ -1627,8 +1732,8 @@ export class ProduccionModel {
         // return results
       }
 
-      // if (conn) conn.rollback()
-      if (conn) conn.commit()
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return {ok:true,message:'Proceso ejecutado con éxito'}
     } catch (err) {
       if (conn) conn.rollback()
@@ -1674,7 +1779,8 @@ export class ProduccionModel {
         console.log("El id del despacho es: ", id)
         const [results, fields] = await conn.query(`
           SELECT tdd.idx,tdd.id_item,tgtc.servicio,tgtc.modelo,tgtd.id_guia_CAB,tgtd.articulo,tgtd.cantidad,tgtd.isprototipo,
-          tdd.despacho,tdd.caidos 
+          tdd.despacho,tdd.caidos,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',t1.talla,'cantidad',t1.cantidad)) 
+          from tbl2_despachos_det_fracciones t1 where t1.id_despacho_DET = tdd.idx ),JSON_ARRAY()) as fracciones
           FROM tbl2_guias_traslado_det tgtd 
           JOIN tbl2_despachos_det tdd on tdd.id_item = tgtd.idx 
           JOIN tbl2_guias_traslado_cab tgtc on tgtc.idx = tgtd.id_guia_CAB

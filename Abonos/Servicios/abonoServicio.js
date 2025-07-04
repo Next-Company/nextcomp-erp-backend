@@ -91,7 +91,7 @@ export default class AbonoServicio{
             ) as cancelado
             FROM
             (
-              SELECT tgtc.idx as id_guia,tp.idx as id_proveedor,tgtc.servicio,COALESCE(tp.ruc,'') as ruc,COALESCE(tgtc.proveedor,'OTROS') as proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,'' as color,IF(COALESCE(tpid.isprototipo),0,tpid.cantidad) as cantidad,tgtc.costo,GROUP_CONCAT(dp.nro_guia) as id_despacho,SUM(COALESCE(IF(COALESCE(tpid.isprototipo),0,dp.despacho),0)-COALESCE(dp.caidos,0)) as despacho,SUM(IF(COALESCE(tpid.isprototipo,0) = 1,0,tgtc.costo*(COALESCE(dp.despacho,0)-COALESCE(dp.caidos,0)))) as total
+              SELECT tgtc.idx as id_guia,tp.idx as id_proveedor,tgtc.servicio,COALESCE(tp.ruc,'') as ruc,COALESCE(tgtc.proveedor,'OTROS') as proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,'' as color,IF(COALESCE(tpid.isprototipo),0,tpid.cantidad) as cantidad,tgtc.costo,GROUP_CONCAT(dp.nro_guia) as id_despacho,SUM(COALESCE(IF(COALESCE(tpid.isprototipo),0,dp.despacho),0)) as despacho,SUM(IF(COALESCE(tpid.isprototipo,0) = 1,0,tgtc.costo*(COALESCE(dp.despacho,0)))) as total
               FROM tbl2_guias_traslado_det tpid 
               JOIN tbl2_guias_traslado_cab tgtc on tgtc.idx = tpid.id_guia_CAB 
               LEFT JOIN tbl2_proveedor tp on tp.idx = tgtc.id_proveedor_CAB
@@ -644,7 +644,7 @@ export default class AbonoServicio{
         0 as pago
         FROM
         (
-          SELECT tgtc.idx as id_guia,tgtc.servicio,COALESCE(tgtc.proveedor,'') as proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,'' as color,IF(COALESCE(tpid.isprototipo),0,tpid.cantidad) as cantidad,tgtc.costo,GROUP_CONCAT(dp.nro_guia) as id_despacho,SUM(COALESCE(IF(COALESCE(tpid.isprototipo),0,dp.despacho),0)-COALESCE(dp.caidos,0)) as despacho,SUM(IF(COALESCE(tpid.isprototipo,0) = 1,0,tgtc.costo*(COALESCE(dp.despacho,0)-COALESCE(dp.caidos,0)))) as total
+          SELECT tgtc.idx as id_guia,tgtc.servicio,COALESCE(tgtc.proveedor,'') as proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,'' as color,IF(COALESCE(tpid.isprototipo),0,tpid.cantidad) as cantidad,tgtc.costo,GROUP_CONCAT(dp.nro_guia) as id_despacho,SUM(COALESCE(IF(COALESCE(tpid.isprototipo),0,dp.despacho),0)) as despacho,SUM(IF(COALESCE(tpid.isprototipo,0) = 1,0,tgtc.costo*(COALESCE(dp.despacho,0)))) as total
           FROM tbl2_guias_traslado_det tpid 
           JOIN tbl2_guias_traslado_cab tgtc on tgtc.idx = tpid.id_guia_CAB 
           LEFT JOIN(
