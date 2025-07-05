@@ -156,7 +156,7 @@ export class OrdenesModel {
       await conn.connect();
 
       let [results] = await conn.query(`SELECT 
-        tfphc.idx as idcombo,
+        tfphc.idx as id_combo,
         CONCAT(tfpo.producto,' ',tfpo.marca,' ',tfpo.modelos,' ',tfphc.color_combo) as articulo,
         COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',tfphcf.talla,'cantidad',tfphcf.cantidad,'produccion_total',tfphcf.produccion_total,'caidos_total',tfphcf.caidos_total)) FROM tbl2_fases_prod_hojacorte_combos_fracciones tfphcf
         where tfphcf.id_combo_CAB = tfphc.idx),JSON_ARRAY()) as fracciones,tfphc.cantidad_combo

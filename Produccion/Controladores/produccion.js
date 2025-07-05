@@ -1275,7 +1275,7 @@ export class ProduccionController {
   }
   static async saveInfoDespachos(req, res) {
     const data = await ProduccionModel.saveInfoDespachos(req.body)
-    res.json({ ok: true, message: 'datos guardados' })
+    res.json(data)
   }
   static async getInfoDespachos(req, res) {
     const id = req.params.id
