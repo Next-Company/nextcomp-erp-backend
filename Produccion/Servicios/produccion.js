@@ -1708,18 +1708,22 @@ export class ProduccionModel {
 
             if(detalle.fracciones_despacho.length > 0){
               console.log("Informacion de la fraccion :",detalle.fracciones_despacho)
-              let fracciones_despacho = ['xs','s','m','l','xl','xxl'].reduce((c,v)=>{
-                c.push([results.insertId,v,detalle.fracciones_despacho[0][v],detalle.fracciones_despacho[1][v]])
+              let fracciones_despacho = detalle.fracciones_despacho.reduce((c,v)=>{
+                c.push([results.insertId,v.talla,v.cantidad,v.caidos])
                 return c
               },[])
+              // let fracciones_despacho = ['xs','s','m','l','xl','xxl'].reduce((c,v)=>{
+              //   c.push([results.insertId,v,detalle.fracciones_despacho[0][v],detalle.fracciones_despacho[1][v]])
+              //   return c
+              // },[])
               console.log("La informacion a insertar es:",fracciones_despacho)
-              await conn.query(`INSERT INTO tbl2_despachos_det_fracciones(id_despacho_DET,talla,despachos,caidos) values ?`,[fracciones_despacho])
-
-            }
+            await conn.query(`INSERT INTO tbl2_despachos_det_fracciones(id_despacho_DET,talla,despachos,caidos) values ?`,[fracciones_despacho])
+            
           }
-
-          const insert2 = async () => {
-            console.log("Insertado de factura bucle contador")
+        }
+        
+        const insert2 = async () => {
+          console.log("Insertado de factura bucle contador")
             const fila = facturas.shift()
             if (fila) {
               const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_adi(id_despacho_CAB,tipodoc,moneda,serie,numero,fec_emision,unidades,importe_bruto,base_imponible,monto_inafecto,igv,importe_total) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.tipodoc, fila.moneda, fila.serie, fila.numero, fila.fec_emision, parseFloat(fila.unidades), parseFloat(fila.importe_bruto), parseFloat(fila.base_imponible), parseFloat(fila.monto_inafecto), parseFloat(fila.igv), parseFloat(fila.importe_total)]);
@@ -1781,11 +1785,23 @@ export class ProduccionModel {
       // },[])
       console.log("El valor del primer dato es:",param1)
       console.log("La informacion de los articulo es :",articulos)
+      // let param2 = articulos.reduce((c,v)=>{
+      //   let pp = ['xs','s','m','l','xl','xxl'].reduce((cc,vv)=>{
+      //     cc = {...cc,[vv]:[ v.fracciones_despacho[0][vv],v.fracciones_despacho[1][vv] ]}
+      //     return cc
+      //   },{idcombo:v.id_combo})
+      //   c.push(pp)
+      //   return c
+      // },[])
       let param2 = articulos.reduce((c,v)=>{
-        let pp = ['xs','s','m','l','xl','xxl'].reduce((cc,vv)=>{
-          cc = {...cc,[vv]:[ v.fracciones_despacho[0][vv],v.fracciones_despacho[1][vv] ]}
-          return cc
+
+        let pp = v.fracciones_despacho.reduce((cc,vv)=>{
+          return {...cc,[vv.talla]:[vv.cantidad,vv.caidos]}
         },{idcombo:v.id_combo})
+
+        // let pp = v.fracciones_despacho.map(row=>({idcombo:v.id_combo,[row.talla]:[row.cantidad,row.caidos]}))
+        // console.log("Info data fraccines despacho:",v.fracciones_despacho)
+        // c.push(pp)
         c.push(pp)
         return c
       },[])
@@ -1799,8 +1815,8 @@ export class ProduccionModel {
       ///////////////////////////////////////////
       ///////////////////////////////////////////
 
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return {ok:true,message:'Proceso ejecutado con éxito'}
     } catch (err) {
       console.log("asdlkfaslfjlaskdfjlf:",err)
@@ -1849,7 +1865,7 @@ export class ProduccionModel {
         const [results, fields] = await conn.query(`
           SELECT tdd.idx,tdd.id_item,tgtc.servicio,tgtc.modelo,tgtd.id_guia_CAB,tgtd.articulo,tgtd.cantidad,tgtd.isprototipo,
           tdd.despacho,tdd.caidos,tdd.id_combo,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',t1.talla,'cantidad',t1.despachos,'caidos',t1.caidos)) 
-          from tbl2_despachos_det_fracciones t1 where t1.id_despacho_DET = tdd.idx ),JSON_ARRAY()) as fracciones
+          from tbl2_despachos_det_fracciones t1 where t1.id_despacho_DET = tdd.idx ),JSON_ARRAY()) as fracciones_despacho
           FROM tbl2_guias_traslado_det tgtd 
           JOIN tbl2_despachos_det tdd on tdd.id_item = tgtd.idx 
           JOIN tbl2_guias_traslado_cab tgtc on tgtc.idx = tgtd.id_guia_CAB

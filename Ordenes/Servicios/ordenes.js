@@ -158,12 +158,25 @@ export class OrdenesModel {
       let [results] = await conn.query(`SELECT 
         tfphc.idx as id_combo,
         CONCAT(tfpo.producto,' ',tfpo.marca,' ',tfpo.modelos,' ',tfphc.color_combo) as articulo,
-        COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',tfphcf.talla,'cantidad',tfphcf.cantidad,'produccion_total',tfphcf.produccion_total,'caidos_total',tfphcf.caidos_total)) FROM tbl2_fases_prod_hojacorte_combos_fracciones tfphcf
-        where tfphcf.id_combo_CAB = tfphc.idx),JSON_ARRAY()) as fracciones,tfphc.cantidad_combo
+        COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',tfphcf.talla,'cantidad',COALESCE(tfphcf.produccion_total,0),'produccion_total',COALESCE(tfphcf.produccion_total,0),'caidos_total',COALESCE(tfphcf.caidos_total,0))) 
+        FROM tbl2_fases_prod_hojacorte_combos_fracciones tfphcf where tfphcf.id_combo_CAB = tfphc.idx),JSON_ARRAY()) as fracciones,
+        (select sum(COALESCE(tfphcf.produccion_total,0)) FROM tbl2_fases_prod_hojacorte_combos_fracciones tfphcf where tfphcf.id_combo_CAB = tfphc.idx) as cantidad_fracciones,
+        tfphc.cantidad_combo
       from tbl2_fases_prod_hojacorte_combos tfphc 
       join tbl2_fases_prod_hojacorte tfph on tfphc.id_hojacorte_CAB = tfph.idx
       join tbl2_fases_prod_ordenes tfpo on tfph.id_cab_orden = tfpo.idx
-      where tfpo.idx = ?`,[idorden])
+      where tfpo.idx = ?
+      having cantidad_fracciones > 0`,[idorden])
+
+      // let [results] = await conn.query(`SELECT 
+      //   tfphc.idx as id_combo,
+      //   CONCAT(tfpo.producto,' ',tfpo.marca,' ',tfpo.modelos,' ',tfphc.color_combo) as articulo,
+      //   COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',tfphcf.talla,'cantidad',tfphcf.cantidad,'produccion_total',tfphcf.produccion_total,'caidos_total',tfphcf.caidos_total)) FROM tbl2_fases_prod_hojacorte_combos_fracciones tfphcf
+      //   where tfphcf.id_combo_CAB = tfphc.idx),JSON_ARRAY()) as fracciones,tfphc.cantidad_combo
+      // from tbl2_fases_prod_hojacorte_combos tfphc 
+      // join tbl2_fases_prod_hojacorte tfph on tfphc.id_hojacorte_CAB = tfph.idx
+      // join tbl2_fases_prod_ordenes tfpo on tfph.id_cab_orden = tfpo.idx
+      // where tfpo.idx = ?`,[idorden])
 
       results = results.reduce((c,v)=>{
         let total = 0
