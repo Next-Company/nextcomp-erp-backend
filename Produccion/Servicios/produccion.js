@@ -178,8 +178,10 @@ export class ProduccionModel {
         c.push({...v,combos:new_combo})
         return c
       },[])
+
+      let [fasesprod] = await conn.query("SELECT *FROM tbl2_fases_produccion")
   
-      return [ordenes,moldes,cortes]
+      return [ordenes,moldes,cortes,fasesprod]
     } catch (err) {
       console.log("Estamos en error:", err);
       return err
@@ -592,6 +594,7 @@ export class ProduccionModel {
 
       // console.log("Query de busqueda:",quEry)
       let query = `SELECT idx,id_orden_CAB,orden_ref,producto,modelo,marca,estado,tipo,servicio,id_proveedor_CAB,proveedor,fec_emision,DATE_FORMAT(fec_emision,'%d/%m/%Y') as fec_emision_guia,fec_retorno,DATE_FORMAT(fec_retorno,'%d/%m/%Y') as fec_retorno_guia,fec_recepcion,costo,COALESCE(DATEDIFF(fec_retorno,fec_emision),'') as tiempo_produccion,COALESCE(DATEDIFF(STR_TO_DATE(fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
+      COALESCE((select identificador from tbl2_fases_produccion where ruta = tbl2_guias_traslado_cab.servicio),'bg-gray-300') as identificador,
       (
         select sum(cantidad) from tbl2_guias_traslado_det tgtd where tgtd.id_guia_CAB = tbl2_guias_traslado_cab.idx
       ) as cantidad_servicio,
@@ -1030,8 +1033,8 @@ export class ProduccionModel {
         if(!respuesta.ok) throw respuesta.message
       }
 
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return {ok:true,message:'Registro completo'}
     } catch (err) {
       console.log(err)

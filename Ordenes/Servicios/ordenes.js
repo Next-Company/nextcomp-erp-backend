@@ -205,6 +205,23 @@ export class OrdenesModel {
       }
     }
   }
+  static async getFasesProduccion(categoria) {
+    console.log("La categoria filtrada es :",categoria)
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+
+      let [results] = await conn.query(`SELECT *FROM tbl2_fases_produccion WHERE 1=1 ` + (categoria !== '' ? " AND categoria = '" + categoria +"'" : ''))
+
+      return results
+    } catch (err) {
+      console.log(err);
+      return { 'msg': err }
+    } finally {
+      if (conn) await conn.end();
+    }
+  }
   static async getOrdenesByParams(info) {
     let conn
     let query = ''
