@@ -594,6 +594,11 @@ export class ProduccionController {
     const data = await ProduccionModel.eliminarInfoGuias(id)
     res.json(data)
   }
+  static async anularInfoGuias(req, res) {
+    const id = req.params.id
+    const data = await ProduccionModel.anularInfoGuias(id)
+    res.json(data)
+  }
   static async getStatusGuia(req, res) {
     const id = req.params.id
     // const data = await

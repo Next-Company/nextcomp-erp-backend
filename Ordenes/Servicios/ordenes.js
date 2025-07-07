@@ -507,8 +507,8 @@ export class OrdenesModel {
         nameimg = `op_${id}.jpg`
         // console.log(sql)
       }
-      // if (conn) conn.rollback()
-      if (conn) conn.commit()
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito',filename: nameimg }
     } catch (err) {
       console.log(err)

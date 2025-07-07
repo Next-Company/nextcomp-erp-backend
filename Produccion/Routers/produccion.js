@@ -23,6 +23,7 @@ produccionRouter.get('/getListaMuestras/:search', ProduccionController.getListaM
 produccionRouter.get('/guia/:id', ProduccionController.getInfoGuias)
 produccionRouter.put('/guardarguia', ProduccionController.saveInfoGuias)
 produccionRouter.delete('/borrarguia/:id', ProduccionController.eliminarInfoGuias)
+produccionRouter.delete('/anularguia/:id', ProduccionController.anularInfoGuias)
 produccionRouter.get('/estadoguia/:id', ProduccionController.getStatusGuia)
 produccionRouter.get('/showinformeservicio/:id', ProduccionController.ShowInformeServicio)
 // produccionRouter.get('/showinformeservicio2/:id',ProduccionController.ShowInformeServicio2)
