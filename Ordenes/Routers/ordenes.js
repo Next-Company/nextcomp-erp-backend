@@ -19,3 +19,5 @@ ordenesRouter.get('/extraeritemscaja/:id', OrdenesController.ExtraerItemsCaja)
 ordenesRouter.post("/saveFaseOrden",OrdenesController.saveFaseOrden)
 ordenesRouter.post("/saveFaseMolde",OrdenesController.saveFaseMolde)
 ordenesRouter.post("/saveFaseCorte",OrdenesController.saveFaseCorte)
+
+ordenesRouter.get("/lizzet/:id",OrdenesController.regulaLizzet)

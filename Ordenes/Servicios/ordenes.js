@@ -3,6 +3,7 @@ import { configs } from "../../Main/utils.js";
 import mysql from "mysql2/promise";
 import { ConsoleMessage } from "puppeteer-core";
 // import { inventario } from "../../Main/config.js";
+
 export class OrdenesModel {
   static async getOrdenes(search) {
     let conn
@@ -524,8 +525,8 @@ export class OrdenesModel {
         nameimg = `op_${id}.jpg`
         // console.log(sql)
       }
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito',filename: nameimg }
     } catch (err) {
       console.log(err)
@@ -621,8 +622,8 @@ export class OrdenesModel {
 
                   // Insertar hoja de corte
                   const [hojaCorteResult] = await conn.query(
-                      "INSERT INTO tbl2_fases_prod_hojacorte(id_cab_orden, numero_corte, estado_corte) VALUES (?,?,?)",
-                      [id_orden, corte.numero_corte, corte.estado_corte]
+                      "INSERT INTO tbl2_fases_prod_hojacorte(id_cab_orden, numero_corte, estado_corte, fec_emision) VALUES (?,?,?,?)",
+                      [id_orden, corte.numero_corte, corte.estado_corte, corte.fec_emision]
                   );
                   const idHojaCorte = hojaCorteResult.insertId;
 
@@ -642,14 +643,14 @@ export class OrdenesModel {
                       const fraccionado = [];
                       ['xs', 's', 'm', 'l', 'xl', 'xxl'].forEach(talla => {
                           const cantidad = parseInt(combo[talla]);
-                          fraccionado.push([idComboCorte, talla, isNaN(cantidad) ? 0 : cantidad > 0 ? cantidad : 0]);
+                          fraccionado.push([idComboCorte, talla, isNaN(cantidad) ? 0 : cantidad > 0 ? cantidad : 0, isNaN(cantidad) ? 0 : cantidad > 0 ? cantidad : 0]);
                       });
 
                       console.log("  La info del fraccionado es:", fraccionado);
 
                       // Insertar fracciones
                       await conn.query(
-                          "INSERT INTO tbl2_fases_prod_hojacorte_combos_fracciones(id_combo_CAB, talla, cantidad) VALUES ?",
+                          "INSERT INTO tbl2_fases_prod_hojacorte_combos_fracciones(id_combo_CAB, talla, cantidad, produccion_total) VALUES ?",
                           [fraccionado]
                       );
                   }
@@ -674,13 +675,12 @@ export class OrdenesModel {
         let base_combos = base_update.map(row=>row.combos).filter(item=>item)
 
         let recursive = async (id_orden,base_update,conn)=>{
-
           try {
             for(let corte of [...base_update]){
 
               console.log("Info del corte",corte)
 
-              let base = ['numero_corte','estado_corte']
+              let base = ['numero_corte','estado_corte','fec_emision']
               let acumulado = []
 
               base.forEach(campo=>{
@@ -693,23 +693,29 @@ export class OrdenesModel {
               await conn.query(`UPDATE tbl2_fases_prod_hojacorte SET ${acumulado.join(',')} WHERE idx in (${base_update.map(row=>row.idx).join(',')}) and id_cab_orden = ?`,[id_orden])
 
               
-              for(let combo of [...corte.combos]){
-                console.log("La info del combo es:",combo)
+              // let [validacion] = await conn.query("SELECT id_corte_CAB FROM tbl2_guias_traslado_cab WHERE estado <> 'ANULADO' and id_corte_CAB in (" + [base_update.map(row=>row.idx).toString()] + ")")
+              let [validacion] = await conn.query("SELECT id_corte_CAB FROM tbl2_guias_traslado_cab WHERE estado <> 'ANULADO' and id_corte_CAB = ?",[parseInt(corte['idx'])])
+              // console.log("La validacion del corte es:",validacion)
+              // base_update = base_update.filter(row=>!validacion.map(item=>item.id_corte_CAB).includes(row.idx))
 
-                await conn.query("delete from tbl2_fases_prod_hojacorte_combos where idx = ?",[combo.idx])
-                await conn.query("delete from tbl2_fases_prod_hojacorte_combos_fracciones where id_combo_CAB = ?",[combo.idx])
-
-                let [info_insert] = await conn.query("insert into tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB,color_combo,cantidad_combo) values (?,?,?)",[corte.idx,combo.color_combo,combo.cantidad_combo])
-
-                const fraccionado = combo.fracciones.reduce((c,v)=>{
-                  c.push([info_insert.insertId,v.talla,v.cantidad])
-                  return c
-                },[])
-                console.log("Info del fraccionado:",fraccionado)
-                await conn.query("insert into tbl2_fases_prod_hojacorte_combos_fracciones(id_combo_CAB,talla,cantidad) values ? ",[fraccionado])
+              if(!(validacion.length > 0)){
+                for(let combo of [...corte.combos]){
+                  console.log("La info del combo es:",combo)
+  
+                  await conn.query("delete from tbl2_fases_prod_hojacorte_combos where idx = ?",[combo.idx])
+                  await conn.query("delete from tbl2_fases_prod_hojacorte_combos_fracciones where id_combo_CAB = ?",[combo.idx])
+  
+                  let [info_insert] = await conn.query("insert into tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB,color_combo,cantidad_combo) values (?,?,?)",[corte.idx,combo.color_combo,combo.cantidad_combo])
+  
+                  const fraccionado = combo.fracciones.reduce((c,v)=>{
+                    c.push([info_insert.insertId,v.talla,v.cantidad,v.cantidad])
+                    return c
+                  },[])
+                  console.log("Info del fraccionado:",fraccionado)
+                  await conn.query("insert into tbl2_fases_prod_hojacorte_combos_fracciones(id_combo_CAB,talla,cantidad,produccion_total) values ? ",[fraccionado])
+                }
               }
 
-  
             }
             return true
           } catch (error) {
@@ -729,6 +735,7 @@ export class OrdenesModel {
         }
       }
 
+      console.log("Terminando el actulizado de corte")
       // if (conn) conn.rollback()
       if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito' }
@@ -957,6 +964,37 @@ export class OrdenesModel {
       //   }
       // }
     
+
+      // if (conn) conn.rollback();
+      if (conn) conn.commit();
+      return {ok:true,message:'aja'}
+    } catch (err) {
+      if (conn) conn.rollback();
+      return {ok:false,message:err}
+    } finally {
+      if (conn) await conn.end();
+    }
+  }
+  static async regulaLizzet(){
+    let conn
+    console.log("Dentro de regula lizzet")
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      conn.beginTransaction()
+
+      // console.log("La data de lizset es:",infolizzet)
+
+      // let p1 = ''
+      // for(let combo of [...infolizzet]){
+      //   p1 += " WHEN idx = " + combo.idx + " THEN " + combo.cantidad
+      // }
+      // p1 = `CASE ${p1} END`
+
+      // await conn.query("UPDATE tbl2_inventario_det SET cantidad = " + p1 + " WHERE id_inventario_CAB = 789")
+
+      // let [verifica] = await conn.query("select sum(cantidad) from tbl2_inventario_det where id_inventario_CAB = 789")
+      // console.log("El tocal actuzliado 3es :",verifica)
 
       // if (conn) conn.rollback();
       if (conn) conn.commit();

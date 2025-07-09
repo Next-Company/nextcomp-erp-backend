@@ -4,6 +4,7 @@ import fs from "node:fs/promises"
 import puppeteer from 'puppeteer';
 import { OtherTarget } from "puppeteer-core";
 import { concat } from "puppeteer-core/lib/esm/third_party/rxjs/rxjs.js";
+import { OrdenesModel } from "../../Ordenes/Servicios/ordenes.js";
 // import { width } from "pdfkit/js/page";
 // import { height } from "pdfkit/js/page";
 // import PDFDocument from "pdfkit";
@@ -576,7 +577,9 @@ export class ProduccionController {
     const data2 = await ProduccionModel.getInfoGuiaDet(id)
     const data3 = await ProduccionModel.getInfoGuiaPenalidades(id)
     const data4 = await ProduccionModel.getListaPenalidades()
-    res.json([data[0], data2, data3, data4])
+    const data5 = await OrdenesModel.getFasesProduccion('')
+    // const data4 = await ProduccionModel.()
+    res.json([data[0], data2, data3, data4, data5])
   }
   static async searchGuia(req, res) {
     const { info } = req.params
