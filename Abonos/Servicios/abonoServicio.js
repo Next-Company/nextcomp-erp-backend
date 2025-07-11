@@ -95,12 +95,13 @@ export default class AbonoServicio{
               FROM tbl2_guias_traslado_det tpid 
               JOIN tbl2_guias_traslado_cab tgtc on tgtc.idx = tpid.id_guia_CAB 
               LEFT JOIN tbl2_proveedor tp on tp.idx = tgtc.id_proveedor_CAB
-              LEFT JOIN(
+              INNER JOIN(
                 SELECT tdc.id_guia_origen,tdc.nro_guia,tdc.idx,tdd.id_item,tdd.precio,tdd.despacho,tdd.caidos
                 FROM tbl2_despachos_cab tdc 
                 LEFT JOIN tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
+                WHERE DATE(tdc.fec_emision_guia) >= '2025-07-01'
               ) AS dp on tpid.id_guia_CAB = dp.id_guia_origen and tpid.idx = dp.id_item
-              WHERE tgtc.costo > 0 and tgtc.tipo = 'SERVICIOS' and tgtc.servicio <> 'ACABADOS'
+              WHERE tgtc.costo > 0 and tgtc.tipo = 'SERVICIOS' -- and DATE(tdc.fec_emision_guia) >= '2025-07-01'
               GROUP BY tgtc.idx,tp.idx,tgtc.servicio,tp.ruc,tgtc.proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,tpid.cantidad,tgtc.costo
             ) as resumen
             GROUP BY resumen.id_guia,resumen.id_proveedor,resumen.servicio,resumen.proveedor,resumen.producto,resumen.marca,resumen.modelo,resumen.costo
@@ -108,6 +109,7 @@ export default class AbonoServicio{
         WHERE 1=1 ${busqueda}
         GROUP BY resumen.ruc,resumen.id_proveedor,resumen.proveedor
       `)
+      // and tgtc.exonerado = 0 
       await conn.end()
       return rows
     } catch (error) {
@@ -319,7 +321,7 @@ export default class AbonoServicio{
           // console.log("Info del abono de servicio:", data_mov)
           let result_mov_caja = await this.saveMovimientoCaja('EGRE', data_mov_caja)
         }else{
-          throw new Error("No se dectecto un movimiento de caja para la fecha seleccionada")
+          // throw new Error("No se dectecto un movimiento de caja para la fecha seleccionada")
         }
         ////////////////////////////////////////////
         ////////////////////////////////////////////
@@ -330,8 +332,8 @@ export default class AbonoServicio{
         // }
       }
 
-      // if (conn) conn.rollback()
-      if (conn) conn.commit()
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return {ok:true,message:'Se ha guardado el registros'}
     } catch (err) {
       console.log("Error en la transaccion",err)
@@ -652,7 +654,7 @@ export default class AbonoServicio{
             FROM tbl2_despachos_cab tdc 
             LEFT JOIN tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
           ) AS dp on tpid.id_guia_CAB = dp.id_guia_origen and tpid.idx = dp.id_item
-          WHERE tgtc.costo > 0 and tgtc.tipo = 'SERVICIOS' and tgtc.servicio <> 'ACABADOS' and tgtc.id_proveedor_CAB = ?
+          WHERE tgtc.costo > 0 and tgtc.tipo = 'SERVICIOS' and tgtc.exonerado = 0 and tgtc.id_proveedor_CAB = ?
           GROUP BY tgtc.idx,tgtc.servicio,tgtc.proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,tpid.cantidad,tgtc.costo
         ) as resumen
         GROUP BY resumen.id_guia,resumen.servicio,resumen.proveedor,resumen.producto,resumen.marca,resumen.modelo,resumen.costo
@@ -775,6 +777,7 @@ export default class AbonoServicio{
   static async saveMovimientoCaja(tipo,data){
     let conn
     console.log("Informacion movimiento de caja:",data)
+    return {ok:true,message:'Se ha guardado el registros'}
     try {
       conn = await mysql2.createConnection(configs[1])
       await conn.connect(); 
