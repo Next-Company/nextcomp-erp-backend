@@ -48,70 +48,251 @@ export default class AbonoServicio{
       conn = await mysql2.createConnection(configs[1])
       await conn.connect()
 
-      // let [rows] = await conn.execute(`
-      //   SELECT resumen.id_guia as idx,resumen.servicio,resumen.proveedor,resumen.producto,resumen.marca,resumen.modelo,resumen.costo,SUM(resumen.cantidad) as cantidad,
-      //   SUM(resumen.despacho) as despacho,sum(resumen.total) as importe,
-      //   (
-      //     SELECT sum(importe) as cancelado FROM tbl2_conciliaciones tc  
-      //     JOIN tbl2_abonos ta on ta.idx = tc.id_abono_CAB 
-      //     WHERE resumen.id_guia = tc.id_servicio_CAB
-      //   ) as cancelado
-      //   FROM
-      //   (
-      //     SELECT tgtc.idx as id_guia,tgtc.servicio,COALESCE(tgtc.proveedor,'') as proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,'' as color,IF(COALESCE(tpid.isprototipo),0,tpid.cantidad) as cantidad,tgtc.costo,GROUP_CONCAT(dp.nro_guia) as id_despacho,SUM(COALESCE(IF(COALESCE(tpid.isprototipo),0,dp.despacho),0)-COALESCE(dp.caidos,0)) as despacho,SUM(IF(COALESCE(tpid.isprototipo,0) = 1,0,tgtc.costo*(COALESCE(dp.despacho,0)-COALESCE(dp.caidos,0)))) as total
-      //     FROM tbl2_guias_traslado_det tpid 
-      //     JOIN tbl2_guias_traslado_cab tgtc on tgtc.idx = tpid.id_guia_CAB 
-      //     LEFT JOIN(
-      //       SELECT tdc.id_guia_origen,tdc.nro_guia,tdc.idx,tdd.id_item,tdd.precio,tdd.despacho,tdd.caidos
-      //       FROM tbl2_despachos_cab tdc 
-      //       LEFT JOIN tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
-      //     ) AS dp on tpid.id_guia_CAB = dp.id_guia_origen and tpid.idx = dp.id_item
-      //     WHERE tgtc.costo > 0 and tgtc.tipo = 'SERVICIOS' and tgtc.servicio <> 'ACABADOS'
-      //     GROUP BY tgtc.idx,tgtc.servicio,tgtc.proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,tpid.cantidad,tgtc.costo
-      //   ) as resumen
-      //   GROUP BY resumen.id_guia,resumen.servicio,resumen.proveedor,resumen.producto,resumen.marca,resumen.modelo,resumen.costo
-      // `, [limit])
       console.log("Buscando por dato envaido del frontent ",search)
       const busqueda = search.length > 0 ? search.split(" ").map(item=>`AND LOCATE('${item}',CONCAT(TRIM(COALESCE(ruc,'')),TRIM(COALESCE(proveedor,'')))) > 0`).join(" ") : ""
 
+      // let [rows] = await conn.execute(`
+      //   SELECT
+      //     resumen.id_proveedor as idx,resumen.ruc,resumen.proveedor,sum(COALESCE(resumen.cantidad,0)) as cantidad,sum(COALESCE(resumen.despacho,0)) as despacho,sum(COALESCE(resumen.cancelado,0)) as cancelado,sum(COALESCE(resumen.importe,0)) as importe
+      //   FROM
+      //   (
+      //     SELECT resumen.id_guia as idx,resumen.id_proveedor,resumen.servicio,resumen.ruc,resumen.proveedor,resumen.producto,resumen.marca,resumen.modelo,resumen.costo,SUM(resumen.cantidad) as cantidad,
+      //       SUM(resumen.despacho) as despacho,sum(resumen.total) as importe,
+      //       (
+      //         SELECT COALESCE(sum(tc.importe_conciliacion),0) as cancelado FROM tbl2_conciliaciones tc  
+      //         JOIN tbl2_abonos ta on ta.idx = tc.id_abono_CAB 
+      //         WHERE resumen.id_guia = tc.id_servicio_CAB
+      //       ) as cancelado
+      //       FROM
+      //       (
+      //         SELECT tgtc.idx as id_guia,tp.idx as id_proveedor,tgtc.servicio,COALESCE(tp.ruc,'') as ruc,COALESCE(tgtc.proveedor,'OTROS') as proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,'' as color,IF(COALESCE(tpid.isprototipo),0,tpid.cantidad) as cantidad,tgtc.costo,GROUP_CONCAT(dp.nro_guia) as id_despacho,SUM(COALESCE(IF(COALESCE(tpid.isprototipo),0,dp.despacho),0)) as despacho,SUM(IF(COALESCE(tpid.isprototipo,0) = 1,0,tgtc.costo*(COALESCE(dp.despacho,0)))) as total
+      //         FROM tbl2_guias_traslado_det tpid 
+      //         JOIN tbl2_guias_traslado_cab tgtc on tgtc.idx = tpid.id_guia_CAB 
+      //         LEFT JOIN tbl2_proveedor tp on tp.idx = tgtc.id_proveedor_CAB
+      //         INNER JOIN(
+      //           SELECT tdc.id_guia_origen,tdc.nro_guia,tdc.idx,tdd.id_item,tdd.precio,tdd.despacho,tdd.caidos
+      //           FROM tbl2_despachos_cab tdc 
+      //           LEFT JOIN tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
+      //           WHERE DATE(tdc.fec_emision_guia) >= '2025-07-01'
+      //         ) AS dp on tpid.id_guia_CAB = dp.id_guia_origen and tpid.idx = dp.id_item
+      //         WHERE tgtc.costo > 0 and tgtc.tipo = 'SERVICIOS' -- and DATE(tdc.fec_emision_guia) >= '2025-07-01'
+      //         GROUP BY tgtc.idx,tp.idx,tgtc.servicio,tp.ruc,tgtc.proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,tpid.cantidad,tgtc.costo
+      //       ) as resumen
+      //       GROUP BY resumen.id_guia,resumen.id_proveedor,resumen.servicio,resumen.proveedor,resumen.producto,resumen.marca,resumen.modelo,resumen.costo
+      //   ) as resumen
+      //   WHERE 1=1 ${busqueda}
+      //   GROUP BY resumen.ruc,resumen.id_proveedor,resumen.proveedor
+      // `)
 
-      console.log("Busqueda de servicios, filtro",busqueda)
+      // let [guias] = await conn.query("SELECT *FROM tbl2_guias_tra")
 
       let [rows] = await conn.execute(`
         SELECT
-          resumen.id_proveedor as idx,resumen.ruc,resumen.proveedor,sum(COALESCE(resumen.cantidad,0)) as cantidad,sum(COALESCE(resumen.despacho,0)) as despacho,sum(COALESCE(resumen.cancelado,0)) as cancelado,sum(COALESCE(resumen.importe,0)) as importe
-        FROM
-        (
-          SELECT resumen.id_guia as idx,resumen.id_proveedor,resumen.servicio,resumen.ruc,resumen.proveedor,resumen.producto,resumen.marca,resumen.modelo,resumen.costo,SUM(resumen.cantidad) as cantidad,
-            SUM(resumen.despacho) as despacho,sum(resumen.total) as importe,
-            (
-              SELECT COALESCE(sum(tc.importe_conciliacion),0) as cancelado FROM tbl2_conciliaciones tc  
-              JOIN tbl2_abonos ta on ta.idx = tc.id_abono_CAB 
-              WHERE resumen.id_guia = tc.id_servicio_CAB
-            ) as cancelado
-            FROM
-            (
-              SELECT tgtc.idx as id_guia,tp.idx as id_proveedor,tgtc.servicio,COALESCE(tp.ruc,'') as ruc,COALESCE(tgtc.proveedor,'OTROS') as proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,'' as color,IF(COALESCE(tpid.isprototipo),0,tpid.cantidad) as cantidad,tgtc.costo,GROUP_CONCAT(dp.nro_guia) as id_despacho,SUM(COALESCE(IF(COALESCE(tpid.isprototipo),0,dp.despacho),0)) as despacho,SUM(IF(COALESCE(tpid.isprototipo,0) = 1,0,tgtc.costo*(COALESCE(dp.despacho,0)))) as total
-              FROM tbl2_guias_traslado_det tpid 
-              JOIN tbl2_guias_traslado_cab tgtc on tgtc.idx = tpid.id_guia_CAB 
-              LEFT JOIN tbl2_proveedor tp on tp.idx = tgtc.id_proveedor_CAB
-              INNER JOIN(
-                SELECT tdc.id_guia_origen,tdc.nro_guia,tdc.idx,tdd.id_item,tdd.precio,tdd.despacho,tdd.caidos
-                FROM tbl2_despachos_cab tdc 
-                LEFT JOIN tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
-                WHERE DATE(tdc.fec_emision_guia) >= '2025-07-01'
-              ) AS dp on tpid.id_guia_CAB = dp.id_guia_origen and tpid.idx = dp.id_item
-              WHERE tgtc.costo > 0 and tgtc.tipo = 'SERVICIOS' -- and DATE(tdc.fec_emision_guia) >= '2025-07-01'
-              GROUP BY tgtc.idx,tp.idx,tgtc.servicio,tp.ruc,tgtc.proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,tpid.cantidad,tgtc.costo
-            ) as resumen
-            GROUP BY resumen.id_guia,resumen.id_proveedor,resumen.servicio,resumen.proveedor,resumen.producto,resumen.marca,resumen.modelo,resumen.costo
-        ) as resumen
-        WHERE 1=1 ${busqueda}
-        GROUP BY resumen.ruc,resumen.id_proveedor,resumen.proveedor
+      resumen.id_proveedor as idx,
+      resumen.ruc,
+      resumen.proveedor,
+      sum(COALESCE(resumen.cantidad,0)) as cantidad,
+      sum(COALESCE(resumen.despacho,0)) as despacho,
+      sum(COALESCE(resumen.cancelado,0)) as cancelado,
+      sum(COALESCE(resumen.importe,0)) as importe
+ FROM
+(
+  SELECT 
+  	  resumen.id_guia as idx,
+      resumen.id_proveedor,
+      resumen.servicio,
+      resumen.ruc,
+      resumen.proveedor,
+      resumen.producto,
+      resumen.marca,
+      resumen.modelo,
+      resumen.costo,
+      SUM(resumen.cantidad) as cantidad,
+      SUM(resumen.despacho) as despacho,
+      sum(resumen.total) as importe,
+	    (
+	      SELECT COALESCE(sum(tc.importe_conciliacion),0) as cancelado FROM tbl2_conciliaciones tc  
+	      JOIN tbl2_abonos ta on ta.idx = tc.id_abono_CAB 
+	      WHERE resumen.id_guia = tc.id_servicio_CAB
+	    ) as cancelado 
+    FROM
+    (
+      SELECT 
+      	tgtc.idx as id_guia,
+      	tp.idx as id_proveedor,
+      	tgtc.servicio,
+      	COALESCE(tp.ruc,'') as ruc,
+      	COALESCE(tgtc.proveedor,'OTROS') as proveedor,
+      	tgtc.producto,
+      	tgtc.marca,
+      	tgtc.modelo,
+      	tpid.idx,	
+      	tpid.articulo,'' as color,
+      	IF(COALESCE(tpid.isprototipo),0,tpid.cantidad) as cantidad,
+      	tgtc.costo,
+      	(
+	    	select GROUP_CONCAT(COALESCE(t1.nro_guia,'')) from tbl2_despachos_cab t1 
+	    	join tbl2_despachos_det t2 on t1.idx = t2.id_despacho_CAB
+	    	where date(t1.fec_emision_guia) >= '2025-07-01' and t1.id_guia_origen = tgtc.idx and t2.id_item = tpid.idx
+	   ) as id_despacho,
+	   (
+	    	select SUM(COALESCE(t2.despacho,0)) from tbl2_despachos_cab t1 
+	    	join tbl2_despachos_det t2 on t1.idx = t2.id_despacho_CAB
+	    	where date(t1.fec_emision_guia) >= '2025-07-01' and t1.id_guia_origen = tgtc.idx and t2.id_item = tpid.idx
+	   ) as despacho,
+	   (
+	    	select SUM(tgtc.costo*COALESCE(t2.despacho,0)) from tbl2_despachos_cab t1 
+	    	join tbl2_despachos_det t2 on t1.idx = t2.id_despacho_CAB
+	    	where date(t1.fec_emision_guia) >= '2025-07-01' and t1.id_guia_origen = tgtc.idx and t2.id_item = tpid.idx
+	   ) as total
+      FROM tbl2_guias_traslado_det tpid 
+      JOIN tbl2_guias_traslado_cab tgtc on tgtc.idx = tpid.id_guia_CAB 
+      LEFT JOIN tbl2_proveedor tp on tp.idx = tgtc.id_proveedor_CAB
+      WHERE tgtc.costo > 0 and tgtc.tipo = 'SERVICIOS' AND COALESCE(tpid.isprototipo,0) = 0 -- AND tp.idx = 30144 
+      AND tgtc.idx in (select id_guia_origen from tbl2_despachos_cab where  DATE(fec_emision_guia) >= '2025-07-01')
+   ) as resumen
+   GROUP BY resumen.id_guia,
+      resumen.id_proveedor,
+      resumen.servicio,
+      resumen.ruc,
+      resumen.proveedor,
+      resumen.producto,
+      resumen.marca,
+      resumen.modelo,
+      resumen.costo
+   ) as resumen
+    WHERE 1=1 ${busqueda}
+   group by resumen.id_proveedor,resumen.ruc,resumen.proveedor
       `)
-      // and tgtc.exonerado = 0 
+
       await conn.end()
       return rows
+    } catch (error) {
+      console.log(error)
+    } finally {
+      if(conn) conn.end()
+    }
+  }
+  static async getProveedorServiciosStatusDetalle(idproveedor){
+    let conn
+    try {
+      conn = await mysql2.createConnection(configs[1])
+      await conn.connect()
+
+      const [cabecera,fields] = await conn.query(`SELECT sum(importe) as cancelado FROM tbl2_guias_traslado_cab tgtc JOIN tbl2_conciliaciones tc ON tgtc.idx = tc.id_servicio_CAB JOIN tbl2_abonos ta ON ta.idx = tc.id_abono_CAB WHERE tgtc.idx = ?`,[idproveedor])
+
+      // let [resultado] = await conn.execute(`
+      //   SELECT resumen.id_guia as idx,resumen.servicio,resumen.proveedor,resumen.producto,resumen.marca,resumen.modelo,resumen.costo,SUM(resumen.cantidad) as cantidad,
+      //   SUM(resumen.despacho) as despacho,sum(resumen.total) as importe,
+      //   (
+      //     SELECT COALESCE(sum(importe_conciliacion),0) as cancelado FROM tbl2_conciliaciones tc  
+      //     JOIN tbl2_abonos ta on ta.idx = tc.id_abono_CAB 
+      //     WHERE resumen.id_guia = tc.id_servicio_CAB
+      //   ) as cancelado,
+      //   (
+      //     SELECT COALESCE(sum(tgta.importe),0) FROM tbl2_guias_traslado_adi tgta 
+      //     WHERE tgta.id_guia_CAB = resumen.id_guia
+      //   ) as descuentos,
+      //   0 as pago
+      //   FROM
+      //   (
+      //     SELECT tgtc.idx as id_guia,tgtc.servicio,COALESCE(tgtc.proveedor,'') as proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,'' as color,IF(COALESCE(tpid.isprototipo),0,tpid.cantidad) as cantidad,tgtc.costo,GROUP_CONCAT(dp.nro_guia) as id_despacho,SUM(COALESCE(IF(COALESCE(tpid.isprototipo),0,dp.despacho),0)) as despacho,SUM(IF(COALESCE(tpid.isprototipo,0) = 1,0,tgtc.costo*(COALESCE(dp.despacho,0)))) as total
+      //     FROM tbl2_guias_traslado_det tpid 
+      //     JOIN tbl2_guias_traslado_cab tgtc on tgtc.idx = tpid.id_guia_CAB 
+      //     INNER JOIN(
+      //       SELECT tdc.id_guia_origen,tdc.nro_guia,tdc.idx,tdd.id_item,tdd.precio,tdd.despacho,tdd.caidos
+      //       FROM tbl2_despachos_cab tdc 
+      //       LEFT JOIN tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
+      //       WHERE DATE(tdc.fec_emision_guia) >= '2025-07-01'
+      //     ) AS dp on tpid.id_guia_CAB = dp.id_guia_origen -- and tpid.idx = dp.id_item
+      //     WHERE tgtc.costo > 0 and tgtc.tipo = 'SERVICIOS' and tgtc.id_proveedor_CAB = ? -- and tgtc.exonerado = 0 
+      //     GROUP BY tgtc.idx,tgtc.servicio,tgtc.proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,tpid.cantidad,tgtc.costo
+      //   ) as resumen
+      //   GROUP BY resumen.id_guia,resumen.servicio,resumen.proveedor,resumen.producto,resumen.marca,resumen.modelo,resumen.costo
+      // `, [idproveedor])
+
+      let [resultado] = await conn.execute(`
+        SELECT 
+  	  resumen.id_guia as idx,resumen.servicio,resumen.proveedor,resumen.producto,resumen.marca,resumen.modelo,resumen.costo,
+      SUM(resumen.cantidad) as cantidad,
+      SUM(resumen.despacho) as despacho,
+      sum(resumen.total) as importe,
+	    (
+	      SELECT COALESCE(sum(tc.importe_conciliacion),0) as cancelado FROM tbl2_conciliaciones tc  
+	      JOIN tbl2_abonos ta on ta.idx = tc.id_abono_CAB 
+	      WHERE resumen.id_guia = tc.id_servicio_CAB
+	    ) as cancelado,
+      (
+        SELECT COALESCE(sum(tgta.importe),0) FROM tbl2_guias_traslado_adi tgta 
+        WHERE tgta.id_guia_CAB = resumen.id_guia
+      ) as descuentos,
+      0 as pago
+    FROM
+    (
+      SELECT 
+      	tgtc.idx as id_guia,
+      	tp.idx as id_proveedor,
+      	tgtc.servicio,
+      	COALESCE(tp.ruc,'') as ruc,
+      	COALESCE(tgtc.proveedor,'OTROS') as proveedor,
+      	tgtc.producto,
+      	tgtc.marca,
+      	tgtc.modelo,
+      	tpid.idx,	
+      	tpid.articulo,'' as color,
+      	IF(COALESCE(tpid.isprototipo),0,tpid.cantidad) as cantidad,
+      	tgtc.costo,
+      	(
+	    	select GROUP_CONCAT(COALESCE(t1.nro_guia,'')) from tbl2_despachos_cab t1 
+	    	join tbl2_despachos_det t2 on t1.idx = t2.id_despacho_CAB
+	    	where date(t1.fec_emision_guia) >= '2025-07-01' and t1.id_guia_origen = tgtc.idx and t2.id_item = tpid.idx
+	   ) as id_despacho,
+	   (
+	    	select SUM(COALESCE(t2.despacho,0)) from tbl2_despachos_cab t1 
+	    	join tbl2_despachos_det t2 on t1.idx = t2.id_despacho_CAB
+	    	where date(t1.fec_emision_guia) >= '2025-07-01' and t1.id_guia_origen = tgtc.idx and t2.id_item = tpid.idx
+	   ) as despacho,
+	   (
+	    	select SUM(tgtc.costo*COALESCE(t2.despacho,0)) from tbl2_despachos_cab t1 
+	    	join tbl2_despachos_det t2 on t1.idx = t2.id_despacho_CAB
+	    	where date(t1.fec_emision_guia) >= '2025-07-01' and t1.id_guia_origen = tgtc.idx and t2.id_item = tpid.idx
+	   ) as total
+      FROM tbl2_guias_traslado_det tpid 
+      JOIN tbl2_guias_traslado_cab tgtc on tgtc.idx = tpid.id_guia_CAB 
+      LEFT JOIN tbl2_proveedor tp on tp.idx = tgtc.id_proveedor_CAB
+      WHERE tgtc.costo > 0 and tgtc.tipo = 'SERVICIOS' AND COALESCE(tpid.isprototipo,0) = 0 and tgtc.id_proveedor_CAB = ? -- AND tp.idx = 30144 
+      AND tgtc.idx in (select id_guia_origen from tbl2_despachos_cab where  DATE(fec_emision_guia) >= '2025-07-01')
+   ) as resumen
+   GROUP BY resumen.id_guia,
+      resumen.id_proveedor,
+      resumen.servicio,
+      resumen.ruc,
+      resumen.proveedor,
+      resumen.producto,
+      resumen.marca,
+      resumen.modelo,
+      resumen.costo
+      `, [idproveedor])
+      
+      console.log("Otro resultado adicional")
+      console.log("Resultado preliminar de busqueda de status abono:",resultado)
+
+      let resultado_new = resultado.reduce((ca,item)=>{
+
+        let cc = async ()=>{
+          let bb = []
+          let [penalidades_list] = await conn.execute(`SELECT id_guia_CAB as idguia,id_penalidad_CAB as idx,observaciones as observacion,importe FROM tbl2_guias_traslado_adi WHERE id_guia_CAB = `+item.idx)  
+          penalidades_list.length > 0 ? ca.push({...item,penalidades:penalidades_list}) : ca.push(item)
+          return ca
+        }
+        cc()
+        return ca
+      },[])
+      console.log("Infor en procesar :",resultado_new)
+
+      await conn.end()
+      // return resultado
+      return resultado_new
     } catch (error) {
       console.log(error)
     } finally {
@@ -617,68 +798,6 @@ export default class AbonoServicio{
 
       await conn.end()
       return resultado
-    } catch (error) {
-      console.log(error)
-    } finally {
-      if(conn) conn.end()
-    }
-  }
-  static async getProveedorServiciosStatusDetalle(idproveedor){
-    let conn
-    try {
-      conn = await mysql2.createConnection(configs[1])
-      await conn.connect()
-
-      const [cabecera,fields] = await conn.query(`SELECT sum(importe) as cancelado FROM tbl2_guias_traslado_cab tgtc JOIN tbl2_conciliaciones tc ON tgtc.idx = tc.id_servicio_CAB JOIN tbl2_abonos ta ON ta.idx = tc.id_abono_CAB WHERE tgtc.idx = ?`,[idproveedor])
-
-      let [resultado] = await conn.execute(`
-        SELECT resumen.id_guia as idx,resumen.servicio,resumen.proveedor,resumen.producto,resumen.marca,resumen.modelo,resumen.costo,SUM(resumen.cantidad) as cantidad,
-        SUM(resumen.despacho) as despacho,sum(resumen.total) as importe,
-        (
-          SELECT COALESCE(sum(importe_conciliacion),0) as cancelado FROM tbl2_conciliaciones tc  
-          JOIN tbl2_abonos ta on ta.idx = tc.id_abono_CAB 
-          WHERE resumen.id_guia = tc.id_servicio_CAB
-        ) as cancelado,
-        (
-          SELECT COALESCE(sum(tgta.importe),0) FROM tbl2_guias_traslado_adi tgta 
-          WHERE tgta.id_guia_CAB = resumen.id_guia
-        ) as descuentos,
-        0 as pago
-        FROM
-        (
-          SELECT tgtc.idx as id_guia,tgtc.servicio,COALESCE(tgtc.proveedor,'') as proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,'' as color,IF(COALESCE(tpid.isprototipo),0,tpid.cantidad) as cantidad,tgtc.costo,GROUP_CONCAT(dp.nro_guia) as id_despacho,SUM(COALESCE(IF(COALESCE(tpid.isprototipo),0,dp.despacho),0)) as despacho,SUM(IF(COALESCE(tpid.isprototipo,0) = 1,0,tgtc.costo*(COALESCE(dp.despacho,0)))) as total
-          FROM tbl2_guias_traslado_det tpid 
-          JOIN tbl2_guias_traslado_cab tgtc on tgtc.idx = tpid.id_guia_CAB 
-          LEFT JOIN(
-            SELECT tdc.id_guia_origen,tdc.nro_guia,tdc.idx,tdd.id_item,tdd.precio,tdd.despacho,tdd.caidos
-            FROM tbl2_despachos_cab tdc 
-            LEFT JOIN tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
-          ) AS dp on tpid.id_guia_CAB = dp.id_guia_origen and tpid.idx = dp.id_item
-          WHERE tgtc.costo > 0 and tgtc.tipo = 'SERVICIOS' and tgtc.exonerado = 0 and tgtc.id_proveedor_CAB = ?
-          GROUP BY tgtc.idx,tgtc.servicio,tgtc.proveedor,tgtc.producto,tgtc.marca,tgtc.modelo,tpid.idx,tpid.articulo,tpid.cantidad,tgtc.costo
-        ) as resumen
-        GROUP BY resumen.id_guia,resumen.servicio,resumen.proveedor,resumen.producto,resumen.marca,resumen.modelo,resumen.costo
-      `, [idproveedor])
-      
-      console.log("Otro resultado adicional")
-      console.log("Resultado preliminar de busqueda de status abono:",resultado)
-
-      let resultado_new = resultado.reduce((ca,item)=>{
-
-        let cc = async ()=>{
-          let bb = []
-          let [penalidades_list] = await conn.execute(`SELECT id_guia_CAB as idguia,id_penalidad_CAB as idx,observaciones as observacion,importe FROM tbl2_guias_traslado_adi WHERE id_guia_CAB = `+item.idx)  
-          penalidades_list.length > 0 ? ca.push({...item,penalidades:penalidades_list}) : ca.push(item)
-          return ca
-        }
-        cc()
-        return ca
-      },[])
-      console.log("Infor en procesar :",resultado_new)
-
-      await conn.end()
-      // return resultado
-      return resultado_new
     } catch (error) {
       console.log(error)
     } finally {

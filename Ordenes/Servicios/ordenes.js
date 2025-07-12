@@ -924,6 +924,85 @@ export class OrdenesModel {
       if (conn) await conn.end();
     }
   }
+  static async getStatusGeneral2(id) {
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+
+      
+      // const [ordenes] = await conn.query(`
+      //   SELECT tfpo.*,
+      //   ( COALESCE(tfpo.combo1_orden,0) + COALESCE(tfpo.combo2_orden,0) + COALESCE(tfpo.combo3_orden,0) + COALESCE(tfpo.combo4_orden,0) + COALESCE(tfpo.combo5_orden,0) + COALESCE(tfpo.combo6_orden,0) + COALESCE(tfpo.combo7_orden,0) + COALESCE(tfpo.combo8_orden,0) + COALESCE(tfpo.combo9_orden,0) ) as total_orden,
+      //   (COALESCE(tfph.combo1_corte,0) + COALESCE(tfph.combo2_corte,0) + COALESCE(tfph.combo3_corte,0) + COALESCE(tfph.combo4_corte,0) + COALESCE(tfph.combo5_corte,0) + COALESCE(tfph.combo6_corte,0) + COALESCE(tfph.combo7_corte,0) + COALESCE(tfph.combo8_corte,0) + COALESCE(tfph.combo9_corte,0) ) as total_corte,
+      //   COALESCE(DATEDIFF(STR_TO_DATE(fec_entrega,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
+      //   tfph.numero_corte,tfph.ruta_proceso
+      //   FROM tbl2_fases_prod_ordenes tfpo 
+      //   LEFT JOIN tbl2_fases_prod_hojacorte tfph on tfpo.idx = tfph.id_cab_orden 
+      //   where tfpo.idx = ?
+      // `, [id]);
+
+      const [ordenes] = await conn.query("SELECT tb1.*,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('id_orden_CAB',tb2.id_orden_CAB,'color_combo',tb2.color_combo,'cantidad_combo',tb2.cantidad_combo)) from tbl2_fases_prod_ordenes_combos tb2 where tb2.id_orden_CAB = tb1.idx),JSON_ARRAY()) as combos,COALESCE(DATEDIFF(STR_TO_DATE(tb1.fec_entrega,'%Y-%m-%d'),date(now())),0) as dias_pendientes FROM tbl2_fases_prod_ordenes tb1 WHERE tb1.idx = ? ORDER BY tb1.idx desc",[id]);
+
+      const [moldes] = await conn.query('SELECT tb1.* FROM tbl2_fases_prod_molde tb1 WHERE tb1.id_cab_orden = ?',[id]);
+
+      const [cortes] = await conn.query("SELECT tb1.*,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('id_hojacorte_CAB',tb2.id_hojacorte_CAB,'id_orden_CAB',tb2.id_orden_CAB,'color_combo',tb2.color_combo,'cantidad_combo',tb2.cantidad_combo)) from tbl2_fases_prod_hojacorte_combos tb2 where tb2.id_hojacorte_CAB = tb1.idx),JSON_ARRAY()) as combos FROM tbl2_fases_prod_hojacorte tb1 WHERE tb1.id_cab_orden = ?",[id]);
+
+      let query = `SELECT idx,id_orden_CAB,orden_ref,producto,modelo,marca,estado,tipo,servicio,id_proveedor_CAB,proveedor,fec_emision,DATE_FORMAT(fec_emision,'%d/%m/%Y') as fec_emision_guia,fec_retorno,DATE_FORMAT(fec_retorno,'%d/%m/%Y') as fec_retorno_guia,fec_recepcion,costo,COALESCE(DATEDIFF(fec_retorno,fec_emision),'') as tiempo_produccion,COALESCE(DATEDIFF(STR_TO_DATE(fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
+      (
+        select sum(cantidad) from tbl2_guias_traslado_det tgtd where tgtd.id_guia_CAB = tbl2_guias_traslado_cab.idx
+      ) as cantidad_servicio,
+      (
+        select COALESCE(sum(COALESCE(tdd.despacho,0) + COALESCE(tdd.caidos,0)),0) as total from tbl2_despachos_cab tdc 
+        join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
+        where tdc.id_guia_origen = tbl2_guias_traslado_cab.idx
+      ) as ingresos, DATE_FORMAT(created_at,'%Y-%m-%d') as created_at
+      FROM tbl2_guias_traslado_cab where tipo = 'SERVICIOS' and estado <> 'ANULADO' and id_orden_cab = ? order by created_at desc`
+      
+      let [infoguias] = await conn.query(query,[id])
+      infoguias = Object.groupBy(infoguias,(item)=>item.created_at)
+
+      // console.log("Informcion agrupada",Object.groupBy(infoguias,(created_at)=>created_at))
+	let ruta = eval(ordenes[0].ruta_proceso)
+	// let ruta_ordenada = ['MOLDE','CORTE','AVIOS','CONFECCION','OJAL','ESTAMPADO','LAVANDERIA','BORDADO','ACABADOS']
+	
+	ruta = ruta.filter(item=>!['MOLDE','CORTE','AVIOS'].includes(item)).reduce((c,v)=>{
+		c[v] = []
+		return c
+	},{})
+
+	console.log("La ruta de la orden es:",ruta)
+	
+	let [info_guias] = await conn.query(`
+	select 
+	t1.*,
+	(select t0.identificador from tbl2_fases_produccion t0 where t0.ruta = t1.servicio) as color,
+	(
+	select JSON_ARRAYAGG(JSON_OBJECT('nro_guia',tdc.nro_guia,'despacho',(select sum(tdd.despacho) from tbl2_despachos_det tdd where tdc.idx = tdd.id_despacho_CAB)))
+	from tbl2_despachos_cab tdc
+	where tdc.id_guia_origen = t1.idx
+	) as despachos	
+	from tbl2_guias_traslado_cab t1
+	where t1.estado <> 'ANULADO' and t1.id_orden_CAB = ?
+	`,[id])
+
+	let final = Object.groupBy(info_guias,(row)=>row.servicio)
+
+	let formateado = Object.keys(ruta).reduce((c,v)=>{
+		if(!Object.keys(c).includes(v)) c[v] = []
+		return c
+	},final)
+
+	console.log("La informafion organizada por servicio es:",formateado)
+
+      return [ordenes,moldes,cortes,infoguias,formateado]
+    } catch (err) {
+      console.log(err)
+      return [err]
+    } finally {
+      if (conn) await conn.end();
+    }
+  }
   static async ActualizaCombos(){
     let conn
     console.log("Comienza la actualizadoin")

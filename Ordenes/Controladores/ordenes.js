@@ -197,6 +197,11 @@ export class OrdenesController {
     const data = await OrdenesModel.getStatusGeneral(id)
     res.json(data)
   }
+  static async getStatusGeneral2(req, res) {
+    const id = req.params.id
+    const data = await OrdenesModel.getStatusGeneral2(id)
+    res.json(data)
+  }
   static async updateCombos(req, reply) {
     const data = await OrdenesModel.ActualizaCombos()
     reply.json(data)
