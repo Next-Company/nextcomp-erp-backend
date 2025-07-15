@@ -158,6 +158,10 @@ export class ProduccionController {
           carry += valor.isprototipo ? 0 : parseFloat(valor.cantidad)
           return carry;
         }, 0),
+        totaldespacho: data2.reduce((carry, valor) => {
+          carry += valor.isprototipo ? 0 : parseFloat(valor.despacho)
+          return carry;
+        }, 0),
         proveedor: data3[0],
         helpers: {
           plusindex(index) {
@@ -647,8 +651,9 @@ export class ProduccionController {
     const data3 = await ProduccionModel.getInfoGuiaPenalidades(id)
     const data4 = await ProduccionModel.getListaPenalidades()
     const data5 = await OrdenesModel.getFasesProduccion('')
+    const data6 = await ProduccionModel.getListaReprogramacionGuias(id)
     // const data4 = await ProduccionModel.()
-    res.json([data[0], data2, data3, data4, data5])
+    res.json([data[0], data2, data3, data4, data5, data6])
   }
   static async searchGuia(req, res) {
     const { info } = req.params

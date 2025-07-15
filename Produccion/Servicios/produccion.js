@@ -2172,4 +2172,21 @@ export class ProduccionModel {
       }
     }
   }
+  static async getListaReprogramacionGuias(idguia){
+    console.log("Test2 desde otra galaxia")
+    let conn
+    try {
+      let conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      const [resultado] = await conn.query(`SELECT id_guia_CAB as idguia,fecha_entrega,observacion FROM tbl2_guias_traslado_reprogramacion where id_guia_CAB = ?`,[idguia])
+      await conn.end();
+      return resultado;
+    } catch (err) {
+      return err
+    } finally {
+      if (conn) {
+        await conn.end();
+      }
+    }
+  }
 }
