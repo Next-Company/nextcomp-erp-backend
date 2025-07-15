@@ -50,6 +50,7 @@ produccionRouter.get('/estampado/:id', ProduccionController.getInfoEstampado)
 produccionRouter.put('/guardarestampado', ProduccionController.saveInfoEstampado)
 produccionRouter.delete('/borrarestampado/:id', ProduccionController.eliminarInfoEstampado)
 produccionRouter.post('/exportdespacho/:id/:idguia', ProduccionController.exportInfoDespacho)
+produccionRouter.get('/verdespacho/:id/:idguia/:condicion', ProduccionController.verInfoDespacho)
 
 produccionRouter.post('/busqueda', ProduccionController.getOrdenesByParams)
 produccionRouter.get('/getordenesbyid/:id', ProduccionController.getOrdenesById)

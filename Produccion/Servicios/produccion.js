@@ -775,7 +775,7 @@ export class ProduccionModel {
 
       const [cruce] = await conn.query("select tdc.idx as id_despacho,DATE_FORMAT(tdc.fec_despacho,'%d/%m') as fec_despacho,tdd.id_item as idx,tdd.despacho from tbl2_despachos_cab tdc join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB where tdc.tipo = 'SERVICIOS' and tdc.id_guia_origen = ?",[id])
 
-      console.log("iNfo del creuce uomo es.:",cruce)
+      console.log("iNfo del creuce uomo es.:",cruce,id)
 
       // let lista_despachos = [...new Set(cruce.reduce((carry, valor) => { return [...carry, valor.id_despacho] }, []))]
       let lista_despachos = cruce.reduce((carry,value)=>{
@@ -875,9 +875,11 @@ export class ProduccionModel {
     const cabecera = JSON.parse(data.info)
     const articulos = JSON.parse(data.detalle)
     const penalidades = data.penalidades ? JSON.parse(data.penalidades) : []
+    const reprogramacion = data.reprogramacion ? JSON.parse(data.reprogramacion) : []
 
     console.log('Detalle multiple:', cabecera)
     console.log('Detalle penalidades:', penalidades)
+    console.log('Detalle reprogramaciones:', reprogramacion)
 
     try {
       conn = await mysql.createConnection(configs[1])
@@ -968,6 +970,11 @@ export class ProduccionModel {
           await conn.query("DELETE FROM tbl2_guias_traslado_adi WHERE id_guia_CAB = ?",[parseInt(data.id)])
           await conn.query("INSERT INTO tbl2_guias_traslado_adi(id_guia_CAB,id_penalidad_CAB,observaciones,importe) VALUES ?",[penalidadesinsert])
         }
+        if(reprogramacion.length > 0){
+          let reprogramacioninsert = reprogramacion.map(row=>[row.idguia,row.fecha_entrega,row.observacion])
+          await conn.query("DELETE FROM tbl2_guias_traslado_reprogramacion WHERE id_guia_CAB = ?",[parseInt(data.id)])
+          await conn.query("INSERT INTO tbl2_guias_traslado_reprogramacion(id_guia_CAB,fecha_entrega,observacion) VALUES ?",[reprogramacioninsert])
+        }
 
       } else {
         try {
@@ -1025,8 +1032,8 @@ export class ProduccionModel {
         if(!respuesta.ok) throw respuesta.message
       }
 
-      // if (conn) conn.rollback()
-      if (conn) conn.commit()
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return {ok:true,message:'Registro completo'}
     } catch (err) {
       console.log(err)

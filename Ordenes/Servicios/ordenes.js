@@ -963,37 +963,37 @@ export class OrdenesModel {
       infoguias = Object.groupBy(infoguias,(item)=>item.created_at)
 
       // console.log("Informcion agrupada",Object.groupBy(infoguias,(created_at)=>created_at))
-	let ruta = eval(ordenes[0].ruta_proceso)
-	// let ruta_ordenada = ['MOLDE','CORTE','AVIOS','CONFECCION','OJAL','ESTAMPADO','LAVANDERIA','BORDADO','ACABADOS']
-	
-	ruta = ruta.filter(item=>!['MOLDE','CORTE','AVIOS'].includes(item)).reduce((c,v)=>{
-		c[v] = []
-		return c
-	},{})
+      let ruta = eval(ordenes[0].ruta_proceso)
+      // let ruta_ordenada = ['MOLDE','CORTE','AVIOS','CONFECCION','OJAL','ESTAMPADO','LAVANDERIA','BORDADO','ACABADOS']
+      
+      ruta = ruta.filter(item=>!['MOLDE','CORTE','AVIOS'].includes(item)).reduce((c,v)=>{
+        c[v] = []
+        return c
+      },{})
 
-	console.log("La ruta de la orden es:",ruta)
-	
-	let [info_guias] = await conn.query(`
-	select 
-	t1.*,
-	(select t0.identificador from tbl2_fases_produccion t0 where t0.ruta = t1.servicio) as color,
-	(
-	select JSON_ARRAYAGG(JSON_OBJECT('nro_guia',tdc.nro_guia,'despacho',(select sum(tdd.despacho) from tbl2_despachos_det tdd where tdc.idx = tdd.id_despacho_CAB)))
-	from tbl2_despachos_cab tdc
-	where tdc.id_guia_origen = t1.idx
-	) as despachos	
-	from tbl2_guias_traslado_cab t1
-	where t1.estado <> 'ANULADO' and t1.id_orden_CAB = ?
-	`,[id])
+      console.log("La ruta de la orden es:",ruta)
+      
+      let [info_guias] = await conn.query(`
+      select 
+      t1.*,
+      (select t0.identificador from tbl2_fases_produccion t0 where t0.ruta = t1.servicio) as color,
+      (
+      select JSON_ARRAYAGG(JSON_OBJECT('id',tdc.idx,'idguia',tdc.id_guia_origen,'nro_guia',tdc.nro_guia,'despacho',(select sum(tdd.despacho) from tbl2_despachos_det tdd where tdc.idx = tdd.id_despacho_CAB)))
+      from tbl2_despachos_cab tdc
+      where tdc.id_guia_origen = t1.idx
+      ) as despachos	
+      from tbl2_guias_traslado_cab t1
+      where t1.estado <> 'ANULADO' and t1.id_orden_CAB = ?
+      `,[id])
 
-	let final = Object.groupBy(info_guias,(row)=>row.servicio)
+      let final = Object.groupBy(info_guias,(row)=>row.servicio)
 
-	let formateado = Object.keys(ruta).reduce((c,v)=>{
-		if(!Object.keys(c).includes(v)) c[v] = []
-		return c
-	},final)
+      let formateado = Object.keys(ruta).reduce((c,v)=>{
+        if(!Object.keys(c).includes(v)) c[v] = []
+        return c
+      },final)
 
-	console.log("La informafion organizada por servicio es:",formateado)
+	    console.log("La informafion organizada por servicio es:",formateado)
 
       return [ordenes,moldes,cortes,infoguias,formateado]
     } catch (err) {

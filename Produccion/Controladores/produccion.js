@@ -131,6 +131,75 @@ export class ProduccionController {
         }
       });
   }
+  static async verInfoDespacho(req, resp) {
+    const params = req.params
+    console.log("La informacion de los parametros es otro cambio:",params)
+    const data = await ProduccionModel.getInfoGuiaCab(params.idguia)
+    console.log("Mostrando informacin de la guia:",data)
+    // const data2 = await ProduccionModel.getInfoGuiaDet(params.id)
+    const data2 = await ProduccionModel.getInfoDespachoDet(params.id)
+    console.log("Mostrando la informacion del detalle del despacho:",data2)
+    const data3 = data[0].id_proveedor_CAB ? await ProduccionModel.searchProveedorById(data[0].id_proveedor_CAB) : [{ nom: data[0].responsable, ruc: '', direccion: data[0].destino }]
+    resp.render(
+      'guia_despacho',
+      {
+        color: 'black',
+        info: params,
+        cabecera: data[0],
+        // detalle:data2.filter(row=>!row.isprototipo),
+        detalle: data2,
+        // relleno:data2.filter(),
+        prototipos: data2.filter(row => row.isprototipo),
+        numproto: data2.filter(row => row.isprototipo).length,
+        date: (new Date(data[0].created_at)).toLocaleDateString('en-GB'),
+        time: (new Date(data[0].created_at)).toLocaleTimeString('en-GB'),
+        idguia: `${data[0].idx}`.padStart(10, 0),
+        totalunid: data2.reduce((carry, valor) => {
+          carry += valor.isprototipo ? 0 : parseFloat(valor.cantidad)
+          return carry;
+        }, 0),
+        proveedor: data3[0],
+        helpers: {
+          plusindex(index) {
+            return index + 1
+          }
+        }
+      },async (err, html) => {
+        try {  
+          console.log("La condicion de busqueda es la siguiente:",params.condicion)
+          if(params.condicion == 2){
+            console.log("Dentro de la codicion 1 vista pdf")
+            const browser = await puppeteer.launch();
+            const version = await browser.version();
+            console.log(`Versión de Chrome: ${version}`);
+            const page = await browser.newPage();
+            await page.setContent(html);
+            const pdfOptions = {
+              width: '20cm',
+              height: '27.94cm',
+              landscape: false,
+              printBackground: true,
+              margin: {
+                left: 0,
+                right: 0
+              }
+            };
+            const pdfBuffer = await page.pdf(pdfOptions);
+            await browser.close();
+            resp.send({ data: pdfBuffer.toString('base64') })
+          }else{
+            console.log("Dentro de la condicion 2 vista html")
+            resp.send(html)
+          }
+        } catch (error) {
+          resp.status(500).send('Error al generar el PDF');
+          // await browser.close();
+        } finally {
+          // await browser.close();
+        }
+      });
+  }
+
   static async exportInfoDespacho(req, resp) {
     const params = req.params
     const data = await ProduccionModel.getInfoGuiaCab(params.idguia)
