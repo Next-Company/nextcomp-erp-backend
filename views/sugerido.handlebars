@@ -1,0 +1,77 @@
+<style>
+  div#main div.cell{
+    border:1px solid red;
+  }
+  div#body{
+    display: flex;
+    flex-direction: row;
+  }
+  div#body div:first-child div:first-child{
+    flex:1;
+  }
+  div#body > div:nth-child(2) > div{
+    display: flex;
+    flex-direction: row;
+  }
+  div.combo{
+    display: flex;
+    flex-direction: column;
+  }
+  div.talla{
+    display: flex;
+    flex-direction: column;
+  }
+  div.cantidad{
+    display: flex;
+    flex-direction: column;
+  }
+  div#orden div:not(:first-child){
+    display: flex;
+    flex-direction: row;
+  }
+</style>
+<div>
+  {{#relleno cabecera}}
+  {{/relleno}}
+
+  {{!-- <div id="main" style="display:table;border-collapse:collapse;">
+    <div style="display:table-row;">
+      <div style="display:table-cell;">
+        
+        <div id="main" style="display:table;border-collapse:collapse;">
+          <div style="display:table-row">
+            <div style="display:table-cell;width:100px;">
+              sasdf
+            </div>
+            <div style="display:table-cell">
+              sasdf
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <div style="display:table-row">
+      <div style="display:table-cell">
+        sasdf
+      </div>
+    </div>
+  </div>
+  </br>
+  <div id="main" style="display:table;border-collapse:collapse;">
+    <div style="display:table-row;">
+      <div style="display:table-cell;">
+        asdfasfd
+      </div>
+      <div style="display:table-cell;">
+        asdfasfd
+      </div>
+    </div>
+    <div style="display:table-row">
+      <div>
+        dsf
+      </div>
+    </div>
+  </div> --}}
+
+</div>

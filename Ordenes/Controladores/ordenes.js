@@ -223,4 +223,279 @@ export class OrdenesController {
     const data = await OrdenesModel.regulaLizzet()
     reply.json(data)
   }
+  static async printSugerido_back(req, reply) {
+    const params = req.params
+    const data = await OrdenesModel.getInfoPrintSugerido(params.idorden)
+    console.log("La info de la orde es:",data[0].ordenes_combos,data[0].ordenes_combos[0].fracciones)
+    
+    reply.render(
+      'sugerido',
+      {
+        cabecera: data[0],
+        helpers: {
+          plusindex(index) {
+            return index + 1
+          },
+          relleno: function(info){
+            let top = `
+              <div id="main">
+                <div id="header">
+                </div>
+                <div id="body">
+                  <div>
+                    <div>Image y datos</div>
+                    <div id="orden">
+                      <div>NEXT COMPANY</div>
+                      <div>
+                        <div>MARCA</div>
+                        <div>0</div>
+                      </div>
+                      <div>
+                        <div>MODELO</div>
+                        <div>0</div>
+                      </div>
+                      <div>
+                        <div>PROVEEDOR</div>
+                        <div>0</div>
+                      </div>
+                      <div>
+                        <div>TELA</div>
+                        <div>0</div>
+                      </div>
+                      <div>
+                        <div>CURVA</div>
+                        <div>0</div>
+                      </div>
+                      <div>
+                        <div>TALLAS</div>
+                        <div>0</div>
+                      </div>
+                      <div>
+                        <div>CANTIDAD</div>
+                        <div>0</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+              `
+            let down = `
+                  </div>
+                </div>
+                <div id="footer" style="text-align:center;">
+                  <div >
+                    NOTA - LIQUIDAR ROLLO COMPLETO
+                  </div>
+                  <div >
+                    LA CALIDAD ES RESPONSABILIDAD DE TODOS
+                  </div>
+                </div>
+              </div>
+              `
+            let middle = info.ordenes_combos.map(row=>{
+              return `
+                  <div>
+                    <div class="combo">
+                      <div>${row.color_combo}</div>
+                      <div>${row.fracciones.reduce((c,v)=>c + parseInt(v.cantidad),0)}</div>
+                    </div>
+                    <div class="talla">
+                      ${row.fracciones.map(row=>`<div>${row.talla}</div>`).join('\n')}
+                    </div>
+                    <div class="cantidad">
+                      ${row.fracciones.map(row=>`<div>${row.cantidad}</div>`).join('\n')}
+                    </div>
+                    <div>tela principal</div>
+                    <div>jersey</div>
+                    <div>otro</div>
+                  </div>
+              `
+            }).join('\n')
+            return top + middle + down
+            // return '<div>Hola mundo</div>'
+        },
+        }
+      });
+  }
+  static async printSugerido(req, reply) {
+    const params = req.params
+    const data = await OrdenesModel.getInfoPrintSugerido(params.idorden)
+    console.log("La info de la orde es:",data[0].ordenes_combos,data[0].ordenes_combos[0].fracciones)
+
+    // La info de la orde es: 
+    // ordenes_combos = [
+    //   {
+    //     fracciones: [ [Object], [Object], [Object], [Object], [Object], [Object] ],
+    //     color_combo: 'NEGRO',
+    //     id_orden_CAB: 207,
+    //     cantidad_combo: 112
+    //   },
+    //   {
+    //     fracciones: [ [Object], [Object], [Object], [Object], [Object], [Object] ],
+    //     color_combo: 'IVORY',
+    //     id_orden_CAB: 207,
+    //     cantidad_combo: 56
+    //   },
+    //   {
+    //     fracciones: [ [Object], [Object], [Object], [Object], [Object], [Object] ],
+    //     color_combo: 'MELANGE',
+    //     id_orden_CAB: 207,
+    //     cantidad_combo: 56
+    //   },
+    //   {
+    //     fracciones: [ [Object], [Object], [Object], [Object], [Object], [Object] ],
+    //     color_combo: 'VERDE PETROLEO',
+    //     id_orden_CAB: 207,
+    //     cantidad_combo: 56
+    //   }
+    // ] 
+    // fracciones = [
+    //   { talla: 'l', cantidad: 32, id_combo_CAB: 473 },
+    //   { talla: 'm', cantidad: 40, id_combo_CAB: 473 },
+    //   { talla: 's', cantidad: 24, id_combo_CAB: 473 },
+    //   { talla: 'xl', cantidad: 16, id_combo_CAB: 473 },
+    //   { talla: 'xs', cantidad: 0, id_combo_CAB: 473 },
+    //   { talla: 'xxl', cantidad: 0, id_combo_CAB: 473 }
+    // ]
+    
+    reply.render(
+      'sugerido',
+      {
+        cabecera: data[0],
+        helpers: {
+          plusindex(index) {
+            return index + 1
+          },
+          relleno: function(info){
+            let top = `
+              <div id="main" style="display:table;border-collapse:collapse;">
+                <div id="header" style="display:table-row;">
+                </div>
+                <div id="body" style="display:table-row;">
+                  <div class="cell" style="display:table-cell;">
+                    <div>Image y datos</div>
+                    <div id="orden">
+                      <div>NEXT COMPANY</div>
+                      <div>
+                        <div>MARCA</div>
+                        <div>0</div>
+                      </div>
+                      <div>
+                        <div>MODELO</div>
+                        <div>0</div>
+                      </div>
+                      <div>
+                        <div>PROVEEDOR</div>
+                        <div>0</div>
+                      </div>
+                      <div>
+                        <div>TELA</div>
+                        <div>0</div>
+                      </div>
+                      <div>
+                        <div>CURVA</div>
+                        <div>0</div>
+                      </div>
+                      <div>
+                        <div>TALLAS</div>
+                        <div>0</div>
+                      </div>
+                      <div>
+                        <div>CANTIDAD</div>
+                        <div>0</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div style="display:table-cell;">sdffd
+              `
+            let down = `
+                  </div>
+                </div>
+                <div id="footer" style="display:table-row;">
+                  <div style="display:table;">
+                    <div style="display:table-row;">
+                      <div style="display:table-cell;">
+                        NOTA - LIQUIDAR ROLLO COMPLETO
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div id="footer" style="display:table-row;text-align:center;">
+                  LA CALIDAD ES RESPONSABILIDAD DE TODOS
+                </div>
+              </div>
+              `
+            let middle = info.ordenes_combos.map(row=>{
+              return `
+                  <div style="display:table-row;">
+                    <div class="combo">
+                      <div class="cell">${row.color_combo}</div>
+                      <div class="cell">${row.fracciones.reduce((c,v)=>c + parseInt(v.cantidad),0)}</div>
+                    </div>
+                    <div class="talla">
+                      ${row.fracciones.map(row=>`<div class="cell">${row.talla}</div>`).join('\n')}
+                    </div>
+                    <div class="cantidad">
+                      ${row.fracciones.map(row=>`<div class="cell">${row.cantidad}</div>`).join('\n')}
+                    </div>
+                    <div class="cell">tela principal</div>
+                    <div class="cell">jersey</div>
+                    <div class="cell">otro</div>
+                  </div>
+              `
+            }).join('\n')
+            return top + middle + down
+            // return '<div>Hola mundo</div>'
+        },
+        }
+      });
+  }
+  static async printSugerido_(req, reply) {
+    const params = req.params
+    // const data = await OrdenesModel.getInfoPrintSugerido(params.idorden)
+    // cons
+    
+    reply.render(
+      'sugerido',
+      {
+        helpers: {
+          plusindex(index) {
+            return index + 1
+          },
+          relleno: function(info){
+            
+            // return `
+            //   <div id="main" style="display:table;border-collapse:collapse;">
+            //     <div style="display:table-row">
+            //       <div style="display:table-cell;width:100px;">
+            //         sasdf
+            //       </div>
+            //       <div style="display:table-cell">
+            //         sasdf
+            //       </div>
+            //     </div>
+            //     <div style="display:table-row">
+            //       <div style="display:table-cell">
+            //         sasdf
+            //       </div>
+            //     </div>
+            //   </div>
+            // `
+            return `
+              <table>
+                <tbody>
+                  <tr>
+                    <td>COMBO</td>
+                    <td>COMBO2</td>
+                    <td>COMBO1</td>
+                  </tr>
+                  <tr></tr>
+                  <tr></tr>
+                </tbody>
+              </table>
+            
+            `
+        },
+        }
+      });
+  }
 }

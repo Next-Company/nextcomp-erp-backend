@@ -2,9 +2,23 @@ import { raceWith } from "puppeteer-core/lib/esm/third_party/rxjs/rxjs.js";
 import { configs } from "../../Main/utils.js";
 import mysql from "mysql2/promise";
 import { ConsoleMessage } from "puppeteer-core";
+import { CdpKeyboard } from "puppeteer-core";
 // import { inventario } from "../../Main/config.js";
 
 export class OrdenesModel {
+  static async getInfoPrintSugerido(id){
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      const [info] = await conn.query("select *from viewProduccionOrdenesV2 where idx = ?",[id])
+      return info
+    } catch(error){
+      
+    } finally{
+      if(conn) await conn.end()
+    }
+  }
   static async getOrdenes(search) {
     let conn
     try {
@@ -692,29 +706,62 @@ export class OrdenesModel {
               console.log("Imprimiendo acumulado :",acumulado)
               await conn.query(`UPDATE tbl2_fases_prod_hojacorte SET ${acumulado.join(',')} WHERE idx in (${base_update.map(row=>row.idx).join(',')}) and id_cab_orden = ?`,[id_orden])
 
-              
-              // let [validacion] = await conn.query("SELECT id_corte_CAB FROM tbl2_guias_traslado_cab WHERE estado <> 'ANULADO' and id_corte_CAB in (" + [base_update.map(row=>row.idx).toString()] + ")")
-              let [validacion] = await conn.query("SELECT id_corte_CAB FROM tbl2_guias_traslado_cab WHERE estado <> 'ANULADO' and id_corte_CAB = ?",[parseInt(corte['idx'])])
-              // console.log("La validacion del corte es:",validacion)
-              // base_update = base_update.filter(row=>!validacion.map(item=>item.id_corte_CAB).includes(row.idx))
+              for(let combo of [...corte.combos]){
 
-              if(!(validacion.length > 0)){
-                for(let combo of [...corte.combos]){
-                  console.log("La info del combo es:",combo)
+                let [validacion] = await conn.query(`SELECT *FROM tbl2_guias_traslado_cab t1 JOIN tbl2_guias_traslado_det t2 ON t1.idx = t2.id_guia_CAB WHERE t1.tipo = 'SERVICIOS' AND t1.id_corte_CAB = ? AND t2.id_combo = ?`,[parseInt(corte['idx']),combo.idx ?? 0])
+
+                if(validacion.length == 0){
+                  await conn.query("DELETE FROM tbl2_fases_prod_hojacorte_combos WHERE idx = ?",[combo.idx])
+                  await conn.query("DELETE FROM tbl2_fases_prod_hojacorte_combos_fracciones WHERE id_combo_CAB = ?",[combo.idx])
   
-                  await conn.query("delete from tbl2_fases_prod_hojacorte_combos where idx = ?",[combo.idx])
-                  await conn.query("delete from tbl2_fases_prod_hojacorte_combos_fracciones where id_combo_CAB = ?",[combo.idx])
+                  let [info_insert] = await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB,color_combo,cantidad_combo) VALUES (?,?,?)",[corte.idx,combo.color_combo,combo.cantidad_combo])
   
-                  let [info_insert] = await conn.query("insert into tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB,color_combo,cantidad_combo) values (?,?,?)",[corte.idx,combo.color_combo,combo.cantidad_combo])
-  
-                  const fraccionado = combo.fracciones.reduce((c,v)=>{
-                    c.push([info_insert.insertId,v.talla,v.cantidad,v.cantidad])
-                    return c
-                  },[])
+                  let fraccionado = []
+                  if(combo.idx && combo.idx !== ''){
+                    fraccionado = combo.fracciones.reduce((c,v)=>{
+                      c.push([info_insert.insertId,v.talla,v.cantidad,v.cantidad])
+                      return c
+                    },[])
+                  }else{
+                    fraccionado = ['xs','s','m','l','xl','xxl'].map(talla=>([info_insert.insertId,talla,combo[talla] ?? 0, combo[talla] ?? 0]))
+                  }
                   console.log("Info del fraccionado:",fraccionado)
-                  await conn.query("insert into tbl2_fases_prod_hojacorte_combos_fracciones(id_combo_CAB,talla,cantidad,produccion_total) values ? ",[fraccionado])
+                  await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos_fracciones(id_combo_CAB,talla,cantidad,produccion_total) values ? ",[fraccionado])
+                } else {
+                  await conn.query("UPDATE tbl2_fases_prod_hojacorte_combos SET color_combo = ?",[combo.color_combo])
                 }
+
               }
+              
+
+              /////////////////////
+              /// ANTERIOR ////////
+              //////////////////////
+              // let [validacion] = await conn.query("SELECT id_corte_CAB FROM tbl2_guias_traslado_cab WHERE estado <> 'ANULADO' and id_corte_CAB = ?",[parseInt(corte['idx'])])
+
+              // if(!(validacion.length > 0)){
+              //   for(let combo of [...corte.combos]){
+
+              //     await conn.query("delete from tbl2_fases_prod_hojacorte_combos where idx = ?",[combo.idx])
+              //     await conn.query("delete from tbl2_fases_prod_hojacorte_combos_fracciones where id_combo_CAB = ?",[combo.idx])
+  
+              //     let [info_insert] = await conn.query("insert into tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB,color_combo,cantidad_combo) values (?,?,?)",[corte.idx,combo.color_combo,combo.cantidad_combo])
+  
+              //     let fraccionado = []
+              //     if(combo.idx && combo.idx !== ''){
+              //       fraccionado = combo.fracciones.reduce((c,v)=>{
+              //         c.push([info_insert.insertId,v.talla,v.cantidad,v.cantidad])
+              //         return c
+              //       },[])
+              //     }else{
+              //       fraccionado = ['xs','s','m','l','xl','xxl'].map(talla=>([info_insert.insertId,talla,combo[talla] ?? 0, combo[talla] ?? 0]))
+              //     }
+  
+              //     console.log("Info del fraccionado:",fraccionado)
+              //     await conn.query("insert into tbl2_fases_prod_hojacorte_combos_fracciones(id_combo_CAB,talla,cantidad,produccion_total) values ? ",[fraccionado])
+              //   }
+              // }
+              ///////////////////
 
             }
             return true
