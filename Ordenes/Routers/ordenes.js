@@ -3,6 +3,7 @@ import { OrdenesController } from "../Controladores/ordenes.js";
 
 export const ordenesRouter = Router()
 
+ordenesRouter.get('/getmaterialesproduccion',OrdenesController.getMaterialesProduccion)
 ordenesRouter.get('/getfasesproduccion',OrdenesController.getFasesProduccion)
 ordenesRouter.get('/getfasesproduccion/:categoria',OrdenesController.getFasesProduccion)
 ordenesRouter.get("/getordenes/",OrdenesController.getOrdenes)
@@ -22,5 +23,5 @@ ordenesRouter.post("/saveFaseMolde",OrdenesController.saveFaseMolde)
 ordenesRouter.post("/saveFaseCorte",OrdenesController.saveFaseCorte)
 
 ordenesRouter.get("/lizzet/:id",OrdenesController.regulaLizzet)
-ordenesRouter.get("/printsugerido/:idorden",OrdenesController.printSugerido)
+ordenesRouter.get("/printsugerido/:idorden",OrdenesController.printSugeridoV3)
 

@@ -1,6 +1,7 @@
 // import PDFDocument from "pdfkit"
 import fs from "node:fs/promises"
 import path from 'node:path';
+import puppeteer from 'puppeteer';
 import { Client } from "basic-ftp"
 // import puppeteer from 'puppeteer';
 // import { OtherTarget } from "puppeteer-core";
@@ -215,6 +216,10 @@ export class OrdenesController {
     // console.log("Info req es:",req)
     const categoria = req.params.categoria ?? ''
     const data = await OrdenesModel.getFasesProduccion(categoria)
+    reply.json(data)
+  }
+  static async getMaterialesProduccion(req, reply) {
+    const data = await OrdenesModel.getMaterialesProduccion()
     reply.json(data)
   }
   static async regulaLizzet(req, reply) {
@@ -497,5 +502,459 @@ export class OrdenesController {
         },
         }
       });
+  }
+  static async printSugeridoV2(req, reply) {
+    const params = req.params
+    const data = await OrdenesModel.getInfoPrintSugerido(params.idorden)
+    console.log("La info de la orde es:",data[0].ordenes_combos,data[0].ordenes_combos[0].fracciones)
+
+    // La info de la orde es: 
+    // ordenes_combos = [
+    //   {
+    //     fracciones: [ [Object], [Object], [Object], [Object], [Object], [Object] ],
+    //     color_combo: 'NEGRO',
+    //     id_orden_CAB: 207,
+    //     cantidad_combo: 112
+    //   },
+    //   {
+    //     fracciones: [ [Object], [Object], [Object], [Object], [Object], [Object] ],
+    //     color_combo: 'IVORY',
+    //     id_orden_CAB: 207,
+    //     cantidad_combo: 56
+    //   },
+    //   {
+    //     fracciones: [ [Object], [Object], [Object], [Object], [Object], [Object] ],
+    //     color_combo: 'MELANGE',
+    //     id_orden_CAB: 207,
+    //     cantidad_combo: 56
+    //   },
+    //   {
+    //     fracciones: [ [Object], [Object], [Object], [Object], [Object], [Object] ],
+    //     color_combo: 'VERDE PETROLEO',
+    //     id_orden_CAB: 207,
+    //     cantidad_combo: 56
+    //   }
+    // ] 
+    // fracciones = [
+    //   { talla: 'l', cantidad: 32, id_combo_CAB: 473 },
+    //   { talla: 'm', cantidad: 40, id_combo_CAB: 473 },
+    //   { talla: 's', cantidad: 24, id_combo_CAB: 473 },
+    //   { talla: 'xl', cantidad: 16, id_combo_CAB: 473 },
+    //   { talla: 'xs', cantidad: 0, id_combo_CAB: 473 },
+    //   { talla: 'xxl', cantidad: 0, id_combo_CAB: 473 }
+    // ]
+    
+    reply.render(
+      'sugerido',
+      {
+        cabecera: data[0],
+        helpers: {
+          plusindex(index) {
+            return index + 1
+          },
+          relleno: function(info){
+            console.log("La infomarca de la cabecera es:",info)
+            const tallas = {'10':'10','12':'12','14':'14','16':'16','xs':'XS/26','s':'S/28','m':'M/30','l':'L/32','xl':'XL/34','xxl':'XXL/36'}
+            const materiales = eval(info.materiales_produccion) ?? []
+            const combos = JSON.parse(JSON.stringify(info.ordenes_combos))
+            let consolidado = []
+
+            if(combos.length > 6){
+              let limit = combos.length - parseInt(combos.length / 2)
+              for(let x = 0; x < limit; x++){
+                consolidado.push([combos.shift() ?? {},combos.shift() ?? {}])
+              }
+            }else{
+              consolidado = combos.map(row=>[row])
+            }
+            console.log("Los combos arreglados son:",consolidado)
+
+            let middle = info.ordenes_combos.map((row,key)=>{          
+              const rowspan = row.fracciones.filter(row=>parseInt(row.cantidad) > 0).length
+              row.fracciones = Object.keys(tallas).reduce((c,v)=>{
+                if(row.fracciones.map(row=>row.talla).includes(v)){
+                  c.push({...row.fracciones.filter(row=>row.talla == v)[0],talla:tallas[v]})
+                }
+                return c
+              },[])
+              let filas = row.fracciones.filter(row=>parseInt(row.cantidad) > 0).map((row2,key2)=>{
+                console.log("Producto rowspan:",info.ordenes_combos.length,row.fracciones.length)
+                return `
+                  <tr>
+                    ${key2 == 0 && key == 0 
+                      ? `
+                        <td rowspan="${info.ordenes_combos.length*row.fracciones.filter(row=>parseInt(row.cantidad)>0).length}" style="padding:-1px">
+                          <div style="display:flex;flex-direction:column;height:100%;margin:-2px;">
+                            <div style="flex:1;backgroun">
+                              <div style="height: 100%;background: gray;overflow: hidden;display: flex; justify-content: center;">
+                                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQEedjjRZmK22NHyPgV8boGdiMPyE8VIC7VUw&s" style="width:100%;"/>
+                              </div>
+                            </div>
+                            <div style="flex:1;">
+                              <table border="1" style="border-collapse:collapse;width:100%;height:100%;text-align:center;">
+                                <tr><td colspan="2" style="background-color:orange;">${info.cliente}</td></tr>
+                                <tr><td>MARCA</td><td>${info.marca}</td></tr>
+                                <tr><td>MODELO</td><td>${info.modelos}</td></tr>
+                                <tr><td>BASE</td><td>${info.base}</td></tr>
+                                <tr><td>PROVEEDOR</td><td>${info.proveedor}</td></tr>
+                                <tr><td>TELA</td><td>OP/${('00000000' + info.orden_ref).substring(5)}</td></tr>
+                                <tr><td>CURVA</td><td>${info.curva ?? 'curva'}</td></tr>
+                                <tr><td>TALLAS</td><td>${info.ordenes_combos[0].fracciones.filter(row=>parseInt(row.cantidad) > 0).map(row=>row.talla).join(" - ")}</td></tr>
+                                <tr><td>CANTIDAD</td><td>${info.ordenes_combos.reduce((c,v)=>c+parseInt(v.cantidad_combo),0)}</td></tr>
+                              </table>
+                            </div>
+                          </div>
+                        </td>
+                      ` 
+                      : ''} 
+                    ${key2 == 0 
+                      ? `
+                        <td rowspan='${rowspan}'>
+                          <div style="display:flex;flex-direction:column;height:100%;background-color:#b5e1ff;">
+                            <div style="flex:1;display:flex;justify-content:center;align-items:center;text-align:center;">
+                              ${row.color_combo}
+                            </div>
+                            <div style="height:20%;background-color:yellow;display:flex;justify-content:center;align-items:center;">
+                              ${row.cantidad_combo}
+                            </div>
+                          </div>
+                          
+                        </td>` 
+                      : ""
+                    }
+                    <td style="text-align:center;">${row2.talla}</td>
+                    <td style="text-align:center;">${row2.cantidad}</td>
+                    ${
+                      key2 == 0 ? materiales.map(row=>"<td rowspan='" + rowspan +"'></td>").join("\n") : ""
+                    }
+                  </tr>
+                `
+              })              
+              return filas.join("\n")
+            }).join('\n')
+   
+            return `
+              <table border="1" style="border-collapse:collapse;width:100%;height:100vh">
+                <tr style="background-color:#b5e1ff;height:40px;">
+                  <th style="min-width:200px;">FOTO DE PRENDA</th>
+                  <th style="min-width:120px;">COLOR</th>
+                  <th style="">TALLA</th>
+                  <th style="">CANTIDAD</th>
+                  ${
+                    materiales.length > 0 
+                    ? materiales.map(row=>"<th style='width:25%;'>"+ row +"</th>").join("\n")
+                    : ["","",""].map(row=>"<th style='width:25%;'>"+ row +"</th>").join("\n")
+                  }
+                </tr>
+                ${middle}
+                <tr>
+                  <td style="text-align:center;height:30px;" colspan="7">NOTA.- LIQUIDAR ROLLO COMPLETO</td>
+                </tr>
+                <tr>
+                  <td style="text-align:center;background-color:yellow;font-size:10px;height:20px;" colspan="7">LA CALIDAD ES RESPONSABILIDAD DE TODOS</td>
+                </tr>
+              </table>
+            `
+            // return '<div>Hola mundo</div>'
+          },
+        }
+      }
+    );
+
+
+    // ,
+    //   async (err, html) => {
+    //     try {
+    //       const browser = await puppeteer.launch();
+
+    //       const version = await browser.version();
+    //       console.log(`Versión de Chrome: ${version}`);
+    //       const page = await browser.newPage();
+    //       await page.setContent(html);
+
+    //       const pdfOptions = {
+    //         landscape: true,
+    //         printBackground: true,
+    //         margin: {
+    //           left: 0,
+    //           right: 0
+    //         }
+    //         , scale: 1
+    //       };
+
+    //       const pdfBuffer = await page.pdf(pdfOptions);
+    //       await browser.close();
+    //       // res.send({ data: pdfBuffer.toString('base64') })
+    //       console.log("aBuffer:",pdfBuffer)
+    //       reply.send(pdfBuffer)
+    //       // reply.send(pdfBuffer)
+    //     } catch (error) {
+    //       reply.status(500).send('Error al generar el PDF');
+    //       // await browser.close();
+    //     } finally {
+    //       // await browser.close();
+    //     }
+    //   }
+
+  }
+  static async printSugeridoV3(req, reply) {
+    const params = req.params
+    const data = await OrdenesModel.getInfoPrintSugerido(params.idorden)
+    console.log("La info de la orde es:",data[0].ordenes_combos,data[0].ordenes_combos[0].fracciones)
+
+    // La info de la orde es: 
+    // ordenes_combos = [
+    //   {
+    //     fracciones: [ [Object], [Object], [Object], [Object], [Object], [Object] ],
+    //     color_combo: 'NEGRO',
+    //     id_orden_CAB: 207,
+    //     cantidad_combo: 112
+    //   },
+    //   {
+    //     fracciones: [ [Object], [Object], [Object], [Object], [Object], [Object] ],
+    //     color_combo: 'IVORY',
+    //     id_orden_CAB: 207,
+    //     cantidad_combo: 56
+    //   },
+    //   {
+    //     fracciones: [ [Object], [Object], [Object], [Object], [Object], [Object] ],
+    //     color_combo: 'MELANGE',
+    //     id_orden_CAB: 207,
+    //     cantidad_combo: 56
+    //   },
+    //   {
+    //     fracciones: [ [Object], [Object], [Object], [Object], [Object], [Object] ],
+    //     color_combo: 'VERDE PETROLEO',
+    //     id_orden_CAB: 207,
+    //     cantidad_combo: 56
+    //   }
+    // ] 
+    // fracciones = [
+    //   { talla: 'l', cantidad: 32, id_combo_CAB: 473 },
+    //   { talla: 'm', cantidad: 40, id_combo_CAB: 473 },
+    //   { talla: 's', cantidad: 24, id_combo_CAB: 473 },
+    //   { talla: 'xl', cantidad: 16, id_combo_CAB: 473 },
+    //   { talla: 'xs', cantidad: 0, id_combo_CAB: 473 },
+    //   { talla: 'xxl', cantidad: 0, id_combo_CAB: 473 }
+    // ]
+    
+    reply.render(
+      'sugerido',
+      {
+        cabecera: data[0],
+        helpers: {
+          plusindex(index) {
+            return index + 1
+          },
+          relleno: function(info){
+            console.log("La infomarca de la cabecera es:",info)
+            const tallas = {'10':'10','12':'12','14':'14','16':'16','xs':'XS/26','s':'S/28','m':'M/30','l':'L/32','xl':'XL/34','xxl':'XXL/36'}
+            const materiales = eval(info.materiales_produccion) ?? ['','','']
+            const combos = JSON.parse(JSON.stringify(info.ordenes_combos))
+            const relleno = {
+              fracciones:[],
+              color_combo:'',
+              id_orden_CAB:0,
+              cantidad_combo:0
+            }
+            let consolidado = []
+
+            if(combos.length > 6){
+              let limit = combos.length - parseInt(combos.length / 2)
+              for(let x = 0; x < limit; x++){
+                consolidado.push([combos.shift() ?? {},combos.shift() ?? relleno])
+              }
+            }else{
+              consolidado = combos.map(row=>[row])
+            }
+            console.log("Los combos arreglados son:",consolidado)
+
+            let middle = consolidado.map((row,key)=>{      
+              // console.log("Info del afraccionesn",row[0].fracciones,row[1].fracciones)   
+              let rowspan1 = 0, rowspan2 = 0 
+
+              if(consolidado[0].length > 0){
+                rowspan1 = row[0].fracciones.length > 0 ? row[0].fracciones.filter(row=>parseInt(row.cantidad) > 0).length : 0
+                row[0].fracciones = Object.keys(tallas).reduce((c,v)=>{
+                  if(row[0].fracciones.filter(row=>parseInt(row.cantidad) > 0).map(row=>row.talla).includes(v)){
+                    c.push({...row[0].fracciones.filter(row=>row.talla == v)[0],talla:tallas[v]})
+                  }
+                  return c
+                },[])
+              }else{
+                rowspan2 = row[1].fracciones.length > 0 ? row[1].fracciones.filter(row=>parseInt(row.cantidad) > 0).length : 0
+                row[1].fracciones = Object.keys(tallas).reduce((c,v)=>{
+                  if(row[1].fracciones.filter(row=>parseInt(row.cantidad) > 0).map(row=>row.talla).includes(v)){
+                    c.push({...row[1].fracciones.filter(row=>row.talla == v)[0],talla:tallas[v]})
+                  }
+                  return c
+                },[])
+              }
+              let lista = Array.from({length:[rowspan1,rowspan2].sort((a,b)=> b - a)[0]})
+
+              // let filas = row.fracciones.filter(row=>parseInt(row.cantidad) > 0).map((row2,key2)=>{
+              let filas = lista.map((row2,key2)=>{
+                // console.log("Producto rowspan:",consolidado.length,row.fracciones.length)
+                return `
+                  <tr>
+                    ${key2 == 0 && key == 0 
+                      ? `
+                        <td rowspan="${consolidado.length*lista.length}" style="padding:-1px">
+                          <div style="display:flex;flex-direction:column;height:100%;margin:-2px;">
+                            <div style="flex:1;backgroun">
+                              <div style="height: 100%;background: gray;overflow: hidden;display: flex; justify-content: center;">
+                                <img src="" style="width:100%;"/>
+                              </div>
+                            </div>
+                            <div style="flex:1;">
+                              <table border="1" style="border-collapse:collapse;width:100%;height:100%;text-align:center;">
+                                <tr><td colspan="2" style="background-color:orange;">${info.cliente}</td></tr>
+                                <tr><td>MARCA</td><td>${info.marca}</td></tr>
+                                <tr><td>MODELO</td><td>${info.modelos}</td></tr>
+                                <tr><td>BASE</td><td>${info.base}</td></tr>
+                                <tr><td>PROVEEDOR</td><td>${info.proveedor}</td></tr>
+                                <tr><td>TELA</td><td>OP/${('00000000' + info.orden_ref).substring(5)}</td></tr>
+                                <tr><td>CURVA</td><td>${info.curva ?? 'curva'}</td></tr>
+                                <tr><td>TALLAS</td><td>0</td></tr>
+                                <tr><td>CANTIDAD</td><td>0</td></tr>
+                              </table>
+                            </div>
+                          </div>
+                        </td>
+                      ` 
+                      : ''
+                    } 
+                    
+                    ${key2 == 0 
+                      ? `
+                        <td rowspan='${rowspan1 ? rowspan1 : lista.length}'>
+                          <div style="display:flex;flex-direction:column;height:100%;background-color:#b5e1ff;">
+                            <div style="flex:1;display:flex;justify-content:center;align-items:center;text-align:center;">
+                              ${row[0].color_combo}
+                            </div>
+                            <div style="height:20%;background-color:yellow;display:flex;justify-content:center;align-items:center;">
+                              ${row[0].cantidad_combo}
+                            </div>
+                          </div>
+                          
+                        </td>` 
+                      : ""
+                    }
+                    <td style="text-align:center;">${row[0].fracciones[key2].talla}</td>
+                    <td style="text-align:center;">${row[0].fracciones[key2].cantidad}</td>
+                    ${
+                      key2 == 0 ? materiales.map(row=>"<td rowspan='" + (rowspan1 ? rowspan1 : lista.length) +"'></td>").join("\n") : ""
+                    }
+                    ${consolidado[0].length > 1 && key2 == 0 
+                      ? `
+                        <td rowspan='${rowspan2 ? rowspan2 : lista.length}'>
+                          <div style="display:flex;flex-direction:column;height:100%;background-color:#b5e1ff;">
+                            <div style="flex:1;display:flex;justify-content:center;align-items:center;text-align:center;">
+                              ${row[1].color_combo}
+                            </div>
+                            <div style="height:20%;background-color:yellow;display:flex;justify-content:center;align-items:center;">
+                              ${row[1].cantidad_combo}
+                            </div>
+                          </div>
+                          
+                        </td>` 
+                      : ""
+                    }
+                    ${
+                      consolidado[0].length > 1 
+                      ? `
+                        <td style="text-align:center;">${row[1].fracciones.length > 0 ? row[1].fracciones[key2].talla : ''}</td>
+                        <td style="text-align:center;">${row[1].fracciones.length > 0 ? row[1].fracciones[key2].cantidad : ''}</td>
+                      `
+                      : ''
+                    }
+                    
+                    ${
+                      consolidado[0].length > 1 && key2 == 0 ? materiales.map(row=>"<td rowspan='" + (rowspan2 ? rowspan2 : lista.length) +"'></td>").join("\n") : ""
+                    }
+                  </tr>
+                `
+              })              
+              return filas.join("\n")
+            }).join('\n')
+   
+            return `
+              <table border="1" style="border-collapse:collapse;width:100%;height:100vh">
+                <tr style="background-color:#b5e1ff;height:40px;">
+                  <th style="min-width:200px;">FOTO DE PRENDA</th>
+                  <th style="min-width:120px;">COLOR</th>
+                  <th style="">TALLA</th>
+                  <th style="">CANTIDAD</th>
+                  ${
+                    materiales.length > 0 
+                    ? materiales.map(row=>"<th style='width:calc(25% / " + consolidado[0].length + ");'>"+ row +"</th>").join("\n")
+                    : ["","",""].map(row=>"<th style='width:calc(25% / " + consolidado[0].length + ");'>"+ row +"</th>").join("\n")
+                  }
+                  ${
+                    consolidado[0].length > 1
+                    ? `
+                      <th style="min-width:120px;">COLOR</th>
+                      <th style="">TALLA</th>
+                      <th style="">CANTIDAD</th>
+                      ${
+                        materiales.length > 0 
+                        ? materiales.map(row=>"<th style='width:calc(25% / " + consolidado[0].length + ");'>"+ row +"</th>").join("\n")
+                        : ["","",""].map(row=>"<th style='width:calc(25% / " + consolidado[0].length + ");'>"+ row +"</th>").join("\n")
+                      }
+                    `
+                    : ''
+                  }
+                </tr>
+                ${middle}
+                <tr>
+                  <td style="text-align:center;height:30px;" colspan="${3*consolidado[0].length + materiales.length*consolidado[0].length + 1}">NOTA.- LIQUIDAR ROLLO COMPLETO</td>
+                </tr>
+                <tr>
+                  <td style="text-align:center;background-color:yellow;font-size:10px;height:20px;" colspan="${3*consolidado[0].length + materiales.length*consolidado[0].length + 1}">LA CALIDAD ES RESPONSABILIDAD DE TODOS</td>
+                </tr>
+              </table>
+            `
+            // return '<div>Hola mundo</div>'
+          },
+        }
+      }
+      ,
+      async (err, html) => {
+        try {
+          const browser = await puppeteer.launch();
+
+          const version = await browser.version();
+          console.log(`Versión de Chrome: ${version}`);
+          const page = await browser.newPage();
+          await page.setContent(html);
+
+          const pdfOptions = {
+            landscape: true,
+            printBackground: true,
+            margin: {
+              left: 0,
+              right: 0
+            }
+            , scale: 1
+          };
+
+          const pdfBuffer = await page.pdf(pdfOptions);
+          await browser.close();
+          reply.send({ data: pdfBuffer.toString('base64') })
+          // console.log("aBuffer:",pdfBuffer)
+          // reply.send(pdfBuffer)
+          // reply.send(pdfBuffer)
+        } catch (error) {
+          reply.status(500).send('Error al generar el PDF');
+          // await browser.close();
+        } finally {
+          // await browser.close();
+        }
+      }
+    );
+
+
+    
+
   }
 }

@@ -825,10 +825,11 @@ export class ProduccionController {
             return formateo
           },
           fuu(cabecera){
-            let condiciones = cabecera.id_proveedor_CAB !== '30208'
+            console.log("asldfalsdfj:",cabecera.id_proveedor_CAB,parseInt(cabecera.id_proveedor_CAB) !== 30208 ? 'a' : 'b')
+            let condiciones = parseInt(cabecera.id_proveedor_CAB) !== 30208
             ? `
               <tr>
-                <td colspan="9" style="height:15px;padding:10px;"><strong>OBSERVACIONES:</strong></td>
+                <td colspan="9" style="height:15px;padding:10px;"><strong>OBSERVACIONESsss:</strong></td>
               </tr>
               <tr>
                 <td colspan="9" style="padding:10px 10px 10px;font-size:8px;">

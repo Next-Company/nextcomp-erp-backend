@@ -11,7 +11,7 @@ export class OrdenesModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      const [info] = await conn.query("select *from viewProduccionOrdenesV2 where idx = ?",[id])
+      const [info] = await conn.query("SELECT *FROM viewProduccionOrdenesV2 t1 LEFT JOIN tbl2_pedidos_insumos_cab t2 on t1.id_pedido_origen = t2.idx WHERE t1.idx = ?",[id])
       return info
     } catch(error){
       
@@ -218,6 +218,22 @@ export class OrdenesModel {
       if (conn) {
         await conn.end();
       }
+    }
+  }
+  static async getMaterialesProduccion(categoria) {
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      
+      let [results] = await conn.query(`SELECT *FROM tbl2_materiales_sugerido WHERE ruc_ = '20522094120'`)
+
+      return results
+    } catch (err) {
+      console.log(err);
+      return { 'msg': err }
+    } finally {
+      if (conn) await conn.end();
     }
   }
   static async getFasesProduccion(categoria) {

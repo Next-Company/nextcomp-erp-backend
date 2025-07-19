@@ -1480,7 +1480,7 @@ export class ProduccionModel {
         console.log("Creandsssso")
         try {
 
-          const correlativo = await this.getNuevoPedido(cabecera.tipo)
+          const correlativo = await this.getNuevoPedido('TELAS')
 
           const [res, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_cab(orden_ref,fec_emision,fec_retorno,tipo,id_proveedor_CAB,proveedor,responsable,forma_pago,nro_contacto,observaciones,estado,moneda,igv,produccion,afec_retencion) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [correlativo, cabecera.fec_emision, cabecera.fec_retorno, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.forma_pago, cabecera.nro_contacto, cabecera.observaciones, cabecera.estado, cabecera.moneda, cabecera.igv, cabecera.produccion, cabecera.afec_retencion])
 
@@ -1495,7 +1495,8 @@ export class ProduccionModel {
           }
           await insert()
 
-          await conn.query("update tbl2_pedidos_insumos_correlativo set codigo_num = codigo_num + 1 where ruc_ = ? and anio = YEAR(NOW()) and tipo = ?",['20522094120',cabecera.tipo])
+          // await conn.query("update tbl2_pedidos_insumos_correlativo set codigo_num = codigo_num + 1 where ruc_ = ? and anio = YEAR(NOW()) and tipo = ?",['20522094120',cabecera.tipo])
+          await conn.query("update tbl2_pedidos_insumos_correlativo set codigo_num = codigo_num + 1 where ruc_ = ? and anio = YEAR(NOW()) and tipo = ?",['20522094120','TELAS'])
 
         } catch (err) {
           console.log("error en la consulta", err)
