@@ -773,7 +773,7 @@ export class OrdenesController {
               // console.log("Info del afraccionesn",row[0].fracciones,row[1].fracciones)   
               let rowspan1 = 0, rowspan2 = 0 
 
-              if(consolidado[0].length > 0){
+              if(consolidado[0].length > 1){
                 rowspan1 = row[0].fracciones.length > 0 ? row[0].fracciones.filter(row=>parseInt(row.cantidad) > 0).length : 0
                 row[0].fracciones = Object.keys(tallas).reduce((c,v)=>{
                   if(row[0].fracciones.filter(row=>parseInt(row.cantidad) > 0).map(row=>row.talla).includes(v)){
@@ -781,7 +781,6 @@ export class OrdenesController {
                   }
                   return c
                 },[])
-              }else{
                 rowspan2 = row[1].fracciones.length > 0 ? row[1].fracciones.filter(row=>parseInt(row.cantidad) > 0).length : 0
                 row[1].fracciones = Object.keys(tallas).reduce((c,v)=>{
                   if(row[1].fracciones.filter(row=>parseInt(row.cantidad) > 0).map(row=>row.talla).includes(v)){
@@ -789,14 +788,30 @@ export class OrdenesController {
                   }
                   return c
                 },[])
+              }else{
+                rowspan1 = row[0].fracciones.length > 0 ? row[0].fracciones.filter(row=>parseInt(row.cantidad) > 0).length : 0
+                row[0].fracciones = Object.keys(tallas).reduce((c,v)=>{
+                  if(row[0].fracciones.filter(row=>parseInt(row.cantidad) > 0).map(row=>row.talla).includes(v)){
+                    c.push({...row[0].fracciones.filter(row=>row.talla == v)[0],talla:tallas[v]})
+                  }
+                  return c
+                },[])
+                // rowspan2 = row[1].fracciones.length > 0 ? row[1].fracciones.filter(row=>parseInt(row.cantidad) > 0).length : 0
+                // row[1].fracciones = Object.keys(tallas).reduce((c,v)=>{
+                //   if(row[1].fracciones.filter(row=>parseInt(row.cantidad) > 0).map(row=>row.talla).includes(v)){
+                //     c.push({...row[1].fracciones.filter(row=>row.talla == v)[0],talla:tallas[v]})
+                //   }
+                //   return c
+                // },[])
               }
               let lista = Array.from({length:[rowspan1,rowspan2].sort((a,b)=> b - a)[0]})
+              console.log("La lista es la siguiente:",lista)
 
               // let filas = row.fracciones.filter(row=>parseInt(row.cantidad) > 0).map((row2,key2)=>{
               let filas = lista.map((row2,key2)=>{
                 // console.log("Producto rowspan:",consolidado.length,row.fracciones.length)
                 return `
-                  <tr>
+                  <tr style="height:30px;">
                     ${key2 == 0 && key == 0 
                       ? `
                         <td rowspan="${consolidado.length*lista.length}" style="padding:-1px">
@@ -816,7 +831,7 @@ export class OrdenesController {
                                 <tr><td>TELA</td><td>OP/${('00000000' + info.orden_ref).substring(5)}</td></tr>
                                 <tr><td>CURVA</td><td>${info.curva ?? 'curva'}</td></tr>
                                 <tr><td>TALLAS</td><td>0</td></tr>
-                                <tr><td>CANTIDAD</td><td>0</td></tr>
+                                <tr><td>CANTIDAD</td><td>${info.ordenes_combos.reduce((c,v)=>c+v.cantidad_combo,0)}</td></tr>
                               </table>
                             </div>
                           </div>
@@ -879,7 +894,7 @@ export class OrdenesController {
             }).join('\n')
    
             return `
-              <table border="1" style="border-collapse:collapse;width:100%;height:100vh">
+              <table border="1" style="border-collapse:collapse;width:100%;height:21cm;">
                 <tr style="background-color:#b5e1ff;height:40px;">
                   <th style="min-width:200px;">FOTO DE PRENDA</th>
                   <th style="min-width:120px;">COLOR</th>
