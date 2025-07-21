@@ -74,6 +74,7 @@ produccionRouter.get('/clienteslist/:search', ProduccionController.getListaClien
 // produccionRouter.get('/searchproveedorbyid/:id',ProduccionController.searchProveedorById)
 
 produccionRouter.post('/vistapreviapedido/:tipo', ProduccionController.VistaPreviaPedido)
+produccionRouter.post('/vistapreviapedidoavios/:tipo', ProduccionController.VistaPreviaPedidoAvios)
 // produccionRouter.post('/vistapreviapedidoavios/:tipo',ProduccionController.VistaPreviaPedidoAvios)
 
 

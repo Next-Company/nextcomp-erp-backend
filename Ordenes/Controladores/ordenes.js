@@ -116,8 +116,9 @@ export class OrdenesController {
       }
       client.close()
     }
-
+    console.log("Resputad del guardado de fase orden:",data,imagenes)
     if(imagenes.length > 0 && data.ok && data.filename){
+      console.log("Imagenes recibidads:",imagenes)
       let str = 'public/images';
       new Promise((resolve, reject) => {
         imagenes.forEach(async element => {
@@ -750,6 +751,7 @@ export class OrdenesController {
             console.log("La infomarca de la cabecera es:",info)
             const tallas = {'10':'10','12':'12','14':'14','16':'16','xs':'XS/26','s':'S/28','m':'M/30','l':'L/32','xl':'XL/34','xxl':'XXL/36'}
             const materiales = eval(info.materiales_produccion) ?? ['','','']
+			// const materiales = eval(pp) && eval(pp).length > 0 ? eval(pp) : ['','','']
             const combos = JSON.parse(JSON.stringify(info.ordenes_combos))
             const relleno = {
               fracciones:[],
@@ -811,17 +813,17 @@ export class OrdenesController {
               let filas = lista.map((row2,key2)=>{
                 // console.log("Producto rowspan:",consolidado.length,row.fracciones.length)
                 return `
-                  <tr style="height:30px;">
+                  <tr style="height:40px;">
                     ${key2 == 0 && key == 0 
                       ? `
                         <td rowspan="${consolidado.length*lista.length}" style="padding:-1px">
                           <div style="display:flex;flex-direction:column;height:100%;margin:-2px;">
-                            <div style="flex:1;backgroun">
-                              <div style="height: 100%;background: gray;overflow: hidden;display: flex; justify-content: center;">
-                                <img src="" style="width:100%;"/>
+                            <div style="flex:1;">
+                              <div style="height: 100%;overflow: hidden;display: flex; justify-content: center;padding:10px;background-color:#dddddd;background-image: url('https://jsjfact.com/facturador/imagenez/op_222.jpg');background-position: center;background-size: cover;background-origin: content-box;background-clip: content-box;">
+                                
                               </div>
                             </div>
-                            <div style="flex:1;">
+                            <div style="height:40%;">
                               <table border="1" style="border-collapse:collapse;width:100%;height:100%;text-align:center;">
                                 <tr><td colspan="2" style="background-color:orange;">${info.cliente}</td></tr>
                                 <tr><td>MARCA</td><td>${info.marca}</td></tr>
@@ -830,7 +832,7 @@ export class OrdenesController {
                                 <tr><td>PROVEEDOR</td><td>${info.proveedor}</td></tr>
                                 <tr><td>TELA</td><td>OP/${('00000000' + info.orden_ref).substring(5)}</td></tr>
                                 <tr><td>CURVA</td><td>${info.curva ?? 'curva'}</td></tr>
-                                <tr><td>TALLAS</td><td>0</td></tr>
+                                <tr><td>TALLAS</td><td style="font-size:10px;">${row[0].fracciones.map(item=>item.talla).join("-")}</td></tr>
                                 <tr><td>CANTIDAD</td><td>${info.ordenes_combos.reduce((c,v)=>c+v.cantidad_combo,0)}</td></tr>
                               </table>
                             </div>
@@ -855,8 +857,8 @@ export class OrdenesController {
                         </td>` 
                       : ""
                     }
-                    <td style="text-align:center;">${row[0].fracciones[key2].talla}</td>
-                    <td style="text-align:center;">${row[0].fracciones[key2].cantidad}</td>
+                    <td style="text-align:center;background-color:#b5e1ff;">${row[0].fracciones[key2].talla}</td>
+                    <td style="text-align:center;background-color:#dddddd;">${row[0].fracciones[key2].cantidad}</td>
                     ${
                       key2 == 0 ? materiales.map(row=>"<td rowspan='" + (rowspan1 ? rowspan1 : lista.length) +"'></td>").join("\n") : ""
                     }
@@ -878,8 +880,8 @@ export class OrdenesController {
                     ${
                       consolidado[0].length > 1 
                       ? `
-                        <td style="text-align:center;">${row[1].fracciones.length > 0 ? row[1].fracciones[key2].talla : ''}</td>
-                        <td style="text-align:center;">${row[1].fracciones.length > 0 ? row[1].fracciones[key2].cantidad : ''}</td>
+                        <td style="text-align:center;background-color:#b5e1ff;">${row[1].fracciones.length > 0 ? row[1].fracciones[key2].talla : ''}</td>
+                        <td style="text-align:center;background-color:#dddddd;">${row[1].fracciones.length > 0 ? row[1].fracciones[key2].cantidad : ''}</td>
                       `
                       : ''
                     }
@@ -894,12 +896,12 @@ export class OrdenesController {
             }).join('\n')
    
             return `
-              <table border="1" style="border-collapse:collapse;width:100%;height:21cm;">
-                <tr style="background-color:#b5e1ff;height:40px;">
+              <table>
+                <tr style="background-color:#b5e1ff;height:10px;">
                   <th style="min-width:200px;">FOTO DE PRENDA</th>
                   <th style="min-width:120px;">COLOR</th>
                   <th style="">TALLA</th>
-                  <th style="">CANTIDAD</th>
+                  <th style="">CANTID AD</th>
                   ${
                     materiales.length > 0 
                     ? materiales.map(row=>"<th style='width:calc(25% / " + consolidado[0].length + ");'>"+ row +"</th>").join("\n")
@@ -910,7 +912,7 @@ export class OrdenesController {
                     ? `
                       <th style="min-width:120px;">COLOR</th>
                       <th style="">TALLA</th>
-                      <th style="">CANTIDAD</th>
+                      <th style="">CANTID AD</th>
                       ${
                         materiales.length > 0 
                         ? materiales.map(row=>"<th style='width:calc(25% / " + consolidado[0].length + ");'>"+ row +"</th>").join("\n")
@@ -921,11 +923,11 @@ export class OrdenesController {
                   }
                 </tr>
                 ${middle}
-                <tr>
-                  <td style="text-align:center;height:30px;" colspan="${3*consolidado[0].length + materiales.length*consolidado[0].length + 1}">NOTA.- LIQUIDAR ROLLO COMPLETO</td>
+                <tr style="text-align:center;height:5px;">
+                  <td style="text-align:center;" colspan="${3*consolidado[0].length + materiales.length*consolidado[0].length + 1}">NOTA.- LIQUIDAR ROLLO COMPLETO</td>
                 </tr>
-                <tr>
-                  <td style="text-align:center;background-color:yellow;font-size:10px;height:20px;" colspan="${3*consolidado[0].length + materiales.length*consolidado[0].length + 1}">LA CALIDAD ES RESPONSABILIDAD DE TODOS</td>
+                <tr style="text-align:center;height:5px;">
+                  <td style="text-align:center;background-color:yellow;font-size:8px;" colspan="${3*consolidado[0].length + materiales.length*consolidado[0].length + 1}">LA CALIDAD ES RESPONSABILIDAD DE TODOS</td>
                 </tr>
               </table>
             `
@@ -944,11 +946,15 @@ export class OrdenesController {
           await page.setContent(html);
 
           const pdfOptions = {
+            width: '22cm',
+            height: '29.7cm',
             landscape: true,
             printBackground: true,
             margin: {
-              left: 0,
-              right: 0
+              left: 10,
+              right: 10,
+              top: 20,
+              bottom: 20
             }
             , scale: 1
           };
@@ -966,10 +972,12 @@ export class OrdenesController {
           // await browser.close();
         }
       }
+      
     );
 
-
     
+    
+
 
   }
 }

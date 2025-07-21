@@ -180,8 +180,9 @@ export class ProduccionModel {
       },[])
 
       let [fasesprod] = await conn.query("SELECT *FROM tbl2_fases_produccion")
+      let [materiales] = await conn.query("SELECT *FROM tbl2_materiales_sugerido WHERE ruc_ = '20522094120'")
   
-      return [ordenes,moldes,cortes,fasesprod]
+      return [ordenes,moldes,cortes,fasesprod,materiales]
     } catch (err) {
       console.log("Estamos en error:", err);
       return err

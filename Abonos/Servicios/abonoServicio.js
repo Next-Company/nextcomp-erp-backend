@@ -94,6 +94,7 @@ export default class AbonoServicio{
       sum(COALESCE(resumen.cantidad,0)) as cantidad,
       sum(COALESCE(resumen.despacho,0)) as despacho,
       sum(COALESCE(resumen.cancelado,0)) as cancelado,
+      sum(COALESCE(resumen.descuentos,0)) as descuentos,
       sum(COALESCE(resumen.importe,0)) as importe
  FROM
 (
@@ -114,7 +115,11 @@ export default class AbonoServicio{
 	      SELECT COALESCE(sum(tc.importe_conciliacion),0) as cancelado FROM tbl2_conciliaciones tc  
 	      JOIN tbl2_abonos ta on ta.idx = tc.id_abono_CAB 
 	      WHERE resumen.id_guia = tc.id_servicio_CAB
-	    ) as cancelado 
+	    ) as cancelado,
+      (
+        SELECT COALESCE(sum(tgta.importe),0) FROM tbl2_guias_traslado_adi tgta
+        WHERE tgta.id_guia_CAB = resumen.id_guia
+      ) as descuentos
     FROM
     (
       SELECT 
