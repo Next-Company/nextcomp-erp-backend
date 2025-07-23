@@ -1039,6 +1039,10 @@ export class OrdenesModel {
       let [info_guias] = await conn.query(`
       select 
       t1.*,
+      DATEDIFF(t1.fec_retorno,t1.fec_emision) as dias_pendientes,
+      (
+        select sum(cantidad) from tbl2_guias_traslado_det tgtd where tgtd.id_guia_CAB = t1.idx
+      ) as cantidad_servicio,
       (select t0.identificador from tbl2_fases_produccion t0 where t0.ruta = t1.servicio) as color,
       (
       select JSON_ARRAYAGG(JSON_OBJECT('id',tdc.idx,'idguia',tdc.id_guia_origen,'nro_guia',tdc.nro_guia,'despacho',(select sum(tdd.despacho) from tbl2_despachos_det tdd where tdc.idx = tdd.id_despacho_CAB)))

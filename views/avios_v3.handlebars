@@ -100,21 +100,29 @@
                                               </tr>
                                               <tr>
                                                 <td style="border:none;">
-                                                  <table class="contenido" style="border-collapse: collapse; border: 1px solid black;">
-                                                    <thead>
+                                                  <table class="contenido" style="border-collapse: collapse; border: 1px solid black;width:450px;" border="1">
+                                                    {{!-- <thead>
                                                       <tr>
                                                         <th style="height:25px;width:100px;font-weight:bolder;font-size:12px;" valing="middle">N° ORDEN</td>
                                                         <th style="height:25px;width:45px;font-weight:bolder">AL.</td>
                                                         <th style="height:25px;width:280px;font-size:12px;" colspan="8">{{datos.orden_ref}}</td>
                                                       </tr>
-                                                    </thead>
+                                                    </thead> --}}
                                                     <tbody>
                                                       <tr>
-                                                        <td style="height:20px;width:80px;font-size:8px;">FECHA PEDIDO</td>
+                                                        <td style="height:25px;font-weight:bolder;font-size:12px;text-align:left;padding-left:10px;" valing="middle" colspan="8">N° ORDEN</td>
+                                                        {{!-- <td style="height:25px;width:45px;font-weight:bolder">AL.</td> --}}
+                                                        <td style="height:20px;font-size:8px;">{{datos.orden_ref}}</td>
+                                                        <td style="height:20px;font-size:8px;">FECHA PEDIDO</td>
                                                         <td colspan="2" style="font-size:8px;"><strong style="font-size: inherit;">{{#fechaCorta datos.fec_emision_cuadre}}{{/fechaCorta}}</strong></td>
-                                                        <td colspan="2" style="font-size:8px;">FECHA ENTREGA</td>
-                                                        <td colspan="2" style="font-size:8px;width:50px;"><strong style="font-size: inherit;">{{#fechaCorta datos.fec_retorno_cuadre}}{{/fechaCorta}}</strong></td>
+                                                        <td style="height:20px;font-size:8px;">FECHA ENTREGA</td>
+                                                        <td style="font-size:8px;"><strong style="font-size: inherit;">{{#fechaCorta datos.fec_retorno_cuadre}}{{/fechaCorta}}</strong></td>
                                                       </tr>
+                                                      {{!-- <tr>
+                                                        <td style="font-size:12px;text-align:left;padding-left:10px;" colspan="8">{{datos.orden_ref}}</td>
+                                                        <td style="font-size:8px;">FECHA ENTREGA</td>
+                                                        <td style="font-size:8px;"><strong style="font-size: inherit;">{{#fechaCorta datos.fec_retorno_cuadre}}{{/fechaCorta}}</strong></td>
+                                                      </tr> --}}
                                                     </tbody>
                                                   </table>
                                                 </td>
@@ -136,12 +144,12 @@
                 <tbody >
                 <tr style="height:14px;">
                     <td style="font-size:10px;"><strong style="font-size: 10px;font-weight:200;">PROVEEDOR: </strong>{{datos.proveedor}}</td>
-                    <td style="font-weight:100;font-size:10px"><strong style="font-size:10px;font-weight:100;">PRODUCCIÓN :</strong></td>
-                    <td style="font-weight:100;font-size:10px"><strong style="font-size:10px;font-weight:100;">RUC: </strong>{{datos.ruc}}</td>
+                    <td style="font-weight:100;font-size:10px"><strong style="font-size:10px;font-weight:100;">FORMA DE PAGO: </strong>{{datos.forma_pago}}</td>
+                    <td style="font-weight:100;font-size:10px"><strong style="font-size:10px;font-weight:100;">GIRADO POR: </strong>{{datos.responsable}}</td>
                 </tr>
                 <tr style="height:14px;">
-                    <td style="font-weight:100;font-size:10px"><strong style="font-size:10px;font-weight:100;">GIRADO POR: </strong>{{datos.responsable}}</td>
-                    <td style="font-weight:100;font-size:10px"><strong style="font-size:10px;font-weight:100;">FORMA DE PAGO: </strong>{{datos.forma_pago}}</td>
+                    <td style="font-weight:100;font-size:10px"><strong style="font-size:10px;font-weight:100;">RUC: </strong>{{datos.ruc}}</td>
+                    <td style="font-weight:100;font-size:10px"><strong style="font-size:10px;font-weight:100;">PRODUCCIÓN :</strong></td>
                     <td style="font-weight:100;font-size:10px"><strong style="font-size:10px;font-weight:100;">NRO.CONTACTO: </strong>{{datos.nro_contacto}}</td>
                 </tr>
                 </tbody>
@@ -154,16 +162,16 @@
 
       </section>
       
-      <section style="font-size:.9rem; padding-bottom: 10px;">
+      <section style="font-size:.9rem; padding-bottom: 10px;height:250px;background-color:transparent;overflow: hidden;">
         <table style="border-collapse: collapse;width:100%;" border="1">
           <thead>
             <tr nobr="true" style="height:20px;">
                 <th style="width:35px;font-size:8px;">ITEM</th>
-                <th style="width:150px;font-size:8px;">MODELO</th>
-                <th style="width:50px;font-size:8px;">CORTE</th>
-                <th style="width:550px;font-size:8px;">DESCRIPCI&Oacute;N</th>
+                <th style="font-size:8px;">MODELO</th>
+                <th style="font-size:8px;">CORTE</th>
+                <th style="width:400px;font-size:8px;">DESCRIPCI&Oacute;N</th>
                 <th style="font-size:8px;">COLOR</th>
-                <th style="font-size:8px;">CANTIDAD</th>
+                <th style="font-size:8px;">CANT.</th>
                 <th style="font-size:8px;">UND</th>
                 <th style="font-size:8px;">PRECIO X UND</th>
                 <th style="font-size:8px;">IMPORTE</th>
@@ -182,11 +190,15 @@
           </tfoot> --}}
         </table>
       </section>
+      <section>
+        {{#consolidado detalle}}
+        {{/consolidado}}
+      </section>
       {{!-- </br> --}}
     </section>
-    <div style="display:flex;width:100%;gap:15px;border:0px solid green;height:70px;align-items:end;">
+    <div style="display:flex;width:100%;gap:15px;border:0px solid rgb(149, 246, 130);height:70px;align-items:end;">
+      <div style="background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">JULY APELLIDO</br> ENCARGADO(A) DE AVIOS</div>
       <div style="background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">JEFFERSON TAPIA MONTOYA</br> JEFE DE PRODUCCION</div>
-      <div style="background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">RAQUEL MONTOYA CESPEDES</br> JEFE DE FINANZAS</div>
       <div style="background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">NOMBRE RESPONSABLE</br> RESONSABLE DE COMPRA</div>
     </div>
     <section style="display:flex;justify-content:space-around;gap:15px;">
@@ -195,7 +207,7 @@
   {{!-- ///////////////////////////////////////////////////////////////////////////////////////////////////////// --}}
   {{!-- ///////////////////////////////////////////////////////////////////////////////////////////////////////// --}}
   {{!-- ///////////////////////////////////////////////////////////////////////////////////////////////////////// --}}
-  <div style="flex:1;display:flex;flex-direction:column;border-bottom:.2px dashed rgb(199, 199, 199);padding-top:20px;14.85cm;">
+  <div style="flex:1;display:flex;flex-direction:column;padding-top:20px;14.85cm;">
     <section style="flex:1;">
       <section>
         <table id="principal" style="width: 100%;">
@@ -238,21 +250,29 @@
                                               </tr>
                                               <tr>
                                                 <td style="border:none;">
-                                                  <table class="contenido" style="border-collapse: collapse; border: 1px solid black;">
-                                                    <thead>
+                                                  <table class="contenido" style="border-collapse: collapse; border: 1px solid black;width:450px;" border="1">
+                                                    {{!-- <thead>
                                                       <tr>
                                                         <th style="height:25px;width:100px;font-weight:bolder;font-size:12px;" valing="middle">N° ORDEN</td>
                                                         <th style="height:25px;width:45px;font-weight:bolder">AL.</td>
                                                         <th style="height:25px;width:280px;font-size:12px;" colspan="8">{{datos.orden_ref}}</td>
                                                       </tr>
-                                                    </thead>
+                                                    </thead> --}}
                                                     <tbody>
                                                       <tr>
-                                                        <td style="height:20px;width:80px;font-size:8px;">FECHA PEDIDO</td>
+                                                        <td style="height:25px;font-weight:bolder;font-size:12px;text-align:left;padding-left:10px;" valing="middle" colspan="8">N° ORDEN</td>
+                                                        {{!-- <td style="height:25px;width:45px;font-weight:bolder">AL.</td> --}}
+                                                        <td style="height:20px;font-size:8px;">{{datos.orden_ref}}</td>
+                                                        <td style="height:20px;font-size:8px;">FECHA PEDIDO</td>
                                                         <td colspan="2" style="font-size:8px;"><strong style="font-size: inherit;">{{#fechaCorta datos.fec_emision_cuadre}}{{/fechaCorta}}</strong></td>
-                                                        <td colspan="2" style="font-size:8px;">FECHA ENTREGA</td>
-                                                        <td colspan="2" style="font-size:8px;width:50px;"><strong style="font-size: inherit;">{{#fechaCorta datos.fec_retorno_cuadre}}{{/fechaCorta}}</strong></td>
+                                                        <td style="height:20px;font-size:8px;">FECHA ENTREGA</td>
+                                                        <td style="font-size:8px;"><strong style="font-size: inherit;">{{#fechaCorta datos.fec_retorno_cuadre}}{{/fechaCorta}}</strong></td>
                                                       </tr>
+                                                      {{!-- <tr>
+                                                        <td style="font-size:12px;text-align:left;padding-left:10px;" colspan="8">{{datos.orden_ref}}</td>
+                                                        <td style="font-size:8px;">FECHA ENTREGA</td>
+                                                        <td style="font-size:8px;"><strong style="font-size: inherit;">{{#fechaCorta datos.fec_retorno_cuadre}}{{/fechaCorta}}</strong></td>
+                                                      </tr> --}}
                                                     </tbody>
                                                   </table>
                                                 </td>
@@ -274,12 +294,12 @@
                 <tbody >
                 <tr style="height:14px;">
                     <td style="font-size:10px;"><strong style="font-size: 10px;font-weight:200;">PROVEEDOR: </strong>{{datos.proveedor}}</td>
-                    <td style="font-weight:100;font-size:10px"><strong style="font-size:10px;font-weight:100;">PRODUCCIÓN :</strong></td>
-                    <td style="font-weight:100;font-size:10px"><strong style="font-size:10px;font-weight:100;">RUC: </strong>{{datos.ruc}}</td>
+                    <td style="font-weight:100;font-size:10px"><strong style="font-size:10px;font-weight:100;">FORMA DE PAGO: </strong>{{datos.forma_pago}}</td>
+                    <td style="font-weight:100;font-size:10px"><strong style="font-size:10px;font-weight:100;">GIRADO POR: </strong>{{datos.responsable}}</td>
                 </tr>
                 <tr style="height:14px;">
-                    <td style="font-weight:100;font-size:10px"><strong style="font-size:10px;font-weight:100;">GIRADO POR: </strong>{{datos.responsable}}</td>
-                    <td style="font-weight:100;font-size:10px"><strong style="font-size:10px;font-weight:100;">FORMA DE PAGO: </strong>{{datos.forma_pago}}</td>
+                    <td style="font-weight:100;font-size:10px"><strong style="font-size:10px;font-weight:100;">RUC: </strong>{{datos.ruc}}</td>
+                    <td style="font-weight:100;font-size:10px"><strong style="font-size:10px;font-weight:100;">PRODUCCIÓN :</strong></td>
                     <td style="font-weight:100;font-size:10px"><strong style="font-size:10px;font-weight:100;">NRO.CONTACTO: </strong>{{datos.nro_contacto}}</td>
                 </tr>
                 </tbody>
@@ -292,16 +312,16 @@
 
       </section>
       
-      <section style="font-size:.9rem; padding-bottom: 10px;">
+      <section style="font-size:.9rem; padding-bottom: 10px;height:250px;background-color:transparent;overflow: hidden;border:1px solid black;">
         <table style="border-collapse: collapse;width:100%;" border="1">
           <thead>
             <tr nobr="true" style="height:20px;">
                 <th style="width:35px;font-size:8px;">ITEM</th>
-                <th style="width:150px;font-size:8px;">MODELO</th>
-                <th style="width:50px;font-size:8px;">CORTE</th>
-                <th style="width:550px;font-size:8px;">DESCRIPCI&Oacute;N</th>
+                <th style="font-size:8px;">MODELO</th>
+                <th style="font-size:8px;">CORTE</th>
+                <th style="width:400px;font-size:8px;">DESCRIPCI&Oacute;N</th>
                 <th style="font-size:8px;">COLOR</th>
-                <th style="font-size:8px;">CANTIDAD</th>
+                <th style="font-size:8px;">CANT.</th>
                 <th style="font-size:8px;">UND</th>
                 <th style="font-size:8px;">PRECIO X UND</th>
                 <th style="font-size:8px;">IMPORTE</th>
@@ -311,12 +331,24 @@
             {{#foo detalle}}
             {{/foo}}
           </tbody>
+          {{!-- <tfoot>
+            <tr>
+              <td colspan="8"></td>
+              <td style="text-align: center;font-size:.9rem;"><strong>Total</strong></td>
+              <td style="text-align: center;font-size:.9rem;"><strong>{{totalunid}}</strong></td>
+            </tr>
+          </tfoot> --}}
         </table>
       </section>
+      <section>
+        {{#consolidado detalle}}
+        {{/consolidado}}
+      </section>
+      {{!-- </br> --}}
     </section>
-    <div style="display:flex;width:100%;gap:15px;border:0px solid green;height:70px;align-items:end;">
+    <div style="display:flex;width:100%;gap:15px;border:0px solid rgb(149, 246, 130);height:70px;align-items:end;">
+      <div style="background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">JULY APELLIDO</br> ENCARGADO(A) DE AVIOS</div>
       <div style="background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">JEFFERSON TAPIA MONTOYA</br> JEFE DE PRODUCCION</div>
-      <div style="background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">RAQUEL MONTOYA CESPEDES</br> JEFE DE FINANZAS</div>
       <div style="background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">NOMBRE RESPONSABLE</br> RESONSABLE DE COMPRA</div>
     </div>
     <section style="display:flex;justify-content:space-around;gap:15px;">
