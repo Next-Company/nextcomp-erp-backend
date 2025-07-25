@@ -1039,9 +1039,9 @@ export class ProduccionController {
             <tr style="height:14px;font-size:10px;">
               <td style="text-align: center;background-color:#ddebf7;">${key + 1}</td>
               <td style="width:60px;text-align: center;">` + item['modelo'] + `</td>
-              <td style="width:60px;text-align: center;">` + item['corte'] + `</td>
+              <td style="width:60px;text-align: center;">` + (item['corte'] ?? '') + `</td>
               <td style="width:60px;text-align: center;">` + item['producto'] + `</td>
-              <td style="width:60px;text-align:left;background-color:#ddebf7;">` + item['color'] + `</td>
+              <td style="width:60px;text-align:left;background-color:#ddebf7;">` + (item['color'] ?? '') + `</td>
               <td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['cantidad'] + `</td>
               <td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['unidad'] + `</td>
               <td style="width: 60px;text-align: center;background-color:#ddebf7;">` + item['precio'] + `</td>

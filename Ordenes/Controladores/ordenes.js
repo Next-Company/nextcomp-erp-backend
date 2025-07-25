@@ -210,7 +210,8 @@ export class OrdenesController {
   }
   static async ExtraerItemsCaja(req, reply) {
     let idorden = req.params.id
-    const data = await OrdenesModel.ExtraerItemsCaja(idorden)
+    let idhoja = req.params.id_corte
+    const data = await OrdenesModel.ExtraerItemsCaja(idorden,idhoja)
     reply.json(data)
   }
   static async getFasesProduccion(req, reply) {

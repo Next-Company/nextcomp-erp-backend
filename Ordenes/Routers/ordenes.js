@@ -16,7 +16,7 @@ ordenesRouter.post("/getstatusgeneral/:id",OrdenesController.getStatusGeneral)
 ordenesRouter.post("/getstatusgeneral2/:id",OrdenesController.getStatusGeneral2)
 ordenesRouter.delete('/:id', OrdenesController.deleteOrden)
 ordenesRouter.get('/updatecombos/combos', OrdenesController.updateCombos)
-ordenesRouter.get('/extraeritemscaja/:id', OrdenesController.ExtraerItemsCaja)
+ordenesRouter.get('/extraeritemscaja/:id/:id_corte', OrdenesController.ExtraerItemsCaja)
 
 ordenesRouter.post("/saveFaseOrden",OrdenesController.saveFaseOrden)
 ordenesRouter.post("/saveFaseMolde",OrdenesController.saveFaseMolde)

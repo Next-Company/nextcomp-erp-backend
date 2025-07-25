@@ -164,12 +164,13 @@ export class OrdenesModel {
       }
     }
   }
-  static async ExtraerItemsCaja(idorden) {
+  static async ExtraerItemsCaja(idorden,idhoja) {
     let conn
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
 
+      console.log("Id orden:",idorden,"Id hoja:",idhoja)
       let [results] = await conn.query(`SELECT 
         tfphc.idx as id_combo,
         CONCAT(tfpo.producto,' ',tfpo.marca,' ',tfpo.modelos,' ',tfphc.color_combo) as articulo,
@@ -180,8 +181,10 @@ export class OrdenesModel {
       from tbl2_fases_prod_hojacorte_combos tfphc 
       join tbl2_fases_prod_hojacorte tfph on tfphc.id_hojacorte_CAB = tfph.idx
       join tbl2_fases_prod_ordenes tfpo on tfph.id_cab_orden = tfpo.idx
-      where tfpo.idx = ?
-      having cantidad_fracciones > 0`,[idorden])
+      where tfpo.idx = ? and tfph.idx = ?
+      having cantidad_fracciones > 0`,[idorden,idhoja])
+
+      console.log("Resultados de extraer items de caja:",results)
 
       // let [results] = await conn.query(`SELECT 
       //   tfphc.idx as id_combo,
@@ -725,8 +728,10 @@ export class OrdenesModel {
               for(let combo of [...corte.combos]){
 
                 let [validacion] = await conn.query(`SELECT *FROM tbl2_guias_traslado_cab t1 JOIN tbl2_guias_traslado_det t2 ON t1.idx = t2.id_guia_CAB WHERE t1.tipo = 'SERVICIOS' AND t1.id_corte_CAB = ? AND t2.id_combo = ?`,[parseInt(corte['idx']),combo.idx ?? 0])
+                console.log("Validacion de combos:",validacion,parseInt(corte['idx']),combo.idx)
 
                 if(validacion.length == 0){
+                  console.log("Dentro del update de combos complejo")
                   await conn.query("DELETE FROM tbl2_fases_prod_hojacorte_combos WHERE idx = ?",[combo.idx])
                   await conn.query("DELETE FROM tbl2_fases_prod_hojacorte_combos_fracciones WHERE id_combo_CAB = ?",[combo.idx])
   
@@ -744,7 +749,8 @@ export class OrdenesModel {
                   console.log("Info del fraccionado:",fraccionado)
                   await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos_fracciones(id_combo_CAB,talla,cantidad,produccion_total) values ? ",[fraccionado])
                 } else {
-                  await conn.query("UPDATE tbl2_fases_prod_hojacorte_combos SET color_combo = ?",[combo.color_combo])
+                  console.log("Dentro del update de combos simple")
+                  await conn.query("UPDATE tbl2_fases_prod_hojacorte_combos SET color_combo = ? WHERE idx = ? and id_hojacorte_CAB = ?",[combo.color_combo,combo.idx,parseInt(corte['idx'])])
                 }
 
               }
@@ -1045,7 +1051,7 @@ export class OrdenesModel {
       ) as cantidad_servicio,
       (select t0.identificador from tbl2_fases_produccion t0 where t0.ruta = t1.servicio) as color,
       (
-      select JSON_ARRAYAGG(JSON_OBJECT('id',tdc.idx,'idguia',tdc.id_guia_origen,'nro_guia',tdc.nro_guia,'despacho',(select sum(tdd.despacho) from tbl2_despachos_det tdd where tdc.idx = tdd.id_despacho_CAB)))
+      select JSON_ARRAYAGG(JSON_OBJECT('id',tdc.idx,'idguia',tdc.id_guia_origen,'nro_guia',tdc.nro_guia,'fecha_ingreso',tdc.fec_despacho,'despacho',(select sum(tdd.despacho) from tbl2_despachos_det tdd where tdc.idx = tdd.id_despacho_CAB)))
       from tbl2_despachos_cab tdc
       where tdc.id_guia_origen = t1.idx
       ) as despachos	
@@ -1060,9 +1066,14 @@ export class OrdenesModel {
         return c
       },final)
 
-	    console.log("La informafion organizada por servicio es:",formateado)
+      let estadofase = Object.keys(ruta).reduce((c,v)=>{
+        c[v] = formateado[v].length == 0 || formateado[v].filter(row=>row.estado !== 'FINALIZADO').length > 0 ? true : false
+        return c
+      },{})
 
-      return [ordenes,moldes,cortes,infoguias,formateado]
+	    console.log("La informafion organizada por servicio es:",formateado,estadofase)
+
+      return [ordenes,moldes,cortes,infoguias,formateado,estadofase]
     } catch (err) {
       console.log(err)
       return [err]
