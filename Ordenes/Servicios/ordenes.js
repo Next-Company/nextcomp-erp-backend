@@ -723,11 +723,21 @@ export class OrdenesModel {
                 acumulado.push(text)
               })
               console.log("Imprimiendo acumulado :",acumulado)
+              let [combosbase] = await conn.query(`SELECT *FROM tbl2_fases_prod_hojacorte_combos WHERE id_hojacorte_CAB = ?`,[parseInt(corte['idx'])])
               await conn.query(`UPDATE tbl2_fases_prod_hojacorte SET ${acumulado.join(',')} WHERE idx in (${base_update.map(row=>row.idx).join(',')}) and id_cab_orden = ?`,[id_orden])
 
-              for(let combo of [...corte.combos]){
+              for(let combo of [...combosbase.filter(row=>!corte.combos.map(item=>item.idx).includes(row.idx))]){
+                console.log("Combo a eliminar:",combo)
+                let [validacion] = await conn.query(`SELECT *FROM tbl2_guias_traslado_cab t1 JOIN tbl2_guias_traslado_det t2 ON t1.idx = t2.id_guia_CAB WHERE t1.tipo = 'SERVICIOS' AND t1.estado <> 'ANULADO' AND t1.id_corte_CAB = ? AND t2.id_combo = ?`,[parseInt(corte['idx']),combo.idx ?? 0])
 
-                let [validacion] = await conn.query(`SELECT *FROM tbl2_guias_traslado_cab t1 JOIN tbl2_guias_traslado_det t2 ON t1.idx = t2.id_guia_CAB WHERE t1.tipo = 'SERVICIOS' AND t1.id_corte_CAB = ? AND t2.id_combo = ?`,[parseInt(corte['idx']),combo.idx ?? 0])
+                if(validacion.length == 0){
+                  await conn.query("DELETE FROM tbl2_fases_prod_hojacorte_combos WHERE idx = ?",[combo.idx])
+                  await conn.query("DELETE FROM tbl2_fases_prod_hojacorte_combos_fracciones WHERE id_combo_CAB = ?",[combo.idx])
+                }
+              }
+
+              for(let combo of [...corte.combos]){
+                let [validacion] = await conn.query(`SELECT *FROM tbl2_guias_traslado_cab t1 JOIN tbl2_guias_traslado_det t2 ON t1.idx = t2.id_guia_CAB WHERE t1.tipo = 'SERVICIOS' AND t1.estado <> 'ANULADO' AND t1.id_corte_CAB = ? AND t2.id_combo = ?`,[parseInt(corte['idx']),combo.idx ?? 0])
                 console.log("Validacion de combos:",validacion,parseInt(corte['idx']),combo.idx)
 
                 if(validacion.length == 0){
@@ -803,6 +813,10 @@ export class OrdenesModel {
           await conn.query("DELETE t1,t2,t3 FROM tbl2_fases_prod_hojacorte t1 JOIN tbl2_fases_prod_hojacorte_combos t2 ON t1.idx = t2.id_hojacorte_CAB JOIN tbl2_fases_prod_hojacorte_combos_fracciones t3 ON t2.idx = t3.id_combo_CAB WHERE t1.idx = ? and t1.id_cab_orden = ?",[corte.idx,id_orden])
         }
       }
+
+      let [verificar] = await conn.query("select *from tbl2_fases_prod_hojacorte t1 join tbl2_fases_prod_hojacorte_combos t2 on t1.idx = t2.id_hojacorte_CAB where t1.id_cab_orden = 235")
+
+      console.log("Verificando la informacion de corte :",verificar)
 
       console.log("Terminando el actulizado de corte")
       // if (conn) conn.rollback()
@@ -1140,7 +1154,7 @@ export class OrdenesModel {
       await conn.connect();
       conn.beginTransaction()
 
-      // console.log("La data de lizset es:",infolizzet)
+      // console.log("La data de lizset es:",info de lizzet pronto)
 
       // let p1 = ''
       // for(let combo of [...infolizzet]){
