@@ -1272,7 +1272,13 @@ export class ProduccionController {
     }
     console.log("DEtalle de la cabecerea es: ", cabecera)
     const BINARY_CHUNKS = await fs.readFile('public/images/firma_jefferson.png')
-    const BINARY_CHUNKS2 = await fs.readFile('public/images/logo_next.png')
+    let BINARY_CHUNKS2 = null
+    if(cabecera.emisor == 'NEXT'){
+      BINARY_CHUNKS2 = await fs.readFile('public/images/logo_next.png')
+    }else{
+      BINARY_CHUNKS2 = await fs.readFile('public/images/logo_elenex_company.png')
+    }
+    
     const BINARY_CHUNKS3 = await fs.readFile('public/images/orden_pedido.png')
     // const tipo = JSON.parse(data.info).tipo
     console.log("El tipo de pedido es :", tipo)
@@ -1284,6 +1290,7 @@ export class ProduccionController {
         BINARY_CHUNKS3: BINARY_CHUNKS3.toString('base64'),
         datos: cabecera,
         detalle: detalle,
+        emisor: cabecera.emisor == 'NEXT' ? 1 : 0,
         helpers: {
           fechaCorta(fechaStr) {
             let formateo = ''

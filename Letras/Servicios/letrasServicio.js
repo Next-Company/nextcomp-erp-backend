@@ -303,7 +303,7 @@ export class LetrasService{
           ) as importe_sugerido
           from tbl2_despachos_cab tdc 
           join tbl2_pedidos_insumos_cab tpic on tdc.id_pedido_origen = tpic.idx
-          where tdc.tipo like '%PEDIDOS%' and tdc.id_proveedor_CAB = ?
+          where tdc.tipo in ('PEDIDOS','AVIOS') and tdc.id_proveedor_CAB = ?
           having importe_despacho - cancelado > 0
         ) as cc
         group by
