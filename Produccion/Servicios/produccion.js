@@ -774,7 +774,7 @@ export class ProduccionModel {
       `, [id]);
       const ids = results.map(row => row.idx)
 
-      const [cruce] = await conn.query("select tdc.idx as id_despacho,DATE_FORMAT(tdc.fec_despacho,'%d/%m') as fec_despacho,tdd.id_item as idx,tdd.despacho,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',tddf.talla,'despachos',tddf.despachos,'caidos',tddf.caidos,'incompletos',tddf.incompletos)) from tbl2_despachos_det_fracciones tddf WHERE tddf.id_despacho_DET = tdd.idx),JSON_ARRAY()) as fracciones from tbl2_despachos_cab tdc join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB where tdc.tipo = 'SERVICIOS' and tdc.id_guia_origen = ?",[id])
+      const [cruce] = await conn.query("select tdc.idx as id_despacho,DATE_FORMAT(tdc.fec_despacho,'%d/%m') as fec_despacho,tdd.id_item as idx,COALESCE(tdd.despacho,0) as despacho,COALESCE(tdd.caidos,0) as caidos,COALESCE(tdd.incompletos,0) as incompletos,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',tddf.talla,'despachos',tddf.despachos,'caidos',tddf.caidos,'incompletos',tddf.incompletos)) from tbl2_despachos_det_fracciones tddf WHERE tddf.id_despacho_DET = tdd.idx),JSON_ARRAY()) as fracciones from tbl2_despachos_cab tdc join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB where tdc.tipo = 'SERVICIOS' and tdc.id_guia_origen = ?",[id])
       // const [cruce] = await conn.query("select tdc.idx as id_despacho,DATE_FORMAT(tdc.fec_despacho,'%d/%m') as fec_despacho,tdd.id_item as idx,tdd.despacho from tbl2_despachos_cab tdc join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB where tdc.tipo = 'SERVICIOS' and tdc.id_guia_origen = ?",[id])
 
       console.log("iNfo del creuce uomo es.:",cruce,id)
@@ -791,11 +791,14 @@ export class ProduccionModel {
         value['despachos'] = Object.keys(lista_despachos).reduce((carry,valor)=>{
           let info = cruce.filter(item=>item.id_despacho == valor && item.idx == value.idx)
 
+          console.log("Fresas con sal:",info)
           carry.push({
             'id_despacho':info.length > 0 ? info[0].id_despacho : parseInt(valor),
             'fec_despacho':info.length > 0 ? info[0].fec_despacho : lista_despachos[valor], 
             'cantidad_despacho':info.length > 0 ? info[0].despacho : 0,
-            'fracciones': info[0].fracciones
+            'cantidad_caidos':info.length > 0 ? info[0].caidos : 0,
+            'cantidad_incompletos':info.length > 0 ? info[0].incompletos : 0,
+            'fracciones': info.length > 0 ? info[0].fracciones : []
           })
           return carry
         },[])
@@ -1165,7 +1168,7 @@ export class ProduccionModel {
         p1 = `CASE ${p1} ELSE 0 END`
         p2 = `CASE ${p2} ELSE 0 END`
         p3 = `CASE ${p3} ELSE 0 END`
-        await conn.query(`UPDATE tbl2_fases_prod_hojacorte_combos_fracciones SET produccion_total = COALESCE(produccion_total,0) + ` + p1 + `, caidos_total = COALESCE(caidos_total,0) + ` + p2 + `, caidos_total = COALESCE(incompletos_total,0) + ` + p3)
+        await conn.query(`UPDATE tbl2_fases_prod_hojacorte_combos_fracciones SET produccion_total = COALESCE(produccion_total,0) + ` + p1 + `, caidos_total = COALESCE(caidos_total,0) + ` + p2 + `, incompletos_total = COALESCE(incompletos_total,0) + ` + p3)
       }
       const [validacion] = await conn.query(`SELECT *FROM tbl2_fases_prod_hojacorte_combos_fracciones tfphcf WHERE tfphcf.id_combo_CAB IN (SELECT t1.idx FROM tbl2_fases_prod_hojacorte_combos t1 JOIN tbl2_fases_prod_hojacorte t2 ON t1.id_hojacorte_CAB = t2.idx WHERE t2.id_cab_orden = ?) AND ((tfphcf.produccion_total + tfphcf.caidos_total + tfphcf.incompletos_total) > tfphcf.cantidad OR (tfphcf.produccion_total + tfphcf.caidos_total + tfphcf.incompletos_total) < 0)`,[parseInt(orden)])
       console.log("Imprimiendo validacion:",validacion)
@@ -1671,7 +1674,7 @@ export class ProduccionModel {
       conn.beginTransaction()
 
       if(cabecera.tipo !== 'PEDIDOS'){
-        [data_backup] = await conn.query(`select tdd.id_combo,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',t1.talla,'despachos',t1.despachos,'caidos',t1.caidos)) from tbl2_despachos_det_fracciones t1 where t1.id_despacho_DET = tdd.idx),JSON_ARRAY()) as fracciones from tbl2_despachos_det tdd where tdd.id_despacho_CAB = ?`,[data.id]);
+        [data_backup] = await conn.query(`select tdd.id_combo,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',t1.talla,'despachos',t1.despachos,'caidos',t1.caidos,'incompletos',t1.incompletos)) from tbl2_despachos_det_fracciones t1 where t1.id_despacho_DET = tdd.idx),JSON_ARRAY()) as fracciones from tbl2_despachos_det tdd where tdd.id_despacho_CAB = ?`,[data.id]);
         [info_orden] = await conn.query('select *from tbl2_guias_traslado_cab where idx = ?',[parseInt(cabecera.id_guia_origen)])
       }
 
@@ -1707,24 +1710,6 @@ export class ProduccionModel {
           }
 
         }
-
-        // const insert = async () => {
-        //   const fila = articulos.shift()
-        //   if (fila) {
-        //     if (fila.idx && fila.idx !== '') {
-        //       console.log("Detro de la actualizacion")
-        //       const [results, fields] = await conn.query('UPDATE tbl2_despachos_det SET precio=NULLIF(?, ""),despacho=NULLIF(?, ""),caidos=NULLIF(?, "") WHERE idx = ? and id_despacho_CAB = ?', [fila.precio, fila.despacho, fila.caidos, fila.idx, parseInt(data.id)]);
-        //     } else {
-        //       const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,despacho,caidos) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [parseInt(data.id), fila.id_item, fila.despacho, fila.caidos]);
-        //     }
-        //     await insert()
-        //   } else {
-        //     console.log("Devolviendo resolve")
-        //     return Promise.resolve('')
-        //   }
-        // }
-        // await insert();
-
 
         console.log("Lista de filas a eliminar:", ids_delete)
         const eliminar = async () => {
@@ -1893,8 +1878,8 @@ export class ProduccionModel {
       ///////////////////////////////////////////
       ///////////////////////////////////////////
 
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return {ok:true,message:'Proceso ejecutado con éxito'}
     } catch (err) {
       console.log("asdlkfaslfjlaskdfjlf:",err)
@@ -1942,20 +1927,59 @@ export class ProduccionModel {
         console.log("El id del despacho es: ", id)
         const [results, fields] = await conn.query(`
           SELECT tdd.idx,tdd.id_item,tgtc.servicio,tgtc.modelo,tgtd.id_guia_CAB,tgtd.articulo,tgtd.cantidad,tgtd.isprototipo,
-          COALESCE(tdd.despacho,0) as despacho,COALESCE(tdd.caidos,0) as caidos,tdd.id_combo,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',t1.talla,'cantidad',t1.despachos,'caidos',t1.caidos)) 
-          from tbl2_despachos_det_fracciones t1 where t1.id_despacho_DET = tdd.idx ),JSON_ARRAY()) as fracciones_despacho
+          COALESCE(tdd.despacho,0) as despacho,COALESCE(tdd.caidos,0) as caidos,COALESCE(tdd.incompletos,0) as incompletos,tdd.id_combo,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',t1.talla,'cantidad',t1.despachos,'caidos',t1.caidos,'incompletos',t1.incompletos)) 
+          from tbl2_despachos_det_fracciones t1 where t1.id_despacho_DET = tdd.idx ),JSON_ARRAY()) as fracciones_despacho,
+          COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('idcombo',tgtd.id_combo,'talla',tf.talla,'cantidad',tf.cantidad)) from tbl2_guias_traslado_det_fracciones tf where tf.id_guia_DET = tgtd.idx),JSON_ARRAY()) as fracciones
           FROM tbl2_guias_traslado_det tgtd 
           JOIN tbl2_despachos_det tdd on tdd.id_item = tgtd.idx 
           JOIN tbl2_guias_traslado_cab tgtc on tgtc.idx = tgtd.id_guia_CAB
           WHERE tdd.id_despacho_CAB = ?
         `, [id]);
-        console.log(results)
+        console.log("Informacion del despacho :",results)
         const ids = results.map(row => row.id_item)
+
+
+        ////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////
+
+        const [cruce] = await conn.query("select tdc.idx as id_despacho,DATE_FORMAT(tdc.fec_despacho,'%d/%m') as fec_despacho,tdd.id_item as idx,COALESCE(tdd.despacho,0) as despacho,COALESCE(tdd.caidos,0) as caidos,COALESCE(tdd.incompletos,0) as incompletos,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',tddf.talla,'despachos',tddf.despachos,'caidos',tddf.caidos,'incompletos',tddf.incompletos)) from tbl2_despachos_det_fracciones tddf WHERE tddf.id_despacho_DET = tdd.idx),JSON_ARRAY()) as fracciones from tbl2_despachos_cab tdc join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB where tdc.tipo = 'SERVICIOS' and tdc.id_guia_origen = ? and tdc.idx <> ?",[results[0].id_guia_CAB,id])
+
+        let lista_despachos = cruce.reduce((carry,value)=>{
+          if(!Object.keys(carry).includes(value.id_despacho)){
+            carry[value.id_despacho] = value.fec_despacho
+          }
+          return carry 
+        },{})
+
+        let pp = results.reduce((carry,value)=>{
+          value['despachos'] = Object.keys(lista_despachos).reduce((carry,valor)=>{
+            let info = cruce.filter(item=>item.id_despacho == valor && item.idx == value.id_item)
+
+            carry.push({
+              'id_despacho':info.length > 0 ? info[0].id_despacho : parseInt(valor),
+              'fec_despacho':info.length > 0 ? info[0].fec_despacho : lista_despachos[valor], 
+              'cantidad_despacho':info.length > 0 ? info[0].despacho : 0,
+              'cantidad_caidos':info.length > 0 ? info[0].caidos : 0,
+              'cantidad_incompletos':info.length > 0 ? info[0].incompletos : 0,
+              'fracciones': info.length > 0 ? info[0].fracciones : []
+            })
+            return carry
+          },[])
+          carry.push(value)
+          return carry
+        },[])
+
+        console.log("El resultado de la consulta es:",pp)
+
+        ////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////
+
+
 
         const [results2] = await conn.query("select id_guia_DET,concat('({',GROUP_CONCAT(concat(talla,':',CAST(cantidad as unsigned))),'})') as fracciones from tbl2_guias_traslado_det_fracciones where id_guia_DET in (?) group by id_guia_DET", [ids])
 
         console.log(results2)
-        new_articulos = results.map(row => {
+        new_articulos = pp.map(row => {
           let add = eval(results2.filter(row2 => row2.id_guia_DET == row.id_item)[0].fracciones)
           return { ...row, ...add }
         })
@@ -2003,7 +2027,7 @@ export class ProduccionModel {
       conn.beginTransaction()
 
       let [cabecera] = await conn.query('select *from tbl2_despachos_cab where idx = ?',[id])
-      let [data_backup] = await conn.query(`select tdd.id_combo,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',t1.talla,'despachos',t1.despachos,'caidos',t1.caidos)) from tbl2_despachos_det_fracciones t1 where t1.id_despacho_DET = tdd.idx),JSON_ARRAY()) as fracciones from tbl2_despachos_det tdd where tdd.id_despacho_CAB = ?`,[id])
+      let [data_backup] = await conn.query(`select tdd.id_combo,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',t1.talla,'despachos',t1.despachos,'caidos',t1.caidos,'incompletos',t1.incompletos)) from tbl2_despachos_det_fracciones t1 where t1.id_despacho_DET = tdd.idx),JSON_ARRAY()) as fracciones from tbl2_despachos_det tdd where tdd.id_despacho_CAB = ?`,[id])
       console.log("Informacion de la cabecera:",cabecera)
 
       if(cabecera[0].tipo !== 'PEDIDOS'){
@@ -2011,7 +2035,7 @@ export class ProduccionModel {
         let [info_orden] = await conn.query('select *from tbl2_guias_traslado_cab where idx = ?',[parseInt(cabecera[0].id_guia_origen)])
         let param1 = data_backup.filter(row=>row.id_combo).reduce((c,v)=>{
           let pp = v.fracciones.reduce((cc,vv)=>{
-            cc = {...cc,[vv.talla]:[ parseInt(vv.despachos),parseInt(vv.caidos) ]}
+            cc = {...cc,[vv.talla]:[ parseInt(vv.despachos),parseInt(vv.caidos),parseInt(vv.incompletos) ]}
             return cc
           },{idcombo:v.id_combo})
           c.push(pp)

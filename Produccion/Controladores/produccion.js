@@ -245,6 +245,10 @@ export class ProduccionController {
           carry += valor.isprototipo ? 0 : parseFloat(valor.caidos)
           return carry;
         }, 0),
+        totalincompletos: data2.reduce((carry, valor) => {
+          carry += valor.isprototipo ? 0 : parseFloat(valor.incompletos)
+          return carry;
+        }, 0),
         proveedor: data3[0],
         helpers: {
           plusindex(index) {
@@ -1110,27 +1114,14 @@ export class ProduccionController {
           foo(items) {
             let itemsAsHtml = null
             let extra = 20 - items.length
-            // itemsAsHtml = items.map((item, key) => `
-            // <div style="height:14px;font-size:8px;display:flex;flex-direction: row;">
-            //   <div style="width:35px;text-align: center;background-color:#ddebf7;">${key + 1}</div>
-            //   <div style="width:60px;text-align: center;">` + item['modelo'] + `</div>
-            //   <div style="width:60px;text-align: center;">` + item['corte'] + `</div>
-            //   <div style="text-align: center;">` + item['producto'] + `</div>
-            //   <div style="width:60px;text-align:left;background-color:#ddebf7;">` + item['color'] + `</div>
-            //   <div style="width:60px;text-align: center;background-color:#ddebf7;">` + item['cantidad'] + `</div>
-            //   <div style="width:60px;text-align: center;background-color:#ddebf7;">` + item['unidad'] + `</div>
-            //   <div style="width: 60px;text-align: center;background-color:#ddebf7;">` + item['precio'] + `</div>
-            //   <div style="width: 60px;text-align: center;background-color:#ddebf7;">` + (parseFloat(item['cantidad']) * parseFloat(item['precio'])).toFixed(2) + `</div>
-            // </div>
-            // `)
 
             itemsAsHtml = items.map((item, key) => `
             <tr style="height:14px;font-size:10px;">
               <td style="text-align: center;background-color:#ddebf7;">${key + 1}</td>
               <td style="width:60px;text-align: center;">` + item['modelo'] + `</td>
-              <td style="width:60px;text-align: center;">` + (item['corte'] ?? '') + `</td>
+              <td style="width:60px;text-align: center;">` + (item['corte'] ? ('#' + item['corte']) : '') + `</td>
               <td style="width:60px;text-align: center;">` + item['producto'] + `</td>
-              <td style="width:60px;text-align:left;background-color:#ddebf7;">` + (item['color'] ?? '') + `</td>
+              <td style="width:60px;text-align:left;background-color:#ddebf7;text-align:center;">` + (item['color'] ?? '') + `</td>
               <td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['cantidad'] + `</td>
               <td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['unidad'] + `</td>
               <td style="width: 60px;text-align: center;background-color:#ddebf7;">` + item['precio'] + `</td>
@@ -1153,42 +1144,6 @@ export class ProduccionController {
                 </tr>`)
             }
             const total = items.reduce((carry, valor) => { carry += parseFloat(valor['cantidad']) * parseFloat(valor['precio']); return carry }, 0).toFixed(2)
-            // itemsAsHtml.push(`
-            //   <tr style="height:14px;">
-            //     <td style="width:35px;text-align: center;background-color:#ddebf7;"></td>
-            //     <td style="width:60px;text-align: center;"></td>
-            //     <td style="width:60px;text-align: center;"></td>
-            //     <td style="width:60px;text-align: center;"></td>
-            //     <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
-            //     <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
-            //     <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
-            //     <td style="width:100px;text-align: center;background-color:#ddebf7;text-wrap-mode:nowrap"><strong>SUB TOTAL</strong></td>
-            //     <td style="width:90px;text-align: center;background-color:#ddebf7;">${cabecera.moneda == 'USD' ? '$' : 'S/.'} ${total}</td>
-            //   </tr>`)
-            // itemsAsHtml.push(`
-            //   <tr style="height:14px;">
-            //     <td style="width:35px;text-align: center;background-color:#ddebf7;"></td>
-            //     <td style="width:60px;text-align: center;"></td>
-            //     <td style="width:60px;text-align: center;"></td>
-            //     <td style="width:60px;text-align: center;"></td>
-            //     <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
-            //     <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
-            //     <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
-            //     <td style="text-align: center;background-color:#ddebf7;"><strong>IGV 18%</strong></td>
-            //     <td style="text-align: center;background-color:#ddebf7;">${cabecera.moneda == 'USD' ? '$' : 'S/.'} ${parseInt(cabecera.igv) ? (total * 0.18).toFixed(2) : 0}</td>
-            //   </tr>`)
-            // itemsAsHtml.push(`
-            //   <tr style="height:14px;">
-            //     <td style="width:35px;text-align: center;background-color:#ddebf7;"></td>
-            //     <td style="width:60px;text-align: center;"></td>
-            //     <td style="width:60px;text-align: center;"></td>
-            //     <td style="width:60px;text-align: center;"></td>
-            //     <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
-            //     <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
-            //     <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
-            //     <td style="text-align: center;background-color:#ddebf7;"><strong>TOTAL</strong></td>
-            //     <td style="text-align: center;background-color:#ddebf7;">${cabecera.moneda == 'USD' ? '$' : 'S/.'} ${parseInt(cabecera.igv) ? (total * 1.18).toFixed(2) : total}</td>
-            //   </tr>`)
             return itemsAsHtml.join("\n")
           },
           consolidado(items) {

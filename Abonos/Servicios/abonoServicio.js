@@ -593,8 +593,8 @@ export default class AbonoServicio{
         
       }
       console.log("Terminando consultas")
-      // if (conn) conn.rollback()
-      if (conn) conn.commit()
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return {ok:true,message:'Se ha guardado el registros'}
     } catch (err) {
       console.log("Error en la transaccion",err)
@@ -814,36 +814,76 @@ export default class AbonoServicio{
     try {
       conn = await mysql2.createConnection(configs[1])
       await conn.connect()
-
       console.log("EL id de la letra es: ",idletra)
       
+      // const [resultado, fields] = await conn.query(`
+      //   SELECT tlc.importe,tlc.idx,tlc.num_letra,tb1.idx as idpedido,tb1.orden_ref,tb1.tipo,tb1.proveedor,tb1.fec_emision,tb1.fec_retorno,COALESCE(DATEDIFF(tb1.fec_retorno,tb1.fec_emision),'') as tiempo_produccion,tlc.idx as idletra,
+      //   COALESCE(DATEDIFF(STR_TO_DATE(tb1.fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,tb1.forma_pago,tb1.estado,
+      //   (
+      //     SELECT SUM(COALESCE(cantidad,0)) FROM tbl2_pedidos_insumos_det tpid 
+      //     WHERE tpid.id_pedido_CAB = tb1.idx
+      //   ) as cantidad,
+      //   (
+      //     SELECT COALESCE(sum(despacho),0) as despacho FROM tbl2_despachos_cab tdc
+      //     JOIN tbl2_despachos_det tdd ON tdc.idx = tdd.id_despacho_CAB
+      //     WHERE tdc.id_pedido_origen = tb1.idx
+      //   ) as despacho,
+      //   ( 
+      //     select COALESCE(SUM(COALESCE(importe_total,0)),0) FROM tbl2_despachos_cab tdc
+      //     JOIN tbl2_despachos_adi tda ON tda.id_despacho_CAB = tdc.idx
+      //     where tdc.id_pedido_origen = tb1.idx 
+      //   ) as importe_despacho,
+      //   (
+      //     SELECT COALESCE(SUM(COALESCE(ta.importe,0)),0) FROM tbl2_conciliaciones tc
+      //     JOIN tbl2_abonos ta ON tc.id_abono_CAB = ta.idx
+      //     WHERE tc.id_letra_CAB = tla.idx  
+      //   ) as cancelado
+      //   FROM tbl2_pedidos_insumos_cab tb1
+      //   JOIN tbl2_letras_adi tla ON tla.id_pedido_CAB = tb1.idx
+      //   JOIN tbl2_letras_cab tlc ON tlc.idx = tla.id_letra_CAB
+      //   WHERE tla.id_letra_CAB = ?
+      //   `,[idletra]);
+
       const [resultado, fields] = await conn.query(`
-        SELECT tlc.importe,tlc.idx,tlc.num_letra,tb1.idx as idpedido,tb1.orden_ref,tb1.tipo,tb1.proveedor,tb1.fec_emision,tb1.fec_retorno,COALESCE(DATEDIFF(tb1.fec_retorno,tb1.fec_emision),'') as tiempo_produccion,tlc.idx as idletra,
-        COALESCE(DATEDIFF(STR_TO_DATE(tb1.fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,tb1.forma_pago,tb1.estado,
-        (
-          SELECT SUM(COALESCE(cantidad,0)) FROM tbl2_pedidos_insumos_det tpid 
-          WHERE tpid.id_pedido_CAB = tb1.idx
-        ) as cantidad,
-        (
-          SELECT COALESCE(sum(despacho),0) as despacho FROM tbl2_despachos_cab tdc
-          JOIN tbl2_despachos_det tdd ON tdc.idx = tdd.id_despacho_CAB
-          WHERE tdc.id_pedido_origen = tb1.idx
-        ) as despacho,
-        ( 
-          select COALESCE(SUM(COALESCE(importe_total,0)),0) FROM tbl2_despachos_cab tdc
-          JOIN tbl2_despachos_adi tda ON tda.id_despacho_CAB = tdc.idx
-          where tdc.id_pedido_origen = tb1.idx 
-        ) as importe_despacho,
-        (
-          SELECT COALESCE(SUM(COALESCE(ta.importe,0)),0) FROM tbl2_conciliaciones tc
-          JOIN tbl2_abonos ta ON tc.id_abono_CAB = ta.idx
-          WHERE tc.id_letra_CAB = tla.idx  
-        ) as cancelado
-        FROM tbl2_pedidos_insumos_cab tb1
-        JOIN tbl2_letras_adi tla ON tla.id_pedido_CAB = tb1.idx
-        JOIN tbl2_letras_cab tlc ON tlc.idx = tla.id_letra_CAB
-        WHERE tla.id_letra_CAB = ?
-        `,[idletra]);
+        SELECT 
+          tlc.importe,
+          tlc.idx,
+          tlc.num_letra,
+          tb1.idx as idpedido,
+          tb1.orden_ref,
+          tb1.tipo,
+          tb1.proveedor,
+          tb1.fec_emision,
+          tb1.fec_retorno,
+          COALESCE(DATEDIFF(tb1.fec_retorno,tb1.fec_emision),'') as tiempo_produccion,
+          tlc.idx as idletra,
+          COALESCE(DATEDIFF(STR_TO_DATE(tb1.fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
+          tb1.forma_pago,
+          tb1.estado,
+          (
+            SELECT SUM(COALESCE(cantidad,0)) FROM tbl2_pedidos_insumos_det tpid 
+            WHERE tpid.id_pedido_CAB = tb1.idx
+          ) as cantidad,
+          (
+            SELECT COALESCE(sum(despacho),0) as despacho FROM tbl2_despachos_cab tdc
+            JOIN tbl2_despachos_det tdd ON tdc.idx = tdd.id_despacho_CAB
+            WHERE tdc.id_pedido_origen = tb1.idx
+          ) as despacho,
+          ( 
+            select COALESCE(SUM(COALESCE(importe_total,0)),0) FROM tbl2_despachos_cab tdc
+            JOIN tbl2_despachos_adi tda ON tda.id_despacho_CAB = tdc.idx
+            where tdc.id_pedido_origen = tb1.idx 
+          ) as importe_despacho,
+          (
+            SELECT COALESCE(SUM(COALESCE(ta.importe,0)),0) FROM tbl2_conciliaciones tc
+            JOIN tbl2_abonos ta ON tc.id_abono_CAB = ta.idx
+            WHERE tc.id_letra_CAB = tla.idx  
+          ) as cancelado
+        FROM tbl2_letras_cab tlc
+        LEFT JOIN tbl2_letras_adi tla ON tlc.idx = tla.id_letra_CAB
+        LEFT JOIN tbl2_pedidos_insumos_cab tb1 ON tla.id_pedido_CAB = tb1.idx 
+        WHERE tlc.idx = ?
+      `,[idletra])
 
       console.log("Resultado lestras status detalle:",resultado)
 
