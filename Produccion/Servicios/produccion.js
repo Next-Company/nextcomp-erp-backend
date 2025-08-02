@@ -62,7 +62,7 @@ export class ProduccionModel {
   }
   static async getOrdenesById(info) {
     let conn
-    // ppd
+    console.log("Obteniendo ordenes por id :", info.id)
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();

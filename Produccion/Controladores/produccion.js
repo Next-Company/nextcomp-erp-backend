@@ -865,33 +865,12 @@ export class ProduccionController {
           // await browser.close();
         }
       }
-
     )
-
   }
-  static async VistaPreviaPedidoAvios_(req, res) {
-    console.log("Iniciando exportado del formato de avios")
-    const tipo = req.params.tipo
-    const data = req.body
-    console.log("La informacion es:", data)
-    let cabecera = []
-    let detalle = []
-
-    if (data.id) {
-      cabecera = (await ProduccionModel.getInfoPedidoCab(data.id))[0]
-      detalle = await ProduccionModel.getInfoPedidoDet(data.id)
-      console.log("Cabecera:", cabecera)
-      console.log("Detalle:", detalle)
-    } else {
-      cabecera = JSON.parse(data.info)
-      detalle = JSON.parse(data.detalle)
-    }
-    console.log("DEtalle de la cabecerea es: ", cabecera)
+  static async GeneraPedidoAvios(cabecera,detalle,res){
     const BINARY_CHUNKS = await fs.readFile('public/images/firma_jefferson.png')
     const BINARY_CHUNKS2 = await fs.readFile('public/images/logo_next.png')
-    const BINARY_CHUNKS3 = await fs.readFile('public/images/orden_pedido.png')
-    // const tipo = JSON.parse(data.info).tipo
-    console.log("El tipo de pedido es :", tipo)
+    const BINARY_CHUNKS3 = await fs.readFile('public/images/requerimiento.png')
     res.render(
       'avios_v3',
       {
@@ -939,19 +918,22 @@ export class ProduccionController {
           },
           foo(items) {
             let itemsAsHtml = null
-            let extra = 15 - items.length
+            let extra = 20 - items.length
+
             itemsAsHtml = items.map((item, key) => `
             <tr style="height:14px;font-size:10px;">
-              <td style="width:35px;text-align: center;background-color:#ddebf7;">${key + 1}</td>
+              <td style="text-align: center;background-color:#ddebf7;">${key + 1}</td>
               <td style="width:60px;text-align: center;">` + item['modelo'] + `</td>
-              <td style="width:60px;text-align: center;">` + item['corte'] + `</td>
+              <td style="width:60px;text-align: center;">` + (item['corte'] ? ('#' + item['corte']) : '') + `</td>
               <td style="width:60px;text-align: center;">` + item['producto'] + `</td>
-              <td style="width:60px;text-align:left;background-color:#ddebf7;">` + item['color'] + `</td>
+              <td style="width:60px;text-align:left;background-color:#ddebf7;text-align:center;">` + (item['color'] ?? '') + `</td>
               <td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['cantidad'] + `</td>
               <td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['unidad'] + `</td>
               <td style="width: 60px;text-align: center;background-color:#ddebf7;">` + item['precio'] + `</td>
               <td style="width: 60px;text-align: center;background-color:#ddebf7;">` + (parseFloat(item['cantidad']) * parseFloat(item['precio'])).toFixed(2) + `</td>
-            </tr>`)
+            </tr>
+            `)
+
             for (let i = 0; i < extra; i++) {
               itemsAsHtml.push(`
                 <tr style="height:14px;">
@@ -967,72 +949,65 @@ export class ProduccionController {
                 </tr>`)
             }
             const total = items.reduce((carry, valor) => { carry += parseFloat(valor['cantidad']) * parseFloat(valor['precio']); return carry }, 0).toFixed(2)
-            itemsAsHtml.push(`
-              <tr style="height:14px;">
-                <td style="width:35px;text-align: center;background-color:#ddebf7;"></td>
-                <td style="width:60px;text-align: center;"></td>
-                <td style="width:60px;text-align: center;"></td>
-                <td style="width:60px;text-align: center;"></td>
-                <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
-                <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
-                <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
-                <td style="width:100px;text-align: center;background-color:#ddebf7;text-wrap-mode:nowrap"><strong>SUB TOTAL</strong></td>
-                <td style="width:90px;text-align: center;background-color:#ddebf7;">${cabecera.moneda == 'USD' ? '$' : 'S/.'} ${total}</td>
-              </tr>`)
-            itemsAsHtml.push(`
-              <tr style="height:14px;">
-                <td style="width:35px;text-align: center;background-color:#ddebf7;"></td>
-                <td style="width:60px;text-align: center;"></td>
-                <td style="width:60px;text-align: center;"></td>
-                <td style="width:60px;text-align: center;"></td>
-                <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
-                <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
-                <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
-                <td style="text-align: center;background-color:#ddebf7;"><strong>IGV 18%</strong></td>
-                <td style="text-align: center;background-color:#ddebf7;">${cabecera.moneda == 'USD' ? '$' : 'S/.'} ${parseInt(cabecera.igv) ? (total * 0.18).toFixed(2) : 0}</td>
-              </tr>`)
-            itemsAsHtml.push(`
-              <tr style="height:14px;">
-                <td style="width:35px;text-align: center;background-color:#ddebf7;"></td>
-                <td style="width:60px;text-align: center;"></td>
-                <td style="width:60px;text-align: center;"></td>
-                <td style="width:60px;text-align: center;"></td>
-                <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
-                <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
-                <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
-                <td style="text-align: center;background-color:#ddebf7;"><strong>TOTAL</strong></td>
-                <td style="text-align: center;background-color:#ddebf7;">${cabecera.moneda == 'USD' ? '$' : 'S/.'} ${parseInt(cabecera.igv) ? (total * 1.18).toFixed(2) : total}</td>
-              </tr>`)
             return itemsAsHtml.join("\n")
+          },
+          consolidado(items) {
+            let itemsAsHtml = ''
+            let extra = 12 - items.length
+            const total = items.reduce((carry, valor) => { carry += parseFloat(valor['cantidad']) * parseFloat(valor['precio']); return carry }, 0).toFixed(2)
+
+            itemsAsHtml = `
+              <div style="height:14px;padding-top:5px;border-top:1px solid black;">
+                <div style="text-align: center;display:flex;flex-direction: row;">
+                  <div style="flex:1;text-align:right;font-weight:bold;">SUBTOTAL</div>
+                  <div style="width:60px;text-align:left;padding-left:10px;">${cabecera.moneda == 'USD' ? '$' : 'S/.'} ${total}</div>
+                </div>
+                <div style="text-align: center;display:flex;flex-direction: row;">
+                  <div style="flex:1;text-align:right;font-weight:bold;">IGV 18%</div>
+                  <div style="width:60px;text-align:left;padding-left:10px;">${cabecera.moneda == 'USD' ? '$' : 'S/.'} ${parseInt(cabecera.igv) ? (total * 0.18).toFixed(2) : 0}</div>
+                </div>
+                <div style="text-align: center;display:flex;flex-direction: row;">
+                  <div style="flex:1;text-align:right;font-weight:bold;">TOTAL</div>
+                  <div style="width:60px;text-align:left;padding-left:10px;">${cabecera.moneda == 'USD' ? '$' : 'S/.'} ${parseInt(cabecera.igv) ? (total * 1.18).toFixed(2) : total}</div>
+                </div>
+              </div>
+            `
+            return itemsAsHtml
           }
         },
 
       },
       async (err, html) => {
+        console.log(html)
         try {
-          const browser = await puppeteer.launch();
+          if(mode === 'download') {
+            const browser = await puppeteer.launch();
+            const version = await browser.version();
+            console.log(`Versión de Chrome: ${version}`);
+            const page = await browser.newPage();
+            await page.setContent(html);
 
-          const version = await browser.version();
-          console.log(`Versión de Chrome: ${version}`);
-          const page = await browser.newPage();
-          await page.setContent(html);
+            const pdfOptions = {
+              // format: 'A4',
+              width: '20cm',
+              height: '27.94cm',
+              landscape: false,
+              printBackground: true,
+              margin: {
+                left: 0,
+                right: 0
+              }
+              , scale: 1
+            };
 
-          const pdfOptions = {
-            // format: 'A4',
-            width: '20cm',
-            height: '27.94cm',
-            landscape: false,
-            printBackground: true,
-            margin: {
-              left: 0,
-              right: 0
-            }
-            , scale: 1
-          };
-
-          const pdfBuffer = await page.pdf(pdfOptions);
-          await browser.close();
-          res.send({ data: pdfBuffer.toString('base64') })
+            const pdfBuffer = await page.pdf(pdfOptions);
+            await browser.close();
+            res.send({ data: pdfBuffer.toString('base64') })
+          } else {
+            console.log("Enviando html")
+            res.send(html)
+          }
+          
           // res.send(pdfBuffer)
         } catch (error) {
           res.status(500).send('Error al generar el PDF');
@@ -1046,6 +1021,7 @@ export class ProduccionController {
   static async VistaPreviaPedidoAvios(req, res) {
     console.log("Iniciando exportado del formato de avios")
     const tipo = req.params.tipo
+    const mode = req.params.mode || 'download' // 'view' or 'download'
     const data = req.body
     console.log("La informacion es:", data)
     let cabecera = []
@@ -1174,29 +1150,33 @@ export class ProduccionController {
       },
       async (err, html) => {
         try {
-          const browser = await puppeteer.launch();
+          if(mode === 'download') {
+            const browser = await puppeteer.launch();
+            const version = await browser.version();
+            console.log(`Versión de Chrome: ${version}`);
+            const page = await browser.newPage();
+            await page.setContent(html);
 
-          const version = await browser.version();
-          console.log(`Versión de Chrome: ${version}`);
-          const page = await browser.newPage();
-          await page.setContent(html);
+            const pdfOptions = {
+              // format: 'A4',
+              width: '20cm',
+              height: '27.94cm',
+              landscape: false,
+              printBackground: true,
+              margin: {
+                left: 0,
+                right: 0
+              }
+              , scale: 1
+            };
 
-          const pdfOptions = {
-            // format: 'A4',
-            width: '20cm',
-            height: '27.94cm',
-            landscape: false,
-            printBackground: true,
-            margin: {
-              left: 0,
-              right: 0
-            }
-            , scale: 1
-          };
-
-          const pdfBuffer = await page.pdf(pdfOptions);
-          await browser.close();
-          res.send({ data: pdfBuffer.toString('base64') })
+            const pdfBuffer = await page.pdf(pdfOptions);
+            await browser.close();
+            res.send({ data: pdfBuffer.toString('base64') })
+          } else {
+            res.send(html)
+          }
+          
           // res.send(pdfBuffer)
         } catch (error) {
           res.status(500).send('Error al generar el PDF');
@@ -1206,6 +1186,22 @@ export class ProduccionController {
         }
       }
     )
+  }
+  static async VistaRapidaPedidoAvios(req, res) {
+    console.log("Iniciando exportado del formato de avios")
+    const id = req.params.id || ''
+    const mode = req.params.mode || 'download' // 'view' or 'download'
+    // const data = req.body
+    // console.log("La informacion es:", data)
+    let cabecera = []
+    let detalle = []
+
+    cabecera = (await ProduccionModel.getInfoPedidoCab(id))[0]
+    detalle = await ProduccionModel.getInfoPedidoDet(id)
+    console.log("Cabecera:", cabecera)
+    console.log("Detalle:", detalle)
+    this.GeneraPedidoAvios(cabecera,detalle,res)
+    
   }
   static async VistaPreviaPedido(req, res) {
     const tipo = req.params.tipo
