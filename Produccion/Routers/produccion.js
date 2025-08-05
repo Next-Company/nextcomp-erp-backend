@@ -74,7 +74,11 @@ produccionRouter.get('/clienteslist/:search', ProduccionController.getListaClien
 // produccionRouter.get('/searchproveedor/:info',ProduccionController.searchProveedor)
 // produccionRouter.get('/searchproveedorbyid/:id',ProduccionController.searchProveedorById)
 
+produccionRouter.post('/vistarapidapedidoavios/:mode', ProduccionController.VistaRapidaPedidoAvios)
 produccionRouter.get('/vistarapidapedidoavios/:id/:mode', ProduccionController.VistaRapidaPedidoAvios)
+produccionRouter.post('/vistarapidapedidotelas/:mode', ProduccionController.VistaRapidaPedidoTelas)
+produccionRouter.get('/vistarapidapedidotelas/:id/:mode', ProduccionController.VistaRapidaPedidoTelas)
+
 produccionRouter.post('/vistapreviapedido/:tipo', ProduccionController.VistaPreviaPedido)
 produccionRouter.post('/vistapreviapedidoavios/:tipo', ProduccionController.VistaPreviaPedidoAvios)
 // produccionRouter.post('/vistapreviapedidoavios/:tipo',ProduccionController.VistaPreviaPedidoAvios)
