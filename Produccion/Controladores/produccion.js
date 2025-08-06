@@ -1189,7 +1189,7 @@ export class ProduccionController {
     )
   }
   static async VistaRapidaPedidoAvios(req, res) {
-    console.log("Iniciando exportado del formato de avios")
+    console.log("Iniciando exportado del formato de avios otros")
     const id = req.params.id || ''
     const mode = req.params.mode || 'download'
     const data = req.body
@@ -1205,8 +1205,8 @@ export class ProduccionController {
         cabecera = (await ProduccionModel.getInfoPedidoCab(data.id))[0]
         detalle = await ProduccionModel.getInfoPedidoDet(data.id)
       }else{
-        cabecera = JSON.parse(data[0].info)
-        detalle = JSON.parse(data[0].detalle)
+        cabecera = JSON.parse(data.info)
+        detalle = JSON.parse(data.detalle)
       }
     }
     ProduccionController.GeneraPedidoAvios(cabecera,detalle,res,mode)

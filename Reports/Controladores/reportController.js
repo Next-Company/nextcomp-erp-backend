@@ -148,4 +148,50 @@ export default class ReportController{
       res.json(error)
     }
   }
+  static async getResumenConsolidado(req,res){
+    const filters = req.body
+    let conn = null
+    let info = await ReporteService.getResumenConsolidado(filters)
+    try {
+
+      const MESES = ['','ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE']
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.readFile('public/templates/formato_resumen_consolidado.xlsx');
+      const worksheet = workbook.getWorksheet('INFORME');
+      
+      let row  = 2
+      // let formateo = Object.groupBy(result,row=>row.mes)
+      let totalMN = 0, totalUSD = 0
+      let fields = ['oc','id_cliente_CAB','cliente','fec_emitida','fec_entrega','marca','producto','base','precio','modelos','estado_orden','ruta_proceso']
+
+      worksheet.getRow(1).values = info[1].map(field => field.name);
+      worksheet.getRow(1).font = {
+        bold: true,
+        size: 14
+      };
+
+      info[0].forEach(item=>{
+        let format = Object.keys(item).map(key=>item[key])
+        // worksheet.getRow(row).values = [item.oc,item.id_cliente_CAB,item.cliente,item.fec_emitida,item.fec_entrega,item.marca,item.producto,item.base,item.precio,item.modelos,item.estado_orden,item.ruta_proceso]
+        worksheet.getRow(row).values = format
+        row+=1
+      })
+
+      worksheet.eachRow(function(row, rowNumber) {
+        row.eachCell({ includeEmpty: true }, function(cell, colNumber) {
+          cell.border = {
+            top: {style:'thin'},
+            left: {style:'thin'},
+            bottom: {style:'thin'},
+            right: {style:'thin'}
+          };
+        });
+      });
+      const buffer = await workbook.xlsx.writeBuffer()
+      res.json({data:buffer.toString('hex')})
+    } catch (error) {
+      console.log(error)
+      res.json(error)
+    }
+  }
 }

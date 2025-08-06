@@ -23,4 +23,24 @@ export default class ReporteService{
       if(conn) conn.end()
     }
   }
+  static async getResumenConsolidado(filters = {}){
+    let conn = undefined
+    try {
+      conn = await mysql2.createConnection(configs[1])
+      await conn.connect()
+      
+      let query = `select t1.oc,t1.id_cliente_CAB,t1.cliente,t1.fec_emitida,t1.fec_entrega,t1.base,t1.precio,t1.modelos,t1.estado_orden,t1.ruta_proceso,t2.id_orden_CAB,t2.orden_ref,t2.tipo,t2.motivo_traslado,t2.id_proveedor_CAB,t2.proveedor,t2.servicio,t2.responsable,t2.marca,t2.modelo,t2.producto,t2.fec_emision,t2.fec_retorno,t2.costo,t2.observaciones,t2.estado
+      from tbl2_fases_prod_ordenes t1
+      join tbl2_guias_traslado_cab t2 on t1.idx = t2.id_orden_CAB
+      where t1.estado_orden NOT IN ('ANULADO','OTRO')`
+      let [result,fields] = await conn.query(query)
+      console.log("Consulta ejecutada:", result);
+      console.log("Info de las columnas:", fields.map(f => f.name));
+      return [result,fields]
+    } catch (error) {
+      return error
+    } finally {
+      if(conn) conn.end()
+    }
+  }
 }

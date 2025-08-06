@@ -55,6 +55,11 @@ export default class AbonoController {
     const saldos = await AbonoServicio.getSaldosServicios(idproveedor)
     res.json(saldos)
   }
+  static async getSaldosLetra(req, res) {
+    const { idletra } = req.params
+    const saldos = await AbonoServicio.getSaldosLetra(idletra)
+    res.json(saldos)
+  }
   static async saveAbonoServicio(req, res) {
     const params = req.body
     const resp = await AbonoServicio.saveAbonoServicio(params)

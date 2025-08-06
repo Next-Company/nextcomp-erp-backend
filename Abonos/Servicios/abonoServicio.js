@@ -324,7 +324,7 @@ export default class AbonoServicio{
           LEFT JOIN tbl2_letras_adi tla on tlc.idx = tla.id_letra_CAB 
           LEFT JOIN tbl2_despachos_cab tdc on tdc.id_pedido_origen =  tla.id_pedido_CAB
           LEFT JOIN tbl2_despachos_adi tda on tda.id_despacho_CAB = tdc.idx
-          WHERE 1=1 
+          WHERE tlc.estado <> 'TERM' AND 1=1 
           group by tlc.idx,tlc.id_proveedor_CAB,tlc.proveedor,tlc.documentos_ref,tlc.num_letra,tlc.moneda,tlc.fec_emision,tlc.fec_vencimiento,tlc.importe,tlc.estado,tlc.observaciones
           ORDER BY tlc.idx DESC
           LIMIT 100
@@ -424,6 +424,23 @@ export default class AbonoServicio{
       let [rows] = await conn.execute(`SELECT tgtc.idx,tgtc.orden_ref,tgtc.servicio,tgtc.producto,tgtc.modelo,tgtc.marca,tgtc.costo,sum(tgtd.cantidad*tgtc.costo) as importe,0 as saldo from tbl2_guias_traslado_cab tgtc 
       JOIN tbl2_guias_traslado_det tgtd ON tgtc.idx = tgtd.id_guia_CAB 
       WHERE tgtc.id_proveedor_CAB = ? GROUP BY tgtc.idx,tgtc.orden_ref,tgtc.servicio,tgtc.producto,tgtc.modelo,tgtc.marca,tgtc.costo`,[idproveedor])
+      await conn.end()
+      return rows
+    } catch (error) {
+      console.log(error)   
+    } finally {
+      if(conn) conn
+    }
+  }
+  static async getSaldosLetra(idletra){
+    let conn
+    try {
+      conn = await mysql2.createConnection(configs[1])
+      await conn.connect()
+      let [rows] = await conn.execute(`SELECT *from tbl2_letras`,[idletra])
+      // let [rows] = await conn.execute(`SELECT tgtc.idx,tgtc.orden_ref,tgtc.servicio,tgtc.producto,tgtc.modelo,tgtc.marca,tgtc.costo,sum(tgtd.cantidad*tgtc.costo) as importe,0 as saldo from tbl2_guias_traslado_cab tgtc 
+      // JOIN tbl2_guias_traslado_det tgtd ON tgtc.idx = tgtd.id_guia_CAB 
+      // WHERE tgtc.id_proveedor_CAB = ? GROUP BY tgtc.idx,tgtc.orden_ref,tgtc.servicio,tgtc.producto,tgtc.modelo,tgtc.marca,tgtc.costo`,[idproveedor])
       await conn.end()
       return rows
     } catch (error) {
@@ -592,9 +609,11 @@ export default class AbonoServicio{
         }
         
       }
-      console.log("Terminando consultas")
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      let [validacion] = await conn.query(`select t0.importe,COALESCE(sum(t2.importe),0) as cancelado from tbl2_letras_cab t0 join tbl2_conciliaciones t1 on t1.id_letra_CAB = t0.idx join tbl2_abonos t2 on t1.id_abono_CAB = t2.idx where t0.idx = ? group by t0.importe`,[cabecera.idletra])
+      await conn.query(`UPDATE tbl2_letras_cab SET estado = ? WHERE idx = ?`,[(parseFloat(validacion[0].cancelado) >= parseFloat(validacion[0].importe) ? 'TERM' : 'EMIT'),cabecera.idletra])
+
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return {ok:true,message:'Se ha guardado el registros'}
     } catch (err) {
       console.log("Error en la transaccion",err)
@@ -714,9 +733,19 @@ export default class AbonoServicio{
       await conn.connect()
       conn.beginTransaction()
 
+      let [info] = await conn.query(`select t1.id_letra_CAB from tbl2_conciliaciones t1 join tbl2_abonos t2 on t1.id_abono_CAB = t2.idx where t2.idx = ?`,idabono)
+
       await conn.query('DELETE FROM tbl2_abonos WHERE idx = ?',[idabono])
       await conn.query(`DELETE FROM tbl2_conciliaciones WHERE ruc_ = ? and id_abono_CAB = ?`,['20522094120',idabono])
-      await this.deleteMovimientoCaja(idabono)
+
+      let [validacion] = await conn.query(`SELECT t0.importe,COALESCE(sum(t2.importe),0) as cancelado FROM tbl2_letras_cab t0 JOIN tbl2_conciliaciones t1 ON t1.id_letra_CAB = t0.idx JOIN tbl2_abonos t2 ON t1.id_abono_CAB = t2.idx WHERE t0.idx = ? GROUP BY t0.importe`,[info[0].id_letra_CAB])
+
+      await conn.query(`UPDATE tbl2_letras_cab SET estado = ? WHERE idx = ?`,[(parseFloat(validacion[0].cancelado) >= parseFloat(validacion[0].importe) ? 'TERM' : 'EMIT'),info[0].id_letra_CAB])
+
+      /////////////////////////////////////////////////////////////
+      ////// DESAHABILITADO POR EL MOMENTO HASTA EL PROXIMO AVISO
+      // await this.deleteMovimientoCaja(idabono)
+      /////////////////////////////////////////////////////////////
 
       // if(conn) conn.rollback()
       if(conn) conn.commit()
@@ -849,21 +878,22 @@ export default class AbonoServicio{
           tlc.importe,
           tlc.idx,
           tlc.num_letra,
-          tb1.idx as idpedido,
-          tb1.orden_ref,
+          COALESCE(tb1.idx,'-') as idpedido,
+          COALESCE(tb1.orden_ref,'-') as orden_ref,
           tb1.tipo,
           tb1.proveedor,
-          tb1.fec_emision,
-          tb1.fec_retorno,
+          COALESCE(tb1.fec_emision,'-') as fec_emision,
+          COALESCE(tb1.fec_retorno,'-') as fec_retorno,
           COALESCE(DATEDIFF(tb1.fec_retorno,tb1.fec_emision),'') as tiempo_produccion,
           tlc.idx as idletra,
           COALESCE(DATEDIFF(STR_TO_DATE(tb1.fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
-          tb1.forma_pago,
+          COALESCE(tb1.forma_pago,'-') as forma_pago,
           tb1.estado,
+          COALESCE(
           (
             SELECT SUM(COALESCE(cantidad,0)) FROM tbl2_pedidos_insumos_det tpid 
             WHERE tpid.id_pedido_CAB = tb1.idx
-          ) as cantidad,
+          ),0) as cantidad,
           (
             SELECT COALESCE(sum(despacho),0) as despacho FROM tbl2_despachos_cab tdc
             JOIN tbl2_despachos_det tdd ON tdc.idx = tdd.id_despacho_CAB
@@ -877,7 +907,7 @@ export default class AbonoServicio{
           (
             SELECT COALESCE(SUM(COALESCE(ta.importe,0)),0) FROM tbl2_conciliaciones tc
             JOIN tbl2_abonos ta ON tc.id_abono_CAB = ta.idx
-            WHERE tc.id_letra_CAB = tla.idx  
+            WHERE tc.id_letra_CAB = tlc.idx  
           ) as cancelado
         FROM tbl2_letras_cab tlc
         LEFT JOIN tbl2_letras_adi tla ON tlc.idx = tla.id_letra_CAB
@@ -1036,9 +1066,7 @@ export default class AbonoServicio{
       conn = await mysql2.createConnection(configs[1])
       await conn.connect(); 
       conn.beginTransaction()
-
       try{
-
         let [info_movimiento] = await conn.query(`SELECT *FROM tbl2_caja_movimientos_det WHERE id_abono_ref = ?`,[idabono])
         await conn.query(`DELETE FROM tbl2_caja_movimientos_det WHERE id_abono_ref = ${idabono} and ruc_ = '20522094120'`)
 
@@ -1055,12 +1083,9 @@ export default class AbonoServicio{
         });
 
         await conn.query("UPDATE tbl2_caja_movimientos_cab SET ingresos = ?, egresos = ?, saldo_final = ? WHERE ruc_ = ? and idx = ?",[ingresos,egresos,saldo_inicial + ingresos + egresos, '20522094120',info_movimiento[0].id_cajamov_CAB])
-
         // await conn.query("UPDATE tbl2_caja_movimientos_cab SET egresos = egresos - ? WHERE ruc_ = ? and idx = ?",[info_movimiento[0].monto,'20522094120',info_movimiento[0].id_cajamov_CAB])
 
-
         console.log("Infomacion del movuimiento de caja :",info_movimiento)
-
       }catch(err){
         console.log("error en la consulta",err)
       }
