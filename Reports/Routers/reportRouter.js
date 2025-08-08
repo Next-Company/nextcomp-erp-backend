@@ -4,4 +4,5 @@ export const ReportRouter = Router()
 
 ReportRouter.post('/letras',ReportController.getInformeLetras)
 ReportRouter.post('/resumenconsolidado',ReportController.getResumenConsolidado)
+ReportRouter.post('/despachosconsolidado',ReportController.getDespachosConsolidado)
 ReportRouter.post('/import',ReportController.setImportLetras)
