@@ -210,14 +210,43 @@ export class ProduccionController {
       });
   }
   static async verInfoDespacho(req, resp) {
-    // console.log("Mostrando informacion de despacho, dentro de la vista yuju")
     const params = req.params
     console.log("La informacion de los parametros es otro cambio:",params)
     const data = await ProduccionModel.getInfoGuiaCab(params.idguia)
     console.log("Mostrando informacin de la guia:",data)
     // const data2 = await ProduccionModel.getInfoGuiaDet(params.id)
-    const data2 = await ProduccionModel.getInfoDespachoDet(params.id)
+    let data2 = await ProduccionModel.getInfoDespachoDet(params.id)
     console.log("Mostrando la informacion del detalle del despacho:",data2)
+
+    console.log("Reestructurando la variable data2")
+
+    data2 = data2.reduce((c,v)=>{
+      // [
+      //   {"talla": "l", "caidos": 0, "cantidad": 36, "incompletos": 0}, 
+      //   {"talla": "m", "caidos": 4, "cantidad": 32, "incompletos": 0}, 
+      //   {"talla": "s", "caidos": 3, "cantidad": 21, "incompletos": 0}, 
+      //   {"talla": "xl", "caidos": 0, "cantidad": 12, "incompletos": 0}, 
+      //   {"talla": "xs", "caidos": 0, "cantidad": 0, "incompletos": 0}, 
+      //   {"talla": "xxl", "caidos": 0, "cantidad": 0, "incompletos": 0}
+      // ]
+
+      let lista = ['cantidad','caidos','incompletos']
+      let tallas = ['xs','s','m','l','xl','xxl']
+      v.fracciones_despacho = ['xs','s','m','l','xl','xxl'].reduce((c3,v3)=>{
+        c3.push(v.fracciones_despacho.filter(row=>row['talla'] == v3)[0])
+        return c3
+      },[])
+      let nuevo = lista.reduce((c2,v2) => {
+        let newnames = {cantidad:'Despacho',caidos:'Caidos',incompletos:'Incompletos'}
+        c2.push([newnames[v2],...v.fracciones_despacho.map(row=>row[v2]),'-',v.fracciones_despacho.map(row=>row[v2]).reduce((c,v)=>c+v,0)])
+        return c2
+      },[]);
+      console.log("Nuefo formateddo:",nuevo)
+      // let new_fracciones = 
+      c.push({...v,new_fracciones:nuevo})
+      return c
+    },[])
+
     const data3 = data[0].id_proveedor_CAB ? await ProduccionModel.searchProveedorById(data[0].id_proveedor_CAB) : [{ nom: data[0].responsable, ruc: '', direccion: data[0].destino }]
     resp.render(
       'guia_despacho',
@@ -1703,7 +1732,7 @@ export class ProduccionController {
       BINARY_CHUNKS2 = await fs.readFile('public/images/logo_elenex_company.png')
     }
     
-    const BINARY_CHUNKS3 = await fs.readFile('public/images/orden_pedido.png')
+    const BINARY_CHUNKS3 = await fs.readFile('public/images/requerimiento.png')
     // const tipo = JSON.parse(data.info).tipo
     console.log("El tipo de pedido es :", tipo)
     res.render(
