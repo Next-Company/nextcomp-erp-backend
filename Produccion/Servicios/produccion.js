@@ -1,5 +1,6 @@
 import { configs } from "../../Main/utils.js";
 import mysql from "mysql2/promise";
+import { ProductosService } from "../../Productos/Servicios/productosService.js";
 // import { inventario } from "../../Main/config.js";
 export class ProduccionModel {
   static async getOrdenes(search) {
@@ -1448,11 +1449,22 @@ export class ProduccionModel {
 
     console.log("Informacion cabecera:", cabecera)
     console.log("Informacion detalle:", articulos)
+    // return {ok:true,message:'Pedido generado con exito. Por favor'}
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-
       conn.beginTransaction()
+
+      // for(let articulo of [...articulos]){
+      //   if(articulo.id_producto_CAB == ''){
+      //     let resoper = await ProductosService.createNewProduct(articulo)
+      //     console.log("El resultado del insertado es:",resoper)
+      //   }else if(articulo.idx_color == ''){
+
+      //   }
+      // }
+      // return {ok:true, message:'Orden de pedido ha sido generado correctamente.'}
+
       if (data.id) {
         await conn.query('UPDATE tbl2_pedidos_insumos_cab SET orden_ref=NULLIF(?, ""),fec_emision=NULLIF(?, ""),fec_retorno=NULLIF(?, ""),tipo=NULLIF(?, ""),id_proveedor_CAB=NULLIF(?, ""),proveedor=NULLIF(?, ""),responsable=NULLIF(?, ""),forma_pago=NULLIF(?, ""),nro_contacto=NULLIF(?, ""),observaciones=NULLIF(?, ""),estado=NULLIF(?, ""),moneda=NULLIF(?, ""),igv=NULLIF(?, ""),produccion=NULLIF(?, ""),afec_retencion=NULLIF(?, ""),emisor=NULLIF(?, "") WHERE idx = ?', [cabecera.orden_ref, cabecera.fec_emision, cabecera.fec_retorno, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.forma_pago, cabecera.nro_contacto, cabecera.observaciones, cabecera.estado, cabecera.moneda, cabecera.igv, cabecera.produccion, cabecera.afec_retencion, cabecera.emisor, parseInt(data.id)])
 
@@ -1532,8 +1544,8 @@ export class ProduccionModel {
         // return resultS
       }
 
-      if(conn) conn.rollback()
-      // if(conn) conn.commit()
+      // if(conn) conn.rollback()
+      if(conn) conn.commit()
       return {ok:true,message:'Registro completo'}
     } catch (err) {
       if (conn) conn.rollback()

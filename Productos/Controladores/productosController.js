@@ -21,5 +21,16 @@ export class ProductosController{
     // res.send({data:info});
     res.send(info);
   }
-
+  static async createNewProduct(req,res){
+    let data = []
+    const info = await ProductosService.createNewProduct(data);
+    // res.send({data:info});
+    res.send(info);
+  }
+  static async createNewColor(req,res){
+    let data = []
+    const info = await ProductosService.createNewColor(data);
+    // res.send({data:info});
+    res.send(info);
+  }
 }
