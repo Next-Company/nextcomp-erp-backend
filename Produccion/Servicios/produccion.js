@@ -1344,19 +1344,20 @@ export class ProduccionModel {
       }
     }
   }
-  //////////////////////////////////
+  /////////////////////////////////
   //seccion guias traslado interno
-  //////////////////////////////////
+  /////////////////////////////////
   static async getListaPedidos(search = '') {
     console.log("Obteniendo lista de pedidos", search)
     let conn
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      let extra = (search !== '' && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(TRIM(orden_ref),' ',TRIM(proveedor),' ',TRIM(produccion),' ',TRIM(estado))) > 0").join(" ") : ""
+      let extra = (search !== '' && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(TRIM(tipo),' ',TRIM(orden_ref),' ',TRIM(proveedor),' ',TRIM(produccion),' ',TRIM(estado))) > 0").join(" ") : ""
 
       // SECCION CONSULTA PEDIDOS
       console.log("Consulta extra :", extra)
+
       const query = `
       SELECT tb1.idx,tb1.orden_ref,tb1.tipo,tb1.proveedor,tb1.fec_emision,tb1.fec_retorno,COALESCE(DATEDIFF(tb1.fec_retorno,tb1.fec_emision),'') as tiempo_produccion,
         COALESCE(DATEDIFF(STR_TO_DATE(tb1.fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,tb1.forma_pago,tb1.estado,
@@ -1387,6 +1388,7 @@ export class ProduccionModel {
         ) as cancelado
         FROM tbl2_pedidos_insumos_cab tb1
         WHERE 1=1 ${extra}
+        HAVING cantidad > despacho
         ORDER BY created_at DESC 
         LIMIT 100
       `
@@ -1581,7 +1583,17 @@ export class ProduccionModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      const [results, fields] = await conn.query('SELECT *FROM tbl2_pedidos_insumos_det where id_pedido_CAB = ?', [id]);
+      const [results, fields] = await conn.query(`
+        SELECT 
+          t1.*,
+          COALESCE((
+            select sum(tbdd.despacho) from tbl2_despachos_cab tbdc
+            join tbl2_despachos_det tbdd on tbdc.idx = tbdd.id_despacho_CAB
+            where tbdc.id_pedido_origen = t1.id_pedido_CAB and tbdd.id_item = t1.idx
+          ),0) as ingresos
+        FROM tbl2_pedidos_insumos_det t1 
+        WHERE t1.id_pedido_CAB = ?
+      `, [id]);
       const ids = results.map(row => row.idx)
 
       await conn.end();
