@@ -2416,6 +2416,17 @@ export class ProduccionController {
     const data = await ProduccionModel.getPenalidadesServicios()
     res.json(data)
   }
+  static async getListaRetiros(req, res) {
+    const search = req.params.search ?? ''
+    const data = await ProduccionModel.getListaRetiros(search)
+    res.json(data)
+  }
+  static async getInfoRetiros(req, res) {
+    const id = req.params.id
+    const data = await ProduccionModel.getInfoRetiroCab(id)
+    const data2 = await ProduccionModel.getInfoRetiroDet(id, data[0].tipo)
+    res.json([data[0], data2])
+  }
   static async saveInfoRetiro(req, res) {
     const data = await ProduccionModel.saveInfoRetiro(req.body)
     res.json(data)

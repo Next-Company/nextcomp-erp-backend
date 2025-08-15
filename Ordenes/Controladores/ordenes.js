@@ -814,13 +814,16 @@ export class OrdenesController {
               let filas = lista.map((row2,key2)=>{
                 // console.log("Producto rowspan:",consolidado.length,row.fracciones.length)
                 return `
-                  <tr style="height:40px;">
+                  <tr style="height:20px;">
                     ${key2 == 0 && key == 0 
                       ? `
                         <td rowspan="${consolidado.length*lista.length}" style="padding:-1px">
                           <div style="display:flex;flex-direction:column;height:100%;margin:-2px;">
-                            <div style="flex:1;">
-                              <div style="height: 100%;overflow: hidden;display: flex; justify-content: center;padding:10px;background-color:#dddddd;background-image: url('https://jsjfact.com/facturador/imagenez/op_222.jpg');background-position: center;background-size: cover;background-origin: content-box;background-clip: content-box;">
+                            <div style="flex:1;position:relative;">
+                              <div style="height:200px;display: absolute; justify-content: center;padding:10px;background-color:#dddddd;background-image: url('https://jsjfact.com/facturador/imagenez/op_${params.idorden}.jpg');background-position: center;background-size: cover;background-origin: content-box;background-clip: content-box;width:180px;">
+                                <div style="display:absolute;width:180px;height:380px;overflow:hidden;position:relative;">
+                                  <img src='https://jsjfact.com/facturador/imagenez/op_${params.idorden}.jpg' style="margin-left:-70px;" width='320'/>
+                                </div>
                                 
                               </div>
                             </div>
@@ -902,7 +905,7 @@ export class OrdenesController {
                   <th style="min-width:200px;">FOTO DE PRENDA</th>
                   <th style="min-width:120px;">COLOR</th>
                   <th style="">TALLA</th>
-                  <th style="">CANTID AD</th>
+                  <th style="">UND</th>
                   ${
                     materiales.length > 0 
                     ? materiales.map(row=>"<th style='width:calc(25% / " + consolidado[0].length + ");'>"+ row +"</th>").join("\n")
@@ -913,7 +916,7 @@ export class OrdenesController {
                     ? `
                       <th style="min-width:120px;">COLOR</th>
                       <th style="">TALLA</th>
-                      <th style="">CANTID AD</th>
+                      <th style="">UND</th>
                       ${
                         materiales.length > 0 
                         ? materiales.map(row=>"<th style='width:calc(25% / " + consolidado[0].length + ");'>"+ row +"</th>").join("\n")

@@ -82,6 +82,11 @@ export class ProductosService{
       insert['isbn'] = '09000' + indice_prod + '0';
       insert['nom'] = info.producto;
       insert['ruc_']= '20522094120';
+      insert['costo']= 0;
+      insert['utilidad1']= 0;
+      insert['moneda']= '';
+      insert['codUnidadMedida']= 'NIU';
+      insert['tipAfeIGV']= '10';
       insert['serie'] = 'N';
       insert['isc'] = 0;
       insert['vencimiento'] = 'N';
@@ -96,26 +101,9 @@ export class ProductosService{
       console.log("Los valores a insertar son los siguientes:",values)
       let [result] = await conn.execute("insert into tbl2_productos(" + campos.join(',') + ") values("+ campos.map(row=>'?').join(',') +")",values)
 
-      // $adicionales = json_decode($_POST['adicionales'],true);
-      // foreach ($adicionales as $key => $adi) {
-      //     $add = [
-      //         'idx_CAB_PROD' => intval($res['idx_CAB_PROD']),
-      //         'codigo' => $new_value['codigo'],
-      //         'isbn' => $new_value['isbn'],
-      //         'nom' => $new_value['nom'],
-      //         'idx_CAB_COLOR' => $adi['idx_CAB_COLOR'],
-      //         'idx_talla'=> $adi['idx_talla'],
-      //         'talla' => $adi['talla'],
-      //         'estado' => $adi['estado']
-      //     ];
-      //     $this->db->insert('tbl2_subproductos', $add);
-      // }
-      let respcolor = await this.createNewColor({codigo:'',nom:info.color,ruc:'20522094120'})
-      await conn.execute("insert into tbl2_subproductos(idx_CAB_PROD,codigo,isbn,nom,idx_CAB_COLOR,idx_talla,talla,estado) values ?",[result.insertId,insert.codigo,insert.isbn,insert.nom,respcolor.idx,26,'S/T','primera'])
-      
       if(conn) conn.rollback()
       // if(conn) conn.commit()
-      return rows;
+      return {ok:true,message:'',info:result}
     }
     catch(error){
       if(conn) conn.rollback()
@@ -123,6 +111,38 @@ export class ProductosService{
     }
     finally{
       await conn.end();
+    }
+  }
+  static async createNewSubProduct(info){
+    let conn = undefined
+    let resultid = null
+    try {
+      conn = await mysql.createConnection(configs[1]);
+      await conn.connect();
+      conn.beginTransaction()
+
+      let [result,fields] = await conn.query("SELECT *FROM tbl2_subproductos LIMIT 1")
+      if (info.idx) {
+        resultid = info.idx
+      } else {
+        let campos = Object.keys(info).reduce((carry, current) => {
+          fields.filter(row => row.name !== 'idx').map(row => row.name).includes(current) && carry.push(current)
+          return carry
+        }, [])
+        let values = campos.map(row => info[row])
+        let [result2] = await conn.execute("INSERT INTO tbl2_productos(" + campos.join(',') + ") values("+ campos.map(row=>'?').join(',') +")",values)
+        resultid = result2.insertId
+      }
+
+      
+      if(conn) conn.rollback()
+      // if(conn) conn.commit()
+      return {ok:true,message:'',resultid}
+    } catch(error) {
+      if(conn) conn.rollback()
+      return {ok:false,message:error}
+    } finally {
+      if(conn) await conn.end()
     }
   }
   static async createNewColor(info){
@@ -136,21 +156,21 @@ export class ProductosService{
       if(info.idx){
 
       }else{
-        let [busqueda] = await query("select *from tbl2_colores where nom like '%?%' and ruc = ?",[info.nom,info.ruc])
+        let [busqueda] = await query("SELECT *FROM tbl2_colores WHERE nom LIKE '%?%' AND ruc = ?",[info.nom,info.ruc])
         if(busqueda.length > 0){
-          idcolor = busqueda[0].idx
-        }else{
-          let [newcolor] = await conn.query("INSERT INTO tbl2_colores(codigo,nom,ruc) VALUES(?,?,?)",[info.codigo,info.nom,info.ruc])
-          idcolor = newcolor.insertId
+          // idcolor = busqueda[0].idx
+          throw new Error('Esta intentando crear un color que ya exite')
         }
+        let [newcolor] = await conn.query("INSERT INTO tbl2_colores(codigo,nom,ruc) VALUES(?,?,?)",[info.codigo,info.nom,info.ruc])
+        idcolor = newcolor.insertId
       }
       if(conn) conn.rollback()
       // if(conn) conn.commit()
-      return {ok:true,message:'La creacion del color se ejecutó con éxito.',idx:idcolor};
+      return {ok:true,message:'La creacion del color se ejecutó con éxito.',idcolor};
     }
     catch(error){
       if(conn) conn.rollback()
-      return {ok:false,message:error,idx:idcolor}
+      return {ok:false,message:error.message}
     }
     finally{
       await conn.end();

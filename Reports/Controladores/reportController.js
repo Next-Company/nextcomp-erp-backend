@@ -5,6 +5,7 @@ import path from 'node:path';
 import puppeteer from 'puppeteer';
 import ReporteService from "../Servicios/reportServicio.js"
 import ExcelJS from 'exceljs';
+import { ProduccionModel } from "../../Produccion/Servicios/produccion.js";
 
 export default class ReportController{
   static __dirname = '/home/juanjhonv/compartido';
@@ -243,10 +244,8 @@ export default class ReportController{
     let detalle = []
 
     if (data.id) {
-      // cabecera = (await ProduccionModel.getInfoPedidoCab(data.id))[0]
-      // detalle = await ProduccionModel.getInfoPedidoDet(data.id)
-      // console.log("Cabecera:", cabecera)
-      // console.log("Detalle:", detalle)
+      cabecera = (await ProduccionModel.getInfoRetiroCab(data.id))[0]
+      detalle = await ProduccionModel.getInfoRetiroDet(data.id)
     } else {
       cabecera = JSON.parse(data.info)
       detalle = JSON.parse(data.detalle)
@@ -255,11 +254,6 @@ export default class ReportController{
     const BINARY_CHUNKS = await fs.readFile('public/images/firma_jefferson.png')
     let BINARY_CHUNKS2 = null
     BINARY_CHUNKS2 = await fs.readFile('public/images/logo_next.png')
-    // if(cabecera.emisor == 'NEXT'){
-    // }else{
-    //   BINARY_CHUNKS2 = await fs.readFile('public/images/logo_elenex_company.png')
-    // }
-    
     const BINARY_CHUNKS3 = await fs.readFile('public/images/guia_traslado.png')
     // const tipo = JSON.parse(data.info).tipo
     console.log("El tipo de pedido es :", tipo)

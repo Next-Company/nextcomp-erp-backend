@@ -1451,22 +1451,11 @@ export class ProduccionModel {
 
     console.log("Informacion cabecera:", cabecera)
     console.log("Informacion detalle:", articulos)
-    // return {ok:true,message:'Pedido generado con exito. Por favor'}
+
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
       conn.beginTransaction()
-
-      for(let articulo of [...articulos]){
-        if(articulo.id_producto_CAB == ''){
-          let resoper = await ProductosService.createNewProduct(articulo)
-          console.log("El resultado del insertado es:",resoper)
-        }else if(articulo.idx_color == ''){
-
-        }
-      }
-      if(conn) conn.rollback()
-      return {ok:true, message:'Orden de pedido ha sido generado correctamente.'}
 
       if (data.id) {
         await conn.query('UPDATE tbl2_pedidos_insumos_cab SET orden_ref=NULLIF(?, ""),fec_emision=NULLIF(?, ""),fec_retorno=NULLIF(?, ""),tipo=NULLIF(?, ""),id_proveedor_CAB=NULLIF(?, ""),proveedor=NULLIF(?, ""),responsable=NULLIF(?, ""),forma_pago=NULLIF(?, ""),nro_contacto=NULLIF(?, ""),observaciones=NULLIF(?, ""),estado=NULLIF(?, ""),moneda=NULLIF(?, ""),igv=NULLIF(?, ""),produccion=NULLIF(?, ""),afec_retencion=NULLIF(?, ""),emisor=NULLIF(?, "") WHERE idx = ?', [cabecera.orden_ref, cabecera.fec_emision, cabecera.fec_retorno, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.forma_pago, cabecera.nro_contacto, cabecera.observaciones, cabecera.estado, cabecera.moneda, cabecera.igv, cabecera.produccion, cabecera.afec_retencion, cabecera.emisor, parseInt(data.id)])
@@ -1521,7 +1510,23 @@ export class ProduccionModel {
 
           for(let fila of articulos){
 
-            // let [validacion]
+            // for(let articulo of [...articulos]){
+            // }
+            if(fila.id_producto_CAB == ''){
+              let {info} = await ProductosService.createNewProduct(fila)
+              let {idcolor} = await ProductosService.createNewColor({codigo:'',nom:fila.color,ruc:'20522094120'})
+      
+              let [newprod] = await conn.query('select *from tbl2_producto where idx = ?',[info.insertId])
+              await this.createNewSubProduct({idx_CAB_PROD:newprod[0].idx,codigo:newprod[0].codigo,isbn:newprod[0].isbn,nom:newprod[0].nom,idx_CAB_COLOR:idcolor,idx_talla:26,talla:'S/T',estado:'primera',lote:res.insertId})
+
+            }else if(fila.idx_color == ''){
+              let [searchproducto] = await conn.query('SELECT *FROM tbl2_producto WHERE idx = ?',[fila.id_producto_CAB])
+
+              let {idcolor} = await ProductosService.createNewColor()
+              await this.createNewSubProduct({idx_CAB_PROD:newprod[0].idx,codigo:newprod[0].codigo,isbn:newprod[0].isbn,nom:newprod[0].nom,idx_CAB_COLOR:idcolor,idx_talla:26,talla:'S/T',estado:'primera',lote:res.insertId})
+            }
+            // if(conn) conn.rollback()
+            // return {ok:true, message:'Orden de pedido ha sido generado correctamente.'}
             
             const [results, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_det(id_pedido_CAB,id_producto_CAB,producto,modelo,corte,color,rollos,cantidad,unidad,precio) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.id_producto_CAB, fila.producto, fila.modelo, fila.corte, fila.color, fila.rollos, fila.cantidad, fila.unidad, fila.precio]);
           }
@@ -1558,8 +1563,8 @@ export class ProduccionModel {
     }
   }
 
-  static async validarExistencia(nomprod,color){
-    let [busqueda] = await conn.query(`select *from tbl2_subproductos where nom = `)
+  static async validateExistencia(info){
+    
   }
 
   static async getInfoPedidoCab(id) {
@@ -2288,14 +2293,13 @@ export class ProduccionModel {
 
   static async saveInfoRetiro(data) {
     let conn
+    console.log("Empezamos con el registro del retiro",data)
     const results = { ok: true, message: 'test' }
     const cabecera = JSON.parse(data.info)
     const articulos = JSON.parse(data.detalle)
-    const facturas = JSON.parse(data.facturas)
-
+    // return results
     console.log("Informacion cabecera:", cabecera)
     console.log("Informacion detalle:", articulos)
-    console.log("Informacion facturas:", facturas)
     let data_backup = undefined, info_orden = undefined
     try {
       conn = await mysql.createConnection(configs[1])
@@ -2303,9 +2307,9 @@ export class ProduccionModel {
       conn.beginTransaction()
 
       if (data.id) {
-        await conn.query('UPDATE tbl2_despachos_cab SET fec_emision_guia=NULLIF(?, ""),fec_despacho=NULLIF(?, ""),tipo=NULLIF(?, ""),id_proveedor_CAB=NULLIF(?, ""),proveedor=NULLIF(?, ""),responsable=NULLIF(?, ""),id_guia_origen=NULLIF(?, ""),nro_guia_origen=NULLIF(?, ""),id_pedido_origen=NULLIF(?, ""),nro_pedido_origen=NULLIF(?, ""),observaciones=NULLIF(?, ""),nro_guia=NULLIF(?, ""),nro_factura=NULLIF(?, ""),imp_factura=NULLIF(?, ""),facturado=NULLIF(?, "") WHERE idx = ?', [cabecera.fec_emision_guia, cabecera.fec_despacho, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.id_guia_origen, cabecera.nro_guia_origen, cabecera.id_pedido_origen, cabecera.nro_pedido_origen, cabecera.observaciones, cabecera.nro_guia, cabecera.nro_factura, cabecera.imp_factura,cabecera.facturado, parseInt(data.id)])
+        await conn.query('UPDATE tbl2_retiros_cab SET fec_emision_guia=NULLIF(?, ""),fec_retorno=NULLIF(?, ""),id_proveedor_CAB=NULLIF(?, ""),proveedor=NULLIF(?, ""),tipo=NULLIF(?, ""),id_pedido_origen=NULLIF(?, ""),nro_pedido_origen=NULLIF(?, ""),orden_ref=NULLIF(?, ""),nro_corte=NULLIF(?, ""),responsable=NULLIF(?, ""),estado=NULLIF(?, ""),observaciones=NULLIF(?, "") WHERE idx = ?', [cabecera.fec_emision_guia, cabecera.fec_retorno, cabecera.id_proveedor_CAB, cabecera.proveedor,  cabecera.tipo, cabecera.id_pedido_origen, cabecera.nro_pedido_origen, cabecera.orden_ref, cabecera.nro_corte, cabecera.responsable, cabecera.estado, cabecera.observaciones, parseInt(data.id)])
 
-        const [res, fld] = await conn.query("SELECT *FROM tbl2_despachos_det WHERE id_despacho_CAB = " + parseInt(data.id))
+        // const [res, fld] = await conn.query("SELECT *FROM tbl2_despachos_det WHERE id_despacho_CAB = " + parseInt(data.id))
         const ids_delete = res.filter(row => row.idx !== '' && !articulos.map(fila => parseInt(fila.idx)).includes(parseInt(row.idx)))
 
 
@@ -2313,26 +2317,13 @@ export class ProduccionModel {
           let id_det = null
           if (fila.idx && fila.idx !== '') {
             console.log("Detro de la actualizacion")
-            const [results, fields] = await conn.query('UPDATE tbl2_despachos_det SET precio=NULLIF(?, ""),despacho=NULLIF(?, ""),caidos=NULLIF(?, ""),incompletos=NULLIF(?, "") WHERE idx = ? and id_despacho_CAB = ?', [fila.precio, fila.despacho, fila.caidos, fila.incompletos, fila.idx, parseInt(data.id)]);
+            const [results, fields] = await conn.query('UPDATE tbl2_retiros_det SET precio=NULLIF(?, ""),despacho=NULLIF(?, ""),caidos=NULLIF(?, ""),incompletos=NULLIF(?, "") WHERE idx = ? and id_despacho_CAB = ?', [fila.precio, fila.despacho, fila.caidos, fila.incompletos, fila.idx, parseInt(data.id)]);
             id_det = fila.idx
 
           } else {
-            const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,despacho,caidos,incompletos) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [parseInt(data.id), fila.id_item, fila.despacho, fila.caidos, fila.incompletos]);
+            const [results] = await conn.query('INSERT INTO tbl2_retiros_det(id_retiro_CAB,id_item,id_producto,despacho) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [parseInt(data.id), fila.id_item, fila.id_producto_CAB, parseFloat(detalle.despacho ?? 0)]);
             id_det = insertdet.insertId
           }
-
-          if(cabecera.tipo !== 'PEDIDOS' && fila.fracciones_despacho.length > 0){
-            // console.log("Informacion de la fraccion :",detalle.fracciones_despacho)
-            let fracciones_despacho = fila.fracciones_despacho.reduce((c,v)=>{
-              c.push([id_det,v.talla,v.cantidad,v.caidos,v.incompletos])
-              return c
-            },[])
-            console.log("La informacion a insertar es:",fracciones_despacho)
-            await conn.query(`DELETE FROM tbl2_despachos_det_fracciones WHERE id_despacho_DET = ?`,[parseInt(id_det)])
-            await conn.query(`INSERT INTO tbl2_despachos_det_fracciones(id_despacho_DET,talla,despachos,caidos,incompletos) values ?`,[fracciones_despacho])
-            
-          }
-
         }
 
         console.log("Lista de filas a eliminar:", ids_delete)
@@ -2348,116 +2339,23 @@ export class ProduccionModel {
         }
         await eliminar();
 
-        const [res2] = await conn.query("SELECT *FROM tbl2_despachos_adi WHERE id_despacho_CAB = " + parseInt(data.id))
-        const ids_delete2 = res2.filter(row => row.idx !== '' && !facturas.map(fila => parseInt(fila.idx)).includes(parseInt(row.idx)))
-        console.log("Lista de filas a eliminar:", ids_delete2)
-        console.log("Las facturas a insertar son:",facturas)
-        const insert2 = async () => {
-          console.log("Hola mundo facturas")
-          const fila = facturas.shift()
-          console.log("Dentro de insertado facturas", fila)
-          if (fila) {
-            if (fila.idx && fila.idx !== '') {
-              const [results, fields] = await conn.query('UPDATE tbl2_despachos_adi SET tipodoc=NULLIF(?, ""),moneda=NULLIF(?, ""),serie=NULLIF(?, ""),numero=NULLIF(?, ""),fec_emision=NULLIF(?, ""),unidades=NULLIF(?, ""),importe_bruto=NULLIF(?, ""),base_imponible=NULLIF(?, ""),monto_inafecto=NULLIF(?, ""),igv=NULLIF(?, ""),importe_total=NULLIF(?, "") WHERE idx = ? and id_despacho_CAB = ?', [fila.tipodoc, fila.moneda, fila.serie, fila.numero, fila.fec_emision, fila.unidades, fila.importe_bruto, fila.base_imponible, fila.monto_inafecto, fila.igv, fila.importe_total, fila.idx, parseInt(data.id)]);
-            } else {
-              const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_adi(id_despacho_CAB,tipodoc,moneda,serie,numero,fec_emision,unidades,importe_bruto,base_imponible,monto_inafecto,igv,importe_total) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [parseInt(data.id), fila.tipodoc, fila.moneda, fila.serie, fila.numero, fila.fec_emision, parseFloat(fila.unidades), parseFloat(fila.importe_bruto), parseFloat(fila.base_imponible), parseFloat(fila.monto_inafecto), parseFloat(fila.igv), parseFloat(fila.importe_total)]);
-            }
-            await insert2()
-          } else {
-            return Promise.resolve('')
-          }
-        }
-        await insert2()
-
       //////////////////////////////////////////////////////////////
-      //////////////INICIA SEGUNDA SECCION DE INGRE/////////////////
+      //////////////INICIA SEGUNDA SECCION DE INGRS/////////////////
       //////////////////////////////////////////////////////////////
       } else {
         try {
-          const [res, fields] = await conn.query('INSERT INTO tbl2_despachos_cab(fec_emision_guia,fec_despacho,tipo,id_proveedor_CAB,proveedor,responsable,id_guia_origen,nro_guia_origen,id_pedido_origen,nro_pedido_origen,observaciones,nro_guia,nro_factura,imp_factura,facturado) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [cabecera.fec_emision_guia, cabecera.fec_despacho, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.id_guia_origen, cabecera.nro_guia_origen, cabecera.id_pedido_origen, cabecera.nro_pedido_origen, cabecera.observaciones, cabecera.nro_guia, cabecera.nro_factura, cabecera.imp_factura,cabecera.facturado])
-
+          const [res, fields] = await conn.query('INSERT INTO tbl2_retiros_cab(fec_emision,fec_retorno,tipo,id_proveedor_CAB,proveedor,responsable,id_pedido_origen,nro_pedido_origen,observaciones,orden_ref,nro_corte,estado) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [cabecera.fec_emision, cabecera.fec_retorno, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.id_pedido_origen, cabecera.nro_pedido_origen, cabecera.observaciones, cabecera.orden_ref, cabecera.nro_corte, cabecera.estado])
 
           console.log("Inicia insertado detalle despacho")
           for(let detalle of [...articulos]){
-
-            const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,precio,despacho,caidos,incompletos,id_combo) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, detalle.id_item, detalle.precio, parseFloat(detalle.despacho ?? 0), parseFloat(detalle.caidos ?? 0), parseFloat(detalle.incompletos ?? 0),detalle.id_combo]);
-
-        }
-        
-        const insert2 = async () => {
-          console.log("Insertado de factura bucle contador")
-            const fila = facturas.shift()
-            if (fila) {
-              const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_adi(id_despacho_CAB,tipodoc,moneda,serie,numero,fec_emision,unidades,importe_bruto,base_imponible,monto_inafecto,igv,importe_total) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.tipodoc, fila.moneda, fila.serie, fila.numero, fila.fec_emision, parseFloat(fila.unidades), parseFloat(fila.importe_bruto), parseFloat(fila.base_imponible), parseFloat(fila.monto_inafecto), parseFloat(fila.igv), parseFloat(fila.importe_total)]);
-
-              await insert2()
-            } else {
-              return Promise.resolve('')
-            }
+            console.log("Insertando detalle:", detalle)
+            const [results, fields] = await conn.query('INSERT INTO tbl2_retiros_det(id_retiro_CAB,id_item,id_producto,despacho) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, detalle.id_item, detalle.id_producto_CAB, parseFloat(detalle.despacho ?? 0)]);
           }
-          (cabecera.id_pedido_origen ?? false) && await insert2()
-
-          if(cabecera.tipo !== 'PEDIDOS'){
-            console.log("Comienza validacion del saldo de articulos")
-            let [result,fields] = await conn.query(`
-              SELECT idx,orden_ref,producto,responsable,modelo,marca,estado,tipo,servicio,id_proveedor_CAB,proveedor,fec_emision,DATE_FORMAT(fec_emision,'%d/%m/%Y') as fec_emision_guia,fec_retorno,DATE_FORMAT(fec_retorno,'%d/%m/%Y') as fec_retorno_guia,fec_recepcion,costo,COALESCE(DATEDIFF(fec_retorno,fec_emision),'') as tiempo_produccion,COALESCE(DATEDIFF(STR_TO_DATE(fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
-              (
-                select sum(cantidad) from tbl2_guias_traslado_det tgtd where tgtd.id_guia_CAB = tbl2_guias_traslado_cab.idx
-              ) as cantidad_servicio,
-              (
-                select COALESCE(sum(COALESCE(tdd.despacho,0) + COALESCE(tdd.caidos,0) + COALESCE(tdd.incompletos,0)),0) as total from tbl2_despachos_cab tdc 
-                join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
-                where tdc.id_guia_origen = tbl2_guias_traslado_cab.idx
-              ) as ingresos
-              FROM tbl2_guias_traslado_cab where idx = ?
-              `,[parseInt(cabecera.id_guia_origen)])
-
-            console.log("Info de la validacoines :",result)
-        
-            let valida = result[0].ingresos >= result[0].cantidad_servicio ? 1 : 0
-            if(valida){
-              await conn.query("UPDATE tbl2_guias_traslado_cab SET estado = 'FINALIZADO' WHERE idx = ?",[parseInt(cabecera.id_guia_origen)])
-            }
-          }
-
+      
         } catch (err) {
           console.log("error en la consulta", err)
         }
       }
-
-      ///////////////////////////////////////////
-      ///// UPDATE MASTES DE PRODUCCION /////////
-      if(cabecera.tipo == 'SERVICIOS'){
-        console.log("Comenzando actulizacion master de produccion")
-        // muestra info [{idcombo:22,xs:[0,3],s:[0,3],m:[0,3],l:[0,3],xl:[0,3],xxl:[0,3]},{},{},...]
-        let param1 = data_backup.reduce((c,v)=>{
-          let pp = v.fracciones.reduce((cc,vv)=>{
-            cc = {...cc,[vv.talla]:[ parseInt(vv.despachos),parseInt(vv.caidos),parseInt(vv.incompletos) ]}
-            return cc
-          },{idcombo:v.id_combo})
-          c.push(pp)
-          return c
-        },[])
-        console.log("El valor del primer dato es:",param1)
-        console.log("La informacion de los articulo es :",articulos)
-        let param2 = articulos.filter(item=>item.id_combo).reduce((c,v)=>{
-          let pp = v.fracciones_despacho.reduce((cc,vv)=>{
-            return {...cc,[vv.talla]:[vv.cantidad,vv.caidos,vv.incompletos]}
-          },{idcombo:v.id_combo})
-          c.push(pp)
-          return c
-        },[])
-        console.log("El valor del segundo dato es:",param2)
-  
-        let respuesta = await this.UpdateMasterProduccion(param1,param2,info_orden[0].id_orden_CAB,conn,0) // tipo = 1 => RESTA, tipo = 0 => SUMA
-        console.log("Imprimiendo respuestad del master:",respuesta)
-        if(!respuesta.ok) throw respuesta.message
-        // console.log("Resultado del update master :",resp_update)
-      }
-
-      ///////////////////////////////////////////
-      ///////////////////////////////////////////
-
       // if (conn) conn.rollback()
       if (conn) conn.commit()
       return {ok:true,message:'Proceso ejecutado con éxito'}
@@ -2468,6 +2366,90 @@ export class ProduccionModel {
       return {ok:false,message:err}
     } finally {
       if (conn) await conn.end();
+    }
+  }
+  static async getInfoRetiroCab(id) {
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      const [results] = await conn.query('SELECT *FROM tbl2_retiros_cab where idx = ?', [id]);
+      await conn.end();
+
+      return results
+    } catch (err) {
+      return [err]
+    } finally {
+      if (conn) await conn.end()
+    }
+  }
+  static async getInfoRetiroDet(id, tipo = null) {
+    let conn
+    let new_articulos = null
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      
+
+      const [data] = await conn.query(`
+        SELECT 
+          trd.idx,
+          trd.id_item,
+          trd.id_producto,
+          trd.despacho,
+          tpid.producto,
+          tpid.color,
+          tpid.rollos,
+          tpid.cantidad,
+          tpid.unidad,
+          tpid.precio
+        FROM tbl2_retiros_det trd 
+        join tbl2_pedidos_insumos_det tpid on trd.id_item = tpid.idx
+        WHERE trd.id_retiro_CAB = ?
+      `, [id]);
+      console.log("El detalle del retiro es el siguiente:",data)
+
+      await conn.end();
+      return data
+    } catch (err) {
+      console.log(err)
+      return err
+    } finally {
+      if (conn) await conn.end();
+    }
+  }
+  static async getListaRetiros(search = '') {
+    console.log("Obteniendo lista de pedidos", search)
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      let extra = (search !== '' && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(TRIM(tipo),' ',TRIM(orden_ref),' ',TRIM(proveedor),' ',TRIM(produccion),' ',TRIM(estado))) > 0").join(" ") : ""
+
+      // SECCION CONSULTA PEDIDOS
+      console.log("Consulta extra :", extra)
+
+      const query = `
+        SELECT tb1.idx,tb1.fec_emision,tb1.fec_retorno,tb1.id_proveedor_CAB,tb1.proveedor,tb1.tipo,tb1.id_pedido_origen,tb1.nro_pedido_origen,tb1.orden_ref,tb1.orden_ref,tb1.nro_corte,tb1.responsable,tb1.estado,tb1.observaciones
+        FROM tbl2_retiros_cab tb1
+        WHERE 1=1 ${extra}
+        ORDER BY tb1.created_at DESC 
+        LIMIT 100
+      `
+      console.log("EL query de consulta es el siguiente :",query)
+      const [results, fields] = await conn.query(query);
+
+      await conn.end();
+      return results
+    } catch (err) {
+      console.log(err)
+      return [err]
+    } finally {
+      if (conn) {
+        // console.log("Cerrando session")
+        // await conn.end();
+        await conn.end();
+      }
     }
   }
 }

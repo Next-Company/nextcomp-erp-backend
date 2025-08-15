@@ -819,8 +819,8 @@ export class OrdenesModel {
       console.log("Verificando la informacion de corte :",verificar)
 
       console.log("Terminando el actulizado de corte")
-      // if (conn) conn.rollback()
-      if (conn) conn.commit()
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito' }
     } catch (err) {
       console.log(err)
