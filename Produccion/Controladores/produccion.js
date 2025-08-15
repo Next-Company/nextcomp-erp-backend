@@ -1933,7 +1933,8 @@ export class ProduccionController {
   }
   static async saveInfoPedidos(req, res) {
     const data = await ProduccionModel.saveInfoPedidos(req.body)
-    res.json({ ok: true, message: 'datos guardados' })
+    // res.json({ ok: true, message: 'datos guardados' })
+    res.json(data)
   }
   static async getInfoPedidos(req, res) {
     const id = req.params.id
@@ -2413,6 +2414,10 @@ export class ProduccionController {
   }
   static async getPenalidadesServicios(req, res) {
     const data = await ProduccionModel.getPenalidadesServicios()
+    res.json(data)
+  }
+  static async saveInfoRetiro(req, res) {
+    const data = await ProduccionModel.saveInfoRetiro(req.body)
     res.json(data)
   }
 }

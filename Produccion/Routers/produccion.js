@@ -46,6 +46,11 @@ produccionRouter.get('/despacho/:id', ProduccionController.getInfoDespachos)
 produccionRouter.put('/guardardespacho', ProduccionController.saveInfoDespachos)
 produccionRouter.delete('/borrardespacho/:id', ProduccionController.eliminarInfoDespachos)
 
+// produccionRouter.get('/retiros/:id', ProduccionController.getInfoRetiros)
+produccionRouter.put('/saveinforetiro', ProduccionController.saveInfoRetiro)
+// produccionRouter.delete('/deleteinforetiro/:id', ProduccionController.eliminarInfoRetiro)
+
+
 produccionRouter.get('/getListaEstampados', ProduccionController.getListaEstampados)
 produccionRouter.get('/estampado/:id', ProduccionController.getInfoEstampado)
 produccionRouter.put('/guardarestampado', ProduccionController.saveInfoEstampado)

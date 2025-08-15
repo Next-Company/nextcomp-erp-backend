@@ -60,6 +60,7 @@ export class ProductosService{
     return info;
   }
   static async createNewProduct(info){
+    // comentario de reseteo de api
     let conn = undefined
     try {
       conn = await mysql.createConnection(configs[1]);
@@ -92,7 +93,8 @@ export class ProductosService{
         return carry
       }, [])
       let values = campos.map(row => insert[row])
-      let [result] = await conn.execute("insert into tbl2_productos values ?",values)
+      console.log("Los valores a insertar son los siguientes:",values)
+      let [result] = await conn.execute("insert into tbl2_productos(" + campos.join(',') + ") values("+ campos.map(row=>'?').join(',') +")",values)
 
       // $adicionales = json_decode($_POST['adicionales'],true);
       // foreach ($adicionales as $key => $adi) {
@@ -142,8 +144,8 @@ export class ProductosService{
           idcolor = newcolor.insertId
         }
       }
-      // if(conn) conn.rollback()
-      if(conn) conn.commit()
+      if(conn) conn.rollback()
+      // if(conn) conn.commit()
       return {ok:true,message:'La creacion del color se ejecutó con éxito.',idx:idcolor};
     }
     catch(error){
