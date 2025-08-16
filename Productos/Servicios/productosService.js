@@ -1,5 +1,6 @@
 import mysql from "mysql2/promise";
 import { configs } from "../../Main/utils.js";
+import { isErrorLike } from "puppeteer-core";
 export class ProductosService{
   static async getProductosList(){
     const conn = await mysql.createConnection(configs[1]);
@@ -67,10 +68,10 @@ export class ProductosService{
       await conn.connect();
       conn.beginTransaction()
 
-      const [validacion,fields] = await conn.execute("select *from tbl2_productos where ruc_ = '20522094120' and lower(nom) like '%?%'",[info.producto.toLowerCase()])
+      const [validacion,fields] = await conn.execute("select *from tbl2_productos where ruc_ = '20522094120' and lower(nom) = ?",[info.producto.toLowerCase()])
 
       if(validacion.length > 0){
-        throw 'Se ha detectado un producto existente con el mismo nombre'
+        throw new Error('Se ha detectado un producto existente con el mismo nombre')
       }
 
       const [correlativo] = await conn.execute("select codigo_num from tbl2_rubro_correlativo where ruc_ = ?",['20522094120']);
@@ -101,13 +102,13 @@ export class ProductosService{
       console.log("Los valores a insertar son los siguientes:",values)
       let [result] = await conn.execute("insert into tbl2_productos(" + campos.join(',') + ") values("+ campos.map(row=>'?').join(',') +")",values)
 
-      if(conn) conn.rollback()
-      // if(conn) conn.commit()
-      return {ok:true,message:'',info:result}
+      // if(conn) conn.rollback()
+      if(conn) conn.commit()
+      return {ok:true,message:'',info:result.insertId}
     }
     catch(error){
       if(conn) conn.rollback()
-      return {ok:false,message:error}
+      return {ok:false,message:error.message ?? error}
     }
     finally{
       await conn.end();
@@ -121,26 +122,26 @@ export class ProductosService{
       await conn.connect();
       conn.beginTransaction()
 
-      let [result,fields] = await conn.query("SELECT *FROM tbl2_subproductos LIMIT 1")
+      let [validation,fields] = await conn.query("SELECT *FROM tbl2_subproductos WHERE idx_CAB_PROD = ? AND idx_CAB_COLOR = ?",[info.idx_CAB_PROD,info.idx_CAB_COLOR])
+      if(validation.length > 0) throw new Error('Se ha detectado un producto existente con el mismo nombre')
       if (info.idx) {
-        resultid = info.idx
+        
       } else {
         let campos = Object.keys(info).reduce((carry, current) => {
           fields.filter(row => row.name !== 'idx').map(row => row.name).includes(current) && carry.push(current)
           return carry
         }, [])
         let values = campos.map(row => info[row])
-        let [result2] = await conn.execute("INSERT INTO tbl2_productos(" + campos.join(',') + ") values("+ campos.map(row=>'?').join(',') +")",values)
+        let [result2] = await conn.execute("INSERT INTO tbl2_subproductos(" + campos.join(',') + ") values("+ campos.map(row=>'?').join(',') +")",values)
         resultid = result2.insertId
       }
 
-      
-      if(conn) conn.rollback()
-      // if(conn) conn.commit()
-      return {ok:true,message:'',resultid}
+      // if(conn) conn.rollback()
+      if(conn) conn.commit()
+      return {ok:true,message:'El subproducto fue creado con éxito.',resultid}
     } catch(error) {
       if(conn) conn.rollback()
-      return {ok:false,message:error}
+      return {ok:false,message:error.message ?? error}
     } finally {
       if(conn) await conn.end()
     }
@@ -156,21 +157,20 @@ export class ProductosService{
       if(info.idx){
 
       }else{
-        let [busqueda] = await query("SELECT *FROM tbl2_colores WHERE nom LIKE '%?%' AND ruc = ?",[info.nom,info.ruc])
+        let [busqueda] = await conn.query("SELECT *FROM tbl2_colores WHERE nom LIKE ? AND ruc = ?",[`%${info.nom}%`,info.ruc])
         if(busqueda.length > 0){
-          // idcolor = busqueda[0].idx
           throw new Error('Esta intentando crear un color que ya exite')
         }
         let [newcolor] = await conn.query("INSERT INTO tbl2_colores(codigo,nom,ruc) VALUES(?,?,?)",[info.codigo,info.nom,info.ruc])
         idcolor = newcolor.insertId
       }
-      if(conn) conn.rollback()
-      // if(conn) conn.commit()
+      // if(conn) conn.rollback()
+      if(conn) conn.commit()
       return {ok:true,message:'La creacion del color se ejecutó con éxito.',idcolor};
     }
     catch(error){
       if(conn) conn.rollback()
-      return {ok:false,message:error.message}
+      return {ok:false,message:error.message ?? error}
     }
     finally{
       await conn.end();
