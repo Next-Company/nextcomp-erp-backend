@@ -5,6 +5,7 @@ const ALMACEN_ROUTER = new Router()
 
 ALMACEN_ROUTER.get('/listaralmacenes',AlmacenController.getListaAlmacenes)
 ALMACEN_ROUTER.get('/listarmovimientos',AlmacenController.getMovimientosAlmacen)
+ALMACEN_ROUTER.get('/listarinventario',AlmacenController.getInventarioProductos)
 ALMACEN_ROUTER.put('/saveguiamovimiento',AlmacenController.saveGuia)
 
 export default ALMACEN_ROUTER

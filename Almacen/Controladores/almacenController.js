@@ -9,8 +9,13 @@ export default class AlmacenController{
     const data = await AlmacenModel.getMovimientosAlmacen()
     reply.send(data)
   }
+  static async getInventarioProductos(req,reply){
+    const data = await AlmacenModel.getInventarioProductos()
+    reply.send(data)
+  }
   static async saveGuia(req,reply){
-    let info = JSON.parse(req.body.info)
+    console.log("Dentro del proceso de guardado de guia")
+    let info = req.body
     const data = await AlmacenModel.saveGuia(info)
     reply.send(data)
   }

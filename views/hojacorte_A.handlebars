@@ -80,7 +80,6 @@
   table#sugerido{
     border-collapse: collapse;
     width: 100%;
-    height:20.5cm;
   }
   table#liquidacion{
     border-collapse: collapse;
@@ -118,7 +117,7 @@
     <div style="font-size:29px;font-weight:bold;background-color:yellow;">{{nrocorte}}</div>
   </div>
   <div id="subhead">
-    <div>FECHA COMERCIAL: {{#comercial cabecera.fec_emitida}}{{/comercial}}</div>
+    <div>FECHA COMERCIAL: {{#comercial cabecera.fec_entrega}}{{/comercial}}</div>
     <div>ORDEN DE PEDIDO: {{cabecera.oc}}</div>
     <div>FECHA GENERADA: {{cabecera.fec_emitida}}</div>
   </div>
