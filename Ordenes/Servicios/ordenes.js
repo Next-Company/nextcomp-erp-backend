@@ -19,7 +19,7 @@ export class OrdenesModel {
       if(conn) await conn.end()
     }
   }
-  static async getOrdenes(search) {
+  static async getOrdenes_back_19082025(search) {
     let conn
     try {
       conn = await mysql.createConnection(configs[1])
@@ -109,6 +109,123 @@ export class OrdenesModel {
               //   : false,
               // pendiente: false,
               pendiente: row == 'MOLDE' ? (value.estado_molde == 'PENDIENTE' ? true : false) : (value.estado_corte == 'PENDIENTE' ? true : false),
+              caduco: false
+            }
+          })
+        }
+        carry.push(value)
+        return carry
+      },[])
+
+      let bb = Object.groupBy(results,(item)=>item.nro_guias)
+      let kk = Object.keys(bb).reduce((carry,item)=>{
+        console.log(`La info de bb(${item}) es :`,bb[item].map(row=>({idx:row.idx,modelos:row.modelos})))
+        carry = [...carry,...bb[item]]
+        return carry
+      },[])
+
+      // return results
+      return kk
+    } catch (err) {
+      console.log(err);
+      return { 'msg': err }
+    } finally {
+      if (conn) {
+        await conn.end();
+      }
+    }
+  }
+  static async getOrdenes(search) {
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+
+      let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(COALESCE(TRIM(oc),''),' ',COALESCE(TRIM(cliente),''),' ',COALESCE(TRIM(marca),''),' ',COALESCE(TRIM(producto),''),' ',COALESCE(TRIM(modelos),''),' ',COALESCE(TRIM(estado_orden),''),' ',COALESCE(TRIM(status_servicio),''))) > 0").join(" ") : ""
+
+      let [results] = await conn.query(`
+        SELECT *,
+        DATE_FORMAT(fec_emitida,'%d/%m/%Y') as fec_emitida_orden,
+        DATE_FORMAT(fec_entrega,'%d/%m/%Y') as fec_entrega_orden,
+        COALESCE(DATEDIFF(STR_TO_DATE(fec_entrega,'%Y-%m-%d'),STR_TO_DATE(fec_emitida,'%Y-%m-%d') ),0) as dias_produccion,
+        COALESCE(DATEDIFF(STR_TO_DATE(fec_entrega,'%Y-%m-%d'),date(now())),0) as dias_pendientes
+        FROM viewProduccionOrdenesV2
+        WHERE 1=1 ${extra} ORDER BY idx desc
+      `);
+      await conn.end();
+
+      console.log("Info general:",results)
+
+      results = results.reduce((carry,value)=>{
+        value['total_orden'] = value.ordenes_combos.length == 0 ? 0 : value.ordenes_combos.reduce((c,v)=>{
+          c += parseInt(v.cantidad_combo)
+          return c
+        },0)
+        // value['total_orden'] = value.ordenes_combos.length == 0 ? 0 : value.ordenes_combos.map(row=>row.fracciones).reduce((c,v)=>{
+        //   return v.reduce((cc,vv)=>{
+        //     cc += parseInt(vv.cantidad)
+        //     return cc
+        //   },c)
+        // },0)
+        value['total_corte'] = value.cortes_combos.length == 0 ? 0 : value.cortes_combos.reduce((c,v)=>{
+          c += parseInt(v.cantidad_combo)
+          return c
+        },0)
+        // value['total_corte'] = value.cortes_combos.length == 0 ? 0 : value.cortes_combos.map(row=>row.fracciones).reduce((c,v)=>{
+        //   return v.reduce((cc,vv)=>{
+        //     cc += parseInt(vv.cantidad)
+        //     return cc
+        //   },c)
+        // },0)
+
+        // const RUTA_COLOR = {'MOLDES':'bg-orange-400','CORTE':'bg-rose-400','CONFECCION':'bg-purple-400','OJAL':'bg-blue-400','ESTAMPADO':'bg-gray-400','LAVANDERIA':'bg-green-400','BORDADO':'bg-yellow-400','ACABADOS':'bg-red-400'}
+        const RUTA_COLOR = {'MATERIALES':'bg-gray-500','MOLDE':'bg-gray-500','CORTE':'bg-gray-500','CONFECCION':'bg-gray-500','OJAL':'bg-gray-500','ESTAMPADO':'bg-gray-500','LAVANDERIA':'bg-gray-500','BORDADO':'bg-gray-500','ACABADOS':'bg-gray-500'}
+        let ruta_ordenada = ['MOLDE','CORTE','MATERIALES','CONFECCION','OJAL','ESTAMPADO','LAVANDERIA','BORDADO','ACABADOS']
+        let ruta_actual = JSON.parse(value.ruta_proceso)
+        let servicios = value.lista_servicios ? value.lista_servicios.split(',') : []
+
+        console.log("La lista de servicios es:",servicios)
+        console.log("La ruta actual es :",ruta_actual)
+
+        if(servicios.length > 0){
+          let generado = ruta_actual.concat(servicios).reduce((carry,value)=>{!carry.includes(value) && carry.push(value);return carry;},['MOLDE','CORTE','MATERIALES'])
+          value.ruta_final = ruta_ordenada.filter(fase=>generado.includes(fase))
+
+          let pp = ruta_ordenada.filter(fase=>generado.includes(fase)).map(row=>{
+            return {
+              fase: row,
+              color: RUTA_COLOR[row],
+              estado: value.nro_guias > 0
+                ? value.lista_servicios.split(',').concat(['MOLDE','CORTE','MATERIALES']).includes(row)
+                : row == value.status,
+              pendiente: value.status_servicio.split('-').includes(row),
+              cadudo: value.servicios_caducos && value.servicios_caducos.split(',').includes(row)
+            }
+          })
+
+          // value.ruta_test = [...pp.filter(item=>item.estado),...pp.filter(item=>!item.estado)]
+          value.ruta_test = [...[...pp.filter(item=>item.estado && !item.pendiente),...pp.filter(item=>item.estado && item.pendiente)],...pp.filter(item=>!item.estado)]
+          // value.ruta_test = [...pp.filter(item=>item.estado && !value.status_servicio.split('-').includes(item.fase)),...pp.filter(item=>!item.estado || value.status_servicio.split('-').includes(item.fase))]
+
+        }else{
+
+          // let lista_pre = value.status == 'CORTE' ? ['MOLDE','CORTE'] : ( value.status == 'MOLDE' ? ['MOLDE'] : [] )
+          let lista_pre = value.estado_materiales ? ['MOLDE','CORTE','MATERIALES'] : (value.nro_cortes > 0 ? ['MOLDE','CORTE'] : (value.estado_molde ? ['MOLDE'] : []))
+          // let lista_pre = ['MOLDE','CORTE']
+          value.ruta_final = ['MOLDE','CORTE','MATERIALES']
+          value.ruta_test = ['MOLDE','CORTE','MATERIALES'].concat(ruta_actual).reduce((carry,item)=>{if(!carry.includes(item)) carry.push(item); return carry;},[]).map(row=>{
+            return {
+              fase:row,
+              color:RUTA_COLOR[row],
+              estado: lista_pre.includes(row),
+                // ? row == 'MOLDE' ? (value.estado_molde == 'FINALIZADO' ? true : false) : (value.estado_corte == 'FINALIZADO' ? true : false)
+                // : false,
+              // estado: ['MOLDE','CORTE','MATERIALES'].includes(row)
+              //   ? row == 'MOLDE' ? (value.estado_molde == 'FINALIZADO' ? true : false) : (value.estado_corte == 'FINALIZADO' ? true : false)
+              //   : false,
+              // pendiente: false,
+              // pendiente: row == 'MOLDE' ? (value.estado_molde == 'PENDIENTE' ? true : false) : (value.estado_corte == 'PENDIENTE' ? true : false),
+              pendiente: row == 'MOLDE' ? (value.estado_molde == 'PENDIENTE' ? true : false) : (row == 'CORTE' ? (value.estado_corte == 'PENDIENTE' ? true : false) : (value.estado_materiales == 'PENDIENTE' ? true : false)),
               caduco: false
             }
           })
@@ -830,6 +947,56 @@ export class OrdenesModel {
       if (conn) await conn.end();
     }
   }
+  static async saveFaseMateriales(info, user_data) {
+    // dentro de la fases de matirales de contruccion de la produccion
+    console.log("Dentro de la fase de materiales :",info)
+    let conn
+    let nameimg = null
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      conn.beginTransaction()
+
+      let sql = ''
+      const id = info.idx
+      console.log("Empezando guardado de materiales",info,user_data)
+
+      const [consulta,fields] = await conn.execute("SELECT *FROM tbl2_fases_prod_materiales WHERE idx = ?",[id])
+      if (id == '') {
+        try {
+          const campos = Object.keys(info).reduce((carry, current) => {
+            fields.filter(row => row.name !== 'idx').map(row => row.name).includes(current) && carry.push(current)
+            return carry
+          }, [])
+          const values = campos.map(row => info[row])
+          const [result] = await conn.execute('INSERT INTO tbl2_fases_prod_materiales(' + campos.toString() + ') VALUES (' + campos.map(row => "NULLIF(?, '')").toString() + ')', values)
+          const idinsert = result.insertId
+        } catch (error) {
+          console.log(error)
+        }
+  
+      } else {
+        let newid = null
+        const campos = Object.keys(info).reduce((carry, current) => {
+          fields.filter(row => row.name !== 'idx').map(row => row.name).includes(current) && carry.push(current)
+          return carry
+        }, [])
+        const values = campos.map(row => info[row])
+        console.log("Informacion de campos :",campos)
+        await conn.query('UPDATE tbl2_fases_prod_materiales SET ' + campos.map(row => row + " = NULLIF(?,'')").toString() + ' WHERE idx = ' + id,values)
+        // console.log(sql)
+      }
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
+      return { ok: true, mensaje: 'Guardado con exito' }
+    } catch (err) {
+      console.log(err)
+      if (conn) conn.rollback()
+      return { ok: false, mensaje: err.message }
+    } finally {
+      if (conn) await conn.end();
+    }
+  }
   static async getAll(user_data) {
     let conn
     try {
@@ -1049,7 +1216,7 @@ export class OrdenesModel {
       let ruta = eval(ordenes[0].ruta_proceso)
       // let ruta_ordenada = ['MOLDE','CORTE','AVIOS','CONFECCION','OJAL','ESTAMPADO','LAVANDERIA','BORDADO','ACABADOS']
       
-      ruta = ruta.filter(item=>!['MOLDE','CORTE','AVIOS'].includes(item)).reduce((c,v)=>{
+      ruta = ruta.filter(item=>!['MOLDE','CORTE','MATERIALES'].includes(item)).reduce((c,v)=>{
         c[v] = []
         return c
       },{})

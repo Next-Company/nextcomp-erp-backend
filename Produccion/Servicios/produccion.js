@@ -127,6 +127,7 @@ export class ProduccionModel {
       console.log("INfo ordnes eSs: ",ordenes)
       
       const [moldes] = await conn.query('SELECT tb1.* FROM tbl2_fases_prod_molde tb1 WHERE tb1.id_cab_orden = ?',[info.id]);
+      const [materiales] = await conn.query('SELECT tb1.* FROM tbl2_fases_prod_materiales tb1 WHERE tb1.id_cab_orden = ?',[info.id]);
 
       // const [cortes] = await conn.query("SELECT tb1.*,(select JSON_ARRAYAGG(JSON_OBJECT('id_hojacorte_CAB',tb2.id_hojacorte_CAB,'id_orden_CAB',tb2.id_orden_CAB,'color_combo',tb2.color_combo,'cantidad_combo',tb2.cantidad_combo)) from tbl2_fases_prod_hojacorte_combos tb2 where tb2.id_hojacorte_CAB = tb1.idx) as combos FROM tbl2_fases_prod_hojacorte tb1 WHERE tb1.id_cab_orden = ?",[info.id]);
 
@@ -182,9 +183,9 @@ export class ProduccionModel {
       },[])
 
       let [fasesprod] = await conn.query("SELECT *FROM tbl2_fases_produccion")
-      let [materiales] = await conn.query("SELECT *FROM tbl2_materiales_sugerido WHERE ruc_ = '20522094120'")
+      let [materialesref] = await conn.query("SELECT *FROM tbl2_materiales_sugerido WHERE ruc_ = '20522094120'")
   
-      return [ordenes,moldes,cortes,fasesprod,materiales]
+      return [ordenes,moldes,cortes,materiales,fasesprod,materialesref]
     } catch (err) {
       console.log("Estamos en error:", err);
       return err

@@ -2,20 +2,6 @@ import mysql from 'mysql2/promise';
 import { configs } from '../../Main/utils.js';
 
 export default class AlmacenModel{
-  static async getListaAlmacenes(){
-    return [{info:1}]
-  }
-  static async generarGuiaDespachoAlmacen(info,tipo){
-    // GENEREA EL DOCUMENTO DE SALIDA/INGRESO DE MERCADERIA CON FECHA HORA Y DOCUMENTO VINCULADO
-    return [{info:1}]
-  }
-  static async InOutStore(info,tipo){
-    return [{info:1}]
-  }
-  static async saveMovimientoInOut(info,tipo){
-    // ACTUALIZA EL STOCK DE ALMACEN Y REGISTRA MVIMIENTO DE KARDEX
-    return [{info:1}]
-  }
   static async getMovimientosAlmacen(info,tipo){
     // Suponiendo que tienes una conexión global o la recibes como parámetro
     let conn = undefined
@@ -36,6 +22,33 @@ export default class AlmacenModel{
       const [result] = await conn.execute(query);
       console.log("El resultado de la consulta es:", result)
       return result
+    } catch (error) {
+      console.log(error)
+    } finally {
+      if(conn) await conn.end()
+    }
+  }
+  static async getMovimientosAlmacenById(id){
+    // Suponiendo que tienes una conexión global o la recibes como parámetro
+    let conn = undefined
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect()
+
+      const [cabmov] = await conn.execute(`
+        SELECT tkc.*, tp.idx as id_proveedor_CAB, tp.nom as proveedor, tmc.cod_comprobante, tmc.anulado
+        FROM tbl_kard_compras_CAB tkc
+        JOIN tbl2_almacen_mov_cab tmc ON tkc.id_CAB = tmc.idx_documento_asoc
+        JOIN tbl2_proveedor tp ON tkc.Nro_Doc_Prov = tp.ruc
+        WHERE Suc_Tienda in (509,508) and tkc.id_CAB = ?
+      `,[id]);
+
+      const [detbmov] = await conn.execute(`
+        SELECT *FROM tbl_kard_compras_DET WHERE id_CAB_DET = ?
+      `,[id]);
+  
+      console.log("El resultado de la consulta es:", cabmov, detbmov)
+      return [cabmov, detbmov]
     } catch (error) {
       console.log(error)
     } finally {
@@ -121,8 +134,6 @@ export default class AlmacenModel{
       );
       const id_guia = resultGuia.insertId;
 
-      // for (let key = 0; key < detalle.length; key++) {
-
       for(let element of detalle){
         const data_guia_det = {
           ruc: '20522094120',
@@ -143,7 +154,6 @@ export default class AlmacenModel{
       }
 
       // Preparar data_comprobante
-
       let [busqueda] = await conn.execute("SELECT *FROM tbl2_cptes_ordenes_tipo WHERE idx = ?",[parseInt(cabecera.tipo_operacion)])
 
       const data_comprobante = {
@@ -158,8 +168,8 @@ export default class AlmacenModel{
         articulos: JSON.stringify(detalle),
       };
       console.log("El detalle a insertar es el siguiente:",data_comprobante)
-      await AlmacenModel.saveMovimiento(data_comprobante,conn)
-
+      let res_mov = await AlmacenModel.saveMovimiento(data_comprobante,conn)
+      if(!res_mov.ok) throw new Error(res_mov.message)
 
       // if(conn) conn.rollback()
       if(conn) conn.commit()
@@ -186,7 +196,7 @@ export default class AlmacenModel{
       console.log("El listado de articulo es:",articulos)
 
       if (articulos.length > 0) {
-        console.log("Inicia el proceso de movimiento de almacen!!!")
+        console.log("Inicia el proceso de movimiento de almacen!!!",articulos)
 
         let id;
         // Insertar cabecera de movimiento
@@ -355,6 +365,46 @@ export default class AlmacenModel{
       console.log(error)
       // if(conn) conn.rollback()
       return {ok:false,message:error.message ?? error}
+    }
+  }
+  static async getDisponibilidadRequerimiento(idreq){
+    let conn = undefined
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+
+      const [cabreq] = await conn.query(`SELECT DATE_FORMAT(tpic.fec_emision,"%d/%m/%Y") as fec_emision_cuadre,DATE_FORMAT(tpic.fec_retorno,"%d/%m/%Y") as fec_retorno_cuadre,DATEDIFF(STR_TO_DATE(tpic.fec_retorno,"%Y-%m-%d"), STR_TO_DATE(tpic.fec_emision,"%Y-%m-%d")) as duracion,tp.ruc as ruc,
+      COALESCE((select oc from tbl2_fases_prod_ordenes tpo where tpo.id_pedido_origen = tpic.idx),'-') as oc,
+      COALESCE((
+        select t1.numero_corte from tbl2_fases_prod_hojacorte t1 
+        join tbl2_fases_prod_ordenes t2 on t1.id_cab_orden = t2.idx
+        where t2.id_pedido_origen  = tpic.idx
+      ),'-') as nro_corte,tpic.* 
+      FROM tbl2_pedidos_insumos_cab tpic join tbl2_proveedor tp on tpic.id_proveedor_CAB = tp.idx where tpic.idx = ?`, [idreq]);
+
+
+      const [detreq] = await conn.query(`
+        SELECT 
+          t1.*,
+          COALESCE((
+            select sum(tbdd.despacho) from tbl2_despachos_cab tbdc
+            join tbl2_despachos_det tbdd on tbdc.idx = tbdd.id_despacho_CAB
+            where tbdc.id_pedido_origen = t1.id_pedido_CAB and tbdd.id_item = t1.idx
+          ),0) as ingresos,
+          COALESCE((select sum(COALESCE(cantidad,0)) 
+          from tbl2_almacen_det tbad
+          where tbad.idx_subproducto = t1.id_subprod_CAB and tbad.lote = t1.id_pedido_CAB)
+          ,0) as stock
+        FROM tbl2_pedidos_insumos_det t1 
+        WHERE t1.id_pedido_CAB = ?
+      `, [idreq]);
+
+      return [cabreq[0], detreq];
+    } catch (err) {
+      console.log(err)
+      return {ok: false, message: err.message ?? err};
+    } finally {
+      if (conn) await conn.end()
     }
   }
 }
