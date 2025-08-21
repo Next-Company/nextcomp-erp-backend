@@ -1702,7 +1702,157 @@ export class ProduccionModel {
       }
     }
   }
-  static async saveInfoDespachos(data) {
+  static async saveInfoDespachosPedido(data) {
+    let conn
+    const results = { ok: true, message: 'testD' }
+    const cabecera = JSON.parse(data.info)
+    const articulos = JSON.parse(data.detalle)
+    const facturas = JSON.parse(data.facturas)
+
+    console.log("Informacion cabecera:", cabecera)
+    console.log("Informacion detalle:", articulos)
+    console.log("Informacion facturas:", facturas)
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      conn.beginTransaction()
+
+      if (data.id) {
+        await conn.query('UPDATE tbl2_despachos_cab SET fec_emision_guia=NULLIF(?, ""),fec_despacho=NULLIF(?, ""),tipo=NULLIF(?, ""),id_proveedor_CAB=NULLIF(?, ""),proveedor=NULLIF(?, ""),responsable=NULLIF(?, ""),id_guia_origen=NULLIF(?, ""),nro_guia_origen=NULLIF(?, ""),id_pedido_origen=NULLIF(?, ""),nro_pedido_origen=NULLIF(?, ""),observaciones=NULLIF(?, ""),nro_guia=NULLIF(?, ""),nro_factura=NULLIF(?, ""),imp_factura=NULLIF(?, ""),facturado=NULLIF(?, "") WHERE idx = ?', [cabecera.fec_emision_guia, cabecera.fec_despacho, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.id_guia_origen, cabecera.nro_guia_origen, cabecera.id_pedido_origen, cabecera.nro_pedido_origen, cabecera.observaciones, cabecera.nro_guia, cabecera.nro_factura, cabecera.imp_factura,cabecera.facturado, parseInt(data.id)])
+
+        const [res, fld] = await conn.query("SELECT *FROM tbl2_despachos_det WHERE id_despacho_CAB = " + parseInt(data.id))
+        const ids_delete = res.filter(row => row.idx !== '' && !articulos.map(fila => parseInt(fila.idx)).includes(parseInt(row.idx)))
+
+        for(let fila of [...articulos]){
+          let id_det = null
+          if (fila.idx && fila.idx !== '') {
+            console.log("Detro de la actualizacion")
+            const [results, fields] = await conn.query('UPDATE tbl2_despachos_det SET precio=NULLIF(?, ""),despacho=NULLIF(?, ""),caidos=NULLIF(?, ""),incompletos=NULLIF(?, "") WHERE idx = ? and id_despacho_CAB = ?', [fila.precio, fila.despacho, fila.caidos, fila.incompletos, fila.idx, parseInt(data.id)]);
+            id_det = fila.idx
+
+          } else {
+            const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,despacho,caidos,incompletos) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [parseInt(data.id), fila.id_item, fila.despacho, fila.caidos, fila.incompletos]);
+            id_det = insertdet.insertId
+          }
+        }
+
+        console.log("Lista de filas a eliminar:", ids_delete)
+        for(let fila of [...ids_delete]){
+          await conn.query('DELETE FROM `tbl2_despachos_det` WHERE `id_despacho_CAB` = ? and `idx` = ?', [parseInt(data.id), parseInt(fila.idx)])
+        }
+
+        const [res2] = await conn.query("SELECT *FROM tbl2_despachos_adi WHERE id_despacho_CAB = " + parseInt(data.id))
+        const ids_delete2 = res2.filter(row => row.idx !== '' && !facturas.map(fila => parseInt(fila.idx)).includes(parseInt(row.idx)))
+        console.log("Lista de filas a eliminar:", ids_delete2)
+        console.log("Las facturas a insertar son:",facturas)
+
+        for(let fila of [...facturas]){
+          if (fila.idx && fila.idx !== '') {
+            const [results, fields] = await conn.query('UPDATE tbl2_despachos_adi SET tipodoc=NULLIF(?, ""),moneda=NULLIF(?, ""),serie=NULLIF(?, ""),numero=NULLIF(?, ""),fec_emision=NULLIF(?, ""),unidades=NULLIF(?, ""),importe_bruto=NULLIF(?, ""),base_imponible=NULLIF(?, ""),monto_inafecto=NULLIF(?, ""),igv=NULLIF(?, ""),importe_total=NULLIF(?, "") WHERE idx = ? and id_despacho_CAB = ?', [fila.tipodoc, fila.moneda, fila.serie, fila.numero, fila.fec_emision, fila.unidades, fila.importe_bruto, fila.base_imponible, fila.monto_inafecto, fila.igv, fila.importe_total, fila.idx, parseInt(data.id)]);
+          } else {
+            const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_adi(id_despacho_CAB,tipodoc,moneda,serie,numero,fec_emision,unidades,importe_bruto,base_imponible,monto_inafecto,igv,importe_total) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [parseInt(data.id), fila.tipodoc, fila.moneda, fila.serie, fila.numero, fila.fec_emision, parseFloat(fila.unidades), parseFloat(fila.importe_bruto), parseFloat(fila.base_imponible), parseFloat(fila.monto_inafecto), parseFloat(fila.igv), parseFloat(fila.importe_total)]);
+          }
+        }
+        for(let fila of [...ids_delete2]){
+          await conn.query('DELETE FROM `tbl2_despachos_adi` WHERE `id_despacho_CAB` = ? and `idx` = ?', [parseInt(data.id), parseInt(fila.idx)])
+        }
+
+        /////////////////////////////////////////
+        /// INGRESAR MERCADERIA HACIA ALMACEN ///
+        /////////////////////////////////////////
+        // 9	INGR	Ingreso de productos
+        // 10	RETR	Retiro de productos
+        if(cabecera.tipo === 'PEDIDOS'){
+          let [busqueda1] = await conn.execute("SELECT *FROM tbl2_cptes_ordenes_tipo WHERE idx = 10")
+          const data_comprobante_salida = {
+            id_comprobante_CAB: busqueda1[0].idx,
+            cod_comprobante: busqueda1[0].codigo,
+            num_comprobante: parseInt(busqueda1[0].correlativo) + 1,
+            observaciones: 'ANULACION DE GUIA DE TRASLADO',
+            idx_documento_asoc: res.insertId,
+            origen: 'KARD',
+            almacen_destino: 509,
+            articulos: JSON.stringify(
+              articulos.map(fila => ({...fila,lote:cabecera.id_pedido_origen}))
+            ),
+          };
+          console.log("El detalle a insertar es el siguiente:",data_comprobante_salida)
+          let res_mov_1 = await AlmacenModel.saveMovimiento(data_comprobante_salida,conn)
+          if(!res_mov_1.ok) throw new Error(res_mov_1.message)
+
+          let [busqueda2] = await conn.execute("SELECT *FROM tbl2_cptes_ordenes_tipo WHERE idx = 9")
+          const data_comprobante_ingreso = {
+            id_comprobante_CAB: busqueda2[0].idx,
+            cod_comprobante: busqueda2[0].codigo,
+            num_comprobante: parseInt(busqueda2[0].correlativo) + 1,
+            observaciones: 'ACTUALIZACION DE GUIA DE TRASLADO',
+            idx_documento_asoc: res.insertId,
+            origen: 'KARD',
+            almacen_destino: 509,
+            articulos: JSON.stringify(
+              articulos.map(fila => ({...fila,lote:cabecera.id_pedido_origen}))
+            ),
+          };
+          console.log("El detalle a insertar es el siguiente:",data_comprobante_ingreso)
+          let res_mov_2 = await AlmacenModel.saveMovimiento(data_comprobante_ingreso,conn)
+          if(!res_mov_2.ok) throw new Error(res_mov_2.message)
+        }
+        //////////////////////////////////////////////
+        //////////////////////////////////////////////
+
+      } else {
+        try {
+          const [res, fields] = await conn.query('INSERT INTO tbl2_despachos_cab(fec_emision_guia,fec_despacho,tipo,id_proveedor_CAB,proveedor,responsable,id_guia_origen,nro_guia_origen,id_pedido_origen,nro_pedido_origen,observaciones,nro_guia,nro_factura,imp_factura,facturado) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [cabecera.fec_emision_guia, cabecera.fec_despacho, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.id_guia_origen, cabecera.nro_guia_origen, cabecera.id_pedido_origen, cabecera.nro_pedido_origen, cabecera.observaciones, cabecera.nro_guia, cabecera.nro_factura, cabecera.imp_factura,cabecera.facturado])
+
+          console.log("Inicia insertado detalle despacho")
+          for(let detalle of [...articulos]){
+            const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,precio,despacho,caidos,incompletos,id_combo) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, detalle.id_item, detalle.precio, parseFloat(detalle.despacho ?? 0), parseFloat(detalle.caidos ?? 0), parseFloat(detalle.incompletos ?? 0),detalle.id_combo]);
+          }
+
+          for(let fila of [...facturas]){
+            const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_adi(id_despacho_CAB,tipodoc,moneda,serie,numero,fec_emision,unidades,importe_bruto,base_imponible,monto_inafecto,igv,importe_total) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.tipodoc, fila.moneda, fila.serie, fila.numero, fila.fec_emision, parseFloat(fila.unidades), parseFloat(fila.importe_bruto), parseFloat(fila.base_imponible), parseFloat(fila.monto_inafecto), parseFloat(fila.igv), parseFloat(fila.importe_total)]);
+          }
+
+          ///////////////////////////////////////
+          /// INGRESAR MERCADERIA HACIA ALMACEN
+          ///////////////////////////////////////
+          if(cabecera.tipo === 'PEDIDOS'){
+            let [busqueda] = await conn.execute("SELECT *FROM tbl2_cptes_ordenes_tipo WHERE idx = 9")
+            const data_comprobante = {
+              id_comprobante_CAB: busqueda[0].idx,
+              cod_comprobante: busqueda[0].codigo,
+              num_comprobante: parseInt(busqueda[0].correlativo) + 1,
+              observaciones: 'ANULACION DE GUIA DE TRASLADO',
+              idx_documento_asoc: res.insertId,
+              origen: 'KARD',
+              almacen_destino: 509,
+              articulos: JSON.stringify(
+                articulos.map(fila => ({...fila,lote:cabecera.id_pedido_origen}))
+              ),
+            };
+            console.log("El detalle a insertar es el siguiente:",data_comprobante)
+            let res_mov = await AlmacenModel.saveMovimiento(data_comprobante,conn)
+            if(!res_mov.ok) throw new Error(res_mov.message)
+          }
+          //////////////////////////////////////////////
+          //////////////////////////////////////////////
+        } catch (err) {
+          console.log("error en la consulta", err)
+        }
+      }
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
+      return {ok:true,message:'Proceso ejecutado con éxito'}
+    } catch (err) {
+      console.log("asdlkfaslfjlaskdfjlf:",err)
+      if (conn) conn.rollback()
+      // return {ok:false,message:err.message}
+      return {ok:false,message:err}
+    } finally {
+      if (conn) await conn.end();
+    }
+  }
+  static async saveInfoDespachosGuia(data) {
     let conn
     const results = { ok: true, message: 'test' }
     const cabecera = JSON.parse(data.info)
@@ -1920,23 +2070,8 @@ export class ProduccionModel {
         if(!respuesta.ok) throw respuesta.message
         // console.log("Resultado del update master :",resp_update)
       }
-
-      ///////////////////////////////////////////
-      ///////////////////////////////////////////
-
-
-      ////////////////////////////////////////////
-      /// INGRESAR MERCADERIA HACIA ALMACEN
-
-      // let result_inout_store = await AlmacenModel.InOutStore(articulos,'INGR')
-      // if(!result_inout_store.ok) throw new Error(result_inout_store.message)
-
-      //////////////////////////////////////////////
-      ////////////////////////////////////////////
-
-
-      // if (conn) conn.rollback()
-      if (conn) conn.commit()
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return {ok:true,message:'Proceso ejecutado con éxito'}
     } catch (err) {
       console.log("asdlkfaslfjlaskdfjlf:",err)

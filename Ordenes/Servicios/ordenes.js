@@ -156,29 +156,20 @@ export class OrdenesModel {
 
       console.log("Info general:",results)
 
+      ///////////////////////////////////////////////////////
+      // Se reduce la informacion de las ordenes para agregar 
+      // los totales de combos, el estado de las fases y la ruta de produccion 
+      ///////////////////////////////////////////////////////
       results = results.reduce((carry,value)=>{
         value['total_orden'] = value.ordenes_combos.length == 0 ? 0 : value.ordenes_combos.reduce((c,v)=>{
           c += parseInt(v.cantidad_combo)
           return c
         },0)
-        // value['total_orden'] = value.ordenes_combos.length == 0 ? 0 : value.ordenes_combos.map(row=>row.fracciones).reduce((c,v)=>{
-        //   return v.reduce((cc,vv)=>{
-        //     cc += parseInt(vv.cantidad)
-        //     return cc
-        //   },c)
-        // },0)
         value['total_corte'] = value.cortes_combos.length == 0 ? 0 : value.cortes_combos.reduce((c,v)=>{
           c += parseInt(v.cantidad_combo)
           return c
         },0)
-        // value['total_corte'] = value.cortes_combos.length == 0 ? 0 : value.cortes_combos.map(row=>row.fracciones).reduce((c,v)=>{
-        //   return v.reduce((cc,vv)=>{
-        //     cc += parseInt(vv.cantidad)
-        //     return cc
-        //   },c)
-        // },0)
 
-        // const RUTA_COLOR = {'MOLDES':'bg-orange-400','CORTE':'bg-rose-400','CONFECCION':'bg-purple-400','OJAL':'bg-blue-400','ESTAMPADO':'bg-gray-400','LAVANDERIA':'bg-green-400','BORDADO':'bg-yellow-400','ACABADOS':'bg-red-400'}
         const RUTA_COLOR = {'MATERIALES':'bg-gray-500','MOLDE':'bg-gray-500','CORTE':'bg-gray-500','CONFECCION':'bg-gray-500','OJAL':'bg-gray-500','ESTAMPADO':'bg-gray-500','LAVANDERIA':'bg-gray-500','BORDADO':'bg-gray-500','ACABADOS':'bg-gray-500'}
         let ruta_ordenada = ['MOLDE','CORTE','MATERIALES','CONFECCION','OJAL','ESTAMPADO','LAVANDERIA','BORDADO','ACABADOS']
         let ruta_actual = JSON.parse(value.ruta_proceso)
@@ -188,6 +179,9 @@ export class OrdenesModel {
         console.log("La ruta actual es :",ruta_actual)
 
         if(servicios.length > 0){
+          //////////////////////////////////////
+          /// ORDENES SIN GUIAS DE SERVICIOS ///
+          //////////////////////////////////////
           let generado = ruta_actual.concat(servicios).reduce((carry,value)=>{!carry.includes(value) && carry.push(value);return carry;},['MOLDE','CORTE','MATERIALES'])
           value.ruta_final = ruta_ordenada.filter(fase=>generado.includes(fase))
 
@@ -202,37 +196,38 @@ export class OrdenesModel {
               cadudo: value.servicios_caducos && value.servicios_caducos.split(',').includes(row)
             }
           })
-
-          // value.ruta_test = [...pp.filter(item=>item.estado),...pp.filter(item=>!item.estado)]
           value.ruta_test = [...[...pp.filter(item=>item.estado && !item.pendiente),...pp.filter(item=>item.estado && item.pendiente)],...pp.filter(item=>!item.estado)]
-          // value.ruta_test = [...pp.filter(item=>item.estado && !value.status_servicio.split('-').includes(item.fase)),...pp.filter(item=>!item.estado || value.status_servicio.split('-').includes(item.fase))]
 
         }else{
-
-          // let lista_pre = value.status == 'CORTE' ? ['MOLDE','CORTE'] : ( value.status == 'MOLDE' ? ['MOLDE'] : [] )
+          //////////////////////////////////////
+          /// ORDENES SIN GUIAS DE SERVICIOS ///
+          //////////////////////////////////////
           let lista_pre = value.estado_materiales ? ['MOLDE','CORTE','MATERIALES'] : (value.nro_cortes > 0 ? ['MOLDE','CORTE'] : (value.estado_molde ? ['MOLDE'] : []))
-          // let lista_pre = ['MOLDE','CORTE']
           value.ruta_final = ['MOLDE','CORTE','MATERIALES']
           value.ruta_test = ['MOLDE','CORTE','MATERIALES'].concat(ruta_actual).reduce((carry,item)=>{if(!carry.includes(item)) carry.push(item); return carry;},[]).map(row=>{
             return {
               fase:row,
               color:RUTA_COLOR[row],
               estado: lista_pre.includes(row),
-                // ? row == 'MOLDE' ? (value.estado_molde == 'FINALIZADO' ? true : false) : (value.estado_corte == 'FINALIZADO' ? true : false)
-                // : false,
-              // estado: ['MOLDE','CORTE','MATERIALES'].includes(row)
-              //   ? row == 'MOLDE' ? (value.estado_molde == 'FINALIZADO' ? true : false) : (value.estado_corte == 'FINALIZADO' ? true : false)
-              //   : false,
-              // pendiente: false,
-              // pendiente: row == 'MOLDE' ? (value.estado_molde == 'PENDIENTE' ? true : false) : (value.estado_corte == 'PENDIENTE' ? true : false),
               pendiente: row == 'MOLDE' ? (value.estado_molde == 'PENDIENTE' ? true : false) : (row == 'CORTE' ? (value.estado_corte == 'PENDIENTE' ? true : false) : (value.estado_materiales == 'PENDIENTE' ? true : false)),
               caduco: false
             }
           })
+          value.longitud = lista_pre.length
         }
         carry.push(value)
         return carry
       },[])
+
+      ///////////////////////////////////////////////////////
+      // Se procede con el ordenamiento de las ordenes 
+      // por nro_guias
+      ///////////////////////////////////////////////////////
+
+      // let aa = results.filter(item=>item.nro_guias == 0)
+      // console.log("Ordenes sin guias:",aa)
+      let aa = Object.groupBy(results.filter(item=>item.nro_guias == 0),(orden)=>orden.longitud)
+      console.log("Agrupando por longitud de ruta:",aa)
 
       let bb = Object.groupBy(results,(item)=>item.nro_guias)
       let kk = Object.keys(bb).reduce((carry,item)=>{

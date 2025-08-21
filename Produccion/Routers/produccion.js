@@ -43,7 +43,9 @@ produccionRouter.get('/getListaDespachos/:tipo', ProduccionController.getListaDe
 produccionRouter.get('/getListaDespachos/:tipo/:search', ProduccionController.getListaDespachos)
 // produccionRouter.get('/getListaDespachos/:search/:filtros',ProduccionController.getListaDespachos)
 produccionRouter.get('/despacho/:id', ProduccionController.getInfoDespachos)
-produccionRouter.put('/guardardespacho', ProduccionController.saveInfoDespachos)
+// produccionRouter.put('/guardardespacho', ProduccionController.saveInfoDespachos)
+produccionRouter.put('/guardardespachopedido', ProduccionController.saveInfoDespachosPedido)
+produccionRouter.put('/guardardespachoguia', ProduccionController.saveInfoDespachosGuia)
 produccionRouter.delete('/borrardespacho/:id', ProduccionController.eliminarInfoDespachos)
 
 produccionRouter.get('/getListaRetiros', ProduccionController.getListaRetiros)
