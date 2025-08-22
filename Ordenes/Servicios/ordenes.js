@@ -141,7 +141,7 @@ export class OrdenesModel {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
 
-      let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(COALESCE(TRIM(oc),''),' ',COALESCE(TRIM(cliente),''),' ',COALESCE(TRIM(marca),''),' ',COALESCE(TRIM(producto),''),' ',COALESCE(TRIM(modelos),''),' ',COALESCE(TRIM(estado_orden),''),' ',COALESCE(TRIM(status_servicio),''))) > 0").join(" ") : ""
+      let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(COALESCE(TRIM(oc),''),' ',COALESCE(TRIM(cliente),''),' ',COALESCE(TRIM(marca),''),' ',COALESCE(TRIM(producto),''),' ',COALESCE(TRIM(modelos),''),' ',COALESCE(TRIM(estado_orden),''),' ',COALESCE(TRIM(status_servicio),''),' ',estado_preprod)) > 0").join(" ") : ""
 
       let [results] = await conn.query(`
         SELECT *,
@@ -153,8 +153,6 @@ export class OrdenesModel {
         WHERE 1=1 ${extra} ORDER BY idx desc
       `);
       await conn.end();
-
-      console.log("Info general:",results)
 
       ///////////////////////////////////////////////////////
       // Se reduce la informacion de las ordenes para agregar 
@@ -175,8 +173,19 @@ export class OrdenesModel {
         let ruta_actual = JSON.parse(value.ruta_proceso)
         let servicios = value.lista_servicios ? value.lista_servicios.split(',') : []
 
-        console.log("La lista de servicios es:",servicios)
-        console.log("La ruta actual es :",ruta_actual)
+        // console.log("La lista de servicios es:",servicios)
+        // console.log("La ruta actual es :",ruta_actual)
+
+        let faltantes = []
+        // (JSON.parse(value.ruta_proceso).map(ruta=>!['MOLDE','CORTE','MATERIALES'].includes(ruta))).forEach(fase=>{
+        // ruta_actual.forEach(fase=>{
+        JSON.parse(value.ruta_proceso).filter(ruta=>!['MOLDE','CORTE','MATERIALES'].includes(ruta)).forEach(fase=>{   
+          if(!servicios.includes(fase)){
+            faltantes.push(fase)
+          }
+        })
+        value.tomate = JSON.stringify(JSON.parse(value.ruta_proceso).filter(ruta=>!['MOLDE','CORTE','MATERIALES'].includes(ruta)))
+        value.faltantes = 10 - faltantes.length
 
         if(servicios.length > 0){
           //////////////////////////////////////
@@ -198,13 +207,19 @@ export class OrdenesModel {
           })
           value.ruta_test = [...[...pp.filter(item=>item.estado && !item.pendiente),...pp.filter(item=>item.estado && item.pendiente)],...pp.filter(item=>!item.estado)]
 
+          // let status = ''
+          // ruta_ordenada.filter(fase=>generado.includes(fase)).forEach(fase => {
+          //   if(v.calculo.filter(row=>row.servicio == fase)[0]?.cantidad > 0) fase_servicio = fase
+          // });
+          // value.status = status
         }else{
           //////////////////////////////////////
           /// ORDENES SIN GUIAS DE SERVICIOS ///
           //////////////////////////////////////
           let lista_pre = value.estado_materiales ? ['MOLDE','CORTE','MATERIALES'] : (value.nro_cortes > 0 ? ['MOLDE','CORTE'] : (value.estado_molde ? ['MOLDE'] : []))
           value.ruta_final = ['MOLDE','CORTE','MATERIALES']
-          value.ruta_test = ['MOLDE','CORTE','MATERIALES'].concat(ruta_actual).reduce((carry,item)=>{if(!carry.includes(item)) carry.push(item); return carry;},[]).map(row=>{
+          // value.ruta_test = ['MOLDE','CORTE','MATERIALES'].concat(ruta_actual).reduce((carry,item)=>{if(!carry.includes(item)) carry.push(item); return carry;},[]).map(row=>{
+          value.ruta_test = ruta_actual.map(row=>{
             return {
               fase:row,
               color:RUTA_COLOR[row],
@@ -213,7 +228,9 @@ export class OrdenesModel {
               caduco: false
             }
           })
+          // value.meica = JSON.stringify(lista_pre)
           value.longitud = lista_pre.length
+          // value.status = value.estado_materiales ? 'MATERIALES' : (value.nro_cortes > 0 ? 'CORTE' : (value.estado_molde ? 'MOLDE' : 'ORDENES'))
         }
         carry.push(value)
         return carry
@@ -227,17 +244,23 @@ export class OrdenesModel {
       // let aa = results.filter(item=>item.nro_guias == 0)
       // console.log("Ordenes sin guias:",aa)
       let aa = Object.groupBy(results.filter(item=>item.nro_guias == 0),(orden)=>orden.longitud)
-      console.log("Agrupando por longitud de ruta:",aa)
+      // console.log("Ordenes con guias:",aa)
+      let kk1 = Object.keys(aa).reduce((carry,item)=>{
+        carry = [...carry,...aa[item]]
+        return carry
+      },[])
 
-      let bb = Object.groupBy(results,(item)=>item.nro_guias)
-      let kk = Object.keys(bb).reduce((carry,item)=>{
-        console.log(`La info de bb(${item}) es :`,bb[item].map(row=>({idx:row.idx,modelos:row.modelos})))
+      // let bb = Object.groupBy(results.filter(item=>item.nro_guias > 0),(item)=>item.nro_guias)
+      let bb = Object.groupBy(results.filter(item=>item.nro_guias > 0),(item)=>item.faltantes)
+      // console.log("Ordenes con guias:",bb)
+      let kk2 = Object.keys(bb).reduce((carry,item)=>{
+        // console.log(`La info de bb(${item}) es :`,bb[item].map(row=>({idx:row.idx,modelos:row.modelos})))  
         carry = [...carry,...bb[item]]
         return carry
       },[])
 
       // return results
-      return kk
+      return [...kk1,...kk2]
     } catch (err) {
       console.log(err);
       return { 'msg': err }
@@ -1227,7 +1250,7 @@ export class OrdenesModel {
       ) as cantidad_servicio,
       (select t0.identificador from tbl2_fases_produccion t0 where t0.ruta = t1.servicio) as color,
       (
-      select JSON_ARRAYAGG(JSON_OBJECT('id',tdc.idx,'idguia',tdc.id_guia_origen,'nro_guia',tdc.nro_guia,'fecha_ingreso',tdc.fec_despacho,'despacho',(select sum(tdd.despacho) from tbl2_despachos_det tdd where tdc.idx = tdd.id_despacho_CAB)))
+      select JSON_ARRAYAGG(JSON_OBJECT('id',tdc.idx,'fase',tdc.fase,'idguia',tdc.id_guia_origen,'nro_guia',tdc.nro_guia,'fecha_ingreso',tdc.fec_despacho,'despacho',(select sum(tdd.despacho) from tbl2_despachos_det tdd where tdc.idx = tdd.id_despacho_CAB)))
       from tbl2_despachos_cab tdc
       where tdc.id_guia_origen = t1.idx
       ) as despachos	
