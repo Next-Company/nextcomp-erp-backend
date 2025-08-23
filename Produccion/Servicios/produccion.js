@@ -1087,6 +1087,7 @@ export class ProduccionModel {
     }
   }
   static async UpdateMasterProduccion(backup_articulos,articulos,orden,conn,tipo){
+    console.log("Info data backup_articulos:",backup_articulos)
     let p1 = '', p2 = '', p3 = ''
     console.log("La informacion a trabajar es:",backup_articulos,articulos,orden,tipo == 0 ? 'SUMA' : 'RESTA')
     ////////////////////////////////////
@@ -1216,7 +1217,7 @@ export class ProduccionModel {
       
       let param1 = data_backup.reduce((c,v)=>{
         let pp = v.fracciones.reduce((cc,vv)=>{
-          cc = {...cc,[vv.talla]:[ parseInt(vv.cantidad),0 ]}
+          cc = {...cc,[vv.talla]:[ parseInt(vv.cantidad),0,0 ]}
           return cc
         },{idcombo:v.id_combo})
         c.push(pp)
@@ -1806,42 +1807,45 @@ export class ProduccionModel {
 
           console.log("Inicia insertado detalle despacho")
           for(let detalle of [...articulos]){
-            const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,precio,despacho,caidos,incompletos,id_combo) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, detalle.id_item, detalle.precio, parseFloat(detalle.despacho ?? 0), parseFloat(detalle.caidos ?? 0), parseFloat(detalle.incompletos ?? 0),detalle.id_combo]);
+            const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,precio,despacho,caidos,incompletos,id_producto,id_subprod) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, detalle.id_item, detalle.precio, parseFloat(detalle.despacho ?? 0), parseFloat(detalle.caidos ?? 0), parseFloat(detalle.incompletos ?? 0),(detalle.id_producto_CAB ?? 0), (detalle.id_subprod_CAB ?? 0)]);
           }
 
           for(let fila of [...facturas]){
             const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_adi(id_despacho_CAB,tipodoc,moneda,serie,numero,fec_emision,unidades,importe_bruto,base_imponible,monto_inafecto,igv,importe_total) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.tipodoc, fila.moneda, fila.serie, fila.numero, fila.fec_emision, parseFloat(fila.unidades), parseFloat(fila.importe_bruto), parseFloat(fila.base_imponible), parseFloat(fila.monto_inafecto), parseFloat(fila.igv), parseFloat(fila.importe_total)]);
           }
 
+          // const [verifica] = await conn.query("SELECT *FROM tbl2_despachos_det WHERE id_despacho_CAB = ?",[res.insertId])
+          // console.log("El detalle de despacho insertado es el siguiente:",verifica)
+
           ///////////////////////////////////////
           /// INGRESAR MERCADERIA HACIA ALMACEN
           ///////////////////////////////////////
-          if(cabecera.tipo === 'PEDIDOS'){
-            let [busqueda] = await conn.execute("SELECT *FROM tbl2_cptes_ordenes_tipo WHERE idx = 9")
-            const data_comprobante = {
-              id_comprobante_CAB: busqueda[0].idx,
-              cod_comprobante: busqueda[0].codigo,
-              num_comprobante: parseInt(busqueda[0].correlativo) + 1,
-              observaciones: 'ANULACION DE GUIA DE TRASLADO',
-              idx_documento_asoc: res.insertId,
-              origen: 'KARD',
-              almacen_destino: 509,
-              articulos: JSON.stringify(
-                articulos.map(fila => ({...fila,lote:cabecera.id_pedido_origen}))
-              ),
-            };
-            console.log("El detalle a insertar es el siguiente:",data_comprobante)
-            let res_mov = await AlmacenModel.saveMovimiento(data_comprobante,conn)
-            if(!res_mov.ok) throw new Error(res_mov.message)
-          }
+          let [busqueda] = await conn.execute("SELECT *FROM tbl2_cptes_ordenes_tipo WHERE idx = 9")
+          const data_comprobante = {
+            id_comprobante_CAB: busqueda[0].idx,
+            cod_comprobante: busqueda[0].codigo,
+            num_comprobante: parseInt(busqueda[0].correlativo) + 1,
+            observaciones: 'INGRSO DE DESPACHO POR PEDIDO',
+            idx_documento_asoc: res.insertId,
+            origen: 'KARD',
+            almacen_destino: 509,
+            articulos: JSON.stringify(
+              articulos.map(fila => ({...fila,lote:cabecera.id_pedido_origen}))
+            ),
+          };
+          console.log("El detalle a insertar es el siguiente:",data_comprobante)
+          let res_mov = await AlmacenModel.saveMovimiento(data_comprobante,conn)
+          if(!res_mov.ok) throw new Error(res_mov.message)
+          // if(cabecera.tipo === 'PEDIDOS'){
+          // }
           //////////////////////////////////////////////
           //////////////////////////////////////////////
         } catch (err) {
           console.log("error en la consulta", err)
         }
       }
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return {ok:true,message:'Proceso ejecutado con éxito'}
     } catch (err) {
       console.log("asdlkfaslfjlaskdfjlf:",err)
@@ -2169,7 +2173,7 @@ export class ProduccionModel {
       await conn.connect();
       conn.beginTransaction()
 
-      let [cabecera] = await conn.query('select *from tbl2_despachos_cab where idx = ?',[id])
+      let [cabecera] = await conn.query('select *from tbl2_despachos_cab where idx = ?',[id])      
       let [data_backup] = await conn.query(`select tdd.id_combo,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',t1.talla,'despachos',t1.despachos,'caidos',t1.caidos,'incompletos',t1.incompletos)) from tbl2_despachos_det_fracciones t1 where t1.id_despacho_DET = tdd.idx),JSON_ARRAY()) as fracciones from tbl2_despachos_det tdd where tdd.id_despacho_CAB = ?`,[id])
       console.log("Informacion de la cabecera:",cabecera)
 
@@ -2194,12 +2198,41 @@ export class ProduccionModel {
           if(!resultado.ok) throw resultado.message
         }
       } else {
+        let [detalle] = await conn.query("select t1.*,COALESCE((select tp.nom from tbl2_productos tp where tp.idx = ts.idx_CAB_PROD),'') as nom from tbl2_despachos_det t1 join tbl2_subproductos ts on t1.id_subprod = ts.idx where id_despacho_CAB = ?",[id])
+
+        console.log("La informacion del detalle es:",detalle)
+        if(detalle.length > 0 && detalle[0].id_producto){
+          let articulos = detalle.map(row=>(
+            {
+              id_producto_CAB:row.id_producto,
+              producto:row.nom,
+              id_subprod_CAB:row.id_subprod,
+              almacen_destino:509,
+              lote:parseInt(cabecera[0].id_pedido_origen),
+              tipo:'I',
+              despacho:row.despacho
+            }
+          ))
+          const [busqueda] = await conn.query("SELECT *FROM tbl2_cptes_ordenes_tipo WHERE idx = 10")
+          console.log("El listado de articulo es:",data_backup)
+          const data_comprobante = {
+            id_comprobante_CAB: busqueda[0].idx,
+            cod_comprobante: busqueda[0].codigo,
+            num_comprobante: parseInt(busqueda[0].correlativo) + 1,
+            observaciones: 'ANULACION DE DESPACHO POR REQUERIMIENTO DE PEDIDO',
+            idx_documento_asoc: id,
+            lote: parseInt(cabecera[0].id_pedido_origen),
+            origen: 'KARD',
+            almacen_destino: 509,
+            articulos: JSON.stringify(articulos),
+          };
+          console.log("El detalle a insertar es el siguiente:",data_comprobante)
+          let res_mov = await AlmacenModel.saveMovimiento(data_comprobante,conn)
+          if(!res_mov.ok) throw new Error(res_mov.message)
+        }
         await conn.query('DELETE FROM `tbl2_despachos_cab` WHERE `idx` = "' + id + '"');
         await conn.query('DELETE FROM `tbl2_despachos_det` WHERE `id_despacho_CAB` = "' + id + '"');
       }
-      
-      // let [validacion] = await conn.query("select sum(produccion_total) from tbl2_fases_prod_hojacorte_combos_fracciones where id_combo_CAB in (970,971,989)")
-      // console.log("La informacion de la validacion es :",validacion)
 
       // if (conn) await conn.rollback();
       if (conn) await conn.commit();

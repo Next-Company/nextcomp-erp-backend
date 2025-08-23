@@ -55,8 +55,10 @@ export class ProduccionController {
       });
   }
   static async exportInfoGuia(req, resp) {
+    console.log("Iniciando la exportacion de la guia")
     const params = req.params
     const data = await ProduccionModel.getInfoGuiaCab(params.id)
+    console.log("La informacion de la guia es:",data)
     const data2 = await ProduccionModel.getInfoGuiaDet(params.id)
     const data3 = data[0].id_proveedor_CAB ? await ProduccionModel.searchProveedorById(data[0].id_proveedor_CAB) : [{ nom: data[0].responsable, ruc: '', direccion: data[0].destino }]
     // let relleno = []

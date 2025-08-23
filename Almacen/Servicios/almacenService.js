@@ -9,9 +9,9 @@ export default class AlmacenModel{
       conn = await mysql.createConnection(configs[1])
       await conn.connect()
 
-      let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(COALESCE(TRIM(proveedor),''),' ',COALESCE(TRIM(estado),''),' ',COALESCE(TRIM(Raz_social_DOC),''),' ',COALESCE(TRIM(Nro_Doc_Prov),''))) > 0").join(" ") : ""
+      let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(COALESCE(TRIM(estado),''),' ',COALESCE(TRIM(Raz_social_DOC),''),' ',COALESCE(TRIM(Nro_Doc_Prov),''))) > 0").join(" ") : ""
   
-      const query = `
+      const query_ = `
         SELECT tkc.*, tp.idx as id_proveedor_CAB, tp.nom as proveedor, tmc.cod_comprobante, tmc.anulado
         FROM tbl_kard_compras_CAB tkc
         JOIN tbl2_almacen_mov_cab tmc ON tkc.id_CAB = tmc.idx_documento_asoc
@@ -20,6 +20,15 @@ export default class AlmacenModel{
         ORDER BY tkc.fecha_sys DESC
         LIMIT 50
       `;
+      const query = `
+        SELECT tkc.*, tp.idx as id_proveedor_CAB, tp.nom as proveedor, if(COALESCE(tkc.tipomov,0) = 0,'OTRO',if(COALESCE(tkc.tipomov,0) = 9,'INGR','RETR'))  as cod_comprobante
+        FROM tbl_kard_compras_CAB tkc
+        JOIN tbl2_proveedor tp ON tkc.Nro_Doc_Prov = tp.ruc
+        WHERE Suc_Tienda in (509,508) ${extra}
+        ORDER BY tkc.fecha_sys DESC
+        LIMIT 50
+      `;
+      console.log("La consulta generada es:",query)
   
       const [result] = await conn.execute(query);
       console.log("El resultado de la consulta es:", result)
@@ -117,10 +126,8 @@ export default class AlmacenModel{
       conn.beginTransaction()
 
       console.log("La info recibida es:",data)
-
       let cabecera = JSON.parse(data.info)
       let detalle = JSON.parse(data.detalle)
-
       console.log("La informacion de la cebecra es:",cabecera)
       console.log("La informacion del detalle es:",detalle)
 
@@ -142,9 +149,11 @@ export default class AlmacenModel{
         observaciones: cabecera.observaciones,
         fec_Reg_DOC: cabecera.fec_emision.split('-').reverse().join('/'),
         fec_Emision_DOC: cabecera.fec_emision.split('-').reverse().join('/'),
-        idx_usu: 0
+        idx_usu: 0,
+        tipomov: cabecera.tipo_operacion,
+        id_requerimiento: parseInt(cabecera.id_pedido_origen)
       };
-
+      console.log("El detalle a insertar es:",data_guia)
       const [resultGuia] = await conn.execute(
         `INSERT INTO tbl_kard_compras_CAB (${Object.keys(data_guia).join(',')}) VALUES (${Object.keys(data_guia).map(() => '?').join(',')})`,
         Object.values(data_guia)
@@ -207,22 +216,25 @@ export default class AlmacenModel{
       await conn.connect()
       conn.beginTransaction()
 
-      let [detguia] = await conn.execute("SELECT t1.*,ts.nom as producto FROM tbl_kard_compras_DET t1 join tbl2_subproductos ts on t1.id_subprod = ts.idx WHERE id_CAB_DET = ?",[id])
-      let [infomov] = await conn.execute("SELECT *FROM tbl2_almacen_mov_cab WHERE idx_documento_asoc = ?",[id])
-      let [busqueda] = await conn.execute("SELECT *FROM tbl2_cptes_ordenes_tipo WHERE idx = ?",[parseInt(infomov[0].id_comprobante_CAB) == 10 ? 9 : 10])
+      let [cabecera] = await conn.execute("SELECT *FROM tbl_kard_compras_CAB WHERE id_CAB = ? and ruc = ?",[id,'20522094120'])
+      let [detalle] = await conn.execute("SELECT t1.*,COALESCE((select tp.nom from tbl2_productos tp where tp.idx = t1.id_producto_DET),'') as producto FROM tbl_kard_compras_DET t1 WHERE t1.id_CAB_DET = ?",[id])
 
-      let articulos = [
+      // let [detguia] = await conn.execute("SELECT t1.*,ts.nom as producto FROM tbl_kard_compras_DET t1 join tbl2_subproductos ts on t1.id_subprod = ts.idx WHERE id_CAB_DET = ?",[id])
+      // let [infomov] = await conn.execute("SELECT *FROM tbl2_almacen_mov_cab WHERE idx_documento_asoc = ?",[id])
+
+      let [busqueda] = await conn.execute("SELECT *FROM tbl2_cptes_ordenes_tipo WHERE idx = ?",[parseInt(cabecera[0].tipomov) == 10 ? 9 : 10])
+
+      let articulos = detalle.map(row=>(
         {
-          id_producto_CAB:detguia[0].id_producto_DET,
-          producto:detguia[0].producto,
-          id_subprod_CAB:detguia[0].id_subprod,
+          id_producto_CAB:row.id_producto_DET,
+          producto:row.producto,
+          id_subprod_CAB:row.id_subprod,
           almacen_destino:509,
-          lote:detguia[0].num_lote,
+          lote:cabecera[0].id_requerimiento,
           tipo:'I',
-          despacho:detguia[0].Cant_producto_DET
+          despacho:row.Cant_producto_DET
         }
-      ]
-
+      ))
       console.log("El listado de articulo es:",articulos)
       const data_comprobante = {
         id_comprobante_CAB: busqueda[0].idx,
@@ -241,8 +253,8 @@ export default class AlmacenModel{
 
       await conn.execute("UPDATE tbl_kard_compras_CAB SET estado = 'ANULADO' WHERE ruc = ? and id_CAB = ?",['20522094120',id])
 
-      // if(conn) conn.rollback()
-      if(conn) conn.commit()
+      if(conn) conn.rollback()
+      // if(conn) conn.commit()
       return {ok:true,message:'Guardado exitoso'}
     } catch (error) {
       console.log(error)
@@ -284,6 +296,8 @@ export default class AlmacenModel{
           Object.values(data_comprobante)
         );
         id = resultCab.insertId;
+
+        console.log("El id de la cabecera es:",id)
 
         switch (data.cod_comprobante) {
           case 'INGR':
@@ -375,6 +389,7 @@ export default class AlmacenModel{
                 WHERE tad.id_cabprod = ? AND tad.id_CAB_DET = ? AND tad.tipo = 'I' AND tad.idx_subproducto = ? AND lote = ? AND tad.estado = 1`,
                 [value.id_producto_CAB, almacen_destino, value.id_subprod_CAB, parseInt(value.lote)]
               );
+              console.log("El resultado de la consulta es:",consulta_deposito)
               const stockActual = parseFloat(consulta_deposito[0]?.cantidad ?? 0);
 
               if (stockActual < parseFloat(value.despacho)) {
@@ -382,12 +397,14 @@ export default class AlmacenModel{
               }
 
               // Actualizar stock en almacen_det
+              console.log("Se actualiza el stock existente")
               await conn.execute(
                 `UPDATE tbl2_almacen_det SET cantidad = ? WHERE id_cabprod = ? AND idx_subproducto = ? AND id_CAB_DET = ? AND lote = ?`,
                 [stockActual - parseFloat(value.despacho), value.id_producto_CAB, value.id_subprod_CAB, almacen_destino, value.lote]
               );
 
               // Insertar detalle de movimiento
+              console.log("Se inserta un nuevo registro de movimiento")
               const mov_detalle = {
                 id_comprobante_CAB: id,
                 cod_producto: '',
@@ -400,6 +417,7 @@ export default class AlmacenModel{
                 tipo: 'I',
                 idxsub: value.id_subprod_CAB
               };
+              console.log("El detalle a insertar es:",mov_detalle)
               await conn.execute(
                 `INSERT INTO tbl2_almacen_mov_det (${Object.keys(mov_detalle).join(',')}) VALUES (${Object.keys(mov_detalle).map(() => '?').join(',')})`,
                 Object.values(mov_detalle)
