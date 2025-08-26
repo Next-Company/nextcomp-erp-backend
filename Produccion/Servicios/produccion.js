@@ -1446,7 +1446,7 @@ export class ProduccionModel {
       if (conn) await conn.end();
     }
   }
-  static async saveInfoPedidos(data) {
+  static async saveInfoPedidosAvios(data) {
     let conn
     const results = { ok: true, message: 'test' }
     const cabecera = JSON.parse(data.info)
@@ -1454,12 +1454,11 @@ export class ProduccionModel {
 
     console.log("Informacion cabecera:", cabecera)
     console.log("Informacion detalle:", articulos)
-
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      conn.beginTransaction()
 
+      conn.beginTransaction()
       if (data.id) {
         await conn.query('UPDATE tbl2_pedidos_insumos_cab SET orden_ref=NULLIF(?, ""),fec_emision=NULLIF(?, ""),fec_retorno=NULLIF(?, ""),tipo=NULLIF(?, ""),id_proveedor_CAB=NULLIF(?, ""),proveedor=NULLIF(?, ""),responsable=NULLIF(?, ""),forma_pago=NULLIF(?, ""),nro_contacto=NULLIF(?, ""),observaciones=NULLIF(?, ""),estado=NULLIF(?, ""),moneda=NULLIF(?, ""),igv=NULLIF(?, ""),produccion=NULLIF(?, ""),afec_retencion=NULLIF(?, ""),emisor=NULLIF(?, "") WHERE idx = ?', [cabecera.orden_ref, cabecera.fec_emision, cabecera.fec_retorno, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.forma_pago, cabecera.nro_contacto, cabecera.observaciones, cabecera.estado, cabecera.moneda, cabecera.igv, cabecera.produccion, cabecera.afec_retencion, cabecera.emisor, parseInt(data.id)])
 
@@ -1511,6 +1510,124 @@ export class ProduccionModel {
 
           const [res, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_cab(orden_ref,fec_emision,fec_retorno,tipo,id_proveedor_CAB,proveedor,responsable,forma_pago,nro_contacto,observaciones,estado,moneda,igv,produccion,afec_retencion,emisor) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [correlativo, cabecera.fec_emision, cabecera.fec_retorno, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.forma_pago, cabecera.nro_contacto, cabecera.observaciones, cabecera.estado, cabecera.moneda, cabecera.igv, cabecera.produccion, cabecera.afec_retencion, cabecera.emisor]);
 
+          const insert = async () => {
+            const fila = articulos.shift()
+            if (fila) {
+              const [results, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_det(id_pedido_CAB,id_producto_CAB,producto,modelo,corte,color,rollos,cantidad,unidad,precio) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.id_producto_CAB, fila.producto, fila.modelo, fila.corte, fila.color, fila.rollos, fila.cantidad, fila.unidad, fila.precio]);
+              await insert()
+            } else {
+              return Promise.resolve('')
+            }
+          }
+          await insert()
+
+          // await conn.query("update tbl2_pedidos_insumos_correlativo set codigo_num = codigo_num + 1 where ruc_ = ? and anio = YEAR(NOW()) and tipo = ?",['20522094120',cabecera.tipo])
+          await conn.query("update tbl2_pedidos_insumos_correlativo set codigo_num = codigo_num + 1 where ruc_ = ? and anio = YEAR(NOW()) and tipo = ? and origen = ?",['20522094120','TELAS',cabecera.emisor])
+
+        } catch (err) {
+          console.log("error en la consulta", err)
+        }
+        // await conn.end();
+        // return resultS
+      }
+
+      if(conn) conn.rollback()
+      // if(conn) conn.commit()
+      return {ok:true,message:'Registro completo'}
+    } catch (err) {
+      if (conn) conn.rollback()
+      return {ok:false,message:err}
+    } finally {
+      if (conn) await conn.end();
+    }
+  }
+  static async saveInfoPedidosTelas(data) {
+    let conn
+    const results = { ok: true, message: 'test' }
+    const cabecera = JSON.parse(data.info)
+    const articulos = JSON.parse(data.detalle)
+
+    console.log("Informacion cabecera:", cabecera)
+    console.log("Informacion detalle:", articulos)
+
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      conn.beginTransaction()
+
+      if (data.id) {
+        console.log("Empiezando actualizacion")
+        await conn.query('UPDATE tbl2_pedidos_insumos_cab SET orden_ref=NULLIF(?, ""),fec_emision=NULLIF(?, ""),fec_retorno=NULLIF(?, ""),tipo=NULLIF(?, ""),id_proveedor_CAB=NULLIF(?, ""),proveedor=NULLIF(?, ""),responsable=NULLIF(?, ""),forma_pago=NULLIF(?, ""),nro_contacto=NULLIF(?, ""),observaciones=NULLIF(?, ""),estado=NULLIF(?, ""),moneda=NULLIF(?, ""),igv=NULLIF(?, ""),produccion=NULLIF(?, ""),afec_retencion=NULLIF(?, ""),emisor=NULLIF(?, "") WHERE idx = ?', [cabecera.orden_ref, cabecera.fec_emision, cabecera.fec_retorno, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.forma_pago, cabecera.nro_contacto, cabecera.observaciones, cabecera.estado, cabecera.moneda, cabecera.igv, cabecera.produccion, cabecera.afec_retencion, cabecera.emisor, parseInt(data.id)])
+
+        const [res, fld] = await conn.query("SELECT *FROM tbl2_pedidos_insumos_det WHERE id_pedido_CAB = " + parseInt(data.id))
+        const ids_delete = res.filter(row => row.idx !== '' && !articulos.map(fila => parseInt(fila.idx)).includes(parseInt(row.idx)))
+
+        // ///////////////////////////////////
+        // SECCION ACTUALIZACION DE REGISTROS
+        // ///////////////////////////////////
+        for(let fila of articulos){
+
+          if(cabecera.tipo == 'TELAS'){
+            // En este punto se debe validar si el producto, color o subproducto existen
+            try {
+              if(fila.idx_producto == ''){
+                let resultprod = await ProductosService.createNewProduct(fila,conn)
+                if(!resultprod.ok) throw new Error(resultprod.message)
+                console.log("Info de la creacion del producto:",resultprod)
+                fila.idx_producto = resultprod.info
+              }
+              if(fila.idx_color == ''){
+                console.log("Creando nuevo color")
+                let [busqueda] = await conn.query("SELECT *FROM tbl2_colores WHERE nom LIKE ? AND ruc = ?",[`%${fila.color}%`,'20522094120'])
+                if(busqueda.length > 0){
+                  fila.idx_color = busqueda[0].idx
+                }else{
+                  let resultcolor = await ProductosService.createNewColor({codigo:'',nom:fila.color,ruc:'20522094120'},conn)
+                  if(!resultcolor.ok) throw new Error(resultcolor.message)
+                  console.log("Info de la creacion del color:",resultcolor)
+                  fila.idx_color = resultcolor.idcolor
+                }
+              }
+              if(fila.id_producto_CAB == ''){
+                let [newprod] = await conn.query(`SELECT *FROM tbl2_productos WHERE ruc_ = '20522094120' AND idx = ?`,[fila.idx_producto])
+                console.log("La informacion del producto consultado es:",newprod)
+                let resultsubprod = await ProductosService.createNewSubProduct({idx_CAB_PROD:fila.idx_producto,codigo:newprod[0].codigo,isbn:newprod[0].isbn,nom:newprod[0].nom,idx_CAB_COLOR:fila.idx_color,idx_talla:26,talla:'S/T',estado:'primera',nro_lote:data.id},conn)
+                if(!resultsubprod.ok) throw new Error(resultsubprod.message)
+                console.log("Info de la creacion del subproducto:",resultsubprod)
+                fila.id_producto_CAB = resultsubprod.resultid
+              }
+            } catch (error) {
+              console.log("Error en la creacion de productos o colores o subproductos:",error)
+              throw error
+            }
+            
+          }
+
+          if (fila.idx && fila.idx !== '') {
+            console.log("Dentro de 1 actualizacion")
+            const [results, fields] = await conn.query('UPDATE tbl2_pedidos_insumos_det SET id_pedido_CAB=NULLIF(?, ""),id_producto_CAB=NULLIF(?, ""),producto=NULLIF(?, ""),color=NULLIF(?, ""),rollos=NULLIF(?, ""),cantidad=NULLIF(?, ""),unidad=NULLIF(?, ""),precio=NULLIF(?, ""),anulado=NULLIF(?, ""),modelo=NULLIF(?, ""),corte=NULLIF(?, "") WHERE idx = ?', [parseInt(data.id), fila.idx_producto, fila.producto, fila.color, fila.rollos, fila.cantidad, fila.unidad, fila.precio, fila.anulado, fila.modelo, fila.corte, fila.idx]);
+
+          } else {
+            console.log("Dentro de 2 insertado")
+            const [results, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_det(id_pedido_CAB,id_subprod_CAB,id_producto_CAB,producto,color,rollos,cantidad,unidad,precio,anulado,modelo,corte) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [parseInt(data.id),fila.id_producto_CAB ?? null, fila.idx_producto, fila.producto, fila.color, fila.rollos, fila.cantidad, fila.unidad, fila.precio, fila.anulado, fila.modelo, fila.corte]);
+          }
+        }
+
+        // //////////////////////////////
+        // SECCION ELIMINACION DE REGISTROS
+        // //////////////////////////////
+        for(let fila of ids_delete){
+          await conn.query('DELETE FROM `tbl2_pedidos_insumos_det` WHERE `id_pedido_CAB` = ? and `idx` = ?', [parseInt(data.id), parseInt(fila.idx)])
+        }
+
+      } else {
+        console.log("Creandsssso")
+        try {
+
+          const correlativo = await this.getNuevoPedido('TELAS',cabecera.emisor)
+
+          const [res, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_cab(orden_ref,fec_emision,fec_retorno,tipo,id_proveedor_CAB,proveedor,responsable,forma_pago,nro_contacto,observaciones,estado,moneda,igv,produccion,afec_retencion,emisor) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [correlativo, cabecera.fec_emision, cabecera.fec_retorno, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.forma_pago, cabecera.nro_contacto, cabecera.observaciones, cabecera.estado, cabecera.moneda, cabecera.igv, cabecera.produccion, cabecera.afec_retencion, cabecera.emisor]);
+
           for(let fila of articulos){
             console.log("El articulo consultado e:",fila)
             // let idprod = fila.idx_producto
@@ -1518,19 +1635,24 @@ export class ProduccionModel {
             // let idsubprod = fila.id_producto_CAB
             if(cabecera.tipo == 'TELAS'){
               if(fila.idx_producto == ''){
-                let resultprod = await ProductosService.createNewProduct(fila)
+                let resultprod = await ProductosService.createNewProduct(fila,conn)
                 if(!resultprod.ok) throw new Error(resultprod.message)
                 fila.idx_producto = resultprod.info
               }
               if(fila.idx_color == ''){
-                let resultcolor = await ProductosService.createNewColor({codigo:'',nom:fila.color,ruc:'20522094120'})
-                if(!resultcolor.ok) throw new Error(resultcolor.message)
-                fila.idx_color = resultcolor.idcolor
+                let [busqueda] = await conn.query("SELECT *FROM tbl2_colores WHERE nom LIKE ? AND ruc = ?",[`%${fila.color}%`,'20522094120'])
+                if(busqueda.length > 0){
+                  fila.idx_color = busqueda[0].idx
+                }else{
+                  let resultcolor = await ProductosService.createNewColor({codigo:'',nom:fila.color,ruc:'20522094120'},conn)
+                  if(!resultcolor.ok) throw new Error(resultcolor.message)
+                  fila.idx_color = resultcolor.idcolor
+                }
               }
               if(fila.id_producto_CAB == ''){
                 let [newprod] = await conn.query(`SELECT *FROM tbl2_productos WHERE ruc_ = '20522094120' AND idx = ?`,[fila.idx_producto])
                 console.log("La informacion del producto consultado es:",newprod)
-                let resultsubprod = await ProductosService.createNewSubProduct({idx_CAB_PROD:fila.idx_producto,codigo:newprod[0].codigo,isbn:newprod[0].isbn,nom:newprod[0].nom,idx_CAB_COLOR:fila.idx_color,idx_talla:26,talla:'S/T',estado:'primera',nro_lote:res.insertId})
+                let resultsubprod = await ProductosService.createNewSubProduct({idx_CAB_PROD:fila.idx_producto,codigo:newprod[0].codigo,isbn:newprod[0].isbn,nom:newprod[0].nom,idx_CAB_COLOR:fila.idx_color,idx_talla:26,talla:'S/T',estado:'primera',nro_lote:res.insertId},conn)
                 if(!resultsubprod.ok) throw new Error(resultsubprod.message)
                 fila.id_producto_CAB = resultsubprod.resultid
               }
@@ -1552,8 +1674,9 @@ export class ProduccionModel {
       if(conn) conn.commit()
       return {ok:true,message:'Registro completo'}
     } catch (err) {
+      console.log("Error en el proceso:", err)
       if (conn) conn.rollback()
-      return {ok:false,message:err}
+      return {ok:false,message:err.message ?? err}
     } finally {
       if (conn) await conn.end();
     }
@@ -1818,7 +1941,7 @@ export class ProduccionModel {
           // console.log("El detalle de despacho insertado es el siguiente:",verifica)
 
           ///////////////////////////////////////
-          /// INGRESAR MERCADERIA HACIA ALMACEN
+          /// INGRESAR MERCADERIA HACIA ALMACEBN
           ///////////////////////////////////////
           let [busqueda] = await conn.execute("SELECT *FROM tbl2_cptes_ordenes_tipo WHERE idx = 9")
           const data_comprobante = {
@@ -2167,7 +2290,7 @@ export class ProduccionModel {
   }
   static async eliminarInfoDespachos(id) {
     let conn
-    console.log("El id de eliminado es el siguienteds:",id)
+    console.log("El id de eliminado es el siguientes:",id)
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
@@ -2198,10 +2321,11 @@ export class ProduccionModel {
           if(!resultado.ok) throw resultado.message
         }
       } else {
-        let [detalle] = await conn.query("select t1.*,COALESCE((select tp.nom from tbl2_productos tp where tp.idx = ts.idx_CAB_PROD),'') as nom from tbl2_despachos_det t1 join tbl2_subproductos ts on t1.id_subprod = ts.idx where id_despacho_CAB = ?",[id])
+        let [validacion] = await conn.query(`select t1.*,COALESCE((select tp.nom from tbl2_productos tp where tp.idx = ts.idx_CAB_PROD),'') as nom from tbl2_despachos_det t1 left join tbl2_subproductos ts on t1.id_subprod = ts.idx where t1.id_despacho_CAB = ? and ts.idx is null`,[id])
 
-        console.log("La informacion del detalle es:",detalle)
-        if(detalle.length > 0 && detalle[0].id_producto){
+        console.log("La informacion del detalle es:",validacion)
+        if(validacion.length == 0){
+          let [detalle] = await conn.query(`select t1.*,COALESCE((select tp.nom from tbl2_productos tp where tp.idx = ts.idx_CAB_PROD),'') as nom from tbl2_despachos_det t1 join tbl2_subproductos ts on t1.id_subprod = ts.idx where t1.id_despacho_CAB = ? `,[id])
           let articulos = detalle.map(row=>(
             {
               id_producto_CAB:row.id_producto,
@@ -2214,7 +2338,7 @@ export class ProduccionModel {
             }
           ))
           const [busqueda] = await conn.query("SELECT *FROM tbl2_cptes_ordenes_tipo WHERE idx = 10")
-          console.log("El listado de articulo es:",data_backup)
+          console.log("El listado de articulo es:",articulos)
           const data_comprobante = {
             id_comprobante_CAB: busqueda[0].idx,
             cod_comprobante: busqueda[0].codigo,
@@ -2240,7 +2364,7 @@ export class ProduccionModel {
     } catch (err) {
       console.log("Error en la eliminacion de despacho:",err)
       if (conn) await conn.rollback();
-      return {ok:false,message:err}
+      return {ok:false,message:err.message ?? err}
     } finally {
       if (conn) await conn.end();
     }

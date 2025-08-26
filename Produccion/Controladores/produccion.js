@@ -1933,8 +1933,13 @@ export class ProduccionController {
     const data = await ProduccionModel.getNuevoPedido()
     res.json(data)
   }
-  static async saveInfoPedidos(req, res) {
-    const data = await ProduccionModel.saveInfoPedidos(req.body)
+  static async saveInfoPedidosTelas(req, res) {
+    const data = await ProduccionModel.saveInfoPedidosTelas(req.body)
+    // res.json({ ok: true, message: 'datos guardados' })
+    res.json(data)
+  }
+  static async saveInfoPedidosAvios(req, res) {
+    const data = await ProduccionModel.saveInfoPedidosAvios(req.body)
     // res.json({ ok: true, message: 'datos guardados' })
     res.json(data)
   }

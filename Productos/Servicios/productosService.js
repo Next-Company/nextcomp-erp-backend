@@ -6,7 +6,70 @@ export class ProductosService{
     const conn = await mysql.createConnection(configs[1]);
     await conn.connect();
     try {
-      const [rows,fields] = await conn.execute("SELECT * FROM tbl2_prod_color_talla_det where tipo in ('I','A') LIMIT 50");
+      // const [rows,fields] = await conn.execute("SELECT * FROM tbl2_prod_color_talla_det where tipo in ('I','A') LIMIT 50");
+      const [rows,fields] = await conn.execute(`
+        select
+            tp.idx AS id_producto_CAB,
+            tp.codigo AS cod_producto,
+            tp.tipo AS tipo,
+            tp.det AS det,
+            tp.nom AS producto,
+            tr.nom AS rubro,
+            tp.temporada AS temporada,
+            tp.estilo AS estilo,
+            round((tp.costo + ((tp.utilidad1 * tp.costo) / 100)), 1) AS precio,
+            tp.presentacion AS presentacion,
+            tp.marca AS marca,
+            tp.modelo AS modelo,
+            '' AS idx_color,
+            '' AS color,
+            '' AS idx_talla,
+            '' AS talla,
+            '' AS condicion,
+            '' AS idxsub,
+            '' AS sku2
+        from tbl2_productos tp
+        join tbl2_rubros tr on tr.idx = tp.rubros
+        left join tbl2_subproductos ts on tp.idx = ts.idx_CAB_PROD 
+        where tp.ruc_ = '20522094120' and tp.tipo = 'I' and ts.idx is null
+
+        union all
+
+        select
+            tp.idx AS id_producto_CAB,
+            tp.codigo AS cod_producto,
+            tp.tipo AS tipo,
+            tp.det AS det,
+            tp.nom AS producto,
+            tr.nom AS rubro,
+            tp.temporada AS temporada,
+            tp.estilo AS estilo,
+            round((tp.costo + ((tp.utilidad1 * tp.costo) / 100)), 1) AS precio,
+            tp.presentacion AS presentacion,
+            tp.marca AS marca,
+            tp.modelo AS modelo,
+            tc.idx AS idx_color,
+            upper(tc.nom) AS color,
+            tt.idx AS idx_talla,
+            upper(tt.detalle) AS talla,
+            tcn.condicion AS condicion,
+            ts.idx AS idxsub,
+            ts.sku AS sku2
+        from
+            (((((BD_FACTURADOR.tbl2_productos tp
+        join BD_FACTURADOR.tbl2_subproductos ts on
+            ((tp.idx = ts.idx_CAB_PROD)))
+        join BD_FACTURADOR.tbl2_colores tc on
+            ((tc.idx = ts.idx_CAB_COLOR)))
+        join BD_FACTURADOR.tbl2_rubros tr on
+            ((tp.RUBROS = tr.idx)))
+        join BD_FACTURADOR.tbl2_tallas tt on
+            ((tt.idx = ts.idx_talla)))
+        join BD_FACTURADOR.tbl2_condicion tcn on
+            ((tcn.condicion = ts.estado)))
+        where
+            (tp.ruc_ = '20522094120') and tp.tipo in ('I','A')
+      `);
       console.log(rows);
       return rows;
     }
@@ -60,14 +123,8 @@ export class ProductosService{
     }
     return info;
   }
-  static async createNewProduct(info){
-    // comentario de reseteo de api
-    let conn = undefined
+  static async createNewProduct(info,conn){
     try {
-      conn = await mysql.createConnection(configs[1]);
-      await conn.connect();
-      conn.beginTransaction()
-
       const [validacion,fields] = await conn.execute("select *from tbl2_productos where ruc_ = '20522094120' and lower(nom) = ?",[info.producto.toLowerCase()])
 
       if(validacion.length > 0){
@@ -102,26 +159,16 @@ export class ProductosService{
       console.log("Los valores a insertar son los siguientes:",values)
       let [result] = await conn.execute("insert into tbl2_productos(" + campos.join(',') + ") values("+ campos.map(row=>'?').join(',') +")",values)
 
-      // if(conn) conn.rollback()
-      if(conn) conn.commit()
       return {ok:true,message:'',info:result.insertId}
     }
     catch(error){
-      if(conn) conn.rollback()
       return {ok:false,message:error.message ?? error}
     }
-    finally{
-      await conn.end();
-    }
   }
-  static async createNewSubProduct(info){
-    let conn = undefined
+  static async createNewSubProduct(info,conn){
+    console.log("La informacion recibida para crear un subproducto es la siguiente:",info)
     let resultid = null
     try {
-      conn = await mysql.createConnection(configs[1]);
-      await conn.connect();
-      conn.beginTransaction()
-
       let [validation,fields] = await conn.query("SELECT *FROM tbl2_subproductos WHERE idx_CAB_PROD = ? AND idx_CAB_COLOR = ?",[info.idx_CAB_PROD,info.idx_CAB_COLOR])
       if(validation.length > 0) throw new Error('Se ha detectado un producto existente con el mismo nombre')
       if (info.idx) {
@@ -135,25 +182,14 @@ export class ProductosService{
         let [result2] = await conn.execute("INSERT INTO tbl2_subproductos(" + campos.join(',') + ") values("+ campos.map(row=>'?').join(',') +")",values)
         resultid = result2.insertId
       }
-
-      // if(conn) conn.rollback()
-      if(conn) conn.commit()
       return {ok:true,message:'El subproducto fue creado con éxito.',resultid}
     } catch(error) {
-      if(conn) conn.rollback()
       return {ok:false,message:error.message ?? error}
-    } finally {
-      if(conn) await conn.end()
     }
   }
-  static async createNewColor(info){
-    let conn = undefined
+  static async createNewColor(info,conn){
     let idcolor = null
     try {
-      conn = await mysql.createConnection(configs[1]);
-      await conn.connect();
-      conn.beginTransaction()
-
       if(info.idx){
 
       }else{
@@ -164,16 +200,10 @@ export class ProductosService{
         let [newcolor] = await conn.query("INSERT INTO tbl2_colores(codigo,nom,ruc) VALUES(?,?,?)",[info.codigo,info.nom,info.ruc])
         idcolor = newcolor.insertId
       }
-      // if(conn) conn.rollback()
-      if(conn) conn.commit()
       return {ok:true,message:'La creacion del color se ejecutó con éxito.',idcolor};
     }
     catch(error){
-      if(conn) conn.rollback()
       return {ok:false,message:error.message ?? error}
-    }
-    finally{
-      await conn.end();
     }
   }
 }

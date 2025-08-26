@@ -61,16 +61,13 @@ export default class AlmacenModel{
         WHERE tpic.idx = ?
       `,[cabmov[0].id_requerimiento]);
 
-      // const [detbmov] = await conn.execute(`
-      //   SELECT *FROM tbl_kard_compras_DET WHERE id_CAB_DET = ?
-      // `,[id]);
-
       const [detbmov] = await conn.execute(`
         SELECT 
           tpid.*,
           (select COALESCE(tbkd.Cant_producto_DET,0) from tbl_kard_compras_DET tbkd where tbkd.id_subprod = tpid.id_subprod_CAB and tbkd.id_CAB_DET = ?) as despacho
         from tbl2_pedidos_insumos_det tpid 
         where tpid.id_pedido_CAB = ?
+        having despacho > 0
       `,[id,cabmov[0].id_requerimiento]);
   
       console.log("El resultado de la consulta es:", cabmov, detbmov)
@@ -179,7 +176,7 @@ export default class AlmacenModel{
         // detalle[key].idx = value.idx;
       }
 
-      // Preparar data_comprobante
+      // Preparar data_comprobantE
       let [busqueda] = await conn.execute("SELECT *FROM tbl2_cptes_ordenes_tipo WHERE idx = ?",[parseInt(cabecera.tipo_operacion)])
 
       const data_comprobante = {
@@ -361,7 +358,7 @@ export default class AlmacenModel{
                   codigo_cabprod: '',
                   estado: 1,
                   tipo: 'I',
-                  lote: data.lote,
+                  lote: value.lote,
                   cantidad: cantidad
                 };
                 let query = `INSERT INTO tbl2_almacen_det (${Object.keys(data_almacen_det).join(',')}) VALUES (${Object.keys(data_almacen_det).map(() => '?').join(',')})`
@@ -392,7 +389,7 @@ export default class AlmacenModel{
               console.log("El resultado de la consulta es:",consulta_deposito)
               const stockActual = parseFloat(consulta_deposito[0]?.cantidad ?? 0);
 
-              if (stockActual < parseFloat(value.despacho)) {
+              if (stockActual.toFixed(2) < parseFloat(value.despacho).toFixed(2)) {
                 throw new Error("Stock insuficiente, por favor verifique.")
               }
 
@@ -400,7 +397,7 @@ export default class AlmacenModel{
               console.log("Se actualiza el stock existente")
               await conn.execute(
                 `UPDATE tbl2_almacen_det SET cantidad = ? WHERE id_cabprod = ? AND idx_subproducto = ? AND id_CAB_DET = ? AND lote = ?`,
-                [stockActual - parseFloat(value.despacho), value.id_producto_CAB, value.id_subprod_CAB, almacen_destino, value.lote]
+                [stockActual.toFixed(2) - parseFloat(value.despacho).toFixed(2), value.id_producto_CAB, value.id_subprod_CAB, almacen_destino, value.lote]
               );
 
               // Insertar detalle de movimiento
@@ -413,7 +410,7 @@ export default class AlmacenModel{
                 id_almacen_CAB: almacen_destino,
                 cantidad: parseFloat(value.despacho),
                 stock: stockActual,
-                saldo: stockActual - parseFloat(value.despacho),
+                saldo: stockActual.toFixed(2) - parseFloat(value.despacho).toFixed(2),
                 tipo: 'I',
                 idxsub: value.id_subprod_CAB
               };
@@ -465,14 +462,13 @@ export default class AlmacenModel{
       await conn.connect();
 
       const [cabreq] = await conn.query(`SELECT DATE_FORMAT(tpic.fec_emision,"%d/%m/%Y") as fec_emision_cuadre,DATE_FORMAT(tpic.fec_retorno,"%d/%m/%Y") as fec_retorno_cuadre,DATEDIFF(STR_TO_DATE(tpic.fec_retorno,"%Y-%m-%d"), STR_TO_DATE(tpic.fec_emision,"%Y-%m-%d")) as duracion,tp.ruc as ruc,
-      COALESCE((select oc from tbl2_fases_prod_ordenes tpo where tpo.id_pedido_origen = tpic.idx),'-') as oc,
+      COALESCE((select GROUP_CONCAT(oc,'-') from tbl2_fases_prod_ordenes tpo where tpo.id_pedido_origen = tpic.idx),'-') as oc,
       COALESCE((
-        select t1.numero_corte from tbl2_fases_prod_hojacorte t1 
+        select GROUP_CONCAT(t1.numero_corte,'-') from tbl2_fases_prod_hojacorte t1 
         join tbl2_fases_prod_ordenes t2 on t1.id_cab_orden = t2.idx
         where t2.id_pedido_origen  = tpic.idx
       ),'-') as nro_corte,tpic.* 
       FROM tbl2_pedidos_insumos_cab tpic join tbl2_proveedor tp on tpic.id_proveedor_CAB = tp.idx where tpic.idx = ?`, [idreq]);
-
 
       const [detreq] = await conn.query(`
         SELECT 
@@ -490,7 +486,7 @@ export default class AlmacenModel{
         WHERE t1.id_pedido_CAB = ?
       `, [idreq]);
 
-      return [cabreq[0], detreq];
+      return {ok:true,info:[cabreq[0], detreq]};
     } catch (err) {
       console.log(err)
       return {ok: false, message: err.message ?? err};
