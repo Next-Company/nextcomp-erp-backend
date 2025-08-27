@@ -95,7 +95,76 @@ export class ProductosService{
       console.log("Extra consultas :",extra)
 
       // const [rows,fields] = await conn.execute(`SELECT * FROM  tbl2_prod_color_talla_det where producto like '%${busqueda}%' and tipo in ('I','A') LIMIT 50`);
-      const [rows,fields] = await conn.execute(`SELECT * FROM  tbl2_prod_color_talla_det where tipo in ('I','A') ${extra} LIMIT 50`);
+      // const [rows,fields] = await conn.execute(`SELECT * FROM  tbl2_prod_color_talla_det where tipo in ('I','A') ${extra} LIMIT 50`);
+      const [rows,fields] = await conn.execute(`
+        select
+          cc.*
+        from
+        (
+        select
+            tp.idx AS id_producto_CAB,
+            tp.codigo AS cod_producto,
+            tp.tipo AS tipo,
+            tp.det AS det,
+            tp.nom AS producto,
+            tr.nom AS rubro,
+            tp.temporada AS temporada,
+            tp.estilo AS estilo,
+            round((tp.costo + ((tp.utilidad1 * tp.costo) / 100)), 1) AS precio,
+            tp.presentacion AS presentacion,
+            tp.marca AS marca,
+            tp.modelo AS modelo,
+            '' AS idx_color,
+            '' AS color,
+            '' AS idx_talla,
+            '' AS talla,
+            '' AS condicion,
+            '' AS idxsub,
+            '' AS sku2
+        from tbl2_productos tp
+        join tbl2_rubros tr on tr.idx = tp.rubros
+        left join tbl2_subproductos ts on tp.idx = ts.idx_CAB_PROD 
+        where tp.ruc_ = '20522094120' and tp.tipo = 'I' and ts.idx is null
+
+        union all
+
+        select
+            tp.idx AS id_producto_CAB,
+            tp.codigo AS cod_producto,
+            tp.tipo AS tipo,
+            tp.det AS det,
+            tp.nom AS producto,
+            tr.nom AS rubro,
+            tp.temporada AS temporada,
+            tp.estilo AS estilo,
+            round((tp.costo + ((tp.utilidad1 * tp.costo) / 100)), 1) AS precio,
+            tp.presentacion AS presentacion,
+            tp.marca AS marca,
+            tp.modelo AS modelo,
+            tc.idx AS idx_color,
+            upper(tc.nom) AS color,
+            tt.idx AS idx_talla,
+            upper(tt.detalle) AS talla,
+            tcn.condicion AS condicion,
+            ts.idx AS idxsub,
+            ts.sku AS sku2
+        from
+            (((((BD_FACTURADOR.tbl2_productos tp
+        join BD_FACTURADOR.tbl2_subproductos ts on
+            ((tp.idx = ts.idx_CAB_PROD)))
+        join BD_FACTURADOR.tbl2_colores tc on
+            ((tc.idx = ts.idx_CAB_COLOR)))
+        join BD_FACTURADOR.tbl2_rubros tr on
+            ((tp.RUBROS = tr.idx)))
+        join BD_FACTURADOR.tbl2_tallas tt on
+            ((tt.idx = ts.idx_talla)))
+        join BD_FACTURADOR.tbl2_condicion tcn on
+            ((tcn.condicion = ts.estado)))
+        where
+            tp.ruc_ = '20522094120' and tp.tipo in ('I','A')
+        ) as cc
+        where 1=1 ${extra}
+      `);
       console.log(rows);
       return rows;
     }
@@ -193,7 +262,7 @@ export class ProductosService{
       if(info.idx){
 
       }else{
-        let [busqueda] = await conn.query("SELECT *FROM tbl2_colores WHERE nom LIKE ? AND ruc = ?",[`%${info.nom}%`,info.ruc])
+        let [busqueda] = await conn.query("SELECT *FROM tbl2_colores WHERE nom = ? AND ruc IN ('20522094120','20523875583') LIMIT 1",[info.nom])
         if(busqueda.length > 0){
           throw new Error('Esta intentando crear un color que ya exite')
         }

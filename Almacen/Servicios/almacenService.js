@@ -64,7 +64,7 @@ export default class AlmacenModel{
       const [detbmov] = await conn.execute(`
         SELECT 
           tpid.*,
-          (select COALESCE(tbkd.Cant_producto_DET,0) from tbl_kard_compras_DET tbkd where tbkd.id_subprod = tpid.id_subprod_CAB and tbkd.id_CAB_DET = ?) as despacho
+          (select COALESCE(tbkd.Cant_despacho_DET,0) from tbl_kard_compras_DET tbkd where tbkd.id_subprod = tpid.id_subprod_CAB and tbkd.id_CAB_DET = ?) as despacho
         from tbl2_pedidos_insumos_det tpid 
         where tpid.id_pedido_CAB = ?
         having despacho > 0
@@ -163,7 +163,8 @@ export default class AlmacenModel{
           id_CAB_DET: id_guia,
           id_producto_DET: parseInt(element.id_producto_CAB),
           Cod_producto_DET: '',
-          Cant_producto_DET: parseFloat(element.despacho),
+          Cant_producto_DET: 0,
+          Cant_despacho_DET: parseFloat(element.despacho),
           Suc_Tienda: 509,
           Precio_Unid_Det: 0,
           id_subprod: parseInt(element.id_subprod_CAB)
@@ -229,7 +230,7 @@ export default class AlmacenModel{
           almacen_destino:509,
           lote:cabecera[0].id_requerimiento,
           tipo:'I',
-          despacho:row.Cant_producto_DET
+          despacho:row.Cant_despacho_DET
         }
       ))
       console.log("El listado de articulo es:",articulos)
@@ -250,8 +251,8 @@ export default class AlmacenModel{
 
       await conn.execute("UPDATE tbl_kard_compras_CAB SET estado = 'ANULADO' WHERE ruc = ? and id_CAB = ?",['20522094120',id])
 
-      if(conn) conn.rollback()
-      // if(conn) conn.commit()
+      // if(conn) conn.rollback()
+      if(conn) conn.commit()
       return {ok:true,message:'Guardado exitoso'}
     } catch (error) {
       console.log(error)

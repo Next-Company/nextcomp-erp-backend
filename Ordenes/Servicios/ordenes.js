@@ -144,13 +144,19 @@ export class OrdenesModel {
       let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(COALESCE(TRIM(oc),''),' ',COALESCE(TRIM(cliente),''),' ',COALESCE(TRIM(marca),''),' ',COALESCE(TRIM(producto),''),' ',COALESCE(TRIM(modelos),''),' ',COALESCE(TRIM(estado_orden),''),' ',COALESCE(TRIM(status_servicio),''),' ',estado_preprod)) > 0").join(" ") : ""
 
       let [results] = await conn.query(`
-        SELECT *,
-        DATE_FORMAT(fec_emitida,'%d/%m/%Y') as fec_emitida_orden,
-        DATE_FORMAT(fec_entrega,'%d/%m/%Y') as fec_entrega_orden,
-        COALESCE(DATEDIFF(STR_TO_DATE(fec_entrega,'%Y-%m-%d'),STR_TO_DATE(fec_emitida,'%Y-%m-%d') ),0) as dias_produccion,
-        COALESCE(DATEDIFF(STR_TO_DATE(fec_entrega,'%Y-%m-%d'),date(now())),0) as dias_pendientes
-        FROM viewProduccionOrdenesV2
-        WHERE 1=1 ${extra} ORDER BY idx desc
+        SELECT t1.*,
+        DATE_FORMAT(t1.fec_emitida,'%d/%m/%Y') as fec_emitida_orden,
+        DATE_FORMAT(t1.fec_entrega,'%d/%m/%Y') as fec_entrega_orden,
+        COALESCE(DATEDIFF(STR_TO_DATE(t1.fec_entrega,'%Y-%m-%d'),STR_TO_DATE(t1.fec_emitida,'%Y-%m-%d') ),0) as dias_produccion,
+        COALESCE(DATEDIFF(STR_TO_DATE(t1.fec_entrega,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
+        (
+          select count(1)
+          from tbl2_guias_traslado_cab tgtc 
+          join tbl2_despachos_cab tdc on tgtc.idx = tdc.id_guia_origen
+          where tgtc.id_orden_CAB = t1.idx  and tdc.fase = 0
+        ) as despachos_conteo
+        FROM viewProduccionOrdenesV2 t1
+        WHERE 1=1 ${extra} ORDER BY t1.idx desc
       `);
       await conn.end();
 
@@ -284,7 +290,7 @@ export class OrdenesModel {
         DATE_FORMAT(fec_entrega,'%d/%m/%Y') as fec_entrega_orden,
         COALESCE(DATEDIFF(STR_TO_DATE(fec_entrega,'%Y-%m-%d'),STR_TO_DATE(fec_emitida,'%Y-%m-%d') ),0) as dias_produccion,
         COALESCE(DATEDIFF(STR_TO_DATE(fec_entrega,'%Y-%m-%d'),date(now())),0) as dias_pendientes
-        FROM viewProduccionOrdenes
+        FROM viewProduccionOrdenes t1
         WHERE 1=1 ${extra} ORDER BY idx desc
       `);
       await conn.end();

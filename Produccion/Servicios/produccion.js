@@ -1391,7 +1391,7 @@ export class ProduccionModel {
         ) as cancelado
         FROM tbl2_pedidos_insumos_cab tb1
         WHERE 1=1 ${extra}
-        HAVING cantidad > despacho
+        -- HAVING cantidad > despacho
         ORDER BY created_at DESC 
         LIMIT 100
       `
@@ -1566,7 +1566,7 @@ export class ProduccionModel {
         // SECCION ACTUALIZACION DE REGISTROS
         // ///////////////////////////////////
         for(let fila of articulos){
-
+          
           if(cabecera.tipo == 'TELAS'){
             // En este punto se debe validar si el producto, color o subproducto existen
             try {
@@ -1578,19 +1578,23 @@ export class ProduccionModel {
               }
               if(fila.idx_color == ''){
                 console.log("Creando nuevo color")
-                let [busqueda] = await conn.query("SELECT *FROM tbl2_colores WHERE nom LIKE ? AND ruc = ?",[`%${fila.color}%`,'20522094120'])
+                let [busqueda] = await conn.query("SELECT idx FROM tbl2_colores WHERE nom = ? AND ruc IN ('20522094120','20523875583') LIMIT 1",[fila.color.trim()])
                 if(busqueda.length > 0){
+                  console.log("Color hallado")
                   fila.idx_color = busqueda[0].idx
                 }else{
-                  let resultcolor = await ProductosService.createNewColor({codigo:'',nom:fila.color,ruc:'20522094120'},conn)
+                  console.log("Creadndo cnuevo cokir")
+                  let resultcolor = await ProductosService.createNewColor({codigo:'',nom:fila.color.trim(),ruc:'20522094120'},conn)
                   if(!resultcolor.ok) throw new Error(resultcolor.message)
                   console.log("Info de la creacion del color:",resultcolor)
                   fila.idx_color = resultcolor.idcolor
                 }
               }
+              // console.log("La fila comiemza POR SPARTAAA!!!!!!!!!! :",fila)
               if(fila.id_producto_CAB == ''){
                 let [newprod] = await conn.query(`SELECT *FROM tbl2_productos WHERE ruc_ = '20522094120' AND idx = ?`,[fila.idx_producto])
                 console.log("La informacion del producto consultado es:",newprod)
+                console.log()
                 let resultsubprod = await ProductosService.createNewSubProduct({idx_CAB_PROD:fila.idx_producto,codigo:newprod[0].codigo,isbn:newprod[0].isbn,nom:newprod[0].nom,idx_CAB_COLOR:fila.idx_color,idx_talla:26,talla:'S/T',estado:'primera',nro_lote:data.id},conn)
                 if(!resultsubprod.ok) throw new Error(resultsubprod.message)
                 console.log("Info de la creacion del subproducto:",resultsubprod)
@@ -1605,16 +1609,16 @@ export class ProduccionModel {
 
           if (fila.idx && fila.idx !== '') {
             console.log("Dentro de 1 actualizacion")
-            const [results, fields] = await conn.query('UPDATE tbl2_pedidos_insumos_det SET id_pedido_CAB=NULLIF(?, ""),id_producto_CAB=NULLIF(?, ""),producto=NULLIF(?, ""),color=NULLIF(?, ""),rollos=NULLIF(?, ""),cantidad=NULLIF(?, ""),unidad=NULLIF(?, ""),precio=NULLIF(?, ""),anulado=NULLIF(?, ""),modelo=NULLIF(?, ""),corte=NULLIF(?, "") WHERE idx = ?', [parseInt(data.id), fila.idx_producto, fila.producto, fila.color, fila.rollos, fila.cantidad, fila.unidad, fila.precio, fila.anulado, fila.modelo, fila.corte, fila.idx]);
+            const [results, fields] = await conn.query('UPDATE tbl2_pedidos_insumos_det SET id_pedido_CAB=NULLIF(?, ""),id_producto_CAB=NULLIF(?, ""),producto=NULLIF(?, ""),color=NULLIF(?, ""),rollos=NULLIF(?, ""),cantidad=NULLIF(?, ""),unidad=NULLIF(?, ""),precio=NULLIF(?, ""),anulado=NULLIF(?, ""),modelo=NULLIF(?, ""),corte=NULLIF(?, "") WHERE idx = ?', [parseInt(data.id), fila.idx_producto, fila.producto, fila.color.trim(), fila.rollos, fila.cantidad, fila.unidad, fila.precio, fila.anulado, fila.modelo, fila.corte, fila.idx]);
 
           } else {
             console.log("Dentro de 2 insertado")
-            const [results, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_det(id_pedido_CAB,id_subprod_CAB,id_producto_CAB,producto,color,rollos,cantidad,unidad,precio,anulado,modelo,corte) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [parseInt(data.id),fila.id_producto_CAB ?? null, fila.idx_producto, fila.producto, fila.color, fila.rollos, fila.cantidad, fila.unidad, fila.precio, fila.anulado, fila.modelo, fila.corte]);
+            const [results, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_det(id_pedido_CAB,id_subprod_CAB,id_producto_CAB,producto,color,rollos,cantidad,unidad,precio,anulado,modelo,corte) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [parseInt(data.id),fila.id_producto_CAB ?? null, fila.idx_producto, fila.producto, fila.color.trim(), fila.rollos, fila.cantidad, fila.unidad, fila.precio, fila.anulado, fila.modelo, fila.corte]);
           }
         }
 
         // //////////////////////////////
-        // SECCION ELIMINACION DE REGISTROS
+        // SECCION ELIMINACION DE REGISTROs
         // //////////////////////////////
         for(let fila of ids_delete){
           await conn.query('DELETE FROM `tbl2_pedidos_insumos_det` WHERE `id_pedido_CAB` = ? and `idx` = ?', [parseInt(data.id), parseInt(fila.idx)])
@@ -1692,9 +1696,9 @@ export class ProduccionModel {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
       const [results, fields] = await conn.query(`SELECT DATE_FORMAT(tpic.fec_emision,"%d/%m/%Y") as fec_emision_cuadre,DATE_FORMAT(tpic.fec_retorno,"%d/%m/%Y") as fec_retorno_cuadre,DATEDIFF(STR_TO_DATE(tpic.fec_retorno,"%Y-%m-%d"), STR_TO_DATE(tpic.fec_emision,"%Y-%m-%d")) as duracion,tp.ruc as ruc,
-      COALESCE((select oc from tbl2_fases_prod_ordenes tpo where tpo.id_pedido_origen = tpic.idx),'-') as oc,
+      COALESCE((select GROUP_CONCAT(oc,'-') from tbl2_fases_prod_ordenes tpo where tpo.id_pedido_origen = tpic.idx),'-') as oc,
       COALESCE((
-        select t1.numero_corte from tbl2_fases_prod_hojacorte t1 
+        select GROUP_CONCAT(t1.numero_corte,'-') from tbl2_fases_prod_hojacorte t1 
         join tbl2_fases_prod_ordenes t2 on t1.id_cab_orden = t2.idx
         where t2.id_pedido_origen  = tpic.idx
       ),'-') as nro_corte,tpic.* 
