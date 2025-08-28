@@ -15,7 +15,8 @@ export default class AlmacenController{
     reply.send(data)
   }
   static async getInventarioProductos(req,reply){
-    const data = await AlmacenModel.getInventarioProductos()
+    const search = req.params.search ?? ''
+    const data = await AlmacenModel.getInventarioProductos(search)
     reply.send(data)
   }
   static async saveGuia(req,reply){

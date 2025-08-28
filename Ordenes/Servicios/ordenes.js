@@ -212,7 +212,7 @@ export class OrdenesModel {
             }
           })
           value.ruta_test = [...[...pp.filter(item=>item.estado && !item.pendiente),...pp.filter(item=>item.estado && item.pendiente)],...pp.filter(item=>!item.estado)]
-
+          value.running_state = value.despachos_conteo > 0 ? 'PAUSE' : (value.status_servicio == 'TRANSITO' ? 'STOP' : 'PLAY')
           // let status = ''
           // ruta_ordenada.filter(fase=>generado.includes(fase)).forEach(fase => {
           //   if(v.calculo.filter(row=>row.servicio == fase)[0]?.cantidad > 0) fase_servicio = fase
@@ -236,6 +236,7 @@ export class OrdenesModel {
           })
           // value.meica = JSON.stringify(lista_pre)
           value.longitud = lista_pre.length
+          value.running_state = lista_pre.length == 0 ? 'OFF' : (value.estado_materiales == 'PENDIENTE' || value.estado_molde == 'PENDIENTE' || value.estado_corte == 'PENDIENTE' ? 'PLAY' : 'STOP')
           // value.status = value.estado_materiales ? 'MATERIALES' : (value.nro_cortes > 0 ? 'CORTE' : (value.estado_molde ? 'MOLDE' : 'ORDENES'))
         }
         carry.push(value)

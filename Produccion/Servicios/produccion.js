@@ -1714,6 +1714,7 @@ export class ProduccionModel {
       }
     }
   }
+  // t1.id_producto_CAB as idx_producto,
   static async getInfoPedidoDet(id) {
     let conn
     try {
@@ -1721,7 +1722,7 @@ export class ProduccionModel {
       await conn.connect();
       const [results, fields] = await conn.query(`
         SELECT 
-          t1.*,
+          t1.*,COALESCE(t1.id_producto_CAB,'') as idx_producto,
           COALESCE((
             select sum(tbdd.despacho) from tbl2_despachos_cab tbdc
             join tbl2_despachos_det tbdd on tbdc.idx = tbdd.id_despacho_CAB
@@ -1730,10 +1731,49 @@ export class ProduccionModel {
         FROM tbl2_pedidos_insumos_det t1 
         WHERE t1.id_pedido_CAB = ?
       `, [id]);
+
+
       const ids = results.map(row => row.idx)
+      // const [cruce] = await conn.execute("select *from tbl2_despachos where") 
+      const [cruce] = await conn.query(`
+        select tdc.idx as id_despacho,DATE_FORMAT(tdc.fec_despacho,'%d/%m') as fec_despacho,tdd.id_item as idx,COALESCE(tdd.despacho,0) as despacho,0 as caidos,0 as incompletos 
+        from tbl2_despachos_cab tdc 
+        join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB 
+        where tdc.tipo = 'PEDIDOS' and tdc.id_pedido_origen = ?
+      `,[id])
+
+      let lista_despachos = cruce.reduce((carry,value)=>{
+        if(!Object.keys(carry).includes(value.id_despacho)){
+          carry[value.id_despacho] = value.fec_despacho
+        }
+        return carry 
+      },{})
+
+      let pp = results.reduce((carry,value)=>{
+        value['despachos'] = Object.keys(lista_despachos).reduce((carry,valor)=>{
+          let info = cruce.filter(item=>item.id_despacho == valor && item.idx == value.idx)
+          carry.push({
+            'id_despacho':info.length > 0 ? info[0].id_despacho : parseInt(valor),
+            'fec_despacho':info.length > 0 ? info[0].fec_despacho : lista_despachos[valor], 
+            'cantidad_despacho':info.length > 0 ? info[0].despacho : 0,
+            'cantidad_caidos':info.length > 0 ? info[0].caidos : 0,
+            'cantidad_incompletos':info.length > 0 ? info[0].incompletos : 0,
+            'fracciones': info.length > 0 ? info[0].fracciones : []
+          })
+          return carry
+        },[])
+        carry.push(value)
+        return carry
+      },[])      
+      // const [results2] = await conn.query("select id_guia_DET,concat('({',GROUP_CONCAT(concat(talla,':',CAST(cantidad as unsigned))),'})') as fracciones from tbl2_guias_traslado_det_fracciones where id_guia_DET in (?) group by id_guia_DET", [ids])
+
+      // let new_articulos = pp.map(row => {
+      //   let add = eval(results2.filter(row2 => row2.id_guia_DET == row.idx)[0].fracciones)
+      //   return { ...row, ...add }
+      // })
 
       await conn.end();
-      return results
+      return pp
     } catch (err) {
       console.log(err)
       return [err]
@@ -1890,41 +1930,41 @@ export class ProduccionModel {
         /////////////////////////////////////////
         // 9	INGR	Ingreso de productos
         // 10	RETR	Retiro de productos
-        if(cabecera.tipo === 'PEDIDOS'){
-          let [busqueda1] = await conn.execute("SELECT *FROM tbl2_cptes_ordenes_tipo WHERE idx = 10")
-          const data_comprobante_salida = {
-            id_comprobante_CAB: busqueda1[0].idx,
-            cod_comprobante: busqueda1[0].codigo,
-            num_comprobante: parseInt(busqueda1[0].correlativo) + 1,
-            observaciones: 'ANULACION DE GUIA DE TRASLADO',
-            idx_documento_asoc: res.insertId,
-            origen: 'KARD',
-            almacen_destino: 509,
-            articulos: JSON.stringify(
-              articulos.map(fila => ({...fila,lote:cabecera.id_pedido_origen}))
-            ),
-          };
-          console.log("El detalle a insertar es el siguiente:",data_comprobante_salida)
-          let res_mov_1 = await AlmacenModel.saveMovimiento(data_comprobante_salida,conn)
-          if(!res_mov_1.ok) throw new Error(res_mov_1.message)
+        // if(cabecera.tipo === 'PEDIDOS'){
+        //   let [busqueda1] = await conn.execute("SELECT *FROM tbl2_cptes_ordenes_tipo WHERE idx = 10")
+        //   const data_comprobante_salida = {
+        //     id_comprobante_CAB: busqueda1[0].idx,
+        //     cod_comprobante: busqueda1[0].codigo,
+        //     num_comprobante: parseInt(busqueda1[0].correlativo) + 1,
+        //     observaciones: 'ANULACION DE GUIA DE TRASLADO',
+        //     idx_documento_asoc: res.insertId,
+        //     origen: 'KARD',
+        //     almacen_destino: 509,
+        //     articulos: JSON.stringify(
+        //       articulos.map(fila => ({...fila,lote:cabecera.id_pedido_origen}))
+        //     ),
+        //   };
+        //   console.log("El detalle a insertar es el siguiente:",data_comprobante_salida)
+        //   let res_mov_1 = await AlmacenModel.saveMovimiento(data_comprobante_salida,conn)
+        //   if(!res_mov_1.ok) throw new Error(res_mov_1.message)
 
-          let [busqueda2] = await conn.execute("SELECT *FROM tbl2_cptes_ordenes_tipo WHERE idx = 9")
-          const data_comprobante_ingreso = {
-            id_comprobante_CAB: busqueda2[0].idx,
-            cod_comprobante: busqueda2[0].codigo,
-            num_comprobante: parseInt(busqueda2[0].correlativo) + 1,
-            observaciones: 'ACTUALIZACION DE GUIA DE TRASLADO',
-            idx_documento_asoc: res.insertId,
-            origen: 'KARD',
-            almacen_destino: 509,
-            articulos: JSON.stringify(
-              articulos.map(fila => ({...fila,lote:cabecera.id_pedido_origen}))
-            ),
-          };
-          console.log("El detalle a insertar es el siguiente:",data_comprobante_ingreso)
-          let res_mov_2 = await AlmacenModel.saveMovimiento(data_comprobante_ingreso,conn)
-          if(!res_mov_2.ok) throw new Error(res_mov_2.message)
-        }
+        //   let [busqueda2] = await conn.execute("SELECT *FROM tbl2_cptes_ordenes_tipo WHERE idx = 9")
+        //   const data_comprobante_ingreso = {
+        //     id_comprobante_CAB: busqueda2[0].idx,
+        //     cod_comprobante: busqueda2[0].codigo,
+        //     num_comprobante: parseInt(busqueda2[0].correlativo) + 1,
+        //     observaciones: 'ACTUALIZACION DE GUIA DE TRASLADO',
+        //     idx_documento_asoc: res.insertId,
+        //     origen: 'KARD',
+        //     almacen_destino: 509,
+        //     articulos: JSON.stringify(
+        //       articulos.map(fila => ({...fila,lote:cabecera.id_pedido_origen}))
+        //     ),
+        //   };
+        //   console.log("El detalle a insertar es el siguiente:",data_comprobante_ingreso)
+        //   let res_mov_2 = await AlmacenModel.saveMovimiento(data_comprobante_ingreso,conn)
+        //   if(!res_mov_2.ok) throw new Error(res_mov_2.message)
+        // }
         //////////////////////////////////////////////
         //////////////////////////////////////////////
 

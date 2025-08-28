@@ -78,32 +78,38 @@ export default class AlmacenModel{
       if(conn) await conn.end()
     }
   }
-  static async getInventarioProductos(info,tipo){
-    // Suponiendo que tienes una conexión global o la recibes como parámetro
-    console.log("Dentro de la consulta de inventario")
+  static async getInventarioProductos(search){
     let conn = undefined
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect()
+
+      let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(COALESCE(TRIM(producto),''),' ',COALESCE(TRIM(color),''),' ',COALESCE(TRIM(lote),''))) > 0").join(" ") : ""
   
       const query = `
-        SELECT 
-          t1.cantidad as stock,
-          t2.codigo,
-          t3.nom as color,
-          t3.idx as idx_color,
-          t2.idx_CAB_PROD as id_producto_CAB,
-          t2.idx as id_subprod_CAB,
-          t2.nom as producto,
-          t1.lote,
-          t2.idx_talla,
-          t2.estado,
-          t1.tipo
-        FROM tbl2_almacen_det t1 
-        join tbl2_subproductos t2 on t2.idx = t1.idx_subproducto
-        join tbl2_colores t3 on t3.idx = t2.idx_CAB_COLOR 
-        WHERE t1.id_CAB_DET in (509,508) 
-        limit 10
+        SELECT cc.*
+        FROM
+        (
+          SELECT 
+            t1.cantidad as stock,
+            t2.codigo,
+            t3.nom as color,
+            t3.idx as idx_color,
+            t2.idx_CAB_PROD as id_producto_CAB,
+            t2.idx as id_subprod_CAB,
+            t2.nom as producto,
+            t1.lote,
+            t2.idx_talla,
+            t2.estado,
+            t1.tipo,
+            (select COALESCE(tp.codUnidadMedida,'') from tbl2_productos tp where tp.idx = t2.idx_CAB_PROD) as unidad
+          FROM tbl2_almacen_det t1 
+          join tbl2_subproductos t2 on t2.idx = t1.idx_subproducto
+          join tbl2_colores t3 on t3.idx = t2.idx_CAB_COLOR 
+          WHERE t1.id_CAB_DET in (509,508) 
+          limit 100
+        ) AS cc
+        WHERE 1=1 ${extra}
       `;
   
       const [result] = await conn.execute(query);
