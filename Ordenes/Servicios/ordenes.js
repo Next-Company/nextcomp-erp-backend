@@ -956,7 +956,7 @@ export class OrdenesModel {
         }
       }
 
-      let [verificar] = await conn.query("select *from tbl2_fases_prod_hojacorte t1 join tbl2_fases_prod_hojacorte_combos t2 on t1.idx = t2.id_hojacorte_CAB where t1.id_cab_orden = 235")
+      let [verificar] = await conn.query("select *from tbl2_fases_prod_hojacorte t1 join tbl2_fases_prod_hojacorte_combos t2 on t1.idx = t2.id_hojacorte_CAB where t1.id_cab_orden = ?",id_orden)
 
       console.log("Verificando la informacion de corte :",verificar)
 
