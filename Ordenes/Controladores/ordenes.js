@@ -1215,7 +1215,7 @@ export class OrdenesController {
               <table id="sugerido">
                 <thead style="height:80px;">
                   <tr style="background-color:#b5e1ff;">
-                    <th style="min-width:200px;">FOTO DE PRENDA</th>
+                    <th style="min-width:150px;">FOTO DE PRENDA</th>
                     <th style="min-width:120px;">COLOR</th>
                     <th style="">TALLA</th>
                     <th style="">UND</th>

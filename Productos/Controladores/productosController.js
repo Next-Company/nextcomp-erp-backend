@@ -21,6 +21,11 @@ export class ProductosController{
     // res.send({data:info});
     res.send(info);
   }
+  static async generateProducto(req,res){
+    let data = req.body
+    const info = await ProductosService.generateProducto(data);
+    res.send(info);
+  }
   static async createNewProduct(req,res){
     let data = []
     const info = await ProductosService.createNewProduct(data);
@@ -31,6 +36,26 @@ export class ProductosController{
     let data = []
     const info = await ProductosService.createNewColor(data);
     // res.send({data:info});
+    res.send(info);
+  }
+  static async getRubrosList(req,res){
+    const limit = req.params.limit
+    const info = await ProductosService.getRubrosList(limit);
+    res.send(info);
+  }
+  static async searchRubro(req,res){
+    let search = req.params.search ?? ''
+    const info = await ProductosService.searchRubro(search);
+    res.send(info);
+  }
+  static async getUnidadesList(req,res){
+    const limit = req.params.limit
+    const info = await ProductosService.getUnidadesList(limit);
+    res.send(info);
+  }
+  static async searchUnidad(req,res){
+    let search = req.params.search ?? ''
+    const info = await ProductosService.searchUnidad(search);
     res.send(info);
   }
 }

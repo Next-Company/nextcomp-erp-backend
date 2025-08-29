@@ -154,7 +154,8 @@ export default class AlmacenModel{
         fec_Emision_DOC: cabecera.fec_emision.split('-').reverse().join('/'),
         idx_usu: 0,
         tipomov: cabecera.tipo_operacion,
-        id_requerimiento: parseInt(cabecera.id_pedido_origen)
+        id_requerimiento: parseInt(cabecera.id_pedido_origen),
+        id_modelo: parseInt(cabecera.id_modelo)
       };
       console.log("El detalle a insertar es:",data_guia)
       const [resultGuia] = await conn.execute(
@@ -492,6 +493,61 @@ export default class AlmacenModel{
         FROM tbl2_pedidos_insumos_det t1 
         WHERE t1.id_pedido_CAB = ?
       `, [idreq]);
+
+      return {ok:true,info:[cabreq[0], detreq]};
+    } catch (err) {
+      console.log(err)
+      return {ok: false, message: err.message ?? err};
+    } finally {
+      if (conn) await conn.end()
+    }
+  }
+  static async getDisponibilidadModelo(idorden){
+    //busqueda disponibilidad de modelos
+    let conn = undefined
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+
+      const [cabreq] = await conn.query(`
+        SELECT
+        tfd.idx as idorden,
+        tfd.id_pedido_origen,
+        tfd.modelos,
+        DATE_FORMAT(tpic.fec_emision,"%d/%m/%Y") as fec_emision_cuadre,
+        DATE_FORMAT(tpic.fec_retorno,"%d/%m/%Y") as fec_retorno_cuadre,
+        DATEDIFF(STR_TO_DATE(tpic.fec_retorno,"%Y-%m-%d"), 
+        STR_TO_DATE(tpic.fec_emision,"%Y-%m-%d")) as duracion,
+        tp.ruc as ruc,
+        COALESCE((select GROUP_CONCAT(oc,'-') from tbl2_fases_prod_ordenes tpo where tpo.id_pedido_origen = tpic.idx),'-') as oc,
+        COALESCE((
+          select GROUP_CONCAT(t1.numero_corte,'-') from tbl2_fases_prod_hojacorte t1 
+            join tbl2_fases_prod_ordenes t2 on t1.id_cab_orden = t2.idx
+            where t2.id_pedido_origen  = tpic.idx
+        ),'-') as nro_corte,tpic.* 
+        FROM tbl2_pedidos_insumos_cab tpic 
+        join tbl2_proveedor tp on tpic.id_proveedor_CAB = tp.idx 
+        join tbl2_fases_prod_ordenes tfd on tfd.id_pedido_origen = tpic.idx
+        where tfd.idx = ?
+      `, [idorden]);
+
+      console.log("La info de la cabecera es::",cabreq)
+
+      const [detreq] = await conn.query(`
+        SELECT 
+          t1.*,
+          COALESCE((
+            select sum(tbdd.despacho) from tbl2_despachos_cab tbdc
+            join tbl2_despachos_det tbdd on tbdc.idx = tbdd.id_despacho_CAB
+            where tbdc.id_pedido_origen = t1.id_pedido_CAB and tbdd.id_item = t1.idx
+          ),0) as ingresos,
+          COALESCE((select sum(COALESCE(cantidad,0)) 
+          from tbl2_almacen_det tbad
+          where tbad.idx_subproducto = t1.id_subprod_CAB and tbad.lote = t1.id_pedido_CAB)
+          ,0) as stock
+        FROM tbl2_pedidos_insumos_det t1 
+        WHERE t1.id_pedido_CAB = ?
+      `, [cabreq[0].id_pedido_origen]);
 
       return {ok:true,info:[cabreq[0], detreq]};
     } catch (err) {

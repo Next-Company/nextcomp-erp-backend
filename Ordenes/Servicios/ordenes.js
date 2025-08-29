@@ -160,6 +160,7 @@ export class OrdenesModel {
       `);
       await conn.end();
 
+      // console.log("Resultado de la busquda:",results)
       ///////////////////////////////////////////////////////
       // Se reduce la informacion de las ordenes para agregar 
       // los totales de combos, el estado de las fases y la ruta de produccion 

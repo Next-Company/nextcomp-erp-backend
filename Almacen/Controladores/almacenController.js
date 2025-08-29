@@ -34,6 +34,11 @@ export default class AlmacenController{
     const data = await AlmacenModel.getDisponibilidadRequerimiento(idreq)
     reply.send(data)
   }
+  static async getDisponibilidadModelo(req,reply){
+    const idmod = req.params.idmod
+    const data = await AlmacenModel.getDisponibilidadModelo(idmod)
+    reply.send(data)
+  }
   static async VistaPreviaRetiro(req, res) {
     const tipo = req.params.tipo
     const data = req.body

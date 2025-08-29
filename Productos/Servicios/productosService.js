@@ -1,6 +1,6 @@
 import mysql from "mysql2/promise";
 import { configs } from "../../Main/utils.js";
-import { isErrorLike } from "puppeteer-core";
+
 export class ProductosService{
   static async getProductosList(){
     const conn = await mysql.createConnection(configs[1]);
@@ -192,14 +192,42 @@ export class ProductosService{
     }
     return info;
   }
+
+  static async generateProducto(info){
+    let conn = undefined
+    try {
+      conn = new mysql.createConnection(configs[1])
+      await conn.connect()
+      conn.beginTransaction()
+
+      console.log("Aqui empieza la generacion de productos")
+
+      // const [validacion,fields] = await conn.execute("select *from tbl2_productos where ruc_ = '20522094120' and lower(nom) = ?",[info.producto.toLowerCase()])
+      // if(validacion.length > 0){
+      //   throw new Error('Se ha detectado un producto existente con el mismo nombre, por favor verifique.')
+      // }
+
+      // let newinfo = Object.keys(info).reduce((c,v)=>{
+      //   if (fields.map(row=>row.name).includes(v) && v !== 'idx') c[v] = info[v]
+      //   return c
+      // },{})
+
+      // let result = await ProductosService.createNewProduct(newinfo,conn)
+      // if(!result.ok) throw new Error(result.message)
+
+      if(conn) conn.rollback()
+      // if(conn) conn.commit()
+      return {ok:true,message:'',info:result.insertId}
+    } catch(error){
+      if(conn) conn.rollback()
+      return {ok:false,message:error.message ?? error}
+    } finally {
+      if(conn) await conn.end()
+    }
+  }
+
   static async createNewProduct(info,conn){
     try {
-      const [validacion,fields] = await conn.execute("select *from tbl2_productos where ruc_ = '20522094120' and lower(nom) = ?",[info.producto.toLowerCase()])
-
-      if(validacion.length > 0){
-        throw new Error('Se ha detectado un producto existente con el mismo nombre')
-      }
-
       const [correlativo] = await conn.execute("select codigo_num from tbl2_rubro_correlativo where ruc_ = ?",['20522094120']);
       let indice_prod = correlativo[0].codigo_num + 1;
       let sucursal = 509;
@@ -219,6 +247,8 @@ export class ProductosService{
       insert['vencimiento'] = 'N';
       insert['cant_inicial'] = 100;
       insert['sucursal_tienda'] = sucursal;
+
+      insert = {...insert,...info}
 
       let campos = Object.keys(insert).reduce((carry, current) => {
         fields.filter(row => row.name !== 'idx').map(row => row.name).includes(current) && carry.push(current)
@@ -273,6 +303,80 @@ export class ProductosService{
     }
     catch(error){
       return {ok:false,message:error.message ?? error}
+    }
+  }
+  static async getRubrosList(limit){
+    let conn = undefined
+    try {
+      conn = await mysql.createConnection(configs[1]);
+      await conn.connect();
+      const [rows] = await conn.execute(`SELECT *FROM tbl2_rubros WHERE ruc_ = '20522094120' LIMIT ?`,[limit]);
+      // console.log(rows);
+      return rows;
+    }
+    catch(e){
+      console.log(e);
+    }
+    finally{
+      if(conn) await conn.end();
+    }
+  }
+  static async searchRubro(search) {
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+
+      let extra = search.split(" ").length > 0 ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(TRIM(nom),' ',TRIM(det))) > 0").join(" ") : ""
+
+      const [results, fields] = await conn.query(`select *from tbl2_rubros where 1=1 ${extra} and ruc_ = '20522094120'`);
+      // const [results, fields] = await conn.query('SELECT *FROM tbl2_rubros WHERE ruc_ = "20522094120" ' + (search !== '_' ? extra : '') + ' limit 50');
+      await conn.end();
+      return results
+    } catch (err) {
+      console.log(err)
+      return [err]
+    } finally {
+      if (conn) {
+        await conn.end();
+      }
+    }
+  }
+  static async getUnidadesList(limit){
+    let conn = undefined
+    try {
+      conn = await mysql.createConnection(configs[1]);
+      await conn.connect();
+      const [rows] = await conn.execute(`SELECT *FROM tbl2_unidades LIMIT ?`,[limit]);
+      // console.log(rows);
+      return rows;
+    }
+    catch(e){
+      console.log(e);
+    }
+    finally{
+      if(conn) await conn.end();
+    }
+  }
+  static async searchUnidad(search) {
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+
+      let extra = search.split(" ").length > 0 ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(TRIM(codigo),' ',TRIM(descripcion))) > 0").join(" ") : ""
+      
+      const [results, fields] = await conn.query(`select *from tbl2_unidades where 1=1 ${extra}`);
+      // const [results, fields] = await conn.query('SELECT *FROM tbl2_proveedor where ruc_ = "20522094120" ' + (search !== '_' ? extra : '') + ' limit 50');
+      await conn.end();
+      return results
+    } catch (err) {
+      console.log(err)
+      return [err]
+    } finally {
+      if (conn) {
+        await conn.end();
+      }
     }
   }
 }

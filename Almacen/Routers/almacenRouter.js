@@ -11,6 +11,7 @@ ALMACEN_ROUTER.get('/listarinventario/:search',AlmacenController.getInventarioPr
 ALMACEN_ROUTER.put('/saveguiamovimiento',AlmacenController.saveGuia)
 ALMACEN_ROUTER.delete('/deleteguiamov/:idguia',AlmacenController.deleteGuia)
 ALMACEN_ROUTER.get('/disponibilidadreq/:idreq',AlmacenController.getDisponibilidadRequerimiento)
+ALMACEN_ROUTER.get('/disponibilidadmod/:idmod',AlmacenController.getDisponibilidadModelo)
 ALMACEN_ROUTER.post('/getmovimientobyid/:id', AlmacenController.getMovimientosAlmacenById)
 ALMACEN_ROUTER.post('/vistapreviaretiro/:tipo', AlmacenController.VistaPreviaRetiro)
 
