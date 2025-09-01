@@ -196,28 +196,31 @@ export class ProductosService{
   static async generateProducto(info){
     let conn = undefined
     try {
-      conn = new mysql.createConnection(configs[1])
+      conn = await mysql.createConnection(configs[1])
       await conn.connect()
       conn.beginTransaction()
+      let result = []
 
-      console.log("Aqui empieza la generacion de productos")
+      console.log("Aqui empieza la generacion de productos",info)
 
-      // const [validacion,fields] = await conn.execute("select *from tbl2_productos where ruc_ = '20522094120' and lower(nom) = ?",[info.producto.toLowerCase()])
-      // if(validacion.length > 0){
-      //   throw new Error('Se ha detectado un producto existente con el mismo nombre, por favor verifique.')
-      // }
+      const [validacion,fields] = await conn.execute("select *from tbl2_productos where ruc_ = '20522094120' and lower(nom) = ?",[info.nom.toLowerCase()])
+      if(validacion.length > 0){
+        throw new Error('Se ha detectado un producto existente con el mismo nombre, por favor verifique.')
+      }
 
-      // let newinfo = Object.keys(info).reduce((c,v)=>{
-      //   if (fields.map(row=>row.name).includes(v) && v !== 'idx') c[v] = info[v]
-      //   return c
-      // },{})
+      let newinfo = Object.keys(info).reduce((c,v)=>{
+        if (fields.map(row=>row.name).includes(v) && v !== 'idx') c[v] = info[v]
+        return c
+      },{})
+      
+      console.log("La nueva info esS:",newinfo)
 
-      // let result = await ProductosService.createNewProduct(newinfo,conn)
-      // if(!result.ok) throw new Error(result.message)
+      result = await ProductosService.createNewProduct(newinfo,conn)
+      if(!result.ok) throw new Error(result.message)
 
       if(conn) conn.rollback()
       // if(conn) conn.commit()
-      return {ok:true,message:'',info:result.insertId}
+      return {ok:true,message:'',info:''}
     } catch(error){
       if(conn) conn.rollback()
       return {ok:false,message:error.message ?? error}
@@ -250,10 +253,11 @@ export class ProductosService{
 
       insert = {...insert,...info}
 
-      let campos = Object.keys(insert).reduce((carry, current) => {
-        fields.filter(row => row.name !== 'idx').map(row => row.name).includes(current) && carry.push(current)
-        return carry
-      }, [])
+      let campos = Object.keys(insert)
+      // let campos = Object.keys(insert).reduce((carry, current) => {
+      //   fields.filter(row => row.name !== 'idx').map(row => row.name).includes(current) && carry.push(current)
+      //   return carry
+      // }, [])
       let values = campos.map(row => insert[row])
       console.log("Los valores a insertar son los siguientes:",values)
       let [result] = await conn.execute("insert into tbl2_productos(" + campos.join(',') + ") values("+ campos.map(row=>'?').join(',') +")",values)
