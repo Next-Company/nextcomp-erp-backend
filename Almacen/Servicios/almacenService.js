@@ -557,4 +557,23 @@ export default class AlmacenModel{
       if (conn) await conn.end()
     }
   }
+  static async getInfoCuadreTelas(idmov){
+    let conn = undefined
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect()
+      const query = `
+        select *
+        FROM tbl_kard_compras_CAB t1
+        join tbl_kard_compras_DET t2 on t1.id_CAB = t2.id_CAB_DET 
+        where t1.ruc = '20522094120' and t1.id_CAB = ?
+      `
+      const [result] = await conn.execute(query,[idmov]);
+      return result
+    } catch (error) {
+      console.log(error)
+    } finally {
+      if(conn) await conn.end()
+    }
+  }
 }

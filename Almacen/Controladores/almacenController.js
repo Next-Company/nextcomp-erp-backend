@@ -200,4 +200,24 @@ export default class AlmacenController{
       }
     )
   }
+  static async getInfoCuadreTelas(req,reply){
+    const idmov = req.params.idmov
+    const data = await AlmacenModel.getInfoCuadreTelas(idmov)
+    reply.send(data)
+  }
+  static async saveInfoCuadreTelas(req,reply){
+    const idmov = req.params.idmov
+    const data = await AlmacenModel.saveInfoCuadreTelas(idmov)
+    reply.send(data)
+  }
+  static async updateInfoCuadreTelas(req,reply){
+    const idmov = req.params.idmov
+    const data = await AlmacenModel.updateInfoCuadreTelas(idmov)
+    reply.send(data)
+  }
+  static async deleteInfoCuadreTelas(req,reply){
+    const idmov = req.params.idmov
+    const data = await AlmacenModel.deleteInfoCuadreTelas(idmov)
+    reply.send(data)
+  }
 }
