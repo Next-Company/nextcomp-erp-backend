@@ -1161,7 +1161,7 @@ export class OrdenesController {
                     
                     ${key2 == 0 
                       ? `
-                        <td rowspan='${rowspan1 ? rowspan1 : lista.length}' style="position:relative;">
+                        <td rowspan='${rowspan1 ? rowspan1 : lista.length}' style="position:relative;min-width:80px;">
                           <div style="display:flex;flex-direction:column;background-color:#b5e1ff;position:absolute;top:1px;bottom:1px;left:1px;right:0px;">
                             <div style="flex:1;display:flex;justify-content:center;align-items:center;text-align:center;">
                               ${row[0].color_combo}
@@ -1180,7 +1180,7 @@ export class OrdenesController {
                     }
                     ${consolidado[0].length > 1 && key2 == 0 
                       ? `
-                        <td rowspan='${rowspan2 ? rowspan2 : lista.length}' style="position:relative;">
+                        <td rowspan='${rowspan2 ? rowspan2 : lista.length}' style="position:relative;min-width:80px;">
                           <div style="display:flex;flex-direction:column;background-color:#b5e1ff;position:absolute;top:1px;bottom:0px;left:0px;right:0px;">
                             <div style="flex:1;display:flex;justify-content:center;align-items:center;text-align:center;">
                               ${row[1].color_combo}
@@ -1215,8 +1215,8 @@ export class OrdenesController {
               <table id="sugerido">
                 <thead style="height:80px;">
                   <tr style="background-color:#b5e1ff;">
-                    <th style="min-width:150px;">FOTO DE PRENDA</th>
-                    <th style="min-width:120px;">COLOR</th>
+                    <th style="min-width:200px;">FOTO DE PRENDA</th>
+                    <th style="min-width:80px;">COLOR</th>
                     <th style="">TALLA</th>
                     <th style="">UND</th>
                     ${
@@ -1227,7 +1227,7 @@ export class OrdenesController {
                     ${
                       consolidado[0].length > 1
                       ? `
-                        <th style="min-width:120px;">COLOR</th>
+                        <th style="min-width:80px;">COLOR</th>
                         <th style="">TALLA</th>
                         <th style="">UND</th>
                         ${

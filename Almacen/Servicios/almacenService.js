@@ -69,9 +69,33 @@ export default class AlmacenModel{
         where tpid.id_pedido_CAB = ?
         having despacho > 0
       `,[id,cabmov[0].id_requerimiento]);
+
+      const [cuadre] = await conn.execute(`
+        select 
+          DATE_FORMAT(STR_TO_DATE(t1.fec_Emision_DOC,'%d/%m/%Y'),'%Y-%m-%d') as fec_emision,
+          t1.Nro_Doc_Prov,
+          t1.Raz_social_DOC,
+          t1.tipomov,
+          (select tfpo.modelos from tbl2_fases_prod_ordenes tfpo where tfpo.idx = t1.id_modelo) as modelos,
+          (select tfpo.oc from tbl2_fases_prod_ordenes tfpo where tfpo.idx = t1.id_modelo) as oc,
+          (select tbc.numero_corte from tbl2_fases_prod_hojacorte tbc where tbc.id_cab_orden = t1.id_modelo limit 1) as nro_corte,
+          tpid.producto,
+          tpid.color,
+          tpid.rollos,
+          tpid.cantidad,
+          tpid.unidad,
+          tpid.precio,
+          tpic.orden_ref as nro_pedido_origen,
+          t2.*
+        FROM tbl_kard_compras_CAB t1
+        join tbl2_pedidos_insumos_cab tpic on tpic.idx = t1.id_requerimiento
+        join tbl_kard_compras_DET t2 on t1.id_CAB = t2.id_CAB_DET 
+        join tbl2_pedidos_insumos_det tpid on tpid.id_pedido_CAB = tpic.idx and tpid.id_subprod_CAB = t2.id_subprod
+        where t1.ruc = '20522094120' and t1.id_CAB = ? and t1.estado = 'EMITIDO'
+      `,[id])
   
-      console.log("El resultado de la consulta es:", cabmov, detbmov)
-      return [cabmov[0],inforeq[0], detbmov]
+      console.log("El resultado de la consulta es:", cabmov, detbmov, cuadre)
+      return [cabmov[0],inforeq[0], detbmov, cuadre]
     } catch (error) {
       console.log(error)
     } finally {
@@ -117,6 +141,61 @@ export default class AlmacenModel{
       return result
     } catch (error) {
       console.log(error)
+    } finally {
+      if(conn) await conn.end()
+    }
+  }
+  static async getGuia(idmov){
+    let conn = undefined
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect()
+
+      let [cabmov] = await conn.execute(`
+        SELECT
+          DATE_FORMAT(STR_TO_DATE(t1.fec_Emision_DOC,'%d/%m/%Y'),'%Y-%m-%d') as fec_emision,
+          t1.Nro_Doc_Prov,
+          t1.Raz_social_DOC,
+          tpic.id_proveedor_CAB,
+          tpic.proveedor,
+          tpic.idx as id_pedido_origen,
+          tpic.orden_ref as nro_requerimiento,
+          t1.tipomov,
+          t1.id_modelo,
+          (select tfpo.modelos from tbl2_fases_prod_ordenes tfpo where tfpo.idx = t1.id_modelo) as modelos,
+          (select tfpo.oc from tbl2_fases_prod_ordenes tfpo where tfpo.idx = t1.id_modelo) as oc,
+          (select tbc.numero_corte from tbl2_fases_prod_hojacorte tbc where tbc.id_cab_orden = t1.id_modelo limit 1) as nro_corte,
+          tpic.orden_ref as nro_pedido_origen
+        FROM tbl_kard_compras_CAB t1 
+        join tbl2_pedidos_insumos_cab tpic on tpic.idx = t1.id_requerimiento
+        WHERE t1.ruc = '20522094120' and t1.id_CAB = ? and t1.estado = 'EMITIDO'
+      `,[idmov])
+      let [detmov] = await conn.execute(`
+        -- select *from tbl_kard_compras_DET where id_CAB_DET = ?
+        select 
+          tpid.producto,
+          tpid.color,
+          tpid.rollos,
+          tpid.cantidad,
+          tpid.unidad,
+          tpid.precio,
+          tpic.orden_ref as nro_pedido_origen,
+          t2.*
+        FROM tbl_kard_compras_CAB t1
+        join tbl2_pedidos_insumos_cab tpic on tpic.idx = t1.id_requerimiento
+        join tbl_kard_compras_DET t2 on t1.id_CAB = t2.id_CAB_DET 
+        join tbl2_pedidos_insumos_det tpid on tpid.id_pedido_CAB = tpic.idx and tpid.id_subprod_CAB = t2.id_subprod
+        where t1.ruc = '20522094120' and t1.id_CAB = ? and t1.estado = 'EMITIDO'
+      `,[idmov])
+
+
+      
+
+
+      return {ok:true,cab:cabmov[0],det:detmov}
+    } catch (error) {
+      console.log(error)
+      return {ok:false,message:error.message ?? error}
     } finally {
       if(conn) await conn.end()
     }
@@ -563,15 +642,57 @@ export default class AlmacenModel{
       conn = await mysql.createConnection(configs[1])
       await conn.connect()
       const query = `
-        select *
+        select 
+          DATE_FORMAT(STR_TO_DATE(t1.fec_Emision_DOC,'%d/%m/%Y'),'%Y-%m-%d') as fec_emision,
+          t1.Nro_Doc_Prov,
+          t1.Raz_social_DOC,
+          t1.tipomov,
+          (select tfpo.modelos from tbl2_fases_prod_ordenes tfpo where tfpo.idx = t1.id_modelo) as modelos,
+          (select tfpo.oc from tbl2_fases_prod_ordenes tfpo where tfpo.idx = t1.id_modelo) as oc,
+          (select tbc.numero_corte from tbl2_fases_prod_hojacorte tbc where tbc.id_cab_orden = t1.id_modelo limit 1) as nro_corte,
+          tpid.producto,
+          tpid.color,
+          tpid.rollos,
+          tpid.cantidad,
+          tpid.unidad,
+          tpid.precio,
+          tpic.orden_ref as nro_pedido_origen,
+          t2.*
         FROM tbl_kard_compras_CAB t1
+        join tbl2_pedidos_insumos_cab tpic on tpic.idx = t1.id_requerimiento
         join tbl_kard_compras_DET t2 on t1.id_CAB = t2.id_CAB_DET 
-        where t1.ruc = '20522094120' and t1.id_CAB = ?
+        join tbl2_pedidos_insumos_det tpid on tpid.id_pedido_CAB = tpic.idx and tpid.id_subprod_CAB = t2.id_subprod
+        where t1.ruc = '20522094120' and t1.id_CAB = ? and t1.estado = 'EMITIDO'
       `
       const [result] = await conn.execute(query,[idmov]);
       return result
     } catch (error) {
       console.log(error)
+    } finally {
+      if(conn) await conn.end()
+    }
+  }
+  static async updateInfoCuadreTelas(info,id){
+    let conn = undefined
+    let cab = info.info
+    let det = JSON.parse(info.detalle)
+    console.log("La informacin recibida es:",cab,det)
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect()
+      conn.beginTransaction()
+      
+      for(let fila of [...det]){
+        let [result] = await conn.execute("UPDATE tbl_kard_compras_DET tb1 SET tb1.tizado = COALESCE(?,0), tb1.peso = COALESCE(?,0), tb1.panios = COALESCE(?,0), tb1.liquidacion = COALESCE(?,0), tb1.merma = COALESCE(?,0) WHERE tb1.id_CAB_DET = ? AND tb1.id_subprod = ?",[fila.tizado,fila.peso,fila.panios,fila.liquidacion,fila.merma,id,fila.id_subprod])
+        console.log("Las filas modificadas fueron:",result.affectedRows)
+      }
+
+      // if(conn) conn.rollback()
+      if(conn) conn.commit()
+      return { ok:true, message:'El cuadre de telas fue ejecutado con éxito.' }
+    } catch (error) {
+      if(conn) conn.rollback()
+      return { ok:false, message:error.message ?? error }
     } finally {
       if(conn) await conn.end()
     }

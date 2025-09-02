@@ -19,6 +19,11 @@ export default class AlmacenController{
     const data = await AlmacenModel.getInventarioProductos(search)
     reply.send(data)
   }
+  static async getGuia(req,reply){
+    let id = req.params.idmov
+    const data = await AlmacenModel.getGuia(id)
+    reply.send(data)
+  }
   static async saveGuia(req,reply){
     let info = req.body
     const data = await AlmacenModel.saveGuia(info)
@@ -46,18 +51,19 @@ export default class AlmacenController{
     let cabecera = []
     let detalle = []
     let requerimiento = []
+    let cuadre = []
     let consulta = null
 
     if (data.id) {
       // cabecera = (await AlmacenModel.getMovimientoCab(data.id))[0]
       // detalle = await AlmacenModel.getMovimientoDet(data.id)
-      [cabecera,requerimiento,detalle] = await AlmacenModel.getMovimientosAlmacenById(data.id)
+      [cabecera,requerimiento,detalle,cuadre] = await AlmacenModel.getMovimientosAlmacenById(data.id)
     } else {
       cabecera = JSON.parse(data.info)
       detalle = JSON.parse(data.detalle)
     }
 
-    console.log("La informacion consultada es la siguiente:",cabecera, detalle)
+    console.log("La informacion consultada es la siguiente:",cabecera, detalle, cuadre)
     // return {ok:true,message:'ok'}
     // res.send({ ok: true, message: 'ok' })
     // exit()
@@ -66,6 +72,7 @@ export default class AlmacenController{
     let BINARY_CHUNKS2 = null
     BINARY_CHUNKS2 = await fs.readFile('public/images/logo_next.png')
     const BINARY_CHUNKS3 = await fs.readFile('public/images/guia_traslado.png')
+    const BINARY_CHUNKS4 = await fs.readFile('public/images/cuadre_tela.png')
     // const tipo = JSON.parse(data.info).tipo
     console.log("El tipo de pedido es :", tipo)
     res.render(
@@ -74,8 +81,10 @@ export default class AlmacenController{
         BINARY_CHUNKS: BINARY_CHUNKS.toString('base64'),
         BINARY_CHUNKS2: BINARY_CHUNKS2.toString('base64'),
         BINARY_CHUNKS3: BINARY_CHUNKS3.toString('base64'),
+        BINARY_CHUNKS4: BINARY_CHUNKS4.toString('base64'),
         datos: requerimiento,
         detalle: detalle,
+        cuadre: cuadre,
         emisor: cabecera.emisor == 'NEXT' ? 1 : 0,
         helpers: {
           fechaCorta(fechaStr) {
@@ -161,6 +170,93 @@ export default class AlmacenController{
                 <td style="text-align: center;background-color:#ddebf7;">${total}</td>
               </tr>`)
             return itemsAsHtml.join("\n")
+          },
+          fuu(items) {
+            let itemsAsHtml = null
+            let extra = 20 - items.length
+            if (tipo == 'avios') {
+              itemsAsHtml = items.map((item, key) => `
+              <tr style="height:22px;">
+                <td style="width:35px;text-align: center;background-color:#ddebf7;">${key + 1}</td>
+                <td style="width:60px;text-align: center;">` + item['modelo'] + `</td>
+                <td style="width:60px;text-align: center;">` + item['corte'] + `</td>
+                <td style="width:60px;text-align: center;">` + item['producto'] + `</td>
+                <td style="width:60px;text-align:left;background-color:#ddebf7;">` + item['color'] + `</td>
+                <td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['cantidad'] + `</td>
+                <td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['unidad'] + `</td>
+                <td style="width: 60px;text-align: center;background-color:#ddebf7;">` + item['precio'] + `</td>
+                <td style="width: 60px;text-align: center;background-color:#ddebf7;">` + (parseFloat(item['cantidad']) * parseFloat(item['precio'])).toFixed(2) + `</td>
+              </tr>`)
+            } else {
+              itemsAsHtml = items.map((item, key) => `
+              <tr style="height:22px;">
+                <td style="width:35px;text-align: center;background-color:#ddebf7;">${key + 1}</td>
+                <td>` + `${item['producto']} ${item['color']}` + `</td>
+                <td style="text-align:center;background-color:#ddebf7;">` + (item['rollos'] ? item['rollos'] : '') + `</td>
+                <td style="text-align: center;background-color:#ddebf7;">` + item['cantidad'] + `</td>
+                <td style="text-align: center;background-color:#ddebf7;">` + item['unidad'] + `</td>
+                <td style="text-align: center;background-color:#ddebf7;">` + item['tizado'] + `</td>
+                <td style="text-align: center;background-color:#ddebf7;">` + item['peso'] + `</td>
+                <td style="text-align: center;background-color:#ddebf7;">` + item['panios'] + `</td>
+                <td style="text-align: center;background-color:#ddebf7;">` + ( (item['tizado'] ?? 0)*(item['panios'] ?? 0) ) + `</td>
+                <td style="text-align: center;background-color:#ddebf7;">` + item['liquidacion'] + `</td>
+                <td style="text-align: center;background-color:#ddebf7;">` + item['merma'] + `</td>
+                <td style="text-align: center;background-color:#ddebf7;">` + ( (item['tizado'] ?? 0)*(item['panios'] ?? 0) + (item['liquidacion'] && 0) + (item['merma'] && 0)) + `</td>
+              </tr>`)
+            }
+            for (let i = 0; i < extra; i++) {
+              tipo == 'avios'
+                ?
+                itemsAsHtml.push(`
+                  <tr style="height:22px;">
+                    <td style="width:35px;text-align: center;background-color:#ddebf7;"></td>
+                    <td style="text-align: center;"></td>
+                    <td style="text-align: center;"></td>
+                    <td style="text-align: center;"></td>
+                    <td style="text-align:left;background-color:#ddebf7;"></td>
+                    <td style="text-align: center;background-color:#ddebf7;"></td>
+                    <td style="text-align: center;background-color:#ddebf7;"></td>
+                    <td style="text-align: center;background-color:#ddebf7;"></td>
+                    <td style="text-align: center;background-color:#ddebf7;"></td>
+                  </tr>`)
+                :
+                itemsAsHtml.push(`
+                  <tr style="height:22px;">
+                    <td style="width:35px;text-align: center;background-color:#ddebf7;"></td>
+                    <td style="text-align: center;"></td>
+                    <td style="text-align:center;background-color:#ddebf7;"></td>
+                    <td style="text-align: center;background-color:#ddebf7;"></td>
+                    <td style="text-align: center;background-color:#ddebf7;"></td>
+                    <td style="text-align: center;background-color:#ddebf7;"></td>
+                    <td style="text-align: center;background-color:#ddebf7;"></td>
+                    <td style="text-align: center;background-color:#ddebf7;"></td>
+                    <td style="text-align: center;background-color:#ddebf7;"></td>
+                    <td style="text-align: center;background-color:#ddebf7;"></td>
+                    <td style="text-align: center;background-color:#ddebf7;"></td>
+                    <td style="text-align: center;background-color:#ddebf7;"></td>
+                  </tr>`)
+              // items.push({color:'',producto:'',cantidad:0,unidad:'',precio:0,importe:0})
+            }
+            const total = items.reduce((carry, valor) => { carry += (valor['tizado'] ?? 0)*(valor['panios'] ?? 0) + (valor['liquidacion'] && 0) + (valor['merma'] && 0); return carry }, 0).toFixed(2)
+            itemsAsHtml.push(`
+              <tr style="height:22px;">
+                <td style="width:35px;text-align: center;background-color:#ddebf7;"></td>
+                ${tipo == 'avios' ? '<td style="text-align: center;"></td>' : ''}
+                ${tipo == 'avios' ? '<td style="text-align: center;"></td>' : ''}
+                <td style="text-align: center;"></td>
+                ${tipo == 'avios' ? '<td style="text-align: center;background-color:#ddebf7;"></td>' : ''}
+                ${tipo !== 'avios' ? '<td style="text-align: center;background-color:#ddebf7;"></td>' : ''}
+                <td style="text-align: center;background-color:#ddebf7;"></td>
+                <td style="text-align: center;background-color:#ddebf7;"></td>
+                <td style="text-align: center;background-color:#ddebf7;"></td>
+                <td style="text-align: center;background-color:#ddebf7;"></td>
+                <td style="text-align: center;background-color:#ddebf7;"></td>
+                <td style="text-align: center;background-color:#ddebf7;"></td>
+                <td style="text-align: center;background-color:#ddebf7;"></td>
+                <td style="text-align: center;background-color:#ddebf7;"><strong>TOTAL</strong></td>
+                <td style="text-align: center;background-color:#ddebf7;">${total}</td>
+              </tr>`)
+            return itemsAsHtml.join("\n")
           }
         },
 
@@ -205,14 +301,15 @@ export default class AlmacenController{
     const data = await AlmacenModel.getInfoCuadreTelas(idmov)
     reply.send(data)
   }
-  static async saveInfoCuadreTelas(req,reply){
-    const idmov = req.params.idmov
-    const data = await AlmacenModel.saveInfoCuadreTelas(idmov)
-    reply.send(data)
-  }
+  // static async saveInfoCuadreTelas(req,reply){
+  //   const idmov = req.params.idmov
+  //   const data = await AlmacenModel.saveInfoCuadreTelas(idmov)
+  //   reply.send(data)
+  // }
   static async updateInfoCuadreTelas(req,reply){
-    const idmov = req.params.idmov
-    const data = await AlmacenModel.updateInfoCuadreTelas(idmov)
+    let id = req.params.idmov ?? 0
+    let info = req.body
+    const data = await AlmacenModel.updateInfoCuadreTelas(info,id)
     reply.send(data)
   }
   static async deleteInfoCuadreTelas(req,reply){
