@@ -784,20 +784,32 @@ export class ProduccionController {
     const data = await ProduccionModel.searchGuia(info)
     res.json(data)
   }
-
   static async saveInfoGuias(req, res) {
     const data = await ProduccionModel.saveInfoGuias(req.body)
     res.json(data)
-    // res.json({ ok: true, message: 'datos guardados' })
+  }
+  static async saveInfoGuiasXPQ(req, res) {
+    const data = await ProduccionModel.saveInfoGuiasXPQ(req.body)
+    res.json(data)
   }
   static async eliminarInfoGuias(req, res) {
     const id = req.params.id
     const data = await ProduccionModel.eliminarInfoGuias(id)
     res.json(data)
   }
+  static async eliminarInfoGuiasXPQ(req, res) {
+    const id = req.params.id
+    const data = await ProduccionModel.eliminarInfoGuiasXPQ(id)
+    res.json(data)
+  }
   static async anularInfoGuias(req, res) {
     const id = req.params.id
     const data = await ProduccionModel.anularInfoGuias(id)
+    res.json(data)
+  }
+  static async anularInfoGuiasXPQ(req, res) {
+    const id = req.params.id
+    const data = await ProduccionModel.anularInfoGuiasXPQ(id)
     res.json(data)
   }
   static async getStatusGuia(req, res) {
@@ -2405,6 +2417,10 @@ export class ProduccionController {
     const data = await ProduccionModel.saveInfoDespachosGuia(req.body)
     res.json(data)
   }
+  static async saveInfoDespachosGuiaXPQ(req, res) {
+    const data = await ProduccionModel.saveInfoDespachosGuiaXPQ(req.body)
+    res.json(data)
+  }
   static async getInfoDespachos(req, res) {
     const id = req.params.id
     const data = await ProduccionModel.getInfoDespachoCab(id)
@@ -2413,9 +2429,19 @@ export class ProduccionController {
     console.log("chifa", data3)
     res.json([data[0], data2, data3])
   }
-  static async eliminarInfoDespachos(req, res) {
+  static async eliminarInfoDespachosPedido(req, res) {
     const id = req.params.id
-    const data = await ProduccionModel.eliminarInfoDespachos(id)
+    const data = await ProduccionModel.eliminarInfoDespachosPedido(id)
+    res.json(data)
+  }
+  static async eliminarInfoDespachosGuia(req, res) {
+    const id = req.params.id
+    const data = await ProduccionModel.eliminarInfoDespachosGuia(id)
+    res.json(data)
+  }
+  static async eliminarInfoDespachosGuiaXPQ(req, res) {
+    const id = req.params.id
+    const data = await ProduccionModel.eliminarInfoDespachosGuiaXPQ(id)
     res.json(data)
   }
   static async validaInventario(req, res) {

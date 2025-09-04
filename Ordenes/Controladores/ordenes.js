@@ -1162,7 +1162,7 @@ export class OrdenesController {
                     ${key2 == 0 
                       ? `
                         <td rowspan='${rowspan1 ? rowspan1 : lista.length}' style="position:relative;min-width:80px;">
-                          <div style="display:flex;flex-direction:column;background-color:#b5e1ff;position:absolute;top:1px;bottom:1px;left:1px;right:0px;">
+                          <div style="display:flex;flex-direction:column;position:absolute;top:1px;bottom:1px;left:1px;right:1px;background-color:#b5e1ff;">
                             <div style="flex:1;display:flex;justify-content:center;align-items:center;text-align:center;">
                               ${row[0].color_combo}
                             </div>
@@ -1216,7 +1216,7 @@ export class OrdenesController {
                 <thead style="height:80px;">
                   <tr style="background-color:#b5e1ff;">
                     <th style="min-width:200px;">FOTO DE PRENDA</th>
-                    <th style="min-width:80px;">COLOR</th>
+                    <th style="min-width:85px;">COLOR</th>
                     <th style="">TALLA</th>
                     <th style="">UND</th>
                     ${

@@ -17,7 +17,6 @@ produccionRouter.get('/exportguia/:id/:modo', ProduccionController.exportInfoGui
 
 produccionRouter.get('/getListaGuias', ProduccionController.getListaGuias)
 produccionRouter.get('/getListaGuias/:search', ProduccionController.getListaGuias)
-
 produccionRouter.get('/getListaMuestras', ProduccionController.getListaMuestras)
 produccionRouter.get('/getListaMuestras/:search', ProduccionController.getListaMuestras)
 
@@ -25,9 +24,12 @@ produccionRouter.get('/guia/:id', ProduccionController.getInfoGuias)
 produccionRouter.put('/guardarguia', ProduccionController.saveInfoGuias)
 produccionRouter.delete('/borrarguia/:id', ProduccionController.eliminarInfoGuias)
 produccionRouter.delete('/anularguia/:id', ProduccionController.anularInfoGuias)
+produccionRouter.put('/guardarguiaxpq', ProduccionController.saveInfoGuiasXPQ)
+produccionRouter.delete('/borrarguiaxpq/:id', ProduccionController.eliminarInfoGuiasXPQ)
+produccionRouter.delete('/anularguiaxpq/:id', ProduccionController.anularInfoGuiasXPQ)
+
 produccionRouter.get('/estadoguia/:id', ProduccionController.getStatusGuia)
 produccionRouter.get('/showinformeservicio/:id', ProduccionController.ShowInformeServicio)
-// produccionRouter.get('/showinformeservicio2/:id',ProduccionController.ShowInformeServicio2)
 produccionRouter.get('/showinformeservicio2', ProduccionController.ShowInformeServicio2)
 produccionRouter.get('/searchguia/:info', ProduccionController.searchGuia)
 
@@ -47,7 +49,10 @@ produccionRouter.get('/despacho/:id', ProduccionController.getInfoDespachos)
 // produccionRouter.put('/guardardespacho', ProduccionController.saveInfoDespachos)
 produccionRouter.put('/guardardespachopedido', ProduccionController.saveInfoDespachosPedido)
 produccionRouter.put('/guardardespachoguia', ProduccionController.saveInfoDespachosGuia)
-produccionRouter.delete('/borrardespacho/:id', ProduccionController.eliminarInfoDespachos)
+produccionRouter.put('/guardardespachoguiaxpq', ProduccionController.saveInfoDespachosGuiaXPQ)
+produccionRouter.delete('/borrardespachopedido/:id', ProduccionController.eliminarInfoDespachosPedido)
+produccionRouter.delete('/borrardespachoguia/:id', ProduccionController.eliminarInfoDespachosGuia)
+produccionRouter.delete('/borrardespachoguiaxpq/:id', ProduccionController.eliminarInfoDespachosGuiaXPQ)
 
 produccionRouter.get('/getListaRetiros', ProduccionController.getListaRetiros)
 produccionRouter.get('/getListaRetiros/:search', ProduccionController.getListaRetiros)
