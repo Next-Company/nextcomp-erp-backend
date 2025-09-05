@@ -6,35 +6,36 @@ export class ProductosService{
     const conn = await mysql.createConnection(configs[1]);
     await conn.connect();
     try {
+
+        //       select
+        //     tp.idx AS id_producto_CAB,
+        //     tp.codigo AS cod_producto,
+        //     tp.tipo AS tipo,
+        //     tp.det AS det,
+        //     tp.nom AS producto,
+        //     tr.nom AS rubro,
+        //     tp.temporada AS temporada,
+        //     tp.estilo AS estilo,
+        //     round((tp.costo + ((tp.utilidad1 * tp.costo) / 100)), 1) AS precio,
+        //     tp.presentacion AS presentacion,
+        //     tp.marca AS marca,
+        //     tp.modelo AS modelo,
+        //     '' AS idx_color,
+        //     '' AS color,
+        //     '' AS idx_talla,
+        //     '' AS talla,
+        //     '' AS condicion,
+        //     '' AS idxsub,
+        //     '' AS sku2
+        // from tbl2_productos tp
+        // join tbl2_rubros tr on tr.idx = tp.rubros
+        // left join tbl2_subproductos ts on tp.idx = ts.idx_CAB_PROD 
+        // where tp.ruc_ = '20522094120' and tp.tipo = 'I' and ts.idx is null
+
+        // union all
+
       // const [rows,fields] = await conn.execute("SELECT * FROM tbl2_prod_color_talla_det where tipo in ('I','A') LIMIT 50");
       const [rows,fields] = await conn.execute(`
-        select
-            tp.idx AS id_producto_CAB,
-            tp.codigo AS cod_producto,
-            tp.tipo AS tipo,
-            tp.det AS det,
-            tp.nom AS producto,
-            tr.nom AS rubro,
-            tp.temporada AS temporada,
-            tp.estilo AS estilo,
-            round((tp.costo + ((tp.utilidad1 * tp.costo) / 100)), 1) AS precio,
-            tp.presentacion AS presentacion,
-            tp.marca AS marca,
-            tp.modelo AS modelo,
-            '' AS idx_color,
-            '' AS color,
-            '' AS idx_talla,
-            '' AS talla,
-            '' AS condicion,
-            '' AS idxsub,
-            '' AS sku2
-        from tbl2_productos tp
-        join tbl2_rubros tr on tr.idx = tp.rubros
-        left join tbl2_subproductos ts on tp.idx = ts.idx_CAB_PROD 
-        where tp.ruc_ = '20522094120' and tp.tipo = 'I' and ts.idx is null
-
-        union all
-
         select
             tp.idx AS id_producto_CAB,
             tp.codigo AS cod_producto,
@@ -57,7 +58,7 @@ export class ProductosService{
             ts.sku AS sku2
         from
             (((((BD_FACTURADOR.tbl2_productos tp
-        join BD_FACTURADOR.tbl2_subproductos ts on
+        left join BD_FACTURADOR.tbl2_subproductos ts on
             ((tp.idx = ts.idx_CAB_PROD)))
         join BD_FACTURADOR.tbl2_colores tc on
             ((tc.idx = ts.idx_CAB_COLOR)))
@@ -68,7 +69,8 @@ export class ProductosService{
         join BD_FACTURADOR.tbl2_condicion tcn on
             ((tcn.condicion = ts.estado)))
         where
-            (tp.ruc_ = '20522094120') and tp.tipo in ('I','A')
+            (tp.ruc_ = '20522094120') -- and tp.tipo in ('I','A')
+        limit 200
       `);
       console.log(rows);
       return rows;
@@ -80,6 +82,41 @@ export class ProductosService{
       await conn.end();
     }
     return info;
+  }
+  static async getRecetasList(busqueda){
+    const conn = await mysql.createConnection(configs[1]);
+    await conn.connect();
+    try {
+
+      let extra = busqueda.split(" ").length > 0 ? busqueda.split(" ").map(word=>"AND LOCATE('"+word+"',CONCAT(TRIM(nom),' ',TRIM(tipo),' ',TRIM(estilo),' ',TRIM(temporada),' ',TRIM(presentacion),' ',TRIM(marca),' ',TRIM(modelo))) > 0").join(" ") : ""
+
+      const [rows,fields] = await conn.execute(`
+        select
+            tp.idx AS id_producto_CAB,
+            tp.codigo AS cod_producto,
+            tp.tipo,
+            tp.det,
+            tp.nom AS producto,
+            (select tr.nom from tbl2_rubros tr where tr.idx = tp.RUBROS  ) AS rubro,
+            tp.temporada,
+            tp.estilo,
+            round((tp.costo + ((tp.utilidad1 * tp.costo) / 100)), 1) AS precio,
+            tp.presentacion,
+            tp.marca,
+            tp.modelo
+        from tbl2_productos tp
+        where 1=1 ${extra} and tp.ruc_ = '20522094120'
+        limit 150
+      `);
+      // console.log(rows);
+      return rows;
+    }
+    catch(e){
+      console.log(e);
+    }
+    finally{
+      await conn.end();
+    }
   }
   static async searchProducto(busqueda = ""){
     const conn = await mysql.createConnection(configs[1]);

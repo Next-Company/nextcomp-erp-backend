@@ -6,6 +6,13 @@ export class ProductosController{
     // res.send({data:info});
     res.send(info);
   }
+  static async getRecetasList(req,res){
+    console.log("Buscando producos")
+    let search = req.params.search ?? ''
+    const info = await ProductosService.getRecetasList(search);
+    // res.send({data:info});
+    res.send(info);
+  }
   static async searchProducto(req,res){
     let busqueda = req.params.info
     console.log("Buscando productos, filtro busqueda:",busqueda)
