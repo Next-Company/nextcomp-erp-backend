@@ -331,28 +331,6 @@ export class ProduccionController {
     let data2 = await ProduccionModel.getInfoDespachoDet(params.id)
     console.log("Mostrando la informacion del detalle del despacho:",data2)
 
-    console.log("Reestructurando la variable data2")
-
-    // return {ok:true,message:"Generaod de forma exitosass"}
-
-    // data2 = data2.reduce((c,v)=>{
-    //   let lista = ['cantidad','caidos','incompletos']
-    //   let tallas = ['xs','s','m','l','xl','xxl']
-    //   v.fracciones_despacho = ['xs','s','m','l','xl','xxl'].reduce((c3,v3)=>{
-    //     c3.push(v.fracciones_despacho.filter(row=>row['talla'] == v3)[0])
-    //     return c3
-    //   },[])
-    //   let nuevo = lista.reduce((c2,v2) => {
-    //     let newnames = {cantidad:'Despacho',caidos:'Caidos',incompletos:'Incompletos'}
-    //     c2.push([newnames[v2],...v.fracciones_despacho.map(row=>row[v2]),'-',v.fracciones_despacho.map(row=>row[v2]).reduce((c,v)=>c+v,0)])
-    //     return c2
-    //   },[]);
-    //   console.log("Nuefo formateddo:",nuevo)
-    //   // let new_fracciones = 
-    //   c.push({...v,new_fracciones:nuevo})
-    //   return c
-    // },[])
-
     const data3 = data[0].id_proveedor_CAB ? await ProduccionModel.searchProveedorById(data[0].id_proveedor_CAB) : [{ nom: data[0].responsable, ruc: '', direccion: data[0].destino }]
     resp.render(
       'guia_despacho_muestra',
@@ -386,8 +364,8 @@ export class ProduccionController {
             const page = await browser.newPage();
             await page.setContent(html);
             const pdfOptions = {
-              width: '20cm',
-              height: '27.94cm',
+              width: '21cm',
+              height: '14.8cm',
               landscape: false,
               printBackground: true,
               margin: {
