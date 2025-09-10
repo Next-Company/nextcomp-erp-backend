@@ -135,6 +135,7 @@ export default class AlmacenModel{
         ) AS cc
         WHERE 1=1 ${extra}
       `;
+      console.log("El query de busque de producto es:",query)
   
       const [result] = await conn.execute(query);
       console.log("El resultado de la consulta es:", result)

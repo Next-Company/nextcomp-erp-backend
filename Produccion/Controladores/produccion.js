@@ -214,7 +214,7 @@ export class ProduccionController {
   static async verInfoDespachoGuia(req, resp) {
     const params = req.params
     console.log("La informacion de los parametros es otro cambio:",params)
-    const BINARY_CHUNKS = await fs.readFile('public/images/logo_elenex.png')
+    // const BINARY_CHUNKS = await fs.readFile('public/images/logo_elenex.png')
     const data = await ProduccionModel.getInfoGuiaCab(params.idguia)
     console.log("Mostrando informacin de la guia:",data)
     // const data2 = await ProduccionModel.getInfoGuiaDet(params.id)
@@ -240,6 +240,7 @@ export class ProduccionController {
         c3.push(v.fracciones_despacho.filter(row=>row['talla'] == v3)[0])
         return c3
       },[])
+      v.fracciones_despacho_cantidad = v.fracciones_despacho.map(row=>row['cantidad'])
       console.log("Fracciones despacho :",v.fracciones_despacho)
       let nuevo = lista.reduce((c2,v2) => {
         let newnames = {cantidad:'Despacho',caidos:'Caidos',incompletos:'Incompletos'}
@@ -256,7 +257,6 @@ export class ProduccionController {
     resp.render(
       'guia_despacho',
       {
-        BINARY_CHUNKS: BINARY_CHUNKS.toString('base64'),
         color: 'black',
         info: params,
         cabecera: data[0],

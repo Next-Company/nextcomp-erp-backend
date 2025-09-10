@@ -2,7 +2,8 @@ import { ProductosService } from "../Servicios/productosService.js"
 export class ProductosController{
   static async getProductosList(req,res){
     console.log("Buscando producos")
-    const info = await ProductosService.getProductosList();
+    const search = req.params.search ?? ''
+    const info = await ProductosService.getProductosList(search);
     // res.send({data:info});
     res.send(info);
   }
@@ -65,4 +66,38 @@ export class ProductosController{
     const info = await ProductosService.searchUnidad(search);
     res.send(info);
   }
+
+
+  static async getProductosConStock(req,res){
+    console.log("Buscando producos")
+    const search = req.params.search ?? ''
+    const info = await ProductosService.getProductosConStock(search);
+    res.send(info);
+  }
+  static async getProductosTotal(req,res){
+    console.log("Buscando producos")
+    const search = req.params.search ?? ''
+    const info = await ProductosService.getProductosTotal(search);
+    res.send(info);
+  }
+
+  static async getProductosEstilo(req,res){
+    console.log("Buscando producos")
+    const search = req.params.search ?? ''
+    const info = await ProductosService.getProductosEstilo(search);
+    res.send(info);
+  }
+  static async getProductosMarca(req,res){
+    console.log("Buscando producos")
+    const search = req.params.search ?? ''
+    const info = await ProductosService.getProductosMarca(search);
+    res.send(info);
+  }
+  static async getProductosPresentacion(req,res){
+    console.log("Buscando producos")
+    const search = req.params.search ?? ''
+    const info = await ProductosService.getProductosPresentacion(search);
+    res.send(info);
+  }
+
 }
