@@ -214,15 +214,17 @@ export class ProduccionController {
   static async verInfoDespachoGuia(req, resp) {
     const params = req.params
     console.log("La informacion de los parametros es otro cambio:",params)
+    const BINARY_CHUNKS = await fs.readFile('public/images/logo_elenex.png')
     const data = await ProduccionModel.getInfoGuiaCab(params.idguia)
     console.log("Mostrando informacin de la guia:",data)
     // const data2 = await ProduccionModel.getInfoGuiaDet(params.id)
     let data2 = await ProduccionModel.getInfoDespachoDet(params.id)
     console.log("Mostrando la informacion del detalle del despacho:",data2)
 
-    console.log("Reestructurando la variable data2")
+    console.log("Reestructurando la variable data2",data2.map(row=>row.fracciones_despacho))
 
-    data2 = data2.reduce((c,v)=>{
+
+    data2 = data2.filter(row=>row.fracciones_despacho.length > 0).reduce((c,v)=>{
       // [
       //   {"talla": "l", "caidos": 0, "cantidad": 36, "incompletos": 0}, 
       //   {"talla": "m", "caidos": 4, "cantidad": 32, "incompletos": 0}, 
@@ -238,6 +240,7 @@ export class ProduccionController {
         c3.push(v.fracciones_despacho.filter(row=>row['talla'] == v3)[0])
         return c3
       },[])
+      console.log("Fracciones despacho :",v.fracciones_despacho)
       let nuevo = lista.reduce((c2,v2) => {
         let newnames = {cantidad:'Despacho',caidos:'Caidos',incompletos:'Incompletos'}
         c2.push([newnames[v2],...v.fracciones_despacho.map(row=>row[v2]),'-',v.fracciones_despacho.map(row=>row[v2]).reduce((c,v)=>c+v,0)])
@@ -253,6 +256,7 @@ export class ProduccionController {
     resp.render(
       'guia_despacho',
       {
+        BINARY_CHUNKS: BINARY_CHUNKS.toString('base64'),
         color: 'black',
         info: params,
         cabecera: data[0],
@@ -263,7 +267,8 @@ export class ProduccionController {
         numproto: data2.filter(row => row.isprototipo).length,
         date: (new Date(data[0].created_at)).toLocaleDateString('en-GB'),
         time: (new Date(data[0].created_at)).toLocaleTimeString('en-GB'),
-        idguia: `${data[0].idx}`.padStart(10, 0),
+        idguia: `${params.id}`.padStart(10, 0),
+        idref: `${data[0].idx}`.padStart(10, 0),
         totalunid: data2.reduce((carry, valor) => {
           carry += valor.isprototipo ? 0 : parseFloat(valor.cantidad)
           return carry;
@@ -300,7 +305,7 @@ export class ProduccionController {
             const pdfOptions = {
               width: '20cm',
               height: '27.94cm',
-              landscape: false,
+              landscape: true,
               printBackground: true,
               margin: {
                 left: 0,
@@ -332,6 +337,7 @@ export class ProduccionController {
     console.log("Mostrando la informacion del detalle del despacho:",data2)
 
     const data3 = data[0].id_proveedor_CAB ? await ProduccionModel.searchProveedorById(data[0].id_proveedor_CAB) : [{ nom: data[0].responsable, ruc: '', direccion: data[0].destino }]
+    console.log("Info del proveedor es:",data3)
     resp.render(
       'guia_despacho_muestra',
       {
@@ -345,6 +351,7 @@ export class ProduccionController {
         date: (new Date(data[0].created_at)).toLocaleDateString('en-GB'),
         time: (new Date(data[0].created_at)).toLocaleTimeString('en-GB'),
         idguia: `${params.id}`.padStart(10, 0),
+        idref: `${data[0].idx}`.padStart(10, 0),
         totalunid: data2.reduce((c,v)=>c+v.despacho,0),
         proveedor: data3[0],
         helpers: {
@@ -364,9 +371,12 @@ export class ProduccionController {
             const page = await browser.newPage();
             await page.setContent(html);
             const pdfOptions = {
-              width: '21cm',
-              height: '14.8cm',
-              landscape: false,
+              // width: '21cm',
+              // height: '14.8cm',
+              // pageFormat:'A5',
+              width: '20cm',
+              height: '27.94cm',
+              landscape: true,
               printBackground: true,
               margin: {
                 left: 0,
