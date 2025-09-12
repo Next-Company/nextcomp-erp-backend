@@ -191,13 +191,20 @@ export class ProductosService{
     }
     return info;
   }
-  static async searchProductoById(){
+  static async searchProductoById(id){
     const conn = await mysql.createConnection(configs[1]);
     await conn.connect();
     try {
-      const [rows,fields] = await conn.execute("SELECT * FROM tbl2_prod_color_talla_det where tipo in ('I','A') LIMIT 50");
-      console.log(rows);
-      return rows;
+      // const [rows,fields] = await conn.execute("SELECT * FROM tbl2_prod_color_talla_det where tipo in ('I','A') LIMIT 50");
+      const [result] = await conn.execute(`
+        SELECT 
+          tp.*,
+          (select tr.nom from tbl2_rubros tr where tr.idx = tp.RUBROS) as rubro,
+          (select tpv.nom from tbl2_proveedor tpv where tpv.idx = tp.PROVEEDORES) as proveedor
+        FROM tbl2_productos tp
+        WHERE tp.ruc_ = '20522094120' AND tp.idx = ?
+      `,[id])
+      return result;
     }
     catch(e){
       console.log(e);
@@ -205,7 +212,6 @@ export class ProductosService{
     finally{
       await conn.end();
     }
-    return info;
   }
 
   static async generateProducto(info){
@@ -243,7 +249,37 @@ export class ProductosService{
       if(conn) await conn.end()
     }
   }
+  static async updateProducto(info){
+    console.log("Dentro de la actualizacion de productos",info)
+    let conn = undefined
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect()
+      conn.beginTransaction()
 
+      const [validacion,fields] = await conn.execute("select *from tbl2_productos where ruc_ = '20522094120' and idx = ?",[info.idx])
+      let newinfo = Object.keys(info).reduce((c,v)=>{
+        if (fields.map(row=>row.name).includes(v) && v !== 'idx') c[v] = info[v]
+        return c
+      },{})
+      console.log("La nueva info esS:",newinfo)
+
+      let cake = Object.keys(newinfo).map(field=>`${field}='${newinfo[field]}'`)
+      console.log("El query resultado es:",cake,`UPDATE tbl2_productos SET ${cake.toString(',')} WHERE idx = ?`)
+
+      let [result] = await conn.execute(`UPDATE tbl2_productos SET ${cake.toString(',')} WHERE ruc_ = '20522094120' and idx = ?`,[info.idx])
+      console.log("Row Afectada:",result.affectedRows)
+
+      // if(conn) conn.rollback()
+      if(conn) conn.commit()
+      return {ok:true,message:'',info:''}
+    } catch(error){
+      if(conn) conn.rollback()
+      return {ok:false,message:error.message ?? error}
+    } finally {
+      if(conn) await conn.end()
+    }
+  }
   static async createNewProduct(info,conn){
     try {
       const [correlativo] = await conn.execute("select codigo_num from tbl2_rubro_correlativo where ruc_ = ?",['20522094120']);

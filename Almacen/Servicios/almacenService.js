@@ -234,8 +234,8 @@ export default class AlmacenModel{
         fec_Emision_DOC: cabecera.fec_emision.split('-').reverse().join('/'),
         idx_usu: 0,
         tipomov: cabecera.tipo_operacion,
-        id_requerimiento: parseInt(cabecera.id_pedido_origen),
-        id_modelo: parseInt(cabecera.id_modelo)
+        id_requerimiento: parseInt(cabecera.id_pedido_origen ?? 0),
+        id_modelo: parseInt(cabecera.id_modelo ?? 0)
       };
       console.log("El detalle a insertar es:",data_guia)
       const [resultGuia] = await conn.execute(
@@ -273,7 +273,7 @@ export default class AlmacenModel{
         num_comprobante: parseInt(busqueda[0].correlativo) + 1,
         observaciones: cabecera.observaciones,
         idx_documento_asoc: id_guia,
-        lote: cabecera.id_pedido_origen,
+        lote: cabecera.id_pedido_origen ?? 0,
         origen: 'KARD',
         almacen_destino: 509,
         articulos: JSON.stringify(detalle),
@@ -282,8 +282,8 @@ export default class AlmacenModel{
       let res_mov = await AlmacenModel.saveMovimiento(data_comprobante,conn)
       if(!res_mov.ok) throw new Error(res_mov.message)
 
-      // if(conn) conn.rollback()
-      if(conn) conn.commit()
+      if(conn) conn.rollback()
+      // if(conn) conn.commit()
       return {ok:true,message:'Guardado exitoso'}
     } catch (error) {
       console.log(error)
@@ -392,7 +392,6 @@ export default class AlmacenModel{
               let almacen_destino = value.almacen_destino ?? 509;
 
               console.log("El dato a insertar es:", value)
-
               // Consultar stock actual en almacen
               const [consulta_deposito] = await conn.execute(
                 `SELECT SUM(IF(tad.cantidad IS NULL,0,tad.cantidad)) AS cantidad
@@ -465,6 +464,7 @@ export default class AlmacenModel{
           case 'RETR':
 
             for (const value of articulos) {
+              console.log("El articulo a retirar es:",value)
               let almacen_destino = value.almacen_destino ?? 509;
 
               // Consultar stock actual en almacen

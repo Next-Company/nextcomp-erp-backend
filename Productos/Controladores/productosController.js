@@ -25,13 +25,19 @@ export class ProductosController{
   }
   static async searchProductoById(req,res){
     console.log("Buscando productos")
-    const info = await ProductosService.searchProductoById();
+    const id = req.params.id ?? ''
+    const info = await ProductosService.searchProductoById(id);
     // res.send({data:info});
     res.send(info);
   }
   static async generateProducto(req,res){
     let data = req.body
     const info = await ProductosService.generateProducto(data);
+    res.send(info);
+  }
+  static async updateProducto(req,res){
+    let data = req.body
+    const info = await ProductosService.updateProducto(data);
     res.send(info);
   }
   static async createNewProduct(req,res){

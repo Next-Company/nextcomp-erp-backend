@@ -71,7 +71,7 @@ export default class AlmacenController{
     const BINARY_CHUNKS = await fs.readFile('public/images/firma_jefferson.png')
     let BINARY_CHUNKS2 = null
     BINARY_CHUNKS2 = await fs.readFile('public/images/logo_next.png')
-    const BINARY_CHUNKS3 = await fs.readFile('public/images/guia_traslado.png')
+    const BINARY_CHUNKS3 = await fs.readFile('public/images/guia_despacho.png')
     const BINARY_CHUNKS4 = await fs.readFile('public/images/cuadre_tela.png')
     // const tipo = JSON.parse(data.info).tipo
     console.log("El tipo de pedido es :", tipo)

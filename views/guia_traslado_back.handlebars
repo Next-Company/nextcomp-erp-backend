@@ -125,49 +125,72 @@
     <table id="principal" style="width: 100%;">
         <tr>
             <td>
-                <table style="border: 1px solid red;border-collapse:collapse;width:100%;">
+                <table style="border: 0px solid red;border-collapse:collapse;">
                   <tr>
-                    
-                    <td style="text-align: center;border: 0.5px solid blue;border:1px solid;">
+                    <td style="width: 45%; padding: 5px; text-align: left; ">
+                      <table border="0" style="border-collapse:collapse;">
+                        <tr>
+                          <td style="text-align:left;">
+                              {{!-- <img src="data:image/jpg;base64,{{this.BINARY_CHUNKS2}}" class="logo" style="width:260px;"> --}}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="font-size:8px;">
+                            {{!-- Calle Felipo Santiago Crespo Nro 581 - San Luis - Lima - Lima
+                            <br />R.U.C. 20522094120
+                            <br />Telf: 3233128
+                            <br /><a href="#" style="font-weight:bold;color:blue;">next.company.sac@gmail.com</a> --}}
+                          </td>
+                          {{!-- {{#if emisor}}
+                          {{else}}
+                          <td style="padding-left: 38px;font-size:8px;">
+                              Calle Felipo Santiago Crespo Nro 581 - San Luis - Lima - Lima
+                              <br />R.U.C. 20563546035
+                          </td>
+                          {{/if}} --}}
+                        </tr>
+                      </table>
+                    </td>
+                    <td style="text-align: center; width: 55%; border: 0.5px solid white;">
                       <table style="border-collapse: collapse; padding: 6px 1px;margin: 0px; ">
                         <tr>
                           <td>
                             <table class="tipo_orden">
                               <tr>
                                 <td style="border:none;">
-                                  <table style="border-collapse: collapse; padding: 6px 1px;margin: 0px;">
+                                  <table style="border-collapse: collapse; padding: 6px 1px;margin: 0px;width:380px;">
                                     <tr>
-                                      <td style="border:0px solid black;font-weight:bold;font-size:16px;text-align:center;padding:5px;">
-                                        
-
-                                        <div style="display:flex;flew-direction:row;">
-                                          <div style="flex:1;">
-                                            <img src="data:image/jpg;base64,{{this.BINARY_CHUNKS3}}" class="logo" style="width:400px;">
-                                          </div>
-                                          <div>
-                                            2025-09-10 12:43:23 
-                                          </div>
-                                        </div>
-
+                                      <td style="border:1px solid black;font-weight:bold;font-size:16px;text-align:center;padding:5px;">
+                                        <img src="data:image/jpg;base64,{{this.BINARY_CHUNKS3}}" class="logo" style="width:240px;">
                                       </td>
                                     </tr>
                                   </table>
                                 </td>
                               </tr>
-                              {{!-- <tr>
+                              <tr>
                                 <td style="border:none;">
                                   <table class="contenido" style="">
+                                    {{!-- <thead>
+                                      <tr>
+                                        <th style="height:25px;width:100px;font-weight:bolder;font-size:15px;" valing="middle">N° ORDEN</td>
+                                        <th style="height:25px;width:45px;font-weight:bolder">AL.</td>
+                                        <th style="height:25px;width:280px;font-size:18px;" colspan="8">{{datos.orden_ref}}</td>
+                                      </tr>
+                                    </thead> --}}
                                     <tbody>
                                       <tr>
                                         <td style="height:20px;width:80px;font-size:8px;">FECHA EMISIÓN</td>
+                                        {{!-- <td colspan="2" style="font-size:8px;"><strong style="font-size: inherit;">{{#fechaCorta datos.fec_emision}}{{/fechaCorta}}</strong></td> --}}
                                         <td colspan="2" style="font-size:8px;width:80px;"><strong style="font-size: inherit;">{{datos.fec_Emision_DOC}}</strong></td>
                                         <td colspan="2" style="font-size:8px;">FECHA RETORNO</td>
                                         <td colspan="2" style="font-size:8px;width:80px;"><strong style="font-size: inherit;">{{datos.fec_Emision_DOC}}</strong></td>
+                                        {{!-- <td colspan="2" style="font-size:8px;">DÍAS PRODUCCIÓN</td>
+                                        <td colspan="2" style="font-size:8px;"><strong style="font-size: inherit;">{{datos.duracion}}</strong></td> --}}
                                       </tr>
                                     </tbody>
                                   </table>
                                 </td>
-                              </tr> --}}
+                              </tr>
                             </table>
                           </td>
                         </tr>
@@ -222,8 +245,8 @@
     </table>
     <div style="position:absolute;bottom:0px;display:flex;width:100%;gap:15px;">
       <div style="display:flex;width:95%;gap:15px;">
-        <div style="height:20px;background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">AUXILIAR DE ALMACEN</div>
-        <div style="height:20px;background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">JEFE DE CORTE</div>
+        <div style="height:20px;background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">JEFFERSON TAPIA MONTOYA</br> JEFE DE PRODUCCION</div>
+        <div style="height:20px;background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">CARLOS GASPAR</br> ALMACENISTA</div>
         {{!-- <div style="height:20px;background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">NOMBRE RESPONSABLE</br> RESONSABLE DE COMPRA</div> --}}
       </div>
     </div>
@@ -252,7 +275,7 @@
         }
     </style>
   </div>
-  <div style="break-after: page;display:none;">
+  <div style="break-after: page">
     <table id="principal" style="width: 100%;">
         <tr>
             <td>
@@ -262,14 +285,7 @@
                       <table border="0" style="border-collapse:collapse;">
                         <tr>
                           <td style="text-align:left;">
-                            <div style="display:flex;flew-direction:row;">
-                              <div>
-                                <img src="data:image/jpg;base64,{{this.BINARY_CHUNKS2}}" class="logo" style="width:260px;">
-                              </div>
-                              <div>
-                                2025-09-10 12:43:23 
-                              </div>
-                            </div>
+                              <img src="data:image/jpg;base64,{{this.BINARY_CHUNKS2}}" class="logo" style="width:260px;">
                           </td>
                         </tr>
                         <tr>
@@ -389,7 +405,7 @@
     </table>
     <div style="position:absolute;bottom:0px;display:flex;width:100%;gap:15px;">
       <div style="display:flex;width:95%;gap:15px;">
-        <div style="height:20px;background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">JEFFERSON TAPIA MONTOYASDFSD</br> JEFE DE PRODUCCION</div>
+        <div style="height:20px;background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">JEFFERSON TAPIA MONTOYA</br> JEFE DE PRODUCCION</div>
         <div style="height:20px;background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">CARLOS GASPAR</br> ALMACENISTA</div>
         {{!-- <div style="height:20px;background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">NOMBRE RESPONSABLE</br> RESONSABLE DE COMPRA</div> --}}
       </div>

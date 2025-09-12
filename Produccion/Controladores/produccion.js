@@ -220,113 +220,117 @@ export class ProduccionController {
     // const data2 = await ProduccionModel.getInfoGuiaDet(params.id)
     let data2 = await ProduccionModel.getInfoDespachoDet(params.id)
     console.log("Mostrando la informacion del detalle del despacho:",data2)
-
     console.log("Reestructurando la variable data2",data2.map(row=>row.fracciones_despacho))
 
+    try {
+      data2 = data2.filter(row=>row.fracciones_despacho.length > 0).reduce((c,v)=>{
+        // [
+        //   {"talla": "l", "caidos": 0, "cantidad": 36, "incompletos": 0}, 
+        //   {"talla": "m", "caidos": 4, "cantidad": 32, "incompletos": 0}, 
+        //   {"talla": "s", "caidos": 3, "cantidad": 21, "incompletos": 0}, 
+        //   {"talla": "xl", "caidos": 0, "cantidad": 12, "incompletos": 0}, 
+        //   {"talla": "xs", "caidos": 0, "cantidad": 0, "incompletos": 0}, 
+        //   {"talla": "xxl", "caidos": 0, "cantidad": 0, "incompletos": 0}
+        // ]
 
-    data2 = data2.filter(row=>row.fracciones_despacho.length > 0).reduce((c,v)=>{
-      // [
-      //   {"talla": "l", "caidos": 0, "cantidad": 36, "incompletos": 0}, 
-      //   {"talla": "m", "caidos": 4, "cantidad": 32, "incompletos": 0}, 
-      //   {"talla": "s", "caidos": 3, "cantidad": 21, "incompletos": 0}, 
-      //   {"talla": "xl", "caidos": 0, "cantidad": 12, "incompletos": 0}, 
-      //   {"talla": "xs", "caidos": 0, "cantidad": 0, "incompletos": 0}, 
-      //   {"talla": "xxl", "caidos": 0, "cantidad": 0, "incompletos": 0}
-      // ]
-
-      let lista = ['cantidad','caidos','incompletos']
-      let tallas = ['xs','s','m','l','xl','xxl']
-      v.fracciones_despacho = ['xs','s','m','l','xl','xxl'].reduce((c3,v3)=>{
-        c3.push(v.fracciones_despacho.filter(row=>row['talla'] == v3)[0])
-        return c3
+        let lista = ['cantidad','caidos','incompletos']
+        let tallas = ['xs','s','m','l','xl','xxl']
+        v.fracciones_despacho = ['xs','s','m','l','xl','xxl'].reduce((c3,v3)=>{
+          c3.push(v.fracciones_despacho.filter(row=>row['talla'] == v3)[0])
+          return c3
+        },[])
+        v.fracciones_despacho_cantidad = v.fracciones_despacho.map(row=>row['cantidad'])
+        console.log("Fracciones despacho :",v.fracciones_despacho)
+        let nuevo = lista.reduce((c2,v2) => {
+          let newnames = {cantidad:'Despacho',caidos:'Caidos',incompletos:'Incompletos'}
+          c2.push([newnames[v2],...v.fracciones_despacho.map(row=>row[v2]),'-',v.fracciones_despacho.map(row=>row[v2]).reduce((c,v)=>c+v,0)])
+          return c2
+        },[]);
+        console.log("Nuefo formateddo:",nuevo)
+        // let new_fracciones = 
+        c.push({...v,new_fracciones:nuevo})
+        return c
       },[])
-      v.fracciones_despacho_cantidad = v.fracciones_despacho.map(row=>row['cantidad'])
-      console.log("Fracciones despacho :",v.fracciones_despacho)
-      let nuevo = lista.reduce((c2,v2) => {
-        let newnames = {cantidad:'Despacho',caidos:'Caidos',incompletos:'Incompletos'}
-        c2.push([newnames[v2],...v.fracciones_despacho.map(row=>row[v2]),'-',v.fracciones_despacho.map(row=>row[v2]).reduce((c,v)=>c+v,0)])
-        return c2
-      },[]);
-      console.log("Nuefo formateddo:",nuevo)
-      // let new_fracciones = 
-      c.push({...v,new_fracciones:nuevo})
-      return c
-    },[])
 
-    const data3 = data[0].id_proveedor_CAB ? await ProduccionModel.searchProveedorById(data[0].id_proveedor_CAB) : [{ nom: data[0].responsable, ruc: '', direccion: data[0].destino }]
-    resp.render(
-      'guia_despacho',
-      {
-        color: 'black',
-        info: params,
-        cabecera: data[0],
-        // detalle:data2.filter(row=>!row.isprototipo),
-        detalle: data2,
-        // relleno:data2.filter(),
-        prototipos: data2.filter(row => row.isprototipo),
-        numproto: data2.filter(row => row.isprototipo).length,
-        date: (new Date(data[0].created_at)).toLocaleDateString('en-GB'),
-        time: (new Date(data[0].created_at)).toLocaleTimeString('en-GB'),
-        idguia: `${params.id}`.padStart(10, 0),
-        idref: `${data[0].idx}`.padStart(10, 0),
-        totalunid: data2.reduce((carry, valor) => {
-          carry += valor.isprototipo ? 0 : parseFloat(valor.cantidad)
-          return carry;
-        }, 0),
-        totaldespacho: data2.reduce((carry, valor) => {
-          carry += valor.isprototipo ? 0 : parseFloat(valor.despacho)
-          return carry;
-        }, 0),
-        totalcaidos: data2.reduce((carry, valor) => {
-          carry += valor.isprototipo ? 0 : parseFloat(valor.caidos)
-          return carry;
-        }, 0),
-        totalincompletos: data2.reduce((carry, valor) => {
-          carry += valor.isprototipo ? 0 : parseFloat(valor.incompletos)
-          return carry;
-        }, 0),
-        proveedor: data3[0],
-        helpers: {
-          plusindex(index) {
-            return index + 1
+      const data3 = data[0].id_proveedor_CAB ? await ProduccionModel.searchProveedorById(data[0].id_proveedor_CAB) : [{ nom: data[0].responsable, ruc: '', direccion: data[0].destino }]
+      resp.render(
+        'guia_despacho',
+        {
+          color: 'black',
+          info: params,
+          cabecera: data[0],
+          // detalle:data2.filter(row=>!row.isprototipo),
+          detalle: data2,
+          // relleno:data2.filter(),
+          prototipos: data2.filter(row => row.isprototipo),
+          numproto: data2.filter(row => row.isprototipo).length,
+          date: (new Date(data[0].created_at)).toLocaleDateString('en-GB'),
+          time: (new Date(data[0].created_at)).toLocaleTimeString('en-GB'),
+          idguia: `${params.id}`.padStart(10, 0),
+          idref: `${data[0].idx}`.padStart(10, 0),
+          totalunid: data2.reduce((carry, valor) => {
+            carry += valor.isprototipo ? 0 : parseFloat(valor.cantidad)
+            return carry;
+          }, 0),
+          totaldespacho: data2.reduce((carry, valor) => {
+            carry += valor.isprototipo ? 0 : parseFloat(valor.despacho)
+            return carry;
+          }, 0),
+          totalcaidos: data2.reduce((carry, valor) => {
+            carry += valor.isprototipo ? 0 : parseFloat(valor.caidos)
+            return carry;
+          }, 0),
+          totalincompletos: data2.reduce((carry, valor) => {
+            carry += valor.isprototipo ? 0 : parseFloat(valor.incompletos)
+            return carry;
+          }, 0),
+          proveedor: data3[0],
+          helpers: {
+            plusindex(index) {
+              return index + 1
+            }
           }
         }
-      }
-      ,async (err, html) => {
-        try {  
-          console.log("La condicion de busqueda es la siguiente:",params.condicion)
-          if(params.condicion == 2){
-            console.log("Dentro de la codicion 1 vista pdf")
-            const browser = await puppeteer.launch();
-            const version = await browser.version();
-            console.log(`Versión de Chrome: ${version}`);
-            const page = await browser.newPage();
-            await page.setContent(html);
-            const pdfOptions = {
-              width: '20cm',
-              height: '27.94cm',
-              landscape: true,
-              printBackground: true,
-              margin: {
-                left: 0,
-                right: 0
-              }
-            };
-            const pdfBuffer = await page.pdf(pdfOptions);
-            await browser.close();
-            resp.send({ data: pdfBuffer.toString('base64') })
-          }else{
-            console.log("Dentro de la condicion 2 vista html")
-            resp.send(html)
+        ,async (err, html) => {
+          try {  
+            console.log("La condicion de busqueda es la siguiente:",params.condicion)
+            if(params.condicion == 2){
+              console.log("Dentro de la codicion 1 vista pdf")
+              const browser = await puppeteer.launch();
+              const version = await browser.version();
+              console.log(`Versión de Chrome: ${version}`);
+              const page = await browser.newPage();
+              await page.setContent(html);
+              const pdfOptions = {
+                width: '20cm',
+                height: '27.94cm',
+                landscape: true,
+                printBackground: true,
+                margin: {
+                  left: 0,
+                  right: 0
+                }
+              };
+              const pdfBuffer = await page.pdf(pdfOptions);
+              await browser.close();
+              resp.send({ data: pdfBuffer.toString('base64') })
+            }else{
+              console.log("Dentro de la condicion 2 vista html")
+              resp.send(html)
+            }
+          } catch (error) {
+            resp.status(500).send('Error al generar el PDF');
+            // await browser.close();
+          } finally {
+            // await browser.close();
           }
-        } catch (error) {
-          resp.status(500).send('Error al generar el PDF');
-          // await browser.close();
-        } finally {
-          // await browser.close();
         }
-      }
-    );
+      );
+
+    } catch (err) {
+      resp.status(500).json({ error: err.message });
+    }
+
   }
   static async verInfoDespachoMuestra(req, resp) {
     const params = req.params
@@ -336,68 +340,73 @@ export class ProduccionController {
     let data2 = await ProduccionModel.getInfoDespachoDet(params.id)
     console.log("Mostrando la informacion del detalle del despacho:",data2)
 
-    const data3 = data[0].id_proveedor_CAB ? await ProduccionModel.searchProveedorById(data[0].id_proveedor_CAB) : [{ nom: data[0].responsable, ruc: '', direccion: data[0].destino }]
-    console.log("Info del proveedor es:",data3)
-    resp.render(
-      'guia_despacho_muestra',
-      {
-        color: 'black',
-        info: params,
-        cabecera: data[0],
-        detalle: data2,
-        condicion:params.condicion,
-        prototipos: data2.filter(row => row.isprototipo),
-        numproto: data2.filter(row => row.isprototipo).length,
-        date: (new Date(data[0].created_at)).toLocaleDateString('en-GB'),
-        time: (new Date(data[0].created_at)).toLocaleTimeString('en-GB'),
-        idguia: `${params.id}`.padStart(10, 0),
-        idref: `${data[0].idx}`.padStart(10, 0),
-        totalunid: data2.reduce((c,v)=>c+v.despacho,0),
-        proveedor: data3[0],
-        helpers: {
-          plusindex(index) {
-            return index + 1
+    try {
+      const data3 = data[0]?.id_proveedor_CAB ? await ProduccionModel.searchProveedorById(data[0].id_proveedor_CAB) : [{ nom: data[0].responsable, ruc: '', direccion: data[0].destino }]
+      console.log("Info del proveedor es:",data3)
+      resp.render(
+        'guia_despacho_muestra',
+        {
+          color: 'black',
+          info: params,
+          cabecera: data[0],
+          detalle: data2,
+          condicion:params.condicion,
+          prototipos: data2.filter(row => row.isprototipo),
+          numproto: data2.filter(row => row.isprototipo).length,
+          date: (new Date(data[0].created_at)).toLocaleDateString('en-GB'),
+          time: (new Date(data[0].created_at)).toLocaleTimeString('en-GB'),
+          idguia: `${params.id}`.padStart(10, 0),
+          idref: `${data[0].idx}`.padStart(10, 0),
+          totalunid: data2.reduce((c,v)=>c+v.despacho,0),
+          proveedor: data3[0],
+          helpers: {
+            plusindex(index) {
+              return index + 1
+            }
           }
         }
-      }
-      ,async (err, html) => {
-        try {  
-          console.log("La condicion de busqueda es la siguiente:",params.condicion)
-          if(params.condicion == 2){
-            console.log("Dentro de la codicion 1 vista pdf")
-            const browser = await puppeteer.launch();
-            const version = await browser.version();
-            console.log(`Versión de Chrome: ${version}`);
-            const page = await browser.newPage();
-            await page.setContent(html);
-            const pdfOptions = {
-              // width: '21cm',
-              // height: '14.8cm',
-              // pageFormat:'A5',
-              width: '20cm',
-              height: '27.94cm',
-              landscape: true,
-              printBackground: true,
-              margin: {
-                left: 0,
-                right: 0
-              }
-            };
-            const pdfBuffer = await page.pdf(pdfOptions);
-            await browser.close();
-            resp.send({ data: pdfBuffer.toString('base64') })
-          }else{
-            console.log("Dentro de la condicion 2 vista html")
-            resp.send(html)
+        ,async (err, html) => {
+          try {  
+            console.log("La condicion de busqueda es la siguiente:",params.condicion)
+            if(params.condicion == 2){
+              console.log("Dentro de la codicion 1 vista pdf")
+              const browser = await puppeteer.launch();
+              const version = await browser.version();
+              console.log(`Versión de Chrome: ${version}`);
+              const page = await browser.newPage();
+              await page.setContent(html);
+              const pdfOptions = {
+                // width: '21cm',
+                // height: '14.8cm',
+                // pageFormat:'A5',
+                width: '20cm',
+                height: '27.94cm',
+                landscape: true,
+                printBackground: true,
+                margin: {
+                  left: 0,
+                  right: 0
+                }
+              };
+              const pdfBuffer = await page.pdf(pdfOptions);
+              await browser.close();
+              resp.send({ data: pdfBuffer.toString('base64') })
+            }else{
+              console.log("Dentro de la condicion 2 vista html")
+              resp.send(html)
+            }
+          } catch (error) {
+            resp.status(500).send('Error al generar el PDF');
+          } finally {
           }
-        } catch (error) {
-          resp.status(500).send('Error al generar el PDF');
-          // await browser.close();
-        } finally {
-          // await browser.close();
         }
-      }
-    );
+      );
+
+    } catch (err) {
+      // return {ok:false,message:error.message ?? error}
+      resp.status(500).json({ error: err.message });
+    }
+
   }
 
   static async exportInfoDespacho(req, resp) {
