@@ -267,6 +267,15 @@ export default class AlmacenModel{
       // Preparar data_comprobantE
       let [busqueda] = await conn.execute("SELECT *FROM tbl2_cptes_ordenes_tipo WHERE idx = ?",[parseInt(cabecera.tipo_operacion)])
 
+      const articulos = detalle.map(item=>({
+        producto:item.producto,
+        id_producto_CAB:item.id_producto_CAB,
+        almacen_destino:'',
+        id_subprod_CAB:'',
+        lote:0,
+        tipo:''
+      }))
+
       const data_comprobante = {
         id_comprobante_CAB: busqueda[0].idx,
         cod_comprobante: busqueda[0].codigo,
@@ -279,8 +288,8 @@ export default class AlmacenModel{
         articulos: JSON.stringify(detalle),
       };
       console.log("El detalle a insertar es el siguiente:",data_comprobante)
-      let res_mov = await AlmacenModel.saveMovimiento(data_comprobante,conn)
-      if(!res_mov.ok) throw new Error(res_mov.message)
+      // let res_mov = await AlmacenModel.saveMovimiento(data_comprobante,conn)
+      // if(!res_mov.ok) throw new Error(res_mov.message)
 
       if(conn) conn.rollback()
       // if(conn) conn.commit()
@@ -387,6 +396,7 @@ export default class AlmacenModel{
         switch (data.cod_comprobante) {
           case 'INGR':
             for (const value of articulos) {
+              console.log("El articulo a retirar es:",value)
               let stock = 0;
               let num_rows = 0;
               let almacen_destino = value.almacen_destino ?? 509;
@@ -467,7 +477,7 @@ export default class AlmacenModel{
               console.log("El articulo a retirar es:",value)
               let almacen_destino = value.almacen_destino ?? 509;
 
-              // Consultar stock actual en almacen
+              // Consultar stock actual en almaceN
               const [consulta_deposito] = await conn.execute(
                 `SELECT SUM(IF(tad.cantidad IS NULL,0,tad.cantidad)) AS cantidad
                 FROM tbl2_almacen_det tad
@@ -477,7 +487,7 @@ export default class AlmacenModel{
               console.log("El resultado de la consulta es:",consulta_deposito)
               const stockActual = parseFloat(consulta_deposito[0]?.cantidad ?? 0);
 
-              if (stockActual.toFixed(2) < parseFloat(value.despacho).toFixed(2)) {
+              if (parseFloat(stockActual.toFixed(2)) < parseFloat(parseFloat(value.despacho).toFixed(2))) {
                 throw new Error("Stock insuficiente, por favor verifique.")
               }
 

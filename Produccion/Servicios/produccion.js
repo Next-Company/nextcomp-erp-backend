@@ -1965,7 +1965,7 @@ export class ProduccionModel {
 
       
       const [results, fields] = await conn.query(consulta);
-      console.log("Mostrado query de lista despachos:", results)
+      // console.log("Mostrado query de lista despachos:", results)
       await conn.end();
       return results
     } catch (err) {
@@ -2601,7 +2601,7 @@ export class ProduccionModel {
 
       let [cabecera] = await conn.query('select *from tbl2_despachos_cab where idx = ?',[id])      
       let [data_backup] = await conn.query(`select tdd.id_combo,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',t1.talla,'despachos',t1.despachos,'caidos',t1.caidos,'incompletos',t1.incompletos)) from tbl2_despachos_det_fracciones t1 where t1.id_despacho_DET = tdd.idx),JSON_ARRAY()) as fracciones from tbl2_despachos_det tdd where tdd.id_despacho_CAB = ?`,[id])
-      console.log("Informacion de la cabecera:",cabecera)
+      console.log("Informacion de la cabeceras:",cabecera)
 
       if(cabecera[0].tipo !== 'PEDIDOS'){
         console.log("El tipo de despacho es diferente a pedidos")
@@ -2653,7 +2653,7 @@ export class ProduccionModel {
             almacen_destino: 509,
             articulos: JSON.stringify(articulos),
           };
-          console.log("El detalle a insertar es el siguiente:",data_comprobante)
+          console.log("El detalle a insertar es el siguienteS:",data_comprobante)
           let res_mov = await AlmacenModel.saveMovimiento(data_comprobante,conn)
           if(!res_mov.ok) throw new Error(res_mov.message)
         }

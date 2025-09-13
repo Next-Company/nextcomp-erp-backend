@@ -434,7 +434,7 @@ export class ProductosService{
       }
     }
   }
-  static async getProductosConStock(search){
+  static async getProductosConStock_back(search){
     const conn = await mysql.createConnection(configs[1]);
     await conn.connect();
     try {
@@ -476,6 +476,149 @@ export class ProductosService{
               ((tt.idx = ts.idx_talla)))
           join BD_FACTURADOR.tbl2_condicion tcn on
               ((tcn.condicion = ts.estado)))
+          where
+              (tp.ruc_ = '20522094120') -- and tp.tipo in ('I','A')
+        ) as cc
+        where 1=1 ${extra} 
+        limit 100
+      `);
+      console.log(rows);
+      return rows;
+    }
+    catch(e){
+      console.log(e);
+    }
+    finally{
+      await conn.end();
+    }
+  }
+
+  // INGRESO Y SALIDA DE MERCADERIA
+  // ingreso/salida de productos nuevos sin lote ni stock
+  // ingreso/salida de productos en almacen con lote con/sin stock
+  // ------------------------------
+  // NUEVO REQUERIMIENTO DE MERCADERIA
+  // pedido de productos nuevos(s/n talla, s/c color, etc)
+  // pedido de productos antiguos(talla,color,lote,stock)
+  // ------------------------------
+  // RETIRO DE MATERIALES POR ORDEN DE PRODUCCION
+  // carga manual de productos por lote talla y color
+
+  static async getProductosDetalle(){
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect()
+      conn.beginTransaction()
+      
+      let [lista] = await conn.execute("select *from tbl2_productos where ruc_ = '20522094120'")
+      let [consulta,fields1] = await conn.execute("select *from tbl2_productos where nom like '%?%' and marca  like '%?%'",[PRODUCT,'ELENEX'])
+
+      consulta.reduce((c,v)=>{
+        lista.nom == v.nom ? c.push({ok:false,nom:v.nom}) : c.push({ok:true,nom:v.nom})
+        return c
+      },[])
+
+      const [rows,fields2] = await conn.execute(`
+        select *
+        from
+        (
+          select
+              tp.idx AS id_producto_CAB,
+              tp.codigo AS cod_producto,
+              tp.tipo AS tipo,
+              tp.det AS det,
+              tp.nom AS producto,
+              tr.nom AS rubro,
+              tp.temporada AS temporada,
+              tp.estilo AS estilo,
+              round((tp.costo + ((tp.utilidad1 * tp.costo) / 100)), 1) AS precio,
+              tp.presentacion AS presentacion,
+              tp.marca AS marca,
+              tp.modelo AS modelo,
+              tc.idx AS idx_color,
+              upper(tc.nom) AS color,
+              tt.idx AS idx_talla,
+              upper(tt.detalle) AS talla,
+              tcn.condicion AS condicion,
+              ts.idx AS idxsub,
+              ts.sku AS sku2
+          from
+              BD_FACTURADOR.tbl2_productos tp
+          left join BD_FACTURADOR.tbl2_subproductos ts on
+              tp.idx = ts.idx_CAB_PROD
+          
+          join BD_FACTURADOR.tbl2_colores tc on
+              tc.idx = ts.idx_CAB_COLOR
+          join BD_FACTURADOR.tbl2_rubros tr on
+              tp.RUBROS = tr.idx
+          join BD_FACTURADOR.tbl2_tallas tt on
+              tt.idx = ts.idx_talla
+          join BD_FACTURADOR.tbl2_condicion tcn on
+              tcn.condicion = ts.estado
+          where
+              (tp.ruc_ = '20522094120') -- and tp.tipo in ('I','A')
+        ) as cc
+        where 1=1 ${extra} 
+        limit 100
+      `);
+
+
+      conn.commit()
+    } catch (error) {
+      conn.rollback()
+    }    
+  }
+  static async getProductosConStock(){
+
+  }
+  static async getProductosFull(){
+
+  }
+
+  static async getProductosConStock(search){
+    const conn = await mysql.createConnection(configs[1]);
+    await conn.connect();
+    try {
+      let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(COALESCE(TRIM(producto),''),' ',COALESCE(TRIM(color),''),' ',COALESCE(TRIM(modelo),''),' ',COALESCE(TRIM(marca),''),' ',COALESCE(TRIM(presentacion),''))) > 0").join(" ") : ""
+
+      const [rows,fields] = await conn.execute(`
+        select *
+        from
+        (
+          select
+              tp.idx AS id_producto_CAB,
+              tp.codigo AS cod_producto,
+              tp.tipo AS tipo,
+              tp.det AS det,
+              tp.nom AS producto,
+              tr.nom AS rubro,
+              tp.temporada AS temporada,
+              tp.estilo AS estilo,
+              round((tp.costo + ((tp.utilidad1 * tp.costo) / 100)), 1) AS precio,
+              tp.presentacion AS presentacion,
+              tp.marca AS marca,
+              tp.modelo AS modelo,
+              tc.idx AS idx_color,
+              upper(tc.nom) AS color,
+              tt.idx AS idx_talla,
+              upper(tt.detalle) AS talla,
+              tcn.condicion AS condicion,
+              ts.idx AS idxsub,
+              ts.sku AS sku2
+          from
+              BD_FACTURADOR.tbl2_productos tp
+          left join BD_FACTURADOR.tbl2_subproductos ts on
+              tp.idx = ts.idx_CAB_PROD
+          
+          join BD_FACTURADOR.tbl2_colores tc on
+              tc.idx = ts.idx_CAB_COLOR
+          join BD_FACTURADOR.tbl2_rubros tr on
+              tp.RUBROS = tr.idx
+          join BD_FACTURADOR.tbl2_tallas tt on
+              tt.idx = ts.idx_talla
+          join BD_FACTURADOR.tbl2_condicion tcn on
+              tcn.condicion = ts.estado
           where
               (tp.ruc_ = '20522094120') -- and tp.tipo in ('I','A')
         ) as cc

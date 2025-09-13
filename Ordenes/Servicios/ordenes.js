@@ -953,7 +953,7 @@ export class OrdenesModel {
       if(base_delete.length > 0){
         console.log("Dentro de seccion 3")
         for(let corte of [...base_delete]){
-          await conn.query("DELETE t1,t2,t3 FROM tbl2_fases_prod_hojacorte t1 JOIN tbl2_fases_prod_hojacorte_combos t2 ON t1.idx = t2.id_hojacorte_CAB JOIN tbl2_fases_prod_hojacorte_combos_fracciones t3 ON t2.idx = t3.id_combo_CAB WHERE t1.idx = ? and t1.id_cab_orden = ?",[corte.idx,id_orden])
+          await conn.query("DELETE t1,t2,t3 FROM tbl2_fases_prod_hojacorte t1 LEFT JOIN tbl2_fases_prod_hojacorte_combos t2 ON t1.idx = t2.id_hojacorte_CAB LEFT JOIN tbl2_fases_prod_hojacorte_combos_fracciones t3 ON t2.idx = t3.id_combo_CAB WHERE t1.idx = ? and t1.id_cab_orden = ?",[corte.idx,id_orden])
         }
       }
 
@@ -962,8 +962,8 @@ export class OrdenesModel {
       console.log("Verificando la informacion de corte :",verificar)
 
       console.log("Terminando el actulizado de corte")
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito' }
     } catch (err) {
       console.log(err)
