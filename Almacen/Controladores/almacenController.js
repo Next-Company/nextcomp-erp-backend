@@ -29,6 +29,11 @@ export default class AlmacenController{
     const data = await AlmacenModel.saveGuia(info)
     reply.send(data)
   }
+  static async saveMovimiento(req,reply){
+    let info = req.body
+    const data = await AlmacenModel.saveMovimiento(info)
+    reply.send(data)
+  }
   static async deleteGuia(req,reply){
     let id = req.params.idguia
     const data = await AlmacenModel.deleteGuia(id)

@@ -201,6 +201,107 @@ export default class AlmacenModel{
       if(conn) await conn.end()
     }
   }
+  static async saveMovimiento(data){
+    let conn = undefined
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect()
+      conn.beginTransaction()
+
+      console.log("La info recibida es:",data)
+      let cabecera = JSON.parse(data.info)
+      let detalle = JSON.parse(data.detalle)
+      console.log("La informacion de la cebecra es:",cabecera)
+      console.log("La informacion del detalle es:",detalle)
+
+      // Obtener cod_cuenta
+      const cod_cnta = 20;
+      const tip_prod_cdp = 2;
+      const serie_prod = 0;
+
+      // Insertar en tbl_kard_compras_CAB
+      const data_guia = {
+        ruc: '20522094120',
+        tip_DOC: tip_prod_cdp,
+        serie_DOC: serie_prod,
+        num_doc_CDP: 0,
+        Nro_Doc_Prov: cabecera.ruc,
+        Raz_social_DOC: cabecera.proveedor,
+        Dir_DOC: '',
+        Suc_Tienda: 509,
+        observaciones: cabecera.observaciones,
+        fec_Reg_DOC: cabecera.fec_emision.split('-').reverse().join('/'),
+        fec_Emision_DOC: cabecera.fec_emision.split('-').reverse().join('/'),
+        idx_usu: 0,
+        tipomov: cabecera.tipo_operacion,
+        id_requerimiento: parseInt(cabecera.id_pedido_origen ?? 0),
+        id_modelo: parseInt(cabecera.id_modelo ?? 0)
+      };
+      console.log("El detalle a insertar es:",data_guia)
+      const [resultGuia] = await conn.execute(
+        `INSERT INTO tbl_kard_compras_CAB (${Object.keys(data_guia).join(',')}) VALUES (${Object.keys(data_guia).map(() => '?').join(',')})`,
+        Object.values(data_guia)
+      );
+      const id_guia = resultGuia.insertId;
+
+      for(let element of detalle){
+        const data_guia_det = {
+          ruc: '20522094120',
+          id_CAB_DET: id_guia,
+          id_producto_DET: parseInt(element.id_producto_CAB),
+          Cod_producto_DET: '',
+          Cant_producto_DET: 0,
+          Cant_despacho_DET: parseFloat(element.despacho),
+          Suc_Tienda: 509,
+          Precio_Unid_Det: 0,
+          id_subprod: parseInt(element.id_subprod_CAB)
+        };
+        const [resultGuiaDet] = await conn.execute(
+          `INSERT INTO tbl_kard_compras_DET (${Object.keys(data_guia_det).join(',')}) VALUES (${Object.keys(data_guia_det).map(() => '?').join(',')})`,
+          Object.values(data_guia_det)
+        );
+        // value.idx = value.idx;
+        // detalle[key].idx = value.idx;
+      }
+
+      // Preparar data_comprobantE
+      let [busqueda] = await conn.execute("SELECT *FROM tbl2_cptes_ordenes_tipo WHERE idx = ?",[parseInt(cabecera.tipo_operacion)])
+
+      const articulos = detalle.map(item=>({
+        producto:item.producto,
+        id_producto_CAB:item.id_producto_CAB,
+        almacen_destino:'',
+        id_subprod_CAB:'',
+        lote:0,
+        tipo:''
+      }))
+
+      const data_comprobante = {
+        id_comprobante_CAB: busqueda[0].idx,
+        cod_comprobante: busqueda[0].codigo,
+        num_comprobante: parseInt(busqueda[0].correlativo) + 1,
+        observaciones: cabecera.observaciones,
+        idx_documento_asoc: id_guia,
+        lote: cabecera.id_pedido_origen ?? 0,
+        origen: 'KARD',
+        almacen_destino: 509,
+        articulos: JSON.stringify(detalle),
+      };
+      console.log("El detalle a insertar es el siguiente:",data_comprobante)
+      // let res_mov = await AlmacenModel.saveMovimiento(data_comprobante,conn)
+      // if(!res_mov.ok) throw new Error(res_mov.message)
+
+      if(conn) conn.rollback()
+      // if(conn) conn.commit()
+      return {ok:true,message:'Guardado exitoso'}
+    } catch (error) {
+      console.log(error)
+      if(conn) conn.rollback()
+      return {ok:false,message:error.message ?? error}
+    } finally {
+      if(conn) await conn.end()
+    }
+  }
   static async saveGuia(data){
     let conn = undefined
     try {

@@ -7,6 +7,7 @@ import { Client } from "basic-ftp"
 // import { OtherTarget } from "puppeteer-core";
 // import { concat } from "puppeteer-core/lib/esm/third_party/rxjs/rxjs.js";
 import { OrdenesModel } from "../Servicios/ordenes.js";
+import { Console } from "node:console";
 
 export class OrdenesController {
   static async getOrdenes(req, reply) {
@@ -1005,10 +1006,14 @@ export class OrdenesController {
     // console.log("La info de la orde es:",data[0].ordenes_combos,data[0].ordenes_combos[0].fracciones)
     const data = await OrdenesModel.getInfoPrintSugerido(params.idorden)
     console.log("Info cabecera:",data)
+    try {
+      
+    
     reply.render(
       'hojacorte_A',
       {
-        nrocorte: data[0].oc.substr(4,5),
+        // nrocorte: data[0].oc.substr(4,5),
+        nrocorte: data[0].oc,
         ruta: eval(data[0].ruta_proceso).join(" - "),
         cabecera: data[0],
         helpers: {
@@ -1090,8 +1095,9 @@ export class OrdenesController {
             }else{
               consolidado = combos.map(row=>[row])
             }
-
-            let middle = consolidado.map((row,key)=>{      
+            console.log("Continua el proceso!!")
+            let middle = consolidado.map((row,key)=>{
+              console.log("La infor de row ess :",row)
               let rowspan1 = 0, rowspan2 = 0 
 
               if(consolidado[0].length > 1){
@@ -1118,12 +1124,12 @@ export class OrdenesController {
                   return c
                 },[])
               }
+              let rowspan_max = [rowspan1,rowspan2].sort((a,b)=> b - a)[0]
               let lista = Array.from({length:[rowspan1,rowspan2].sort((a,b)=> b - a)[0]})
               console.log("La lista es la siguiente:",lista)
-
-              // let filas = row.fracciones.filter(row=>parseInt(row.cantidad) > 0).map((row2,key2)=>{
+              // let filas = ['a','b','c']
               let filas = lista.map((row2,key2)=>{
-                // console.log("Producto rowspan:",consolidado.length,row.fracciones.length)
+                // console.log("INfor colores 2:",row[1].fracciones)
                 return `
                   <tr style="height:20px;">
                     ${key2 == 0 && key == 0 
@@ -1170,8 +1176,9 @@ export class OrdenesController {
                               ${row[0].cantidad_combo}
                             </div>
                           </div>
-                        </td>` 
-                      : ""
+                        </td>
+                        ` 
+                      : ``
                     }
                     <td style="text-align:center;background-color:#b5e1ff;">${row[0].fracciones[key2].talla}</td>
                     <td style="text-align:center;background-color:#dddddd;">${row[0].fracciones[key2].cantidad}</td>
@@ -1180,7 +1187,7 @@ export class OrdenesController {
                     }
                     ${consolidado[0].length > 1 && key2 == 0 
                       ? `
-                        <td rowspan='${rowspan2 ? rowspan2 : lista.length}' style="position:relative;min-width:80px;">
+                        <td rowspan='${rowspan_max ? rowspan_max : lista.length}' style="position:relative;min-width:80px;">
                           <div style="display:flex;flex-direction:column;background-color:#b5e1ff;position:absolute;top:1px;bottom:0px;left:0px;right:0px;">
                             <div style="flex:1;display:flex;justify-content:center;align-items:center;text-align:center;">
                               ${row[1].color_combo}
@@ -1196,14 +1203,14 @@ export class OrdenesController {
                     ${
                       consolidado[0].length > 1 
                       ? `
-                        <td style="text-align:center;background-color:#b5e1ff;">${row[1].fracciones.length > 0 ? row[1].fracciones[key2].talla : ''}</td>
-                        <td style="text-align:center;background-color:#dddddd;">${row[1].fracciones.length > 0 ? row[1].fracciones[key2].cantidad : ''}</td>
+                        <td style="text-align:center;background-color:#b5e1ff;">${row[1].fracciones.length > 0 ? (row[1].fracciones[key2]?.talla ?? '') : ''}</td>
+                        <td style="text-align:center;background-color:#dddddd;">${row[1].fracciones.length > 0 ? (row[1].fracciones[key2]?.cantidad ?? '') : ''}</td>
                       `
                       : ''
                     }
                     
                     ${
-                      consolidado[0].length > 1 && key2 == 0 ? materiales.map(row=>"<td rowspan='" + (rowspan2 ? rowspan2 : lista.length) +"'></td>").join("\n") : ""
+                      consolidado[0].length > 1 && key2 == 0 ? materiales.map(row=>"<td rowspan='" + (rowspan_max ? rowspan_max : lista.length) +"'></td>").join("\n") : ""
                     }
                   </tr>
                 `
@@ -1281,6 +1288,7 @@ export class OrdenesController {
           // reply.send(pdfBuffer)
           // reply.send(html)
         } catch (error) {
+          console.log(error)
           reply.status(500).send('Error al generar el PDF');
           // await browser.close();
         } finally {
@@ -1288,6 +1296,9 @@ export class OrdenesController {
         }
       }
     )
+    } catch (error) {
+      console.log(error) 
+    }
   }
   static async printSugeridoV3(req, reply) {
     const params = req.params
@@ -1532,10 +1543,10 @@ export class OrdenesController {
       }
       
     );
-
-    
-    
-
-
+  }
+  static async getCorrelativoProduccionPreview(req,res){
+    const tipo = req.params.tipo
+    let resp = await OrdenesModel.getCorrelativoProduccionPreview(tipo)
+    res.json(resp)
   }
 }

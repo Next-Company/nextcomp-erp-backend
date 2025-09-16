@@ -609,6 +609,10 @@ export class OrdenesModel {
 
         try {
           console.log("Dentro de nueva orden de produccion")
+
+          let correlativo = await OrdenesModel.getCorrelativoProduccion('ORDEN',conn)
+          info.oc = correlativo.resp
+
           const campos = Object.keys(info).reduce((carry, current) => {
             fields.filter(row => row.name !== 'idx').map(row => row.name).includes(current) && carry.push(current)
             return carry
@@ -701,8 +705,8 @@ export class OrdenesModel {
         nameimg = `op_${id}.jpg`
         // console.log(sql)
       }
-      // if (conn) conn.rollback()
-      if (conn) conn.commit()
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito',filename: nameimg }
     } catch (err) {
       console.log(err)
@@ -1368,6 +1372,40 @@ export class OrdenesModel {
       return {ok:false,message:err}
     } finally {
       if (conn) await conn.end();
+    }
+  }
+  static async getCorrelativoProduccion(tipo,conn){
+    let correlativo = null
+    try {
+      const [result] = await conn.execute("SELECT CONCAT(YEAR(NOW()),numero) as numero FROM tbl2_fases_produccion_correlativo WHERE ruc_ = ? AND anio = YEAR(NOW()) AND tipo = ? FOR UPDATE",['20522094120',tipo])
+      if(result.length == 0){
+        await conn.execute("UPDATE tbl2_fases_produccion_correlativo SET anio = YEAR(NOW()), numero = 1 WHERE ruc_ = ? AND tipo = ?",['20522094120',tipo])
+        correlativo = (new Date()).toLocaleDateString("es-MX",{year:"numeric"}) + '000001'
+      } else{
+        correlativo = result[0].numero
+      }
+      await conn.execute("UPDATE tbl2_fases_produccion_correlativo SET anio = YEAR(NOW()), numero = numero + 1 WHERE ruc_ = ? AND tipo = ?",['20522094120',tipo])
+      return {ok:true,resp:correlativo}
+    } catch (error) {
+      return {ok:false,resp:0}
+    }
+  }
+  static async getCorrelativoProduccionPreview(tipo){
+    let correlativo = null
+    let conn = undefined
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect()
+      const [result] = await conn.execute("SELECT CONCAT(YEAR(NOW()),numero) as numero FROM tbl2_fases_produccion_correlativo WHERE ruc_ = ? AND anio = YEAR(NOW()) AND tipo = ? FOR UPDATE",['20522094120',tipo])
+      if(result.length == 0){
+        correlativo = (new Date()).toLocaleDateString("es-MX",{year:"numeric"}) + '000001'
+      } else{
+        correlativo = result[0].numero
+      }
+      return {ok:true,resp:correlativo}
+    } catch (error) {
+      console.log(error)
+      return {ok:false,resp:0}
     }
   }
 }

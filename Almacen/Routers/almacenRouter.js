@@ -12,6 +12,7 @@ ALMACEN_ROUTER.get('/listarinventario/:search',AlmacenController.getInventarioPr
 
 ALMACEN_ROUTER.get('/getguiamovimiento/:idmov',AlmacenController.getGuia)
 ALMACEN_ROUTER.put('/saveguiamovimiento',AlmacenController.saveGuia)
+ALMACEN_ROUTER.put('/savemovimiento',AlmacenController.saveMovimiento)
 ALMACEN_ROUTER.delete('/deleteguiamov/:idguia',AlmacenController.deleteGuia)
 
 

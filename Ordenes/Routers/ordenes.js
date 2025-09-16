@@ -27,3 +27,5 @@ ordenesRouter.get("/lizzet/:id",OrdenesController.regulaLizzet)
 ordenesRouter.get("/printhojacorte/:idorden",OrdenesController.printHojaCorte)
 // ordenesRouter.get("/printsugerido/:idorden",OrdenesController.printSugeridoV3)
 
+ordenesRouter.get("/getCorrelativoProduccionPreview/:tipo",OrdenesController.getCorrelativoProduccionPreview)
+
