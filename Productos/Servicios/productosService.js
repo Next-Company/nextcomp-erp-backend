@@ -582,45 +582,44 @@ export class ProductosService{
     try {
       let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(COALESCE(TRIM(producto),''),' ',COALESCE(TRIM(color),''),' ',COALESCE(TRIM(modelo),''),' ',COALESCE(TRIM(marca),''),' ',COALESCE(TRIM(presentacion),''))) > 0").join(" ") : ""
 
-      const [rows,fields] = await conn.execute(`
+      // tp.idx AS id_producto_CAB,
+      // tp.codigo AS cod_producto,
+      // tp.tipo AS tipo,
+      // tp.det AS det,
+      // tp.nom AS producto,
+      // tr.nom AS rubro,
+      // tp.temporada AS temporada,
+      // tp.estilo AS estilo,
+      // round((tp.costo + ((tp.utilidad1 * tp.costo) / 100)), 1) AS precio,
+      // tp.presentacion AS presentacion,
+      // tp.marca AS marca,
+      // tp.modelo AS modelo,
+      // tc.idx AS idx_color,
+      // upper(tc.nom) AS color,
+      // tt.idx AS idx_talla,
+      // upper(tt.detalle) AS talla,
+      // tcn.condicion AS condicion,
+      // ts.idx AS idxsub,
+      // ts.sku AS sku2
+
+      const [rows] = await conn.execute(`
         select *
         from
         (
           select
-              tp.idx AS id_producto_CAB,
-              tp.codigo AS cod_producto,
-              tp.tipo AS tipo,
-              tp.det AS det,
-              tp.nom AS producto,
-              tr.nom AS rubro,
-              tp.temporada AS temporada,
-              tp.estilo AS estilo,
-              round((tp.costo + ((tp.utilidad1 * tp.costo) / 100)), 1) AS precio,
-              tp.presentacion AS presentacion,
-              tp.marca AS marca,
-              tp.modelo AS modelo,
-              tc.idx AS idx_color,
-              upper(tc.nom) AS color,
-              tt.idx AS idx_talla,
-              upper(tt.detalle) AS talla,
-              tcn.condicion AS condicion,
-              ts.idx AS idxsub,
-              ts.sku AS sku2
-          from
-              BD_FACTURADOR.tbl2_productos tp
-          left join BD_FACTURADOR.tbl2_subproductos ts on
-              tp.idx = ts.idx_CAB_PROD
-          
-          join BD_FACTURADOR.tbl2_colores tc on
-              tc.idx = ts.idx_CAB_COLOR
-          join BD_FACTURADOR.tbl2_rubros tr on
-              tp.RUBROS = tr.idx
-          join BD_FACTURADOR.tbl2_tallas tt on
-              tt.idx = ts.idx_talla
-          join BD_FACTURADOR.tbl2_condicion tcn on
-              tcn.condicion = ts.estado
-          where
-              (tp.ruc_ = '20522094120') -- and tp.tipo in ('I','A')
+            tp.idx as idx_prod,
+            ts.idx as idx_subprod,
+            tp.nom as producto,
+            ts.idx_CAB_COLOR,
+            (select tc.nom from tbl2_colores tc where tc.idx = ts.idx_CAB_COLOR) as color,
+            ts.idx_talla,
+            (select tt.detalle from tbl2_tallas tt where tt.idx = ts.idx_talla) as talla,
+            tad.lote,
+            tad.cantidad as stock
+            from tbl2_productos tp
+            left join tbl2_subproductos ts on tp.idx = ts.idx_CAB_PROD
+            left join tbl2_almacen_det tad on tad.idx_subproducto = ts.idx and tad.id_cabprod = ts.idx_CAB_PROD
+          where tp.ruc_ = '20522094120' and tp.tipo in ('I','A') and ts.idx_CAB_COLOR is not null
         ) as cc
         where 1=1 ${extra} 
         limit 100

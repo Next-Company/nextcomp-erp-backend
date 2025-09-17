@@ -68,6 +68,7 @@ produccionRouter.delete('/borrarestampado/:id', ProduccionController.eliminarInf
 produccionRouter.post('/exportdespacho/:id/:idguia', ProduccionController.exportInfoDespacho)
 produccionRouter.get('/verdespachoguia/:id/:idguia/:condicion', ProduccionController.verInfoDespachoGuia)
 produccionRouter.get('/verdespachomuestra/:id/:idguia/:condicion', ProduccionController.verInfoDespachoMuestra)
+produccionRouter.get('/verdespachopedido/:id/:idpedido/:condicion', ProduccionController.verInfoDespachoPedido)
 
 produccionRouter.post('/busqueda', ProduccionController.getOrdenesByParams)
 produccionRouter.get('/getordenesbyid/:id', ProduccionController.getOrdenesById)

@@ -332,6 +332,114 @@ export class ProduccionController {
     }
 
   }
+  static async verInfoDespachoPedido(req, resp) {
+    console.log("Dentro del proceso ver info despacho pedido")
+    const params = req.params
+    console.log("Los paramentros del despacho por pedido es:",params)
+    const data = await ProduccionModel.getInfoPedidoCab(params.idpedido)
+    console.log("Mostrando informacin de la guia:",data)
+
+    let data2 = await ProduccionModel.getInfoDespachoDet(params.id,'PEDIDOS')
+    console.log("Mostrando la informacion del detalle del despacho:",data2)
+    // console.log("Reestructurando la variable data2",data2.map(row=>row.fracciones_despacho))
+    // resp.status(200).send("Reporte generado con exito")
+    // return 0
+    try {
+      // data2 = data2.filter(row=>row.fracciones_despacho.length > 0).reduce((c,v)=>{
+
+      //   let lista = ['cantidad','caidos','incompletos']
+      //   let tallas = ['xs','s','m','l','xl','xxl']
+      //   v.fracciones_despacho = ['xs','s','m','l','xl','xxl'].reduce((c3,v3)=>{
+      //     c3.push(v.fracciones_despacho.filter(row=>row['talla'] == v3)[0])
+      //     return c3
+      //   },[])
+      //   v.fracciones_despacho_cantidad = v.fracciones_despacho.map(row=>row['cantidad'])
+      //   console.log("Fracciones despacho :",v.fracciones_despacho)
+      //   let nuevo = lista.reduce((c2,v2) => {
+      //     let newnames = {cantidad:'Despacho',caidos:'Caidos',incompletos:'Incompletos'}
+      //     c2.push([newnames[v2],...v.fracciones_despacho.map(row=>row[v2]),'-',v.fracciones_despacho.map(row=>row[v2]).reduce((c,v)=>c+v,0)])
+      //     return c2
+      //   },[]);
+      //   console.log("Nuefo formateddo:",nuevo)
+      //   // let new_fracciones = 
+      //   c.push({...v,new_fracciones:nuevo})
+      //   return c
+      // },[])
+
+      const data3 = data[0].id_proveedor_CAB ? await ProduccionModel.searchProveedorById(data[0].id_proveedor_CAB) : [{ nom: data[0].responsable, ruc: '', direccion: data[0].destino }]
+      resp.render(
+        'guia_despacho_pedido',
+        {
+          color: 'black',
+          info: params,
+          cabecera: data[0],
+          detalle: data2,
+          date: (new Date(data[0].created_at)).toLocaleDateString('en-GB'),
+          time: (new Date(data[0].created_at)).toLocaleTimeString('en-GB'),
+          idguia: `${params.id}`.padStart(10, 0),
+          idref: `${data[0].idx}`.padStart(10, 0),
+          totalunid: data2.reduce((carry, valor) => {
+            carry += parseFloat(valor.cantidad)
+            return carry;
+          }, 0),
+          // totalunid: data2.reduce((carry, valor) => {
+          //   carry += valor.isprototipo ? 0 : parseFloat(valor.cantidad)
+          //   return carry;
+          // }, 0),
+          totaldespacho: data2.reduce((carry, valor) => {
+            carry += parseFloat(valor.despacho)
+            return carry;
+          }, 0).toFixed(2),
+          totalcaidos: 0,
+          totalincompletos: 0,
+          proveedor: data3[0],
+          helpers: {
+            plusindex(index) {
+              return index + 1
+            }
+          }
+        }
+        ,async (err, html) => {
+          try {  
+            console.log("La condicion de busqueda es la siguiente:",params.condicion)
+            if(params.condicion == 2){
+              console.log("Dentro de la codicion 1 vista pdf")
+              const browser = await puppeteer.launch();
+              const version = await browser.version();
+              console.log(`Versión de Chrome: ${version}`);
+              const page = await browser.newPage();
+              await page.setContent(html);
+              const pdfOptions = {
+                width: '20cm',
+                height: '27.94cm',
+                landscape: true,
+                printBackground: true,
+                margin: {
+                  left: 0,
+                  right: 0
+                }
+              };
+              const pdfBuffer = await page.pdf(pdfOptions);
+              await browser.close();
+              resp.send({ data: pdfBuffer.toString('base64') })
+            }else{
+              console.log("Dentro de la condicion 2 vista html")
+              resp.send(html)
+            }
+          } catch (error) {
+            resp.status(500).send('Error al generar el PDF');
+            // await browser.close();
+          } finally {
+            // await browser.close();
+          }
+        }
+      );
+
+    } catch (err) {
+      resp.status(500).json({ error: err.message });
+    }
+
+  }
   static async verInfoDespachoMuestra(req, resp) {
     const params = req.params
     console.log("La informacion de los parametros es otro cambio:",params)
