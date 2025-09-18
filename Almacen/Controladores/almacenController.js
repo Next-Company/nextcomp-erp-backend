@@ -2,6 +2,7 @@ import AlmacenModel from "../Servicios/almacenService.js"
 import puppeteer from 'puppeteer';
 import fs from 'node:fs/promises'
 import { exit } from "node:process";
+import { ReplaySubject } from "puppeteer-core/lib/esm/third_party/rxjs/rxjs.js";
 
 export default class AlmacenController{
   static async getMovimientosAlmacen(req,reply){
@@ -29,10 +30,16 @@ export default class AlmacenController{
     const data = await AlmacenModel.saveGuia(info)
     reply.send(data)
   }
-  static async saveMovimiento(req,reply){
+  static async saveDespacho(req,reply,next){
     let info = req.body
-    const data = await AlmacenModel.saveMovimiento(info)
+    let session = req.session ?? {id:0}
+    const data = await AlmacenModel.saveDespacho(info,session)
     reply.send(data)
+    // if(data.ok){
+    //   reply.send(data)
+    // }else{
+    //   reply.status(401).send(data)
+    // }
   }
   static async deleteGuia(req,reply){
     let id = req.params.idguia

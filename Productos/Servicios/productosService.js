@@ -609,6 +609,8 @@ export class ProductosService{
           select
             tp.idx as idx_prod,
             ts.idx as idx_subprod,
+            tp.codigo,
+            tp.codUnidadMedida as unidad,
             tp.nom as producto,
             ts.idx_CAB_COLOR,
             (select tc.nom from tbl2_colores tc where tc.idx = ts.idx_CAB_COLOR) as color,

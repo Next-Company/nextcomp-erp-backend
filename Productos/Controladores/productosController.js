@@ -72,8 +72,6 @@ export class ProductosController{
     const info = await ProductosService.searchUnidad(search);
     res.send(info);
   }
-
-
   static async getProductosConStock(req,res){
     console.log("Buscando producos")
     const search = req.params.search ?? ''

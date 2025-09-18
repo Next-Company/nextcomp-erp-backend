@@ -932,7 +932,7 @@ export class OrdenesController {
               <table id="sugerido">
                 <tr style="background-color:#b5e1ff;height:10px;">
                   <th style="min-width:200px;">FOTO DE PRENDA</th>
-                  <th style="min-width:120px;">COLOR</th>
+                  <th style="min-width:150px;">COLOR</th>
                   <th style="">TALLA</th>
                   <th style="">UND</th>
                   ${
@@ -1169,8 +1169,10 @@ export class OrdenesController {
                       ? `
                         <td rowspan='${rowspan1 ? rowspan1 : lista.length}' style="position:relative;min-width:80px;">
                           <div style="display:flex;flex-direction:column;position:absolute;top:1px;bottom:1px;left:1px;right:1px;background-color:#b5e1ff;">
-                            <div style="flex:1;display:flex;justify-content:center;align-items:center;text-align:center;">
-                              ${row[0].color_combo}
+                            <div style="flex:1;display:flex;flex-direction:column;justify-content:center;text-align:center;vertical-align:middle;">
+                              <div>
+                                <span style="word-wrap:break-word;flex-grow:1;">${row[0].color_combo}</span>
+                              </div>
                             </div>
                             <div style="height:20%;background-color:yellow;display:flex;justify-content:center;align-items:center;">
                               ${row[0].cantidad_combo}
@@ -1223,7 +1225,7 @@ export class OrdenesController {
                 <thead style="height:80px;">
                   <tr style="background-color:#b5e1ff;">
                     <th style="min-width:200px;">FOTO DE PRENDA</th>
-                    <th style="min-width:85px;">COLOR</th>
+                    <th style="min-width:${consolidado[0].length > 1 ? '85' : '120'}px;">COLOR</th>
                     <th style="">TALLA</th>
                     <th style="">UND</th>
                     ${

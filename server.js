@@ -81,7 +81,7 @@ app.use((req, resp, next) => {
       })
       next()
     } catch (error) {
-      console.log("Error:" + error)
+      console.log("Errorf:" + error)
       let info = {
         ok: false,
         message: 'Expiro el token de session.'
@@ -108,6 +108,10 @@ app.use('/reports', ReportRouter)
 app.use('/cobros', COBROS_ROUTER)
 app.use('/caja', CAJA_ROUTER)
 app.use('/almacen', ALMACEN_ROUTER)
+
+// app.use((err,req,res,next)=>{
+//   console.log("Hola hay un error")
+// })
 
 app.listen(PORT_DEFAULT, () => {
   console.log('Servidor corriendo en el puerto ' + PORT_DEFAULT)
