@@ -610,6 +610,7 @@ export class ProductosService{
             tp.idx as idx_prod,
             ts.idx as idx_subprod,
             tp.codigo,
+            tp.tipo,
             tp.codUnidadMedida as unidad,
             tp.nom as producto,
             ts.idx_CAB_COLOR,

@@ -5,6 +5,11 @@ import { exit } from "node:process";
 import { ReplaySubject } from "puppeteer-core/lib/esm/third_party/rxjs/rxjs.js";
 
 export default class AlmacenController{
+  static async getListaAlmacenes(req,reply){
+    const search = req.params.search ?? ''
+    const data = await AlmacenModel.getListaAlmacenes(search)
+    reply.send(data)
+  }
   static async getMovimientosAlmacen(req,reply){
     const search = req.params.search ?? ''
     const data = await AlmacenModel.getMovimientosAlmacen(search)
@@ -25,6 +30,11 @@ export default class AlmacenController{
     const data = await AlmacenModel.getGuia(id)
     reply.send(data)
   }
+  static async getDespacho(req,reply){
+    let id = req.params.idmov
+    const data = await AlmacenModel.getDespacho(id)
+    reply.send(data)
+  }
   static async saveGuia(req,reply){
     let info = req.body
     const data = await AlmacenModel.saveGuia(info)
@@ -35,15 +45,15 @@ export default class AlmacenController{
     let session = req.session ?? {id:0}
     const data = await AlmacenModel.saveDespacho(info,session)
     reply.send(data)
-    // if(data.ok){
-    //   reply.send(data)
-    // }else{
-    //   reply.status(401).send(data)
-    // }
   }
   static async deleteGuia(req,reply){
     let id = req.params.idguia
     const data = await AlmacenModel.deleteGuia(id)
+    reply.send(data)
+  }
+  static async deleteDespacho(req,reply){
+    let id = req.params.idguia
+    const data = await AlmacenModel.deleteDespacho(id)
     reply.send(data)
   }
   static async getDisponibilidadRequerimiento(req,reply){
