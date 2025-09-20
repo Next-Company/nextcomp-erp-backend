@@ -772,8 +772,8 @@ export class OrdenesModel {
       //   console.log(error)
       // }
 
-      // if (conn) conn.rollback()
-      if (conn) conn.commit()
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito',filename: nameimg }
     } catch (err) {
       console.log(err)
@@ -784,6 +784,7 @@ export class OrdenesModel {
     }
   }
   static async updateFaseOrden(info, user_data) {
+    console.log("Empezando con la actualizacion de las ordenes")
     let conn
     let nameimg = null
     try {
@@ -795,6 +796,11 @@ export class OrdenesModel {
       const id = info.idx
       console.log("Empezando guardado de orodenses",info,user_data)
       const combos = JSON.parse(info.combos)
+      const insumos = JSON.parse(info.insumos)
+      const requerimientos = JSON.parse(info.requerimientos)
+
+      console.log("El listado de los insumos es :",insumos)
+      console.log("El listado de los requerimientos es :",requerimientos)
 
       const [consulta,fields] = await conn.execute("SELECT *FROM tbl2_fases_prod_ordenes WHERE idx = ?",[id])
 
@@ -809,36 +815,28 @@ export class OrdenesModel {
 
       console.log("Resultado de la actualziaoo : ",result_update)
 
-
       await conn.query("DELETE FROM tbl2_fases_prod_ordenes_combos WHERE id_orden_CAB = ?",[id])
       await conn.query("DELETE FROM tbl2_fases_prod_ordenes_combos_fracciones WHERE id_combo_CAB in (select idx from tbl2_fases_prod_ordenes_combos where id_orden_CAB = ?)",[id])
-      let recursive = async ()=>{
-        let rdata = combos.shift()
-        if(rdata){
-          // rdata --> {color_combo:'',cantidad_combo:3,xs:3,s:3,m:2,l:4,xl:1,xxl:9}
-          let [insert_info] = await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos(id_orden_CAB,color_combo,cantidad_combo) VALUES (?,?,?)",[id,rdata.color_combo,rdata.cantidad_combo])
+      for(let rdata of [...combos]){
+        let [insert_info] = await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos(id_orden_CAB,color_combo,cantidad_combo) VALUES (?,?,?)",[id,rdata.color_combo,rdata.cantidad_combo])
 
           let fracciones = ['xs','s','m','l','xl','xxl'].reduce((c,v)=>{
-            // if(parseInt(rdata[v]) > 0) c.push([insert_info.insertId,v,parseInt(rdata[v])])
             c.push([insert_info.insertId,v,parseInt(rdata[v]) > 0 ? parseInt(rdata[v]) : 0])
             return c
           },[])
           await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos_fracciones(id_combo_CAB,talla,cantidad) VALUES ?",[fracciones])
-
-          await recursive()
-        }else{
-          return Promise.resolve()
-        }
       }
-      await recursive()
-      // let combos_formateo = combos.map(row=>{
-      //   return [id,row.color_combo,row.cantidad_combo]
-      // })
-      // await conn.query("DELETE FROM tbl2_fases_prod_ordenes_combos WHERE id_orden_CAB = ?",[id])
-      // await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos(id_orden_CAB,color_combo,cantidad_combo) VALUES ?",[combos_formateo])
+
+      await conn.query("DELETE FROM tbl2_fases_prod_ordenes_insumos WHERE id_orden_CAB = ?",[id])
+      for(let insumo of [...insumos]){
+        await conn.query("INSERT INTO tbl2_fases_prod_ordenes_insumos(id_orden_CAB,id_producto_CAB,id_subprod_CAB,cantidad) VALUES (?,?,?,?)",[id,insumo.id_producto_CAB,insumo.id_subprod_CAB,insumo.cantidad])
+      }
+      await conn.query("DELETE FROM tbl2_fases_prod_ordenes_requerimientos WHERE id_orden_CAB = ?",[id])
+      for(let requerimiento of [...requerimientos]){
+        await conn.query("INSERT INTO tbl2_fases_prod_ordenes_requerimientos(id_orden_CAB,id_pedido_CAB) VALUES (?,?)",[id,requerimiento.id_pedido_CAB])
+      }
 
       nameimg = `op_${id}.jpg`
-      // console.log(sql)
       if (conn) conn.rollback()
       // if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito',filename: nameimg }

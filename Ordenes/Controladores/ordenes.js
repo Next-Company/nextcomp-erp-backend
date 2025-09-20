@@ -144,7 +144,7 @@ export class OrdenesController {
     const imagenes = req.files
     const info = req.body
     const user_data = req.session
-    const data = await OrdenesModel.saveFaseOrden(info, user_data)
+    const data = await OrdenesModel.updateFaseOrden(info, user_data)
 
     async function example(ruta,filename) {
       const client = new Client()
