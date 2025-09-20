@@ -587,7 +587,7 @@ export class OrdenesModel {
       if (conn) await conn.end();
     }
   }
-  static async saveFaseOrden(info, user_data) {
+  static async saveFaseOrden_backup(info, user_data) {
     let conn
     let nameimg = null
     try {
@@ -705,6 +705,140 @@ export class OrdenesModel {
         nameimg = `op_${id}.jpg`
         // console.log(sql)
       }
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
+      return { ok: true, mensaje: 'Guardado con exito',filename: nameimg }
+    } catch (err) {
+      console.log(err)
+      if (conn) conn.rollback()
+      return { ok: false, mensaje: err.message,filename: nameimg }
+    } finally {
+      if (conn) await conn.end();
+    }
+  }
+  static async saveFaseOrden(info, user_data) {
+    let conn
+    let nameimg = null
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      conn.beginTransaction()
+
+      const id = info.idx
+      console.log("Empezando guardado de orodenses",info,user_data)
+      const combos = JSON.parse(info.combos)
+      const insumos = JSON.parse(info.insumos)
+      const requerimientos = JSON.parse(info.requerimientos)
+
+      const [consulta,fields] = await conn.execute("SELECT *FROM tbl2_fases_prod_ordenes WHERE idx = ?",[id])
+      let [validacion] = await conn.query(`SELECT *FROM tbl2_fases_prod_ordenes tfpo WHERE tfpo.oc = ?`,[info.oc])
+      if(validacion.length > 0) throw new Error("La oc ingresada ya se encuentra registrada. Por favor verifique.")
+
+      console.log("Dentro de nueva orden de produccion")
+
+      let correlativo = await OrdenesModel.getCorrelativoProduccion('ORDEN',conn)
+      info.oc = correlativo.resp
+
+      const campos = Object.keys(info).reduce((carry, current) => {
+        fields.filter(row => row.name !== 'idx').map(row => row.name).includes(current) && carry.push(current)
+        return carry
+      }, [])
+      const values = campos.map(row => info[row])
+      const [result] = await conn.execute('INSERT INTO tbl2_fases_prod_ordenes(' + campos.toString() + ') VALUES (' + campos.map(row => "NULLIF(?, '')").toString() + ')', values)
+      const idinsert = result.insertId
+
+      for(let combo of [...combos]){
+        console.log("Ejecutando nuevamente",combo)
+        let [insert_combo] = await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos(id_orden_CAB,color_combo,cantidad_combo) VALUES (?,?,?)",[idinsert,combo.color_combo,combo.cantidad_combo])
+
+        let fraccionado = [];
+        ['xs','s','m','l','xl','xxl'].reduce((c,v)=>{
+          c.push([insert_combo.insertId,v,parseInt(combo[v]) > 0 ? parseInt(combo[v]) : 0])
+          return c
+        },fraccionado)
+        console.log("Imprimiento fraccionado",fraccionado)
+
+        await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos_fracciones(id_combo_CAB,talla,cantidad) values ?",[fraccionado])
+      }
+      for(let insumo of [...insumos]){
+        await conn.query("INSERT INTO tbl2_fases_prod_ordenes_insumos(id_orden_CAB,id_producto_CAB,id_subprod_CAB,cantidad) VALUES (?,?,?,?)",[idinsert,insumo.id_producto_CAB,insumo.id_subprod_CAB,insumo.cantidad])
+      }
+      for(let requerimiento of [...requerimientos]){
+        await conn.query("INSERT INTO tbl2_fases_prod_ordenes_requerimientos(id_orden_CAB,id_pedido_CAB) VALUES (?,?)",[idinsert,requerimiento.id_pedido_CAB])
+      }
+      nameimg = `op_${idinsert}.jpg`
+      // try {
+      // } catch (error) {
+      //   console.log(error)
+      // }
+
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
+      return { ok: true, mensaje: 'Guardado con exito',filename: nameimg }
+    } catch (err) {
+      console.log(err)
+      if (conn) conn.rollback()
+      return { ok: false, mensaje: err.message,filename: nameimg }
+    } finally {
+      if (conn) await conn.end();
+    }
+  }
+  static async updateFaseOrden(info, user_data) {
+    let conn
+    let nameimg = null
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      conn.beginTransaction()
+
+      let sql = ''
+      const id = info.idx
+      console.log("Empezando guardado de orodenses",info,user_data)
+      const combos = JSON.parse(info.combos)
+
+      const [consulta,fields] = await conn.execute("SELECT *FROM tbl2_fases_prod_ordenes WHERE idx = ?",[id])
+
+      let newid = null
+      const campos = Object.keys(info).reduce((carry, current) => {
+        fields.filter(row => row.name !== 'idx').map(row => row.name).includes(current) && carry.push(current)
+        return carry
+      }, [])
+      const values = campos.map(row => info[row])
+      console.log("Informacion de campos :",campos)
+      let result_update = await conn.query('UPDATE tbl2_fases_prod_ordenes SET ' + campos.map(row => row + " = NULLIF(?,'')").toString() + ' WHERE idx = ' + id,values)
+
+      console.log("Resultado de la actualziaoo : ",result_update)
+
+
+      await conn.query("DELETE FROM tbl2_fases_prod_ordenes_combos WHERE id_orden_CAB = ?",[id])
+      await conn.query("DELETE FROM tbl2_fases_prod_ordenes_combos_fracciones WHERE id_combo_CAB in (select idx from tbl2_fases_prod_ordenes_combos where id_orden_CAB = ?)",[id])
+      let recursive = async ()=>{
+        let rdata = combos.shift()
+        if(rdata){
+          // rdata --> {color_combo:'',cantidad_combo:3,xs:3,s:3,m:2,l:4,xl:1,xxl:9}
+          let [insert_info] = await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos(id_orden_CAB,color_combo,cantidad_combo) VALUES (?,?,?)",[id,rdata.color_combo,rdata.cantidad_combo])
+
+          let fracciones = ['xs','s','m','l','xl','xxl'].reduce((c,v)=>{
+            // if(parseInt(rdata[v]) > 0) c.push([insert_info.insertId,v,parseInt(rdata[v])])
+            c.push([insert_info.insertId,v,parseInt(rdata[v]) > 0 ? parseInt(rdata[v]) : 0])
+            return c
+          },[])
+          await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos_fracciones(id_combo_CAB,talla,cantidad) VALUES ?",[fracciones])
+
+          await recursive()
+        }else{
+          return Promise.resolve()
+        }
+      }
+      await recursive()
+      // let combos_formateo = combos.map(row=>{
+      //   return [id,row.color_combo,row.cantidad_combo]
+      // })
+      // await conn.query("DELETE FROM tbl2_fases_prod_ordenes_combos WHERE id_orden_CAB = ?",[id])
+      // await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos(id_orden_CAB,color_combo,cantidad_combo) VALUES ?",[combos_formateo])
+
+      nameimg = `op_${id}.jpg`
+      // console.log(sql)
       if (conn) conn.rollback()
       // if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito',filename: nameimg }
@@ -1377,10 +1511,10 @@ export class OrdenesModel {
   static async getCorrelativoProduccion(tipo,conn){
     let correlativo = null
     try {
-      const [result] = await conn.execute("SELECT CONCAT(YEAR(NOW()),numero) as numero FROM tbl2_fases_produccion_correlativo WHERE ruc_ = ? AND anio = YEAR(NOW()) AND tipo = ? FOR UPDATE",['20522094120',tipo])
+      const [result] = await conn.execute("SELECT CONCAT(DATE_FORMAT(NOW(),'%y'),SUBSTRING(numero,-5,5)) as numero FROM tbl2_fases_produccion_correlativo WHERE ruc_ = ? AND anio = YEAR(NOW()) AND tipo = ? FOR UPDATE",['20522094120',tipo])
       if(result.length == 0){
         await conn.execute("UPDATE tbl2_fases_produccion_correlativo SET anio = YEAR(NOW()), numero = 1 WHERE ruc_ = ? AND tipo = ?",['20522094120',tipo])
-        correlativo = (new Date()).toLocaleDateString("es-MX",{year:"numeric"}) + '000001'
+        correlativo = (new Date()).toLocaleDateString("es-MX",{year:"numeric"}) + '00001'
       } else{
         correlativo = result[0].numero
       }
@@ -1396,9 +1530,9 @@ export class OrdenesModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect()
-      const [result] = await conn.execute("SELECT CONCAT(YEAR(NOW()),numero) as numero FROM tbl2_fases_produccion_correlativo WHERE ruc_ = ? AND anio = YEAR(NOW()) AND tipo = ? FOR UPDATE",['20522094120',tipo])
+      const [result] = await conn.execute("SELECT CONCAT(DATE_FORMAT(NOW(),'%y'),SUBSTRING(numero,-5,5)) as numero FROM tbl2_fases_produccion_correlativo WHERE ruc_ = ? AND anio = YEAR(NOW()) AND tipo = ? FOR UPDATE",['20522094120',tipo])
       if(result.length == 0){
-        correlativo = (new Date()).toLocaleDateString("es-MX",{year:"numeric"}) + '000001'
+        correlativo = (new Date()).toLocaleDateString("es-MX",{year:"numeric"}) + '00001'
       } else{
         correlativo = result[0].numero
       }
@@ -1408,4 +1542,38 @@ export class OrdenesModel {
       return {ok:false,resp:0}
     }
   }
+  // static async getCorrelativoProduccion(tipo,conn){
+  //   let correlativo = null
+  //   try {
+  //     const [result] = await conn.execute("SELECT CONCAT(YEAR(NOW()),numero) as numero FROM tbl2_fases_produccion_correlativo WHERE ruc_ = ? AND anio = YEAR(NOW()) AND tipo = ? FOR UPDATE",['20522094120',tipo])
+  //     if(result.length == 0){
+  //       await conn.execute("UPDATE tbl2_fases_produccion_correlativo SET anio = YEAR(NOW()), numero = 1 WHERE ruc_ = ? AND tipo = ?",['20522094120',tipo])
+  //       correlativo = (new Date()).toLocaleDateString("es-MX",{year:"numeric"}) + '000001'
+  //     } else{
+  //       correlativo = result[0].numero
+  //     }
+  //     await conn.execute("UPDATE tbl2_fases_produccion_correlativo SET anio = YEAR(NOW()), numero = numero + 1 WHERE ruc_ = ? AND tipo = ?",['20522094120',tipo])
+  //     return {ok:true,resp:correlativo}
+  //   } catch (error) {
+  //     return {ok:false,resp:0}
+  //   }
+  // }
+  // static async getCorrelativoProduccionPreview(tipo){
+  //   let correlativo = null
+  //   let conn = undefined
+  //   try {
+  //     conn = await mysql.createConnection(configs[1])
+  //     await conn.connect()
+  //     const [result] = await conn.execute("SELECT CONCAT(YEAR(NOW()),numero) as numero FROM tbl2_fases_produccion_correlativo WHERE ruc_ = ? AND anio = YEAR(NOW()) AND tipo = ? FOR UPDATE",['20522094120',tipo])
+  //     if(result.length == 0){
+  //       correlativo = (new Date()).toLocaleDateString("es-MX",{year:"numeric"}) + '000001'
+  //     } else{
+  //       correlativo = result[0].numero
+  //     }
+  //     return {ok:true,resp:correlativo}
+  //   } catch (error) {
+  //     console.log(error)
+  //     return {ok:false,resp:0}
+  //   }
+  // }
 }

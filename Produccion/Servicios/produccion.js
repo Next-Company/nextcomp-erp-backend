@@ -128,6 +128,15 @@ export class ProduccionModel {
       
       const [moldes] = await conn.query('SELECT tb1.* FROM tbl2_fases_prod_molde tb1 WHERE tb1.id_cab_orden = ?',[info.id]);
       const [materiales] = await conn.query('SELECT tb1.* FROM tbl2_fases_prod_materiales tb1 WHERE tb1.id_cab_orden = ?',[info.id]);
+      const [insumos] = await conn.query(`select t2.nom as producto,t2.talla,(select nom from tbl2_colores tc where tc.idx = t2.idx_CAB_COLOR) as color,t1.*
+      from tbl2_fases_prod_ordenes_insumos t1
+      join tbl2_subproductos t2 on t1.id_subprod_CAB = t2.idx
+      where t1.id_orden_CAB = ?
+      `,[info.id]);
+      const [requerimientos] = await conn.query(`select t2.orden_ref,t2.fec_emision,t2.fec_retorno,t2.proveedor,t2.forma_pago,t2.estado,t1.*
+      from tbl2_fases_prod_ordenes_requerimientos t1
+      join tbl2_pedidos_insumos_cab t2 on t1.id_pedido_CAB = t2.idx
+      where t1.id_orden_CAB = ?`,[info.id]);
 
       // const [cortes] = await conn.query("SELECT tb1.*,(select JSON_ARRAYAGG(JSON_OBJECT('id_hojacorte_CAB',tb2.id_hojacorte_CAB,'id_orden_CAB',tb2.id_orden_CAB,'color_combo',tb2.color_combo,'cantidad_combo',tb2.cantidad_combo)) from tbl2_fases_prod_hojacorte_combos tb2 where tb2.id_hojacorte_CAB = tb1.idx) as combos FROM tbl2_fases_prod_hojacorte tb1 WHERE tb1.id_cab_orden = ?",[info.id]);
 
@@ -185,7 +194,7 @@ export class ProduccionModel {
       let [fasesprod] = await conn.query("SELECT *FROM tbl2_fases_produccion")
       let [materialesref] = await conn.query("SELECT *FROM tbl2_materiales_sugerido WHERE ruc_ = '20522094120'")
   
-      return [ordenes,moldes,cortes,materiales,fasesprod,materialesref]
+      return [ordenes,moldes,cortes,materiales,fasesprod,materialesref,insumos,requerimientos]
     } catch (err) {
       console.log("Estamos en error:", err);
       return err

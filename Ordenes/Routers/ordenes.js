@@ -19,6 +19,7 @@ ordenesRouter.get('/updatecombos/combos', OrdenesController.updateCombos)
 ordenesRouter.get('/extraeritemscaja/:id/:id_corte', OrdenesController.ExtraerItemsCaja)
 
 ordenesRouter.post("/saveFaseOrden",OrdenesController.saveFaseOrden)
+ordenesRouter.put("/updateFaseOrden",OrdenesController.updateFaseOrden)
 ordenesRouter.post("/saveFaseMolde",OrdenesController.saveFaseMolde)
 ordenesRouter.post("/saveFaseCorte",OrdenesController.saveFaseCorte)
 ordenesRouter.post("/saveFaseMateriales",OrdenesController.saveFaseMateriales)

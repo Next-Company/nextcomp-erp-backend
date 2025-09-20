@@ -140,6 +140,57 @@ export class OrdenesController {
 
     // resp.json(data)
   }
+  static async updateFaseOrden(req, resp) {
+    const imagenes = req.files
+    const info = req.body
+    const user_data = req.session
+    const data = await OrdenesModel.saveFaseOrden(info, user_data)
+
+    async function example(ruta,filename) {
+      const client = new Client()
+      client.ftp.verbose = false
+      try {
+        await client.access({
+            host: "jsjfact.com",
+            user: "ftpnuevo",
+            password: "JSJPeru2024++",
+        })
+        await client.uploadFrom(ruta, "/facturador/imagenez/" + filename)
+        .then(res => {
+          console.log("Archivo subido correctamente: ", res);
+        })
+        .catch(err => {
+          console.error("Error al subir el archivo: ", err);
+        });
+      }
+      catch(err) {
+          console.log(err)
+      }
+      client.close()
+    }
+    console.log("Resputad del guardado de fase orden:",data,imagenes)
+    if(imagenes.length > 0 && data.ok && data.filename){
+      console.log("Imagenes recibidads:",imagenes)
+      let str = 'public/images';
+      new Promise((resolve, reject) => {
+        imagenes.forEach(async element => {
+          const oldPath = element.path;
+          const newPath = path.join(str, data.filename);
+          await fs.rename(oldPath, newPath)
+          resolve({ruta:newPath,file: data.filename})
+        });
+      }).then(async (resp) => {
+        console.log("Renombrado de archivos finalizado",resp.ruta,resp.file)
+        await example(resp.ruta,resp.file)
+      }).finally(() => {
+        resp.json(data)
+      })
+    }else{
+      resp.json(data)
+    }
+
+    // resp.json(data)
+  }
   static async saveFaseMolde(req, resp) {
     const info = req.body
     const user_data = req.session
