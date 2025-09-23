@@ -211,9 +211,7 @@ export default class AlmacenModel{
         where t1.ruc = '20522094120' and t1.id_CAB = ? and t1.estado = 'EMITIDO'
       `,[idmov])
 
-
-      
-
+      console.log("La informacion consulta es: ",cabmov,detmov)
 
       return {ok:true,cab:cabmov[0],det:detmov}
     } catch (error) {
@@ -229,43 +227,33 @@ export default class AlmacenModel{
       conn = await mysql.createConnection(configs[1])
       await conn.connect()
 
-      // let [cabmov] = await conn.execute(`
-      //   SELECT
-      //     DATE_FORMAT(STR_TO_DATE(t1.fec_Emision_DOC,'%d/%m/%Y'),'%Y-%m-%d') as fec_emision,
-      //     t1.Nro_Doc_Prov,
-      //     t1.Raz_social_DOC,
-      //     tpic.id_proveedor_CAB,
-      //     tpic.proveedor,
-      //     tpic.idx as id_pedido_origen,
-      //     tpic.orden_ref as nro_requerimiento,
-      //     t1.tipomov,
-      //     t1.id_modelo,
-      //     (select tfpo.modelos from tbl2_fases_prod_ordenes tfpo where tfpo.idx = t1.id_modelo) as modelos,
-      //     (select tfpo.oc from tbl2_fases_prod_ordenes tfpo where tfpo.idx = t1.id_modelo) as oc,
-      //     (select tbc.numero_corte from tbl2_fases_prod_hojacorte tbc where tbc.id_cab_orden = t1.id_modelo limit 1) as nro_corte,
-      //     tpic.orden_ref as nro_pedido_origen
-      //   FROM tbl_kard_compras_CAB t1 
-      //   join tbl2_pedidos_insumos_cab tpic on tpic.idx = t1.id_requerimiento
-      //   WHERE t1.ruc = '20522094120' and t1.id_CAB = ? and t1.estado = 'EMITIDO'
-      // `,[idmov])
+      let [cabmov] = await conn.execute(`
+        SELECT
+          DATE_FORMAT(STR_TO_DATE(t1.fec_Emision_DOC,'%d/%m/%Y'),'%Y-%m-%d') as fec_emision,
+          t1.Nro_Doc_Prov,
+          t1.Raz_social_DOC,
+          tpic.id_proveedor_CAB,
+          tpic.proveedor,
+          tpic.idx as id_pedido_origen,
+          tpic.orden_ref as nro_requerimiento,
+          t1.tipomov,
+          t1.id_modelo,
+          (select tfpo.modelos from tbl2_fases_prod_ordenes tfpo where tfpo.idx = t1.id_modelo) as modelos,
+          (select tfpo.oc from tbl2_fases_prod_ordenes tfpo where tfpo.idx = t1.id_modelo) as oc,
+          (select tbc.numero_corte from tbl2_fases_prod_hojacorte tbc where tbc.id_cab_orden = t1.id_modelo limit 1) as nro_corte,
+          tpic.orden_ref as nro_pedido_origen,
+          (select ta.nom from tbl2_almacen ta where ta.idx = t1.Suc_Tienda) as almacen
+        FROM tbl_kard_compras_CAB t1 
+        left join tbl2_pedidos_insumos_cab tpic on tpic.idx = t1.id_requerimiento
+        WHERE t1.ruc = '20522094120' and t1.id_CAB = ? and t1.estado = 'EMITIDO'
+      `,[idmov])
 
-      // let [detmov] = await conn.execute(`
-      //   -- select *from tbl_kard_compras_DET where id_CAB_DET = ?
-      //   select 
-      //     tpid.producto,
-      //     tpid.color,
-      //     tpid.rollos,
-      //     tpid.cantidad,
-      //     tpid.unidad,
-      //     tpid.precio,
-      //     tpic.orden_ref as nro_pedido_origen,
-      //     t2.*
-      //   FROM tbl_kard_compras_CAB t1
-      //   join tbl2_pedidos_insumos_cab tpic on tpic.idx = t1.id_requerimiento
-      //   join tbl_kard_compras_DET t2 on t1.id_CAB = t2.id_CAB_DET 
-      //   join tbl2_pedidos_insumos_det tpid on tpid.id_pedido_CAB = tpic.idx and tpid.id_subprod_CAB = t2.id_subprod
-      //   where t1.ruc = '20522094120' and t1.id_CAB = ? and t1.estado = 'EMITIDO'
-      // `,[idmov])
+      let [detmov] = await conn.execute(`
+        select 
+          t1.*
+        from tbl_kard_compras_DET t1
+        where t1.id_CAB_DET = ?
+      `,[idmov])
 
       return {ok:true,cab:cabmov[0],det:detmov}
     } catch (error) {
@@ -300,6 +288,7 @@ export default class AlmacenModel{
         tip_DOC: tip_prod_cdp,
         serie_DOC: serie_prod,
         num_doc_CDP: 0,
+        id_proveedor_CAB: cabecera.id_proveedor_CAB,
         Nro_Doc_Prov: cabecera.ruc,
         Raz_social_DOC: cabecera.proveedor,
         Dir_DOC: '',

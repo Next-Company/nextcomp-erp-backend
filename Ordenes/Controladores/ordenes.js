@@ -1177,7 +1177,7 @@ export class OrdenesController {
               }
               let rowspan_max = [rowspan1,rowspan2].sort((a,b)=> b - a)[0]
               let lista = Array.from({length:[rowspan1,rowspan2].sort((a,b)=> b - a)[0]})
-              console.log("La lista es la siguiente:",lista)
+              console.log("La lista es la siguiente:",lista,rowspan_max)
               // let filas = ['a','b','c']
               let filas = lista.map((row2,key2)=>{
                 // console.log("INfor colores 2:",row[1].fracciones)
@@ -1218,7 +1218,7 @@ export class OrdenesController {
                     
                     ${key2 == 0 
                       ? `
-                        <td rowspan='${rowspan1 ? rowspan1 : lista.length}' style="position:relative;min-width:80px;">
+                        <td rowspan='${rowspan_max ? rowspan_max : lista.length}' style="position:relative;min-width:80px;">
                           <div style="display:flex;flex-direction:column;position:absolute;top:1px;bottom:1px;left:1px;right:1px;background-color:#b5e1ff;">
                             <div style="flex:1;display:flex;flex-direction:column;justify-content:center;text-align:center;vertical-align:middle;">
                               <div>
@@ -1233,10 +1233,10 @@ export class OrdenesController {
                         ` 
                       : ``
                     }
-                    <td style="text-align:center;background-color:#b5e1ff;">${row[0].fracciones[key2].talla}</td>
-                    <td style="text-align:center;background-color:#dddddd;">${row[0].fracciones[key2].cantidad}</td>
+                    <td style="text-align:center;background-color:#b5e1ff;">${row[0].fracciones.length > 0 ? (row[0].fracciones[key2]?.talla ?? '') : ''}</td>
+                    <td style="text-align:center;background-color:#dddddd;">${row[0].fracciones.length > 0 ? (row[0].fracciones[key2]?.cantidad ?? '') : ''}</td>
                     ${
-                      key2 == 0 ? materiales.map(row=>"<td rowspan='" + (rowspan1 ? rowspan1 : lista.length) +"'></td>").join("\n") : ""
+                      key2 == 0 ? materiales.map(row=>"<td rowspan='" + (rowspan_max ? rowspan_max : lista.length) +"'></td>").join("\n") : ""
                     }
                     ${consolidado[0].length > 1 && key2 == 0 
                       ? `
