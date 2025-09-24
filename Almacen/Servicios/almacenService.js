@@ -130,7 +130,7 @@ export default class AlmacenModel{
       conn = await mysql.createConnection(configs[1])
       await conn.connect()
 
-      let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(COALESCE(TRIM(producto),''),' ',COALESCE(TRIM(color),''),' ',COALESCE(TRIM(lote),''))) > 0").join(" ") : ""
+      let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(COALESCE(TRIM(producto),''),' ',COALESCE(TRIM(color),''),' ',COALESCE(TRIM(lote),''),' ',COALESCE(TRIM(tipo),''))) > 0").join(" ") : ""
   
       const query = `
         SELECT cc.*
@@ -146,8 +146,10 @@ export default class AlmacenModel{
             t2.nom as producto,
             t1.lote,
             t2.idx_talla,
+            (select tt.detalle from tbl2_tallas tt where tt.idx = t2.idx_talla) as talla,
             t2.estado,
-            t1.tipo,
+            -- t1.tipo,
+            (select tipo from tbl2_productos tp where tp.idx = t2.idx_CAB_PROD) as tipo,
             (select COALESCE(tp.codUnidadMedida,'') from tbl2_productos tp where tp.idx = t2.idx_CAB_PROD) as unidad
           FROM tbl2_almacen_det t1 
           join tbl2_subproductos t2 on t2.idx = t1.idx_subproducto
@@ -586,7 +588,7 @@ export default class AlmacenModel{
           despacho:parseFloat(row.Cant_despacho_DET)
         }
       ))
-      console.log("El listado de articulo es:",articulos)
+      console.log("El listado de articulos es el siguiente:",articulos)
       const data_comprobante = {
         id_comprobante_CAB: busqueda[0].idx,
         cod_comprobante: busqueda[0].codigo,

@@ -6,11 +6,12 @@ const ALMACEN_ROUTER = new Router()
 // ALMACEN_ROUTER.get('/listaralmacenes',AlmacenController.getListaAlmacenes)
 ALMACEN_ROUTER.get('/listarmovimientos',AlmacenController.getMovimientosAlmacen)
 ALMACEN_ROUTER.get('/listarmovimientos/:search',AlmacenController.getMovimientosAlmacen)
+
 ALMACEN_ROUTER.get('/listarinventario',AlmacenController.getInventarioProductos)
 ALMACEN_ROUTER.get('/listarinventario/:search',AlmacenController.getInventarioProductos)
+
 ALMACEN_ROUTER.get('/listaralmacenes',AlmacenController.getListaAlmacenes)
 ALMACEN_ROUTER.get('/listaralmacenes/:search',AlmacenController.getListaAlmacenes)
-
 
 ALMACEN_ROUTER.get('/getguiamovimiento/:idmov',AlmacenController.getGuia)
 ALMACEN_ROUTER.put('/saveguia',AlmacenController.saveGuia)

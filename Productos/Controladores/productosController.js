@@ -79,9 +79,9 @@ export class ProductosController{
     res.send(info);
   }
   static async getProductosTotal(req,res){
-    console.log("Buscando producos")
     const search = req.params.search ?? ''
-    const info = await ProductosService.getProductosTotal(search);
+    const filters = req.body.filters ?? {}
+    const info = await ProductosService.getProductosTotal(search,filters);
     res.send(info);
   }
 

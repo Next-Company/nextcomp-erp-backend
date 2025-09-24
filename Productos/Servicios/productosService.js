@@ -637,17 +637,30 @@ export class ProductosService{
       await conn.end();
     }
   }
-  static async getProductosTotal(busqueda){
+  static async getProductosTotal(busqueda,filters){
     const conn = await mysql.createConnection(configs[1]);
     await conn.connect();
     try {
 
       let extra = busqueda.split(" ").length > 0 ? busqueda.split(" ").map(word=>"AND LOCATE('"+word+"',CONCAT(TRIM(nom),' ',TRIM(tipo),' ',TRIM(estilo),' ',TRIM(temporada),' ',TRIM(presentacion),' ',TRIM(marca),' ',TRIM(modelo))) > 0").join(" ") : ""
 
-      const [rows,fields] = await conn.execute(`
+      const filters_query = Object.keys(filters).length > 0 ? Object.keys(filters).map(f=>{
+        if(Array.isArray(filters[f]) && filters[f].length > 0){
+          return `AND ${f} IN (${filters[f].map(v=>`'${v}'`).join(',')})`
+        } else if(typeof filters[f] === 'string' && filters[f].trim().length > 0){
+          return `AND ${f} = '${filters[f]}'`
+        } else {
+          return ''
+        }
+      }).join(' ') : ''
+
+      extra += ' ' + filters_query
+      const query = `
         SELECT
             tp.idx AS id_producto_CAB,
             tp.codigo AS cod_producto,
+            tp.costo,
+            tp.codUnidadMedida,
             tp.tipo,
             tp.det,
             tp.nom AS producto,
@@ -665,7 +678,8 @@ export class ProductosService{
         FROM tbl2_productos tp
         WHERE 1=1 ${extra} and tp.ruc_ = '20522094120'
         LIMIT 150
-      `);
+      `
+      const [rows] = await conn.execute(query);
       // console.log(rows);
       return rows;
     }

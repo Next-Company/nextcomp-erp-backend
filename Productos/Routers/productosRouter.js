@@ -28,6 +28,8 @@ ProductosRouter.get('/productosConStock',ProductosController.getProductosConStoc
 ProductosRouter.get('/productosConStock/:search',ProductosController.getProductosConStock)
 ProductosRouter.get('/productosTotal',ProductosController.getProductosTotal)
 ProductosRouter.get('/productosTotal/:search',ProductosController.getProductosTotal)
+ProductosRouter.post('/productosTotal',ProductosController.getProductosTotal)
+ProductosRouter.post('/productosTotal/:search',ProductosController.getProductosTotal)
 // ProductosRouter.get('/productosCon',ProductosController.getProductosTotal)
 // ProductosRouter.get('/productosTotal/:search',ProductosController.getProductosTotal)
 
