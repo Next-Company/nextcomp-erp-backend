@@ -20,9 +20,9 @@ ordenesRouter.get('/extraeritemscaja/:id/:id_corte', OrdenesController.ExtraerIt
 
 ordenesRouter.post("/saveFaseOrden",OrdenesController.saveFaseOrden)
 ordenesRouter.put("/updateFaseOrden",OrdenesController.updateFaseOrden)
-ordenesRouter.post("/saveFaseMolde",OrdenesController.saveFaseMolde)
-ordenesRouter.post("/saveFaseCorte",OrdenesController.saveFaseCorte)
-ordenesRouter.post("/saveFaseMateriales",OrdenesController.saveFaseMateriales)
+ordenesRouter.put("/saveFaseMolde",OrdenesController.saveFaseMolde)
+ordenesRouter.put("/saveFaseCorte",OrdenesController.saveFaseCorte)
+ordenesRouter.put("/saveFaseMateriales",OrdenesController.saveFaseMateriales)
 
 ordenesRouter.get("/lizzet/:id",OrdenesController.regulaLizzet)
 ordenesRouter.get("/printhojacorte/:idorden",OrdenesController.printHojaCorte)

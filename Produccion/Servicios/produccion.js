@@ -1183,7 +1183,7 @@ export class ProduccionModel {
       return {ok:false,message:error}
     }
   }
-  static async UpdateMasterProduccion(backup_articulos,articulos,orden,conn,tipo){
+  static async UpdateMasterProduccion(backup_articulos,articulos,orden,conn,tipo,acabados = 0){
     console.log("Info data backup_articulos:",backup_articulos)
     let p1 = '', p2 = '', p3 = ''
     console.log("La informacion a trabajar es:",backup_articulos,articulos,orden,tipo == 0 ? 'SUMA' : 'RESTA')
@@ -1193,22 +1193,6 @@ export class ProduccionModel {
     try {
 
       if(backup_articulos.length > 0){
-        // for(let combo of [...backup_articulos]){
-        //   for(let talla of ['xs','s','m','l','xl','xxl']){
-        //     console.log("Esperaando por le siguiente")
-        //     await conn.query(`UPDATE tbl2_fases_prod_hojacorte_combos_fracciones 
-        //       SET 
-        //         produccion_total = produccion_total + (?),
-        //         caidos_total = caidos_total + (?) 
-        //       WHERE id_combo_CAB = ? AND talla = ?
-        //     `,[
-        //         tipo ? parseInt(combo[talla][0]) : -1*parseInt(combo[talla][0]),
-        //         tipo ? parseInt(combo[talla][1]) : -1*parseInt(combo[talla][1]),
-        //         combo.idcombo,
-        //         talla
-        //       ])
-        //   }
-        // }
         p1 = ''
         p2 = ''
         p3 = ''
@@ -1229,26 +1213,13 @@ export class ProduccionModel {
         p1 = `CASE ${p1} ELSE 0 END`
         p2 = `CASE ${p2} ELSE 0 END`
         p3 = `CASE ${p3} ELSE 0 END`
-        await conn.query(`UPDATE tbl2_fases_prod_hojacorte_combos_fracciones SET produccion_total = COALESCE(produccion_total,0) + ` + p1 + `, caidos_total = COALESCE(caidos_total,0) + ` + p2 + `, incompletos_total = COALESCE(incompletos_total,0) + ` + p3)
+        if(!acabados){
+          await conn.query(`UPDATE tbl2_fases_prod_hojacorte_combos_fracciones SET produccion_total = COALESCE(produccion_total,0) + ` + p1 + `, caidos_total = COALESCE(caidos_total,0) + ` + p2 + `, incompletos_total = COALESCE(incompletos_total,0) + ` + p3)
+        }else{
+          await conn.query(`UPDATE tbl2_fases_prod_hojacorte_combos_fracciones SET despacho_total = COALESCE(despacho_total,0) + ` + p1 + `, caidos_total = COALESCE(caidos_total,0) + ` + p2 + `, incompletos_total = COALESCE(incompletos_total,0) + ` + p3)
+        }
       }
       if(articulos.length > 0){
-        // for(let combo of [...articulos]){
-        //   for(let talla of ['xs','s','m','l','xl','xxl']){
-        //     console.log("Esperaando por le siguiente")
-        //     await conn.query(`UPDATE tbl2_fases_prod_hojacorte_combos_fracciones 
-        //       SET 
-        //         produccion_total = produccion_total + (?), 
-        //         caidos_total = caidos_total + (?) 
-        //       WHERE id_combo_CAB = ? AND talla = ?
-        //     `,[
-        //         tipo ? -1*parseInt(combo[talla][0]) : parseInt(combo[talla][0]),
-        //         tipo ? -1*parseInt(combo[talla][1]) : parseInt(combo[talla][1]),
-        //         combo.idcombo,
-        //         talla
-        //       ])
-            
-        //   }
-        // }
         p1 = ''
         p2 = ''
         p3 = ''
@@ -1269,11 +1240,25 @@ export class ProduccionModel {
         p1 = `CASE ${p1} ELSE 0 END`
         p2 = `CASE ${p2} ELSE 0 END`
         p3 = `CASE ${p3} ELSE 0 END`
-        await conn.query(`UPDATE tbl2_fases_prod_hojacorte_combos_fracciones SET produccion_total = COALESCE(produccion_total,0) + ` + p1 + `, caidos_total = COALESCE(caidos_total,0) + ` + p2 + `, incompletos_total = COALESCE(incompletos_total,0) + ` + p3)
+        if(!acabados){
+          await conn.query(`UPDATE tbl2_fases_prod_hojacorte_combos_fracciones SET produccion_total = COALESCE(produccion_total,0) + ` + p1 + `, caidos_total = COALESCE(caidos_total,0) + ` + p2 + `, incompletos_total = COALESCE(incompletos_total,0) + ` + p3)
+        }else{
+          await conn.query(`UPDATE tbl2_fases_prod_hojacorte_combos_fracciones SET despacho_total = COALESCE(despacho_total,0) + ` + p1 + `, caidos_total = COALESCE(caidos_total,0) + ` + p2 + `, incompletos_total = COALESCE(incompletos_total,0) + ` + p3)
+        }
       }
-      const [validacion] = await conn.query(`SELECT *FROM tbl2_fases_prod_hojacorte_combos_fracciones tfphcf WHERE tfphcf.id_combo_CAB IN (SELECT t1.idx FROM tbl2_fases_prod_hojacorte_combos t1 JOIN tbl2_fases_prod_hojacorte t2 ON t1.id_hojacorte_CAB = t2.idx WHERE t2.id_cab_orden = ?) AND ((tfphcf.produccion_total + tfphcf.caidos_total + tfphcf.incompletos_total) > tfphcf.cantidad OR (tfphcf.produccion_total + tfphcf.caidos_total + tfphcf.incompletos_total) < 0)`,[parseInt(orden)])
+      // const [validacion] = await conn.query(`SELECT *FROM tbl2_fases_prod_hojacorte_combos_fracciones tfphcf WHERE tfphcf.id_combo_CAB IN (SELECT t1.idx FROM tbl2_fases_prod_hojacorte_combos t1 JOIN tbl2_fases_prod_hojacorte t2 ON t1.id_hojacorte_CAB = t2.idx WHERE t2.id_cab_orden = ?) AND ((tfphcf.produccion_total + tfphcf.caidos_total + tfphcf.incompletos_total) > tfphcf.cantidad OR (tfphcf.produccion_total + tfphcf.caidos_total + tfphcf.incompletos_total) < 0)`,[parseInt(orden)])
+      // console.log("Imprimiendo validacion:",validacion)
+      // if(validacion.length > 0) throw "La informacion ingresada supera el limite permitido"
+      const [validacion] = await conn.query(`SELECT sum(cantidad) as cantidad,${!acabados ? 'sum(produccion_total)' : 'sum(despacho_total)'} as p_tot,sum(caidos_total) as c_tot,sum(incompletos_total) as i_tot
+        FROM tbl2_fases_prod_hojacorte_combos_fracciones tfphcf 
+        WHERE tfphcf.id_combo_CAB IN (
+          SELECT t1.idx 
+          FROM tbl2_fases_prod_hojacorte_combos t1 
+          JOIN tbl2_fases_prod_hojacorte t2 ON t1.id_hojacorte_CAB = t2.idx 
+          WHERE t2.id_cab_orden = ?
+      )`,[parseInt(orden)])
       console.log("Imprimiendo validacion:",validacion)
-      if(validacion.length > 0) throw "La informacion ingresada supera el limite permitido"
+      if((parseInt(validacion[0].p_tot) + parseInt(validacion[0].c_tot) + parseInt(validacion[0].i_tot)) > validacion[0].cantidad) throw "La informacion ingresada supera el limite permitido"
 
       return {ok:true,message:''}
     } catch (error) {
