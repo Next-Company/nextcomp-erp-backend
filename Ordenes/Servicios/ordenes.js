@@ -950,8 +950,8 @@ export class OrdenesModel {
 
                       // Insertar combo de hoja de corte
                       const [comboInsertResult] = await conn.query(
-                          "INSERT INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB, color_combo, cantidad_combo) VALUES (?,?,?)",
-                          [idHojaCorte, combo.color_combo, combo.cantidad_combo]
+                          "INSERT INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB, idx_color, color_combo, cantidad_combo) VALUES (?,?,?,?)",
+                          [idHojaCorte, combo.idx_color, combo.color_combo, combo.cantidad_combo]
                       );
                       const idComboCorte = comboInsertResult.insertId;
 
@@ -1028,7 +1028,7 @@ export class OrdenesModel {
                   await conn.query("DELETE FROM tbl2_fases_prod_hojacorte_combos WHERE idx = ?",[combo.idx])
                   await conn.query("DELETE FROM tbl2_fases_prod_hojacorte_combos_fracciones WHERE id_combo_CAB = ?",[combo.idx])
   
-                  let [info_insert] = await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB,color_combo,cantidad_combo) VALUES (?,?,?)",[corte.idx,combo.color_combo,combo.cantidad_combo])
+                  let [info_insert] = await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB,idx_color,color_combo,cantidad_combo) VALUES (?,?,?,?)",[corte.idx,combo.idx_color,combo.color_combo,combo.cantidad_combo])
   
                   let fraccionado = []
                   if(combo.idx && combo.idx !== ''){
@@ -1043,7 +1043,7 @@ export class OrdenesModel {
                   await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos_fracciones(id_combo_CAB,talla,cantidad,produccion_total) values ? ",[fraccionado])
                 } else {
                   console.log("Dentro del update de combos simple")
-                  await conn.query("UPDATE tbl2_fases_prod_hojacorte_combos SET color_combo = ? WHERE idx = ? and id_hojacorte_CAB = ?",[combo.color_combo,combo.idx,parseInt(corte['idx'])])
+                  await conn.query("UPDATE tbl2_fases_prod_hojacorte_combos SET idx_color = ?,color_combo = ? WHERE idx = ? and id_hojacorte_CAB = ?",[combo.idx_color,combo.color_combo,combo.idx,parseInt(corte['idx'])])
                 }
 
               }
@@ -1102,8 +1102,8 @@ export class OrdenesModel {
       console.log("Verificando la informacion de corte :",verificar)
 
       console.log("Terminando el actulizado de corte")
-      // if (conn) conn.rollback()
-      if (conn) conn.commit()
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito' }
     } catch (err) {
       console.log(err)

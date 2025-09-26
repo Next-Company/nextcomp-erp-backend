@@ -218,6 +218,7 @@ export class ProduccionController {
     const data = await ProduccionModel.getInfoGuiaCab(params.idguia)
     console.log("Mostrando informacin de la guia:",data)
     // const data2 = await ProduccionModel.getInfoGuiaDet(params.id)
+    let data1 = await ProduccionModel.getInfoDespachoCab(params.id)
     let data2 = await ProduccionModel.getInfoDespachoDet(params.id)
     console.log("Mostrando la informacion del detalle del despacho:",data2)
     console.log("Reestructurando la variable data2",data2.map(row=>row.fracciones_despacho))
@@ -264,8 +265,8 @@ export class ProduccionController {
           // relleno:data2.filter(),
           prototipos: data2.filter(row => row.isprototipo),
           numproto: data2.filter(row => row.isprototipo).length,
-          date: (new Date(data[0].created_at)).toLocaleDateString('en-GB'),
-          time: (new Date(data[0].created_at)).toLocaleTimeString('en-GB'),
+          date: (new Date(data1[0].created_at)).toLocaleDateString('en-GB'),
+          time: (new Date(data1[0].created_at)).toLocaleTimeString('en-GB'),
           idguia: `${params.id}`.padStart(10, 0),
           idref: `${data[0].idx}`.padStart(10, 0),
           totalunid: data2.reduce((carry, valor) => {
@@ -445,6 +446,7 @@ export class ProduccionController {
     console.log("La informacion de los parametros es otro cambio:",params)
     const data = await ProduccionModel.getInfoGuiaCab(params.idguia)
     console.log("Mostrando informacin de la guia:",data)
+    let data1 = await ProduccionModel.getInfoDespachoCab(params.id)
     let data2 = await ProduccionModel.getInfoDespachoDet(params.id)
     console.log("Mostrando la informacion del detalle del despacho:",data2)
 
@@ -461,8 +463,8 @@ export class ProduccionController {
           condicion:params.condicion,
           prototipos: data2.filter(row => row.isprototipo),
           numproto: data2.filter(row => row.isprototipo).length,
-          date: (new Date(data[0].created_at)).toLocaleDateString('en-GB'),
-          time: (new Date(data[0].created_at)).toLocaleTimeString('en-GB'),
+          date: (new Date(data1[0].created_at)).toLocaleDateString('en-GB'),
+          time: (new Date(data1[0].created_at)).toLocaleTimeString('en-GB'),
           idguia: `${params.id}`.padStart(10, 0),
           idref: `${data[0].idx}`.padStart(10, 0),
           totalunid: data2.reduce((c,v)=>c+v.despacho,0),

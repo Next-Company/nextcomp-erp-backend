@@ -1,5 +1,5 @@
 import { Router } from "express";
-import MantenimientoController from "../Controllers/mantenimientoController";
+import MantenimientoController from "../Controllers/mantenimientoController.js";
 
 const MANTENIMIENTO_ROUTER = Router()
 

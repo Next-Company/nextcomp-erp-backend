@@ -25,6 +25,7 @@ import { COBROS_ROUTER } from "./Cobros/Routers/cobros.js";
 import { CAJA_ROUTER } from "./Caja/Routers/caja.js";
 import ALMACEN_ROUTER from "./Almacen/Routers/almacenRouter.js";
 import PROVEEDOR_ROUTER from "./Proveedores/Routers/proveedorRouter.js";
+import MANTENIMIENTO_ROUTER from "./Mantenimiento/Routers/mantenimientoRouter.js";
 const app = express()
 
 
@@ -110,6 +111,7 @@ app.use('/cobros', COBROS_ROUTER)
 app.use('/caja', CAJA_ROUTER)
 app.use('/almacen', ALMACEN_ROUTER)
 app.use('/proveedores', PROVEEDOR_ROUTER )
+app.use('/mantenimiento', MANTENIMIENTO_ROUTER )
 
 // app.use((err,req,res,next)=>{
 //   console.log("Hola hay un error")
