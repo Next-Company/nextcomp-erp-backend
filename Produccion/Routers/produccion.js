@@ -13,17 +13,21 @@ produccionRouter.post('/exportavios', ProduccionController.exportPedidoAvios)
 produccionRouter.post('/exporttelas', ProduccionController.exportPedidoTelas)
 produccionRouter.post('/exportestampado/:id', ProduccionController.exportInfoEstampado)
 produccionRouter.get('/exportguia/:id/:modo', ProduccionController.exportInfoGuia)
-// produccionRouter.get('/exportguiav2/:id/:modo', ProduccionController.exportInfoGuiaV2)
+
+produccionRouter.get('/getListaMuestras', ProduccionController.getListaMuestras)
+produccionRouter.get('/getListaMuestras/:search', ProduccionController.getListaMuestras)
+produccionRouter.get('/muestra/:id', ProduccionController.getInfoMuestras)
+produccionRouter.put('/guardarmuestra', ProduccionController.saveInfoMuestras)
+produccionRouter.delete('/borrarmuestra/:id', ProduccionController.eliminarInfoMuestras)
 
 produccionRouter.get('/getListaGuias', ProduccionController.getListaGuias)
 produccionRouter.get('/getListaGuias/:search', ProduccionController.getListaGuias)
-produccionRouter.get('/getListaMuestras', ProduccionController.getListaMuestras)
-produccionRouter.get('/getListaMuestras/:search', ProduccionController.getListaMuestras)
-
 produccionRouter.get('/guia/:id', ProduccionController.getInfoGuias)
+
 produccionRouter.put('/guardarguia', ProduccionController.saveInfoGuias)
 produccionRouter.delete('/borrarguia/:id', ProduccionController.eliminarInfoGuias)
 produccionRouter.delete('/anularguia/:id', ProduccionController.anularInfoGuias)
+
 produccionRouter.put('/guardarguiaxpq', ProduccionController.saveInfoGuiasXPQ)
 produccionRouter.delete('/borrarguiaxpq/:id', ProduccionController.eliminarInfoGuiasXPQ)
 produccionRouter.delete('/anularguiaxpq/:id', ProduccionController.anularInfoGuiasXPQ)

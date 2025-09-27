@@ -307,7 +307,7 @@ export class OrdenesModel {
       }
     }
   }
-  static async ExtraerItemsCaja(idorden,idhoja) {
+  static async ExtraerItemsCaja_backup(idorden,idhoja) {
     let conn
     try {
       conn = await mysql.createConnection(configs[1])
@@ -338,6 +338,55 @@ export class OrdenesModel {
       // join tbl2_fases_prod_hojacorte tfph on tfphc.id_hojacorte_CAB = tfph.idx
       // join tbl2_fases_prod_ordenes tfpo on tfph.id_cab_orden = tfpo.idx
       // where tfpo.idx = ?`,[idorden])
+
+      results = results.reduce((c,v)=>{
+        let total = 0
+        let pp = undefined
+        if(v.fracciones.length > 0){
+          pp = v.fracciones.reduce((cc,vv)=>{
+            total += parseInt(vv.produccion_total)
+            return {...cc,[vv.talla]:parseInt(vv.cantidad),cantidad:parseInt(total)}
+          },v)
+        }else{
+          pp = {...v,'xs':0,'s':0,'m':0,'l':0,'xl':0,'xxl':0,cantidad:parseInt(v.cantidad_combo)}
+        }
+        c.push(pp)
+        return c
+      },[])
+
+      console.log("Nuevo result:",results)
+
+      return results
+    } catch (err) {
+      console.log(err);
+      return { 'msg': err }
+    } finally {
+      if (conn) {
+        await conn.end();
+      }
+    }
+  }
+  static async ExtraerItemsCaja(idorden,idhoja) {
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+
+      console.log("Id orden:",idorden,"Id hoja:",idhoja)
+      let [results] = await conn.query(`SELECT 
+        tfphc.idx as id_combo,
+        CONCAT(tfpo.producto,' ',tfpo.marca,' ',tfpo.modelos,' ',tfphc.color_combo) as articulo,
+        JSON_ARRAY() as fracciones,
+        (select sum(COALESCE(tfphcf.produccion_total,0)) FROM tbl2_fases_prod_hojacorte_combos_fracciones tfphcf where tfphcf.id_combo_CAB = tfphc.idx) as cantidad_fracciones,
+        tfphc.cantidad_combo,
+        tfphc.disponible_total
+      from tbl2_fases_prod_hojacorte_combos tfphc 
+      join tbl2_fases_prod_hojacorte tfph on tfphc.id_hojacorte_CAB = tfph.idx
+      join tbl2_fases_prod_ordenes tfpo on tfph.id_cab_orden = tfpo.idx
+      where tfpo.idx = ? and tfph.idx = ?
+      having cantidad_fracciones > 0`,[idorden,idhoja])
+
+      console.log("Resultados de extraer items de caja:",results)
 
       results = results.reduce((c,v)=>{
         let total = 0
@@ -950,8 +999,8 @@ export class OrdenesModel {
 
                       // Insertar combo de hoja de corte
                       const [comboInsertResult] = await conn.query(
-                          "INSERT INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB, idx_color, color_combo, cantidad_combo) VALUES (?,?,?,?)",
-                          [idHojaCorte, combo.idx_color, combo.color_combo, combo.cantidad_combo]
+                          "INSERT INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB, idx_color, color_combo, cantidad_combo, disponible_total) VALUES (?,?,?,?,?)",
+                          [idHojaCorte, combo.idx_color, combo.color_combo, combo.cantidad_combo, combo.cantidad_combo]
                       );
                       const idComboCorte = comboInsertResult.insertId;
 
@@ -1028,7 +1077,7 @@ export class OrdenesModel {
                   await conn.query("DELETE FROM tbl2_fases_prod_hojacorte_combos WHERE idx = ?",[combo.idx])
                   await conn.query("DELETE FROM tbl2_fases_prod_hojacorte_combos_fracciones WHERE id_combo_CAB = ?",[combo.idx])
   
-                  let [info_insert] = await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB,idx_color,color_combo,cantidad_combo) VALUES (?,?,?,?)",[corte.idx,combo.idx_color,combo.color_combo,combo.cantidad_combo])
+                  let [info_insert] = await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB,idx_color,color_combo,cantidad_combo,disponible_total) VALUES (?,?,?,?,?)",[corte.idx,combo.idx_color,combo.color_combo,combo.cantidad_combo,combo.cantidad_combo])
   
                   let fraccionado = []
                   if(combo.idx && combo.idx !== ''){
@@ -1045,39 +1094,7 @@ export class OrdenesModel {
                   console.log("Dentro del update de combos simple")
                   await conn.query("UPDATE tbl2_fases_prod_hojacorte_combos SET idx_color = ?,color_combo = ? WHERE idx = ? and id_hojacorte_CAB = ?",[combo.idx_color,combo.color_combo,combo.idx,parseInt(corte['idx'])])
                 }
-
               }
-              
-
-              /////////////////////
-              /// ANTERIOR ////////
-              //////////////////////
-              // let [validacion] = await conn.query("SELECT id_corte_CAB FROM tbl2_guias_traslado_cab WHERE estado <> 'ANULADO' and id_corte_CAB = ?",[parseInt(corte['idx'])])
-
-              // if(!(validacion.length > 0)){
-              //   for(let combo of [...corte.combos]){
-
-              //     await conn.query("delete from tbl2_fases_prod_hojacorte_combos where idx = ?",[combo.idx])
-              //     await conn.query("delete from tbl2_fases_prod_hojacorte_combos_fracciones where id_combo_CAB = ?",[combo.idx])
-  
-              //     let [info_insert] = await conn.query("insert into tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB,color_combo,cantidad_combo) values (?,?,?)",[corte.idx,combo.color_combo,combo.cantidad_combo])
-  
-              //     let fraccionado = []
-              //     if(combo.idx && combo.idx !== ''){
-              //       fraccionado = combo.fracciones.reduce((c,v)=>{
-              //         c.push([info_insert.insertId,v.talla,v.cantidad,v.cantidad])
-              //         return c
-              //       },[])
-              //     }else{
-              //       fraccionado = ['xs','s','m','l','xl','xxl'].map(talla=>([info_insert.insertId,talla,combo[talla] ?? 0, combo[talla] ?? 0]))
-              //     }
-  
-              //     console.log("Info del fraccionado:",fraccionado)
-              //     await conn.query("insert into tbl2_fases_prod_hojacorte_combos_fracciones(id_combo_CAB,talla,cantidad,produccion_total) values ? ",[fraccionado])
-              //   }
-              // }
-              ///////////////////
-
             }
             return true
           } catch (error) {
@@ -1096,14 +1113,12 @@ export class OrdenesModel {
           await conn.query("DELETE t1,t2,t3 FROM tbl2_fases_prod_hojacorte t1 LEFT JOIN tbl2_fases_prod_hojacorte_combos t2 ON t1.idx = t2.id_hojacorte_CAB LEFT JOIN tbl2_fases_prod_hojacorte_combos_fracciones t3 ON t2.idx = t3.id_combo_CAB WHERE t1.idx = ? and t1.id_cab_orden = ?",[corte.idx,id_orden])
         }
       }
-
       let [verificar] = await conn.query("select *from tbl2_fases_prod_hojacorte t1 join tbl2_fases_prod_hojacorte_combos t2 on t1.idx = t2.id_hojacorte_CAB where t1.id_cab_orden = ?",id_orden)
-
       console.log("Verificando la informacion de corte :",verificar)
-
       console.log("Terminando el actulizado de corte")
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito' }
     } catch (err) {
       console.log(err)

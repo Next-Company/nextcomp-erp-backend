@@ -970,6 +970,12 @@ export class ProduccionController {
     // const data4 = await ProduccionModel.()
     res.json([data[0], data2, data3, data4, data5, data6])
   }
+  static async getInfoMuestras(req, res) {
+    const id = req.params.id
+    const data = await ProduccionModel.getInfoMuestraCab(id)
+    const data2 = await ProduccionModel.getInfoMuestraDet(id)
+    res.json([data[0], data2])
+  }
   static async searchGuia(req, res) {
     const { info } = req.params
     const data = await ProduccionModel.searchGuia(info)
@@ -979,6 +985,10 @@ export class ProduccionController {
     const data = await ProduccionModel.saveInfoGuias(req.body)
     res.json(data)
   }
+  static async saveInfoMuestras(req, res) {
+    const data = await ProduccionModel.saveInfoMuestras(req.body)
+    res.json(data)
+  }
   static async saveInfoGuiasXPQ(req, res) {
     const data = await ProduccionModel.saveInfoGuiasXPQ(req.body)
     res.json(data)
@@ -986,6 +996,11 @@ export class ProduccionController {
   static async eliminarInfoGuias(req, res) {
     const id = req.params.id
     const data = await ProduccionModel.eliminarInfoGuias(id)
+    res.json(data)
+  }
+  static async eliminarInfoMuestras(req, res) {
+    const id = req.params.id
+    const data = await ProduccionModel.eliminarInfoMuestras(id)
     res.json(data)
   }
   static async eliminarInfoGuiasXPQ(req, res) {

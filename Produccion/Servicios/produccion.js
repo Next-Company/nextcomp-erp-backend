@@ -761,6 +761,23 @@ export class ProduccionModel {
       }
     }
   }
+  static async getInfoMuestraCab(id) {
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      const [results, fields] = await conn.query('SELECT idx,id_orden_CAB,orden_ref,destino,tipo,motivo_traslado,id_proveedor_CAB,proveedor,servicio,responsable,modelo,marca,producto,DATE_FORMAT(fec_emision,"%d/%m/%Y") as fec_emision_guia,fec_emision,fec_recepcion,fec_retorno,DATE_FORMAT(fec_retorno,"%d/%m/%Y") as fec_retorno_guia, date_format(fec_recepcion,"%d/%m/%Y") as fec_recepcion_guia,costo,observaciones,estado,created_at, DATEDIFF(STR_TO_DATE(fec_retorno,"%Y-%m-%d"), STR_TO_DATE(fec_emision,"%Y-%m-%d")) as duracion,distribucion FROM tbl2_guias_traslado_cab where idx = ?', [id]);
+      await conn.end();
+
+      return results
+    } catch (err) {
+      return [err]
+    } finally {
+      if (conn) {
+        await conn.end();
+      }
+    }
+  }
   static async getInfoGuiaDet(id) {
     let conn
     console.log("Dentro de get info guia det")
@@ -820,6 +837,78 @@ export class ProduccionModel {
       // ste am es asi tu no
       // yo te sp tu nunc vend
       // yo te llorar tu don estaras
+
+      console.log("La info completa es:",pp)
+      
+      const [results2] = await conn.query("select id_guia_DET,concat('({',GROUP_CONCAT(concat(talla,':',CAST(cantidad as unsigned))),'})') as fracciones from tbl2_guias_traslado_det_fracciones where id_guia_DET in (?) group by id_guia_DET", [ids])
+
+      let new_articulos = pp.map(row => {
+        let add = eval(results2.filter(row2 => row2.id_guia_DET == row.idx)[0].fracciones)
+        return { ...row, ...add }
+      })
+
+      await conn.end();
+      return new_articulos
+    } catch (err) {
+      console.log(err)
+      return [err]
+    } finally {
+      if (conn) {
+        await conn.end();
+      }
+    }
+  }
+  static async getInfoMuestraDet(id) {
+    let conn
+    console.log("Dentro de get info guia det")
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      const [results, fields] = await conn.query(`
+      SELECT tb2.servicio,tb2.marca,tb2.modelo,tb1.idx,tb1.id_combo,tb1.id_guia_CAB,tb1.articulo,tb1.talla,tb1.categoria,tb1.cantidad,tb1.cantidad_obs,tb1.isprototipo,
+      (COALESCE(sum(ingresos.despacho),0) + COALESCE(sum(ingresos.caidos),0)) as ingresos,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('idcombo',tb1.id_combo,'talla',tf.talla,'cantidad',tf.cantidad)) from tbl2_guias_traslado_det_fracciones tf where tf.id_guia_DET = tb1.idx),JSON_ARRAY()) as fracciones,JSON_ARRAY() as fracciones_despacho
+      FROM tbl2_guias_traslado_det tb1 
+      JOIN tbl2_guias_traslado_cab tb2 on tb1.id_guia_CAB = tb2.idx
+      LEFT JOIN (
+        select tdc.idx,tdc.id_guia_origen,tdd.id_item,tdd.despacho,tdd.caidos
+        from tbl2_despachos_cab tdc
+        join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
+      ) as ingresos on ingresos.id_guia_origen = tb2.idx and tb1.idx = ingresos.id_item
+      WHERE id_guia_CAB = ?
+      GROUP BY tb2.servicio,tb2.marca,tb2.modelo,tb1.idx,tb1.id_guia_CAB,tb1.articulo,tb1.talla,tb1.categoria,tb1.cantidad,tb1.cantidad_obs,tb1.isprototipo
+      `, [id]);
+      const ids = results.map(row => row.idx)
+
+      const [cruce] = await conn.query("select tdc.idx as id_despacho,DATE_FORMAT(tdc.fec_despacho,'%d/%m') as fec_despacho,tdd.id_item as idx,COALESCE(tdd.despacho,0) as despacho,COALESCE(tdd.caidos,0) as caidos,COALESCE(tdd.incompletos,0) as incompletos,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',tddf.talla,'despachos',tddf.despachos,'caidos',tddf.caidos,'incompletos',tddf.incompletos)) from tbl2_despachos_det_fracciones tddf WHERE tddf.id_despacho_DET = tdd.idx),JSON_ARRAY()) as fracciones from tbl2_despachos_cab tdc join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB where tdc.tipo = 'SERVICIOS' and tdc.id_guia_origen = ?",[id])
+
+      console.log("iNfo del creuce uomo es.:",cruce,id)
+
+      // let lista_despachos = [...new Set(cruce.reduce((carry, valor) => { return [...carry, valor.id_despacho] }, []))]
+      let lista_despachos = cruce.reduce((carry,value)=>{
+        if(!Object.keys(carry).includes(value.id_despacho)){
+          carry[value.id_despacho] = value.fec_despacho
+        }
+        return carry 
+      },{})
+
+      let pp = results.reduce((carry,value)=>{
+        value['despachos'] = Object.keys(lista_despachos).reduce((carry,valor)=>{
+          let info = cruce.filter(item=>item.id_despacho == valor && item.idx == value.idx)
+
+          console.log("Fresas con sal:",info)
+          carry.push({
+            'id_despacho':info.length > 0 ? info[0].id_despacho : parseInt(valor),
+            'fec_despacho':info.length > 0 ? info[0].fec_despacho : lista_despachos[valor], 
+            'cantidad_despacho':info.length > 0 ? info[0].despacho : 0,
+            'cantidad_caidos':info.length > 0 ? info[0].caidos : 0,
+            'cantidad_incompletos':info.length > 0 ? info[0].incompletos : 0,
+            'fracciones': info.length > 0 ? info[0].fracciones : []
+          })
+          return carry
+        },[])
+        carry.push(value)
+        return carry
+      },[])
 
       console.log("La info completa es:",pp)
       
@@ -1024,8 +1113,6 @@ export class ProduccionModel {
         // return results
       }
       if(cabecera.tipo == 'SERVICIOS'){
-        // UpdateMasterProduccion(backup_articulos,articulos,orden,conn,tipo)
-        // formato de data : [ {idcombo:22,xs:[13,1],s:[13,1],m:[13,1],l:[13,1],xl:[13,1],xxl:[13,1]},{},{},... ]
         let param1 = backup_articulos.reduce((c,v)=>{
           let info = {idcombo:v.id_combo}
           info = v.fracciones.reduce((cc,vv)=>{
@@ -1050,8 +1137,114 @@ export class ProduccionModel {
         if(!respuesta.ok) throw respuesta.message
       }
 
-      // if (conn) conn.rollback()
-      if (conn) conn.commit()
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
+      return {ok:true,message:'Registro completo'}
+    } catch (err) {
+      console.log(err)
+      if (conn) conn.rollback()
+      // return {ok:false,message:err.message}
+      return {ok:false,message:err}
+    } finally {
+      if (conn) await conn.end();
+    }
+  }
+  static async saveInfoMuestras(data) {
+    let conn
+    console.log("Info del formulario:", data)
+    const results = { ok: true, message: 'test' }
+    const cabecera = JSON.parse(data.info)
+    const articulos = JSON.parse(data.detalle)
+    const penalidades = data.penalidades ? JSON.parse(data.penalidades) : []
+    const reprogramacion = data.reprogramacion ? JSON.parse(data.reprogramacion) : []
+
+    console.log('Detalle multiple:', cabecera)
+    console.log('Detalle penalidades:', penalidades)
+    console.log('Detalle reprogramaciones:', reprogramacion)
+
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      conn.beginTransaction()
+
+      if (data.id) {
+        await conn.query('UPDATE tbl2_guias_traslado_cab SET orden_ref=NULLIF(?, ""),tipo=NULLIF(?, ""),id_proveedor_CAB=NULLIF(?, ""),proveedor=NULLIF(?, ""),servicio=NULLIF(?, ""),fec_emision=NULLIF(?, ""),fec_retorno=NULLIF(?, ""),fec_recepcion=NULLIF(?, ""),costo=NULLIF(?, ""),observaciones=NULLIF(?, ""),estado=NULLIF(?, ""),motivo_traslado=NULLIF(?, ""),responsable=NULLIF(?, ""),modelo=NULLIF(?, ""),marca=NULLIF(?, ""),producto=NULLIF(?, ""),destino=NULLIF(?, ""),id_orden_CAB=NULLIF(?, "") WHERE idx = ?', [cabecera.orden_ref, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.servicio, cabecera.fec_emision, cabecera.fec_retorno, cabecera.fec_recepcion, cabecera.costo, cabecera.observaciones, cabecera.estado, cabecera.motivo_traslado, cabecera.responsable, cabecera.modelo, cabecera.marca, cabecera.producto, cabecera.destino, cabecera.id_orden_CAB ?? 1 , parseInt(data.id)])
+        const [res, fld] = await conn.query("SELECT *FROM tbl2_guias_traslado_det WHERE id_guia_CAB = " + parseInt(data.id))
+        const ids_delete = res.filter(row => row.idx !== '' && !articulos.map(fila => parseInt(fila.idx)).includes(parseInt(row.idx)))
+
+        const insert = async () => {
+          const fila = articulos.shift()
+          if (fila) {
+            let fracciones = []
+            if (fila.idx && fila.idx !== '') {
+              console.log("Dentro de 1 actualizacion")
+              const [results, fields] = await conn.query('UPDATE tbl2_guias_traslado_det SET articulo=NULLIF(?, ""),cantidad=NULLIF(?, ""),isprototipo=NULLIF(?, "") WHERE idx = ? and id_guia_CAB = ?', [fila.articulo, fila.cantidad, fila.isprototipo, fila.idx, parseInt(data.id)]);
+              // insert()
+              fracciones = Object.keys(fila).filter(valor => ['xs', 's', 'm', 'l', 'xl', 'xxl'].includes(valor)).reduce((carry, value) => {
+                carry.push([fila.idx, value, parseInt(fila[value])])
+                return carry
+              }, [])
+              console.log("Detalle de las fracciones :", fracciones)
+            } else {
+              console.log("Dentro de 2 insertado")
+              const [results, fields] = await conn.query('INSERT INTO tbl2_guias_traslado_det(id_guia_CAB,articulo,cantidad,isprototipo) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [parseInt(data.id), fila.articulo, fila.cantidad, fila.isprototipo]);
+              // insert()
+              fracciones = Object.keys(fila).filter(valor => ['xs', 's', 'm', 'l', 'xl', 'xxl'].includes(valor)).reduce((carry, value) => {
+                carry.push([results.insertId, value, parseInt(fila[value])])
+                return carry
+              }, [])
+            }
+            // console.log("Dentro de actualizado las fracciones son :",fracciones)
+            await conn.query('REPLACE INTO tbl2_guias_traslado_det_fracciones(id_guia_DET,talla,cantidad) values ?', [fracciones])
+
+            await insert()
+          } else {
+            console.log("Devolviendo resolve")
+            return Promise.resolve('')
+          }
+        }
+        await insert()
+
+        const eliminar = async () => {
+          const fila = ids_delete.shift()
+          if (fila) {
+            await conn.query('DELETE FROM `tbl2_guias_traslado_det` WHERE `id_guia_CAB` = ? and `idx` = ?', [parseInt(data.id), parseInt(fila.idx)])
+            await eliminar()
+          } else {
+            return Promise.resolve('')
+          }
+        }
+        await eliminar()
+
+      } else {
+        try {
+          const [res, fields] = await conn.query('INSERT INTO tbl2_guias_traslado_cab(orden_ref,tipo,id_proveedor_CAB,proveedor,servicio,fec_emision,fec_retorno,costo,observaciones,motivo_traslado,responsable,modelo,marca,producto,destino,id_orden_CAB,id_corte_CAB) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?,""),NULLIF(?,""))', [cabecera.orden_ref, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.servicio, cabecera.fec_emision, cabecera.fec_retorno, cabecera.costo, cabecera.observaciones, cabecera.motivo_traslado, cabecera.responsable, cabecera.modelo, cabecera.marca, cabecera.producto, cabecera.destino, cabecera.id_orden_CAB ?? 1, cabecera.id_corte_CAB ?? 1])
+
+          const insert = async () => {
+            const fila = articulos.shift()
+            console.log("Nueva fila detalle juan :", fila)
+            if (fila) {
+              const [results, fields] = await conn.query('INSERT INTO tbl2_guias_traslado_det(id_guia_CAB,articulo,cantidad,isprototipo,id_combo) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.articulo, fila.cantidad, fila.isprototipo, fila.id_combo]);
+
+              const fracciones = Object.keys(fila).filter(valor => ['xs', 's', 'm', 'l', 'xl', 'xxl'].includes(valor)).reduce((carry, value) => {
+                carry.push([results.insertId, value, parseInt(fila[value])])
+                return carry
+              }, [])
+              const [results2] = await conn.query('INSERT INTO tbl2_guias_traslado_det_fracciones(id_guia_DET,talla,cantidad) values ?', [fracciones]);
+
+              await insert()
+            } else {
+              return Promise.resolve('')
+            }
+          }
+          await insert()
+        } catch (err) { 
+          console.log("error en la consulta", err)
+        }
+      }
+
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return {ok:true,message:'Registro completo'}
     } catch (err) {
       console.log(err)
@@ -1267,6 +1460,24 @@ export class ProduccionModel {
     }
   }
   static async eliminarInfoGuias(id) {
+    let conn
+    // console.log("El id de eliminado es el siguiente:",id)
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      await conn.query('DELETE FROM `tbl2_guias_traslado_cab` WHERE `idx` = "' + id + '"');
+      await conn.query('DELETE FROM `tbl2_guias_traslado_det` WHERE `id_guia_CAB` = "' + id + '"');
+      await conn.end();
+      return results
+    } catch (err) {
+      return [err]
+    } finally {
+      if (conn) {
+        await conn.end();
+      }
+    }
+  }
+  static async eliminarInfoMuestras(id) {
     let conn
     // console.log("El id de eliminado es el siguiente:",id)
     try {
