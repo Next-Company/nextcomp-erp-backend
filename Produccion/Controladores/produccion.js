@@ -981,12 +981,16 @@ export class ProduccionController {
     const data = await ProduccionModel.searchGuia(info)
     res.json(data)
   }
+  static async saveInfoMuestras(req, res) {
+    const data = await ProduccionModel.saveInfoMuestras(req.body)
+    res.json(data)
+  }
   static async saveInfoGuias(req, res) {
     const data = await ProduccionModel.saveInfoGuias(req.body)
     res.json(data)
   }
-  static async saveInfoMuestras(req, res) {
-    const data = await ProduccionModel.saveInfoMuestras(req.body)
+  static async saveInfoGuiasGLB(req, res) {
+    const data = await ProduccionModel.saveInfoGuiasGLB(req.body)
     res.json(data)
   }
   static async saveInfoGuiasXPQ(req, res) {
@@ -996,6 +1000,11 @@ export class ProduccionController {
   static async eliminarInfoGuias(req, res) {
     const id = req.params.id
     const data = await ProduccionModel.eliminarInfoGuias(id)
+    res.json(data)
+  }
+  static async eliminarInfoGuiasGLB(req, res) {
+    const id = req.params.id
+    const data = await ProduccionModel.eliminarInfoGuiasGLB(id)
     res.json(data)
   }
   static async eliminarInfoMuestras(req, res) {
@@ -1011,6 +1020,11 @@ export class ProduccionController {
   static async anularInfoGuias(req, res) {
     const id = req.params.id
     const data = await ProduccionModel.anularInfoGuias(id)
+    res.json(data)
+  }
+  static async anularInfoGuiasGLB(req, res) {
+    const id = req.params.id
+    const data = await ProduccionModel.anularInfoGuiasGLB(id)
     res.json(data)
   }
   static async anularInfoGuiasXPQ(req, res) {

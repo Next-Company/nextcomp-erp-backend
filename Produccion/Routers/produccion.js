@@ -28,6 +28,10 @@ produccionRouter.put('/guardarguia', ProduccionController.saveInfoGuias)
 produccionRouter.delete('/borrarguia/:id', ProduccionController.eliminarInfoGuias)
 produccionRouter.delete('/anularguia/:id', ProduccionController.anularInfoGuias)
 
+produccionRouter.put('/guardarguiaglb', ProduccionController.saveInfoGuiasGLB)
+produccionRouter.delete('/borrarguiaglb/:id', ProduccionController.eliminarInfoGuiasGLB)
+produccionRouter.delete('/anularguiaglb/:id', ProduccionController.anularInfoGuiasGLB)
+
 produccionRouter.put('/guardarguiaxpq', ProduccionController.saveInfoGuiasXPQ)
 produccionRouter.delete('/borrarguiaxpq/:id', ProduccionController.eliminarInfoGuiasXPQ)
 produccionRouter.delete('/anularguiaxpq/:id', ProduccionController.anularInfoGuiasXPQ)
