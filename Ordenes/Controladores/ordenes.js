@@ -1202,8 +1202,8 @@ export class OrdenesController {
                                 <tr><td>MARCA</td><td>${info.marca}</td></tr>
                                 <tr><td>MODELO</td><td>${info.modelos}</td></tr>
                                 <tr><td>BASE</td><td>${info.base}</td></tr>
-                                <tr><td>PROVEEDOR</td><td>${info.proveedor}</td></tr>
-                                <tr><td>TELA</td><td>OP/${('00000000' + info.orden_ref).substring(5)}</td></tr>
+                                <tr><td>PROVEEDOR</td><td>${info.proveedor ?? '-'}</td></tr>
+                                <tr><td>TELA</td><td>OP/${info.orden_ref ? ('00000000' + info.orden_ref).substring(5) : 'STOCK'}</td></tr>
                                 <tr><td>CURVA</td><td>${info.curva ?? 'curva'}</td></tr>
                                 <tr><td>TALLAS</td><td style="font-size:10px;">${row[0].fracciones.map(item=>item.talla).join("-")}</td></tr>
                                 <tr><td>CANTIDAD</td><td>${info.ordenes_combos.reduce((c,v)=>c+v.cantidad_combo,0)}</td></tr>

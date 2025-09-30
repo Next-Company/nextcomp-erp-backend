@@ -2,6 +2,7 @@ import { configs } from "../../Main/utils.js";
 import mysql from "mysql2/promise";
 import { ProductosService } from "../../Productos/Servicios/productosService.js";
 import AlmacenModel from "../../Almacen/Servicios/almacenService.js";
+import { isUtf8 } from "node:buffer";
 // import { inventario } from "../../Main/config.js";
 export class ProduccionModel {
   static async getOrdenes(search) {
@@ -790,7 +791,8 @@ export class ProduccionModel {
       // const ids = results.map(row => row.idx)
       const [results, fields] = await conn.query(`
       SELECT tb2.servicio,tb2.marca,tb2.modelo,tb1.idx,tb1.id_combo,tb1.id_guia_CAB,tb1.articulo,tb1.talla,tb1.categoria,tb1.cantidad,tb1.cantidad_obs,tb1.isprototipo,
-      (COALESCE(sum(ingresos.despacho),0) + COALESCE(sum(ingresos.caidos),0)) as ingresos,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('idcombo',tb1.id_combo,'talla',tf.talla,'cantidad',tf.cantidad)) from tbl2_guias_traslado_det_fracciones tf where tf.id_guia_DET = tb1.idx),JSON_ARRAY()) as fracciones,JSON_ARRAY() as fracciones_despacho
+      (COALESCE(sum(ingresos.despacho),0) + COALESCE(sum(ingresos.caidos),0)) as ingresos,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('idcombo',tb1.id_combo,'talla',tf.talla,'cantidad',tf.cantidad)) from tbl2_guias_traslado_det_fracciones tf where tf.id_guia_DET = tb1.idx),JSON_ARRAY()) as fracciones,JSON_ARRAY() as fracciones_despacho,
+      COALESCE((select coalesce(t1.disponible_total,0) from tbl2_fases_prod_hojacorte_combos t1 where t1.idx = tb1.id_combo),0) as disponible_total
       FROM tbl2_guias_traslado_det tb1 
       JOIN tbl2_guias_traslado_cab tb2 on tb1.id_guia_CAB = tb2.idx
       LEFT JOIN (
@@ -1159,7 +1161,9 @@ export class ProduccionModel {
     const penalidades = data.penalidades ? JSON.parse(data.penalidades) : []
     const reprogramacion = data.reprogramacion ? JSON.parse(data.reprogramacion) : []
 
+   
     console.log('Detalle multiple:', cabecera)
+    console.log('Detalle articulos:', articulos)
     console.log('Detalle penalidades:', penalidades)
     console.log('Detalle reprogramaciones:', reprogramacion)
 
@@ -1238,7 +1242,7 @@ export class ProduccionModel {
 
       } else {
         try {
-          const [res, fields] = await conn.query('INSERT INTO tbl2_guias_traslado_cab(orden_ref,tipo,id_proveedor_CAB,proveedor,servicio,fec_emision,fec_retorno,costo,observaciones,motivo_traslado,responsable,modelo,marca,producto,destino,id_orden_CAB,id_corte_CAB) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?,""),NULLIF(?,""))', [cabecera.orden_ref, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.servicio, cabecera.fec_emision, cabecera.fec_retorno, cabecera.costo, cabecera.observaciones, cabecera.motivo_traslado, cabecera.responsable, cabecera.modelo, cabecera.marca, cabecera.producto, cabecera.destino, cabecera.id_orden_CAB ?? 1, cabecera.id_corte_CAB ?? 1])
+          const [res, fields] = await conn.query('INSERT INTO tbl2_guias_traslado_cab(orden_ref,tipo,id_proveedor_CAB,proveedor,servicio,fec_emision,fec_retorno,costo,observaciones,motivo_traslado,responsable,modelo,marca,producto,destino,id_orden_CAB,id_corte_CAB,distribucion) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?,""),NULLIF(?,""),NULLIF(?,""))', [cabecera.orden_ref, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.servicio, cabecera.fec_emision, cabecera.fec_retorno, cabecera.costo, cabecera.observaciones, cabecera.motivo_traslado, cabecera.responsable, cabecera.modelo, cabecera.marca, cabecera.producto, cabecera.destino, cabecera.id_orden_CAB ?? 1, cabecera.id_corte_CAB ?? 1, cabecera.distribucion])
 
           for(let fila of [...articulos]){
             const [results, fields] = await conn.query('INSERT INTO tbl2_guias_traslado_det(id_guia_CAB,articulo,cantidad,isprototipo,id_combo) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.articulo, fila.cantidad, fila.isprototipo, fila.id_combo]);
@@ -1254,9 +1258,9 @@ export class ProduccionModel {
           console.log("error en la consulta", err)
         }
       }
-      // /////////////////////////////////////////
       // ACTUALIZACION DE MASTERS DE DISPONIBLES
-      // /////////////////////////////////////////
+      // //////////////////////////////////////////
+      // //////////////////////////////////////////
 
       // [
       //   {"talla": "l", "cantidad": 69}, 
@@ -1294,9 +1298,9 @@ export class ProduccionModel {
       let respuesta = await this.UpdateMasterProduccionGLB(param1,param2,cabecera.id_orden_CAB,conn,1)
       if(!respuesta.ok) throw respuesta.message
 
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
-      return {ok:true,message:'Registro completo'}
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
+      return {ok:true,message:'Registro completo y terminado'}
     } catch (err) {
       console.log(err)
       if (conn) conn.rollback()
@@ -1396,12 +1400,12 @@ export class ProduccionModel {
           }
           await insert()
         } catch (err) { 
-          console.log("error en la consulta", err)
+          console.log("Error en la consulta", err)
         }
       }
 
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return {ok:true,message:'Registro completo'}
     } catch (err) {
       console.log(err)
@@ -1659,7 +1663,7 @@ export class ProduccionModel {
         // p2 = `CASE ${p2} ELSE 0 END`
         // p3 = `CASE ${p3} ELSE 0 END`
 
-        await conn.query(`update tbl2_fases_prod_hojacorte_combos set disponible_total = COALESCE(disponible_total,0) + `+ p0_ +`, caidos_total = COALESCE(caidos_total,0) + ` + p2_ + `, incompletos_total = COALESCE(incompletos_total,0) + ` + p3_ + ` where id_hojacorte_CAB = ?`,[hojacorte[0].idx])
+        await conn.query(`update tbl2_fases_prod_hojacorte_combos set disponible_total = COALESCE(disponible_total,0) + `+ p1_ +`, caidos_total = COALESCE(caidos_total,0) + ` + p2_ + `, incompletos_total = COALESCE(incompletos_total,0) + ` + p3_ + ` where id_hojacorte_CAB = ?`,[hojacorte[0].idx])
 
         // if(!acabados){
         //   await conn.query(`UPDATE tbl2_fases_prod_hojacorte_combos_fracciones SET produccion_total = COALESCE(produccion_total,0) + ` + p1 + `, caidos_total = COALESCE(caidos_total,0) + ` + p2 + `, incompletos_total = COALESCE(incompletos_total,0) + ` + p3)
@@ -1690,6 +1694,7 @@ export class ProduccionModel {
           //   c += " WHEN id_combo_CAB = " + combo.idcombo + " and talla = '" + v + "' THEN " + (tipo ? -1*parseInt(combo[v][2]) : parseInt(combo[v][2]))
           //   return c
           // },p3)
+          console.log("Seccion recalculo de articulos")
         }
         p1_ = `CASE ${p1_} ELSE 0 END`
         p2_ = `CASE ${p2_} ELSE 0 END`
@@ -1698,7 +1703,11 @@ export class ProduccionModel {
         // p2 = `CASE ${p2} ELSE 0 END`
         // p3 = `CASE ${p3} ELSE 0 END`
 
-        await conn.query(`update tbl2_fases_prod_hojacorte_combos set disponible_total = COALESCE(disponible_total,0) + `+ p0_ +`, caidos_total = COALESCE(caidos_total,0) + ` + p2_ + `, incompletos_total = COALESCE(incompletos_total,0) + ` + p3_ + ` where id_hojacorte_CAB = ?`,[hojacorte[0].idx])
+        let query2 = `update tbl2_fases_prod_hojacorte_combos set disponible_total = COALESCE(disponible_total,0) + `+ p1_ +`, caidos_total = COALESCE(caidos_total,0) + ` + p2_ + `, incompletos_total = COALESCE(incompletos_total,0) + ` + p3_ + ` where id_hojacorte_CAB = ?`
+
+        console.log("El query a ejecutar es el siguiente:",query2)
+        // await conn.query(`update tbl2_fases_prod_hojacorte_combos set disponible_total = COALESCE(disponible_total,0) + `+ p1_ +`, caidos_total = COALESCE(caidos_total,0) + ` + p2_ + `, incompletos_total = COALESCE(incompletos_total,0) + ` + p3_ + ` where id_hojacorte_CAB = ?`,[hojacorte[0].idx])
+        await conn.query(query2,[hojacorte[0].idx])
 
         // if(!acabados){
         //   await conn.query(`UPDATE tbl2_fases_prod_hojacorte_combos_fracciones SET produccion_total = COALESCE(produccion_total,0) + ` + p1 + `, caidos_total = COALESCE(caidos_total,0) + ` + p2 + `, incompletos_total = COALESCE(incompletos_total,0) + ` + p3)
@@ -1707,8 +1716,9 @@ export class ProduccionModel {
         // }
       }
 
-      const [validacion] = await conn.query(`select sum(coalesce(cantidad_combo,0)) as cantidad, sum(coalesce(t2.disponible_total,0)) as disponible, sum(coalesce(t2.caidos_total,0)) as caidos, sum(coalesce(t2.incompletos_total,0)) as incompletos from tbl2_fases_prod_hojacorte t1 join tbl2_fases_prod_hojacorte_combos t2 on t1.idx = t2.id_hojacorte_CAB where t1.id_cab_orden = ?
-      )`,[parseInt(orden)])
+      console.log("La lista de idcombos a validar es:",articulos,articulos.map(row=>row.idcombo).join(','))
+
+      const [validacion] = await conn.query(`select sum(coalesce(cantidad_combo,0)) as cantidad, sum(coalesce(t2.disponible_total,0)) as disponible, sum(coalesce(t2.caidos_total,0)) as caidos, sum(coalesce(t2.incompletos_total,0)) as incompletos from tbl2_fases_prod_hojacorte t1 join tbl2_fases_prod_hojacorte_combos t2 on t1.idx = t2.id_hojacorte_CAB where t1.id_cab_orden = ? and t2.idx in (`+ articulos.map(row=>row.idcombo).join(',') +`)`,[parseInt(orden)])
 
       // const [validacion] = await conn.query(`SELECT sum(cantidad) as cantidad,${!acabados ? 'sum(produccion_total)' : 'sum(despacho_total)'} as p_tot,sum(caidos_total) as c_tot,sum(incompletos_total) as i_tot
       //   FROM tbl2_fases_prod_hojacorte_combos_fracciones tfphcf 
@@ -1719,7 +1729,7 @@ export class ProduccionModel {
       //     WHERE t2.id_cab_orden = ?
       // )`,[parseInt(orden)])
       console.log("Imprimiendo validacion:",validacion)
-      if((parseInt(validacion[0].disponible) + parseInt(validacion[0].caidos) + parseInt(validacion[0].incompletos)) > validacion[0].cantidad) throw "La informacion ingresada supera el limite permitido"
+      if((parseInt(validacion[0].disponible) + parseInt(validacion[0].caidos) + parseInt(validacion[0].incompletos)) > validacion[0].cantidad || (parseInt(validacion[0].disponible) + parseInt(validacion[0].caidos) + parseInt(validacion[0].incompletos)) < 0) throw "La informacion ingresada supera el limite permitido"
 
       return {ok:true,message:''}
     } catch (error) {
@@ -1993,7 +2003,7 @@ export class ProduccionModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      let extra = (search !== '' && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(TRIM(tipo),' ',TRIM(orden_ref),' ',TRIM(proveedor),' ',TRIM(produccion),' ',TRIM(estado))) > 0").join(" ") : ""
+      let extra = (search !== '' && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(TRIM(COALESCE(tipo,'')),' ',TRIM(COALESCE(orden_ref,'')),' ',TRIM(COALESCE(proveedor,'')),' ',TRIM(COALESCE(produccion,'')),' ',TRIM(COALESCE(estado,'')))) > 0").join(" ") : ""
 
       // SECCION CONSULTA PEDIDOS
       console.log("Consulta extra :", extra)
@@ -2830,8 +2840,187 @@ export class ProduccionModel {
         if(!respuesta.ok) throw respuesta.message
         // console.log("Resultado del update master :",resp_update)
       }
-      // if (conn) conn.rollback()
-      if (conn) conn.commit()
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
+      return {ok:true,message:'Proceso ejecutado con éxito'}
+    } catch (err) {
+      console.log("asdlkfaslfjlaskdfjlf:",err)
+      if (conn) conn.rollback()
+      return {ok:false,message:err}
+    } finally {
+      if (conn) await conn.end();
+    }
+  }
+  static async saveInfoDespachosGuiaGLB(data) {
+    let conn
+    const results = { ok: true, message: 'test' }
+    const cabecera = JSON.parse(data.info)
+    const articulos = JSON.parse(data.detalle)
+    const facturas = JSON.parse(data.facturas)
+
+    console.log("Informacion cabecera:", cabecera)
+    console.log("Informacion detalle:", articulos)
+    console.log("Informacion facturas:", facturas)
+
+    // return {ok:true,message:'test'}
+    let data_backup = [], info_orden = undefined
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      conn.beginTransaction()
+
+      [data_backup] = await conn.query(`select tdd.id_combo,tdd.despacho,tdd.caidos,tdd.incompletos,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',t1.talla,'despachos',t1.despachos,'caidos',t1.caidos,'incompletos',t1.incompletos)) from tbl2_despachos_det_fracciones t1 where t1.id_despacho_DET = tdd.idx),JSON_ARRAY()) as fracciones from tbl2_despachos_det tdd where tdd.id_despacho_CAB = ?`,[data.id]);
+      [info_orden] = await conn.query('select *from tbl2_guias_traslado_cab where idx = ?',[parseInt(cabecera.id_guia_origen)])
+
+      if (data.id) {
+        await conn.query('UPDATE tbl2_despachos_cab SET fec_emision_guia=NULLIF(?, ""),fec_despacho=NULLIF(?, ""),tipo=NULLIF(?, ""),id_proveedor_CAB=NULLIF(?, ""),proveedor=NULLIF(?, ""),responsable=NULLIF(?, ""),id_guia_origen=NULLIF(?, ""),nro_guia_origen=NULLIF(?, ""),id_pedido_origen=NULLIF(?, ""),nro_pedido_origen=NULLIF(?, ""),observaciones=NULLIF(?, ""),nro_guia=NULLIF(?, ""),nro_factura=NULLIF(?, ""),imp_factura=NULLIF(?, ""),facturado=NULLIF(?, ""),fase=NULLIF(?, "") WHERE idx = ?', [cabecera.fec_emision_guia, cabecera.fec_despacho, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.id_guia_origen, cabecera.nro_guia_origen, cabecera.id_pedido_origen, cabecera.nro_pedido_origen, cabecera.observaciones, cabecera.nro_guia, cabecera.nro_factura, cabecera.imp_factura,cabecera.facturado,cabecera.fase, parseInt(data.id)])
+
+        const [res, fld] = await conn.query("SELECT *FROM tbl2_despachos_det WHERE id_despacho_CAB = " + parseInt(data.id))
+        const ids_delete = res.filter(row => row.idx !== '' && !articulos.map(fila => parseInt(fila.idx)).includes(parseInt(row.idx)))
+
+        for(let fila of [...articulos]){
+          let id_det = null
+          if (fila.idx && fila.idx !== '') {
+            console.log("Detro de la actualizacion")
+            const [results, fields] = await conn.query('UPDATE tbl2_despachos_det SET precio=NULLIF(?, ""),despacho=NULLIF(?, ""),caidos=NULLIF(?, ""),incompletos=NULLIF(?, "") WHERE idx = ? and id_despacho_CAB = ?', [fila.precio, fila.despacho, fila.caidos, fila.incompletos, fila.idx, parseInt(data.id)]);
+            id_det = fila.idx
+
+          } else {
+            const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,despacho,caidos,incompletos) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [parseInt(data.id), fila.id_item, fila.despacho, fila.caidos, fila.incompletos]);
+            id_det = insertdet.insertId
+          }
+
+          if(fila.fracciones_despacho.length > 0){
+            let fracciones_despacho = fila.fracciones_despacho.reduce((c,v)=>{
+              c.push([id_det,v.talla,v.cantidad,v.caidos,v.incompletos])
+              return c
+            },[])
+            console.log("La informacion a insertar es:",fracciones_despacho)
+            await conn.query(`DELETE FROM tbl2_despachos_det_fracciones WHERE id_despacho_DET = ?`,[parseInt(id_det)])
+            await conn.query(`INSERT INTO tbl2_despachos_det_fracciones(id_despacho_DET,talla,despachos,caidos,incompletos) values ?`,[fracciones_despacho]) 
+          }
+        }
+
+        console.log("Lista de filas a eliminar:", ids_delete)
+        for(let fila of [...ids_delete]){
+          await conn.query('DELETE FROM `tbl2_despachos_det` WHERE `id_despacho_CAB` = ? and `idx` = ?', [parseInt(data.id), parseInt(fila.idx)])
+        }
+
+        const [res2] = await conn.query("SELECT *FROM tbl2_despachos_adi WHERE id_despacho_CAB = " + parseInt(data.id))
+        const ids_delete2 = res2.filter(row => row.idx !== '' && !facturas.map(fila => parseInt(fila.idx)).includes(parseInt(row.idx)))
+        console.log("Lista de filas a eliminar:", ids_delete2)
+        console.log("Las facturas a insertar son:",facturas)
+
+        for(let fila of [...facturas]){
+          if (fila.idx && fila.idx !== '') {
+            const [results, fields] = await conn.query('UPDATE tbl2_despachos_adi SET tipodoc=NULLIF(?, ""),moneda=NULLIF(?, ""),serie=NULLIF(?, ""),numero=NULLIF(?, ""),fec_emision=NULLIF(?, ""),unidades=NULLIF(?, ""),importe_bruto=NULLIF(?, ""),base_imponible=NULLIF(?, ""),monto_inafecto=NULLIF(?, ""),igv=NULLIF(?, ""),importe_total=NULLIF(?, "") WHERE idx = ? and id_despacho_CAB = ?', [fila.tipodoc, fila.moneda, fila.serie, fila.numero, fila.fec_emision, fila.unidades, fila.importe_bruto, fila.base_imponible, fila.monto_inafecto, fila.igv, fila.importe_total, fila.idx, parseInt(data.id)]);
+          } else {
+            const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_adi(id_despacho_CAB,tipodoc,moneda,serie,numero,fec_emision,unidades,importe_bruto,base_imponible,monto_inafecto,igv,importe_total) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [parseInt(data.id), fila.tipodoc, fila.moneda, fila.serie, fila.numero, fila.fec_emision, parseFloat(fila.unidades), parseFloat(fila.importe_bruto), parseFloat(fila.base_imponible), parseFloat(fila.monto_inafecto), parseFloat(fila.igv), parseFloat(fila.importe_total)]);
+          }
+        }
+        for(let fila of [...ids_delete2]){
+          await conn.query('DELETE FROM `tbl2_despachos_adi` WHERE `id_despacho_CAB` = ? and `idx` = ?', [parseInt(data.id), parseInt(fila.idx)])
+        }
+
+        if(cabecera.tipo !== 'PEDIDOS'){
+          let [result,fields] = await conn.query(`
+            SELECT idx,orden_ref,producto,responsable,modelo,marca,estado,tipo,servicio,id_proveedor_CAB,proveedor,fec_emision,DATE_FORMAT(fec_emision,'%d/%m/%Y') as fec_emision_guia,fec_retorno,DATE_FORMAT(fec_retorno,'%d/%m/%Y') as fec_retorno_guia,fec_recepcion,costo,COALESCE(DATEDIFF(fec_retorno,fec_emision),'') as tiempo_produccion,COALESCE(DATEDIFF(STR_TO_DATE(fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
+            (
+              select sum(cantidad) from tbl2_guias_traslado_det tgtd where tgtd.id_guia_CAB = tbl2_guias_traslado_cab.idx
+            ) as cantidad_servicio,
+            (
+              select COALESCE(sum(COALESCE(tdd.despacho,0) + COALESCE(tdd.caidos,0) + COALESCE(tdd.incompletos,0)),0) as total from tbl2_despachos_cab tdc 
+              join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
+              where tdc.id_guia_origen = tbl2_guias_traslado_cab.idx
+            ) as ingresos
+            FROM tbl2_guias_traslado_cab where idx = ?
+            `,[parseInt(cabecera.id_guia_origen)])
+          let valida = result[0].ingresos >= result[0].cantidad_servicio ? 1 : 0
+          if(valida){
+            await conn.query("UPDATE tbl2_guias_traslado_cab SET estado = 'FINALIZADO' WHERE idx = ?",[parseInt(cabecera.id_guia_origen)])
+          }
+        }
+
+      //////////////////////////////////////////////////////////////
+      //////////////INICIA SEGUNDA SECCION DE INGRE/////////////////
+      //////////////////////////////////////////////////////////////
+      } else {
+        try {
+          const [res] = await conn.query('INSERT INTO tbl2_despachos_cab(fec_emision_guia,fec_despacho,tipo,id_proveedor_CAB,proveedor,responsable,id_guia_origen,nro_guia_origen,id_pedido_origen,nro_pedido_origen,observaciones,nro_guia,nro_factura,imp_factura,facturado,fase) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [cabecera.fec_emision_guia, cabecera.fec_despacho, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.id_guia_origen, cabecera.nro_guia_origen, cabecera.id_pedido_origen, cabecera.nro_pedido_origen, cabecera.observaciones, cabecera.nro_guia, cabecera.nro_factura, cabecera.imp_factura,cabecera.facturado,cabecera.fase])
+
+          console.log("Inicia insertado detalle despacho")
+          for(let detalle of [...articulos]){
+            const [results] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,precio,despacho,caidos,incompletos,id_combo) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, detalle.id_item, detalle.precio, parseFloat(detalle.despacho ?? 0), parseFloat(detalle.caidos ?? 0), parseFloat(detalle.incompletos ?? 0),detalle.id_combo]);
+
+            if(cabecera.tipo !== 'PEDIDOS' && detalle.fracciones_despacho.length > 0){
+              console.log("Informacion de la fraccion :",detalle.fracciones_despacho)
+              let fracciones_despacho = detalle.fracciones_despacho.reduce((c,v)=>{
+                c.push([results.insertId,v.talla,v.cantidad,v.caidos,v.incompletos])
+                return c
+              },[])
+              console.log("La informacion a insertar es:",fracciones_despacho)
+              await conn.query(`INSERT INTO tbl2_despachos_det_fracciones(id_despacho_DET,talla,despachos,caidos,incompletos) values ?`,[fracciones_despacho])
+            }
+          }
+
+          for(let fila of [...facturas]){
+            await conn.query('INSERT INTO tbl2_despachos_adi(id_despacho_CAB,tipodoc,moneda,serie,numero,fec_emision,unidades,importe_bruto,base_imponible,monto_inafecto,igv,importe_total) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.tipodoc, fila.moneda, fila.serie, fila.numero, fila.fec_emision, parseFloat(fila.unidades), parseFloat(fila.importe_bruto), parseFloat(fila.base_imponible), parseFloat(fila.monto_inafecto), parseFloat(fila.igv), parseFloat(fila.importe_total)]);
+          }
+
+          console.log("Comienza validacion del saldo de articulos")
+          let [result] = await conn.query(`
+            SELECT idx,orden_ref,producto,responsable,modelo,marca,estado,tipo,servicio,id_proveedor_CAB,proveedor,fec_emision,DATE_FORMAT(fec_emision,'%d/%m/%Y') as fec_emision_guia,fec_retorno,DATE_FORMAT(fec_retorno,'%d/%m/%Y') as fec_retorno_guia,fec_recepcion,costo,COALESCE(DATEDIFF(fec_retorno,fec_emision),'') as tiempo_produccion,COALESCE(DATEDIFF(STR_TO_DATE(fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
+            (
+              select sum(cantidad) from tbl2_guias_traslado_det tgtd where tgtd.id_guia_CAB = tbl2_guias_traslado_cab.idx
+            ) as cantidad_servicio,
+            (
+              select COALESCE(sum(COALESCE(tdd.despacho,0) + COALESCE(tdd.caidos,0) + COALESCE(tdd.incompletos,0)),0) as total from tbl2_despachos_cab tdc 
+              join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
+              where tdc.id_guia_origen = tbl2_guias_traslado_cab.idx
+            ) as ingresos
+            FROM tbl2_guias_traslado_cab where idx = ?
+            `,[parseInt(cabecera.id_guia_origen)])
+
+          console.log("Info de la validacoines :",result)
+      
+          let valida = result[0].ingresos >= result[0].cantidad_servicio ? 1 : 0
+          if(valida){
+            await conn.query("UPDATE tbl2_guias_traslado_cab SET estado = 'FINALIZADO' WHERE idx = ?",[parseInt(cabecera.id_guia_origen)])
+          }
+        } catch (err) {
+          console.log("error en la consulta", err)
+        }
+      }
+
+      ///////////////////////////////////////////
+      ///// UPDATE MASTES DE PRODUCCION /////////
+      if(parseInt(cabecera.fase)){
+        console.log("Comenzando actulizacion master de produccion",data_backup)
+        let param1 = data_backup.reduce((c,v)=>{
+          let pp = v.fracciones.reduce((cc,vv)=>{
+            cc = {...cc,[vv.talla]:[ parseInt(vv.despachos),parseInt(vv.caidos),parseInt(vv.incompletos) ]}
+            return cc
+          },{idcombo:v.id_combo,disponible:v.despachos,caidos:v.caidos,incompletos:v.incompletos})
+          c.push(pp)
+          return c
+        },[])
+        console.log("El valor del primer dato es:",param1)
+        console.log("La informacion de los articulo es :",articulos)
+        let param2 = articulos.filter(item=>item.id_combo).reduce((c,v)=>{
+          let pp = v.fracciones_despacho.reduce((cc,vv)=>{
+            return {...cc,[vv.talla]:[vv.cantidad,vv.caidos,vv.incompletos]}
+          },{idcombo:v.id_combo,disponible:v.despacho,caidos:v.caidos,incompletos:v.incompletos})
+          c.push(pp)
+          return c
+        },[])
+        console.log("El valor del segundo dato es:",param2)
+  
+        let respuesta = ( cabecera.distribucion == 'GLB' ? await this.UpdateMasterProduccionGLB(param1,param2,info_orden[0].id_orden_CAB,conn,0) : await this.UpdateMasterProduccion(param1,param2,info_orden[0].id_orden_CAB,conn,0) ) // tipo = 1 => RESTA, tipo = 0 => SUMA
+        console.log("Imprimiendo respuestad del master:",respuesta)
+        if(!respuesta.ok) throw respuesta.message
+      }
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return {ok:true,message:'Proceso ejecutado con éxito'}
     } catch (err) {
       console.log("asdlkfaslfjlaskdfjlf:",err)

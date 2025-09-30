@@ -2637,6 +2637,10 @@ export class ProduccionController {
     const data = await ProduccionModel.saveInfoDespachosGuia(req.body)
     res.json(data)
   }
+  static async saveInfoDespachosGuiaGLB(req, res) {
+    const data = await ProduccionModel.saveInfoDespachosGuiaGLB(req.body)
+    res.json(data)
+  }
   static async saveInfoDespachosGuiaXPQ(req, res) {
     const data = await ProduccionModel.saveInfoDespachosGuiaXPQ(req.body)
     res.json(data)
