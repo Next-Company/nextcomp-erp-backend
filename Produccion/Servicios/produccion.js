@@ -3,6 +3,7 @@ import mysql from "mysql2/promise";
 import { ProductosService } from "../../Productos/Servicios/productosService.js";
 import AlmacenModel from "../../Almacen/Servicios/almacenService.js";
 import { isUtf8 } from "node:buffer";
+import { info } from "node:console";
 // import { inventario } from "../../Main/config.js";
 export class ProduccionModel {
   static async getOrdenes(search) {
@@ -1639,9 +1640,9 @@ export class ProduccionModel {
         // p2 = ''
         // p3 = ''
         for(let combo of [...backup_articulos]){
-          p1_ = "WHEN idx = " + combo.idcombo + " THEN " + (tipo ? parseInt(combo.disponible) : -1*parseInt(combo.disponible))
-          p2_ = "WHEN idx = " + combo.idcombo + " THEN " + (tipo ? parseInt(combo.caidos) : -1*parseInt(combo.caidos))
-          p3_ = "WHEN idx = " + combo.idcombo + " THEN " + (tipo ? parseInt(combo.incompletos) : -1*parseInt(combo.incompletos))
+          p1_ += " WHEN idx = " + combo.idcombo + " THEN " + (tipo ? parseInt(combo.disponible) : -1*parseInt(combo.disponible))
+          p2_ += " WHEN idx = " + combo.idcombo + " THEN " + (tipo ? parseInt(combo.caidos) : -1*parseInt(combo.caidos))
+          p3_ += " WHEN idx = " + combo.idcombo + " THEN " + (tipo ? parseInt(combo.incompletos) : -1*parseInt(combo.incompletos))
 
           // p1 = ['xs','s','m','l','xl','xxl'].reduce((c,v)=>{
           //   c += " WHEN id_combo_CAB = " + combo.idcombo +" and talla = '" + v + "' THEN " + (tipo ? parseInt(combo[v][0]) : -1*parseInt(combo[v][0]))
@@ -1663,7 +1664,15 @@ export class ProduccionModel {
         // p2 = `CASE ${p2} ELSE 0 END`
         // p3 = `CASE ${p3} ELSE 0 END`
 
-        await conn.query(`update tbl2_fases_prod_hojacorte_combos set disponible_total = COALESCE(disponible_total,0) + `+ p1_ +`, caidos_total = COALESCE(caidos_total,0) + ` + p2_ + `, incompletos_total = COALESCE(incompletos_total,0) + ` + p3_ + ` where id_hojacorte_CAB = ?`,[hojacorte[0].idx])
+        let query1 = `update tbl2_fases_prod_hojacorte_combos set disponible_total = COALESCE(disponible_total,0) + `+ p1_ +`, caidos_total = COALESCE(caidos_total,0) + ` + p2_ + `, incompletos_total = COALESCE(incompletos_total,0) + ` + p3_ + ` where id_hojacorte_CAB = ?`
+
+        console.log("El query a ejecutar es el siguiente:",query1)
+        await conn.query(query1,[hojacorte[0].idx])
+
+        let [vald1] = await conn.query(`SELECT sum(disponible_total) as disponible_total,sum(caidos_total) as caidos_total,sum(incompletos_total) as incompletos_total
+          FROM tbl2_fases_prod_hojacorte_combos 
+          WHERE id_hojacorte_CAB = ?`,[hojacorte[0].idx])
+        console.log("El resultado de la validacion parcial es:",vald1)
 
         // if(!acabados){
         //   await conn.query(`UPDATE tbl2_fases_prod_hojacorte_combos_fracciones SET produccion_total = COALESCE(produccion_total,0) + ` + p1 + `, caidos_total = COALESCE(caidos_total,0) + ` + p2 + `, incompletos_total = COALESCE(incompletos_total,0) + ` + p3)
@@ -1679,9 +1688,9 @@ export class ProduccionModel {
         // p2 = ''
         // p3 = ''
         for(let combo of [...articulos]){
-          p1_ = "WHEN idx = " + combo.idcombo + " THEN " + (tipo ? -1*parseInt(combo.disponible) : parseInt(combo.disponible))
-          p2_ = "WHEN idx = " + combo.idcombo + " THEN " + (tipo ? -1*parseInt(combo.caidos) : parseInt(combo.caidos))
-          p3_ = "WHEN idx = " + combo.idcombo + " THEN " + (tipo ? -1*parseInt(combo.incompletos) : parseInt(combo.incompletos))
+          p1_ += " WHEN idx = " + combo.idcombo + " THEN " + (tipo ? -1*parseInt(combo.disponible) : parseInt(combo.disponible))
+          p2_ += " WHEN idx = " + combo.idcombo + " THEN " + (tipo ? -1*parseInt(combo.caidos) : parseInt(combo.caidos))
+          p3_ += " WHEN idx = " + combo.idcombo + " THEN " + (tipo ? -1*parseInt(combo.incompletos) : parseInt(combo.incompletos))
           // p1 = ['xs','s','m','l','xl','xxl'].reduce((c,v)=>{
           //   c += " WHEN id_combo_CAB = " + combo.idcombo +" and talla = '" + v + "' THEN " + (tipo ? -1*parseInt(combo[v][0]) : parseInt(combo[v][0]))
           //   return c
@@ -1694,7 +1703,7 @@ export class ProduccionModel {
           //   c += " WHEN id_combo_CAB = " + combo.idcombo + " and talla = '" + v + "' THEN " + (tipo ? -1*parseInt(combo[v][2]) : parseInt(combo[v][2]))
           //   return c
           // },p3)
-          console.log("Seccion recalculo de articulos")
+          console.log("Seccion recalculo de articulos",combo,p1_)
         }
         p1_ = `CASE ${p1_} ELSE 0 END`
         p2_ = `CASE ${p2_} ELSE 0 END`
@@ -1709,6 +1718,12 @@ export class ProduccionModel {
         // await conn.query(`update tbl2_fases_prod_hojacorte_combos set disponible_total = COALESCE(disponible_total,0) + `+ p1_ +`, caidos_total = COALESCE(caidos_total,0) + ` + p2_ + `, incompletos_total = COALESCE(incompletos_total,0) + ` + p3_ + ` where id_hojacorte_CAB = ?`,[hojacorte[0].idx])
         await conn.query(query2,[hojacorte[0].idx])
 
+
+        let [vald1] = await conn.query(`SELECT sum(disponible_total) as disponible_total,sum(caidos_total) as caidos_total,sum(incompletos_total) as incompletos_total
+          FROM tbl2_fases_prod_hojacorte_combos 
+          WHERE id_hojacorte_CAB = ?`,[hojacorte[0].idx])
+        console.log("El resultado de la validacion parcial es:",vald1)
+
         // if(!acabados){
         //   await conn.query(`UPDATE tbl2_fases_prod_hojacorte_combos_fracciones SET produccion_total = COALESCE(produccion_total,0) + ` + p1 + `, caidos_total = COALESCE(caidos_total,0) + ` + p2 + `, incompletos_total = COALESCE(incompletos_total,0) + ` + p3)
         // }else{
@@ -1718,7 +1733,12 @@ export class ProduccionModel {
 
       console.log("La lista de idcombos a validar es:",articulos,articulos.map(row=>row.idcombo).join(','))
 
-      const [validacion] = await conn.query(`select sum(coalesce(cantidad_combo,0)) as cantidad, sum(coalesce(t2.disponible_total,0)) as disponible, sum(coalesce(t2.caidos_total,0)) as caidos, sum(coalesce(t2.incompletos_total,0)) as incompletos from tbl2_fases_prod_hojacorte t1 join tbl2_fases_prod_hojacorte_combos t2 on t1.idx = t2.id_hojacorte_CAB where t1.id_cab_orden = ? and t2.idx in (`+ articulos.map(row=>row.idcombo).join(',') +`)`,[parseInt(orden)])
+      // const [pp] = await conn.query(`select sum(coalesce(cantidad_combo,0)) as cantidad, sum(coalesce(t2.disponible_total,0)) as disponible, sum(coalesce(t2.caidos_total,0)) as caidos, sum(coalesce(t2.incompletos_total,0)) as incompletos from tbl2_fases_prod_hojacorte t1 join tbl2_fases_prod_hojacorte_combos t2 on t1.idx = t2.id_hojacorte_CAB where t1.id_cab_orden = ? `,[parseInt(orden)])
+
+      // console.log("Resultado de la validacion general:",pp)
+      const listaIds = !articulos.length ? '' : ` and t2.idx in (`+ articulos.map(row=>row.idcombo).join(',') +`)`
+
+      const [validacion] = await conn.query(`select sum(coalesce(cantidad_combo,0)) as cantidad, sum(coalesce(t2.disponible_total,0)) as disponible, sum(coalesce(t2.caidos_total,0)) as caidos, sum(coalesce(t2.incompletos_total,0)) as incompletos from tbl2_fases_prod_hojacorte t1 join tbl2_fases_prod_hojacorte_combos t2 on t1.idx = t2.id_hojacorte_CAB where t1.id_cab_orden = ? ` + listaIds,[parseInt(orden)])
 
       // const [validacion] = await conn.query(`SELECT sum(cantidad) as cantidad,${!acabados ? 'sum(produccion_total)' : 'sum(despacho_total)'} as p_tot,sum(caidos_total) as c_tot,sum(incompletos_total) as i_tot
       //   FROM tbl2_fases_prod_hojacorte_combos_fracciones tfphcf 
@@ -1817,8 +1837,8 @@ export class ProduccionModel {
       let resultado = await this.UpdateMasterProduccion(param1,[],info_orden[0].id_orden_CAB,conn,1)
       if(!resultado.ok) throw resultado.message
 
-      // if (conn) conn.rollback()
-      if (conn) conn.commit()
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return {ok:true,message:"El servicio fue anulado con éxito."}
     } catch (err) {
       console.log(err)
@@ -1829,6 +1849,7 @@ export class ProduccionModel {
     }
   }
   static async anularInfoGuiasGLB(id) {
+    console.log("Dentro de la anulacion de guias GLB")
     let conn
     try {
       conn = await mysql.createConnection(configs[1])
@@ -1839,23 +1860,23 @@ export class ProduccionModel {
       await conn.query("UPDATE tbl2_guias_traslado_cab SET estado = 'ANULADO' WHERE idx = ?",[id]);
 
       let [info_orden] = await conn.query('select *from tbl2_guias_traslado_cab where idx = ?',[id])
-      let [data_backup] = await conn.query(`select tdd.id_combo,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',t1.talla,'cantidad',t1.cantidad)) from tbl2_guias_traslado_det_fracciones t1 where t1.id_guia_DET = tdd.idx),JSON_ARRAY()) as fracciones from tbl2_guias_traslado_det tdd where tdd.id_guia_CAB = ?`,[id])
+      let [data_backup] = await conn.query(`select tdd.id_combo,tdd.cantidad,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',t1.talla,'cantidad',t1.cantidad)) from tbl2_guias_traslado_det_fracciones t1 where t1.id_guia_DET = tdd.idx),JSON_ARRAY()) as fracciones from tbl2_guias_traslado_det tdd where tdd.id_guia_CAB = ?`,[id])
       
       let param1 = data_backup.reduce((c,v)=>{
         let pp = v.fracciones.reduce((cc,vv)=>{
           cc = {...cc,[vv.talla]:[ parseInt(vv.cantidad),0,0 ]}
           return cc
-        },{idcombo:v.id_combo})
+        },{idcombo:v.id_combo,disponible:v.cantidad,caidos:0,incompletos:0})
         c.push(pp)
         return c
       },[])
       console.log("Info del parametro 1:",param1)
 
-      let resultado = await this.UpdateMasterProduccion(param1,[],info_orden[0].id_orden_CAB,conn,1)
+      let resultado = await this.UpdateMasterProduccionGLB(param1,[],info_orden[0].id_orden_CAB,conn,1)
       if(!resultado.ok) throw resultado.message
 
-      // if (conn) conn.rollback()
-      if (conn) conn.commit()
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return {ok:true,message:"El servicio fue anulado con éxito."}
     } catch (err) {
       console.log(err)
@@ -2852,6 +2873,7 @@ export class ProduccionModel {
     }
   }
   static async saveInfoDespachosGuiaGLB(data) {
+    console.log("Inicando el proceso de guardado de despacho GLB")
     let conn
     const results = { ok: true, message: 'test' }
     const cabecera = JSON.parse(data.info)
@@ -2863,16 +2885,26 @@ export class ProduccionModel {
     console.log("Informacion facturas:", facturas)
 
     // return {ok:true,message:'test'}
-    let data_backup = [], info_orden = undefined
+    let data_backup = [], info_orden = []
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      conn.beginTransaction()
+      conn.beginTransaction();
 
-      [data_backup] = await conn.query(`select tdd.id_combo,tdd.despacho,tdd.caidos,tdd.incompletos,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',t1.talla,'despachos',t1.despachos,'caidos',t1.caidos,'incompletos',t1.incompletos)) from tbl2_despachos_det_fracciones t1 where t1.id_despacho_DET = tdd.idx),JSON_ARRAY()) as fracciones from tbl2_despachos_det tdd where tdd.id_despacho_CAB = ?`,[data.id]);
-      [info_orden] = await conn.query('select *from tbl2_guias_traslado_cab where idx = ?',[parseInt(cabecera.id_guia_origen)])
+      // [data_backup] = await conn.query(`select tdd.id_combo,tdd.despacho,tdd.caidos,tdd.incompletos,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',t1.talla,'despachos',t1.despachos,'caidos',t1.caidos,'incompletos',t1.incompletos)) from tbl2_despachos_det_fracciones t1 where t1.id_despacho_DET = tdd.idx),JSON_ARRAY()) as fracciones from tbl2_despachos_det tdd where tdd.id_despacho_CAB = ?`,[parseInt(data.id)]);
+      
+      [info_orden] = await conn.query('select *from tbl2_guias_traslado_cab where idx = ?',[parseInt(cabecera.id_guia_origen)]);
+
+      console.log("Data backup consultada es:",info_orden)
+      // return {ok:true,message:'Proceso ejecutado con éxito'}
+
+      // const [inff] = await conn.query('select *from tbl2_despachos_det where id_despacho_CAB = ?',[parseInt(data.id)])
+      // const [inff] = await conn.query(`select tdd.id_combo,tdd.despacho,tdd.caidos,tdd.incompletos,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',t1.talla,'despachos',t1.despachos,'caidos',t1.caidos,'incompletos',t1.incompletos)) from tbl2_despachos_det_fracciones t1 where t1.id_despacho_DET = tdd.idx),JSON_ARRAY()) as fracciones from tbl2_despachos_det tdd where tdd.id_despacho_CAB = ?`,[parseInt(data.id)])
+      // console.log("Data backup consultada es:",data.id,data_backup,info_orden)
 
       if (data.id) {
+        [data_backup] = await conn.query(`select tdd.id_combo,tdd.despacho,tdd.caidos,tdd.incompletos,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',t1.talla,'despachos',t1.despachos,'caidos',t1.caidos,'incompletos',t1.incompletos)) from tbl2_despachos_det_fracciones t1 where t1.id_despacho_DET = tdd.idx),JSON_ARRAY()) as fracciones from tbl2_despachos_det tdd where tdd.id_despacho_CAB = ?`,[parseInt(data.id)]);
+
         await conn.query('UPDATE tbl2_despachos_cab SET fec_emision_guia=NULLIF(?, ""),fec_despacho=NULLIF(?, ""),tipo=NULLIF(?, ""),id_proveedor_CAB=NULLIF(?, ""),proveedor=NULLIF(?, ""),responsable=NULLIF(?, ""),id_guia_origen=NULLIF(?, ""),nro_guia_origen=NULLIF(?, ""),id_pedido_origen=NULLIF(?, ""),nro_pedido_origen=NULLIF(?, ""),observaciones=NULLIF(?, ""),nro_guia=NULLIF(?, ""),nro_factura=NULLIF(?, ""),imp_factura=NULLIF(?, ""),facturado=NULLIF(?, ""),fase=NULLIF(?, "") WHERE idx = ?', [cabecera.fec_emision_guia, cabecera.fec_despacho, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.id_guia_origen, cabecera.nro_guia_origen, cabecera.id_pedido_origen, cabecera.nro_pedido_origen, cabecera.observaciones, cabecera.nro_guia, cabecera.nro_factura, cabecera.imp_factura,cabecera.facturado,cabecera.fase, parseInt(data.id)])
 
         const [res, fld] = await conn.query("SELECT *FROM tbl2_despachos_det WHERE id_despacho_CAB = " + parseInt(data.id))
@@ -3000,7 +3032,7 @@ export class ProduccionModel {
           let pp = v.fracciones.reduce((cc,vv)=>{
             cc = {...cc,[vv.talla]:[ parseInt(vv.despachos),parseInt(vv.caidos),parseInt(vv.incompletos) ]}
             return cc
-          },{idcombo:v.id_combo,disponible:v.despachos,caidos:v.caidos,incompletos:v.incompletos})
+          },{idcombo:v.id_combo,disponible:v.despacho,caidos:v.caidos,incompletos:v.incompletos})
           c.push(pp)
           return c
         },[])
@@ -3014,13 +3046,15 @@ export class ProduccionModel {
           return c
         },[])
         console.log("El valor del segundo dato es:",param2)
+
+        console.log("La info consolidada es:",info_orden)
   
         let respuesta = ( cabecera.distribucion == 'GLB' ? await this.UpdateMasterProduccionGLB(param1,param2,info_orden[0].id_orden_CAB,conn,0) : await this.UpdateMasterProduccion(param1,param2,info_orden[0].id_orden_CAB,conn,0) ) // tipo = 1 => RESTA, tipo = 0 => SUMA
         console.log("Imprimiendo respuestad del master:",respuesta)
         if(!respuesta.ok) throw respuesta.message
       }
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return {ok:true,message:'Proceso ejecutado con éxito'}
     } catch (err) {
       console.log("asdlkfaslfjlaskdfjlf:",err)
@@ -3459,8 +3493,55 @@ export class ProduccionModel {
         await conn.query('DELETE FROM `tbl2_despachos_det` WHERE `id_despacho_CAB` = "' + id + '"');
       }
 
-      // if (conn) await conn.rollback();
-      if (conn) await conn.commit();
+      if (conn) await conn.rollback();
+      // if (conn) await conn.commit();
+      return {ok:true,message:'Ingreso eliminado con éxtio!'}
+    } catch (err) {
+      console.log("Error en la eliminacion de despacho:",err)
+      if (conn) await conn.rollback();
+      return {ok:false,message:err.message ?? err}
+    } finally {
+      if (conn) await conn.end();
+    }
+  }
+  static async eliminarInfoDespachosGuiaGLB(id) {
+    console.log("Dentro de eliminado de ingresos globales")
+    let conn
+    console.log("El id de eliminado es el siguientes:",id)
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      conn.beginTransaction()
+
+      let [cabecera] = await conn.query('select *from tbl2_despachos_cab where idx = ?',[id])      
+      let [data_backup] = await conn.query(`select tdd.id_combo,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',t1.talla,'despachos',t1.despachos,'caidos',t1.caidos,'incompletos',t1.incompletos)) from tbl2_despachos_det_fracciones t1 where t1.id_despacho_DET = tdd.idx),JSON_ARRAY()) as fracciones from tbl2_despachos_det tdd where tdd.id_despacho_CAB = ?`,[id])
+      console.log("Informacion de la cabecera:",cabecera)
+
+      console.log("El tipo de despacho es diferente a pedidos")
+      let [info_orden] = await conn.query('select *from tbl2_guias_traslado_cab where idx = ?',[parseInt(cabecera[0].id_guia_origen)])
+      let param1 = data_backup.filter(row=>row.id_combo).reduce((c,v)=>{
+        let pp = v.fracciones.reduce((cc,vv)=>{
+          cc = {...cc,[vv.talla]:[ parseInt(vv.despachos),parseInt(vv.caidos),parseInt(vv.incompletos) ]}
+          return cc
+        },{idcombo:v.id_combo})
+        c.push(pp)
+        return c
+      },[])
+      console.log("Info del parametro 1:",param1)
+
+      await conn.query('DELETE FROM `tbl2_despachos_cab` WHERE `idx` = "' + id + '"');
+      await conn.query('DELETE t1,t2 FROM tbl2_despachos_det t1 JOIN tbl2_despachos_det_fracciones t2 ON t1.idx = t2.id_despacho_DET WHERE t1.id_despacho_CAB = ' + parseInt(id));
+      
+      // ///////////////////////////////////////////////////////////////////////////////////
+      // EL VALOR DE FASE INDICA SI EL INGRESO HA SIDO CONTABILIZADO O TODAVIA: {0:NO,1:SI}
+      // ///////////////////////////////////////////////////////////////////////////////////
+      if(cabecera[0].fase){
+        let resultado = await this.UpdateMasterProduccion(param1,[],info_orden[0].id_orden_CAB,conn,0)
+        if(!resultado.ok) throw resultado.message
+      }
+
+      if (conn) await conn.rollback();
+      // if (conn) await conn.commit();
       return {ok:true,message:'Ingreso eliminado con éxtio!'}
     } catch (err) {
       console.log("Error en la eliminacion de despacho:",err)

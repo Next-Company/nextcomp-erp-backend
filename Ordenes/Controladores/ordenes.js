@@ -1273,7 +1273,7 @@ export class OrdenesController {
    
             return `
               <table id="sugerido">
-                <thead style="height:80px;">
+                <thead style="height:60px;">
                   <tr style="background-color:#b5e1ff;">
                     <th style="min-width:200px;">FOTO DE PRENDA</th>
                     <th style="min-width:${consolidado[0].length > 1 ? '85' : '120'}px;">COLOR</th>

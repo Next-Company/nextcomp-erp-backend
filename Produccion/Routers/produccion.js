@@ -61,6 +61,7 @@ produccionRouter.put('/guardardespachoguiaglb', ProduccionController.saveInfoDes
 produccionRouter.put('/guardardespachoguiaxpq', ProduccionController.saveInfoDespachosGuiaXPQ)
 produccionRouter.delete('/borrardespachopedido/:id', ProduccionController.eliminarInfoDespachosPedido)
 produccionRouter.delete('/borrardespachoguia/:id', ProduccionController.eliminarInfoDespachosGuia)
+produccionRouter.delete('/borrardespachoguiaglb/:id', ProduccionController.eliminarInfoDespachosGuiaGLB)
 produccionRouter.delete('/borrardespachoguiaxpq/:id', ProduccionController.eliminarInfoDespachosGuiaXPQ)
 
 produccionRouter.get('/getListaRetiros', ProduccionController.getListaRetiros)
@@ -76,6 +77,7 @@ produccionRouter.put('/guardarestampado', ProduccionController.saveInfoEstampado
 produccionRouter.delete('/borrarestampado/:id', ProduccionController.eliminarInfoEstampado)
 produccionRouter.post('/exportdespacho/:id/:idguia', ProduccionController.exportInfoDespacho)
 produccionRouter.get('/verdespachoguia/:id/:idguia/:condicion', ProduccionController.verInfoDespachoGuia)
+produccionRouter.get('/verdespachoguiaglb/:id/:idguia/:condicion', ProduccionController.verInfoDespachoGuiaGLB)
 produccionRouter.get('/verdespachomuestra/:id/:idguia/:condicion', ProduccionController.verInfoDespachoMuestra)
 produccionRouter.get('/verdespachopedido/:id/:idpedido/:condicion', ProduccionController.verInfoDespachoPedido)
 
