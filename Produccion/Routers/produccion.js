@@ -52,13 +52,14 @@ produccionRouter.get('/showinformepedido/:id', ProduccionController.ShowInformeP
 
 produccionRouter.get('/getListaDespachos/:tipo', ProduccionController.getListaDespachos)
 produccionRouter.get('/getListaDespachos/:tipo/:search', ProduccionController.getListaDespachos)
-// produccionRouter.get('/getListaDespachos/:search/:filtros',ProduccionController.getListaDespachos)
 produccionRouter.get('/despacho/:id', ProduccionController.getInfoDespachos)
+// produccionRouter.get('/getListaDespachos/:search/:filtros',ProduccionController.getListaDespachos)
 // produccionRouter.put('/guardardespacho', ProduccionController.saveInfoDespachos)
 produccionRouter.put('/guardardespachopedido', ProduccionController.saveInfoDespachosPedido)
 produccionRouter.put('/guardardespachoguia', ProduccionController.saveInfoDespachosGuia)
 produccionRouter.put('/guardardespachoguiaglb', ProduccionController.saveInfoDespachosGuiaGLB)
 produccionRouter.put('/guardardespachoguiaxpq', ProduccionController.saveInfoDespachosGuiaXPQ)
+
 produccionRouter.delete('/borrardespachopedido/:id', ProduccionController.eliminarInfoDespachosPedido)
 produccionRouter.delete('/borrardespachoguia/:id', ProduccionController.eliminarInfoDespachosGuia)
 produccionRouter.delete('/borrardespachoguiaglb/:id', ProduccionController.eliminarInfoDespachosGuiaGLB)

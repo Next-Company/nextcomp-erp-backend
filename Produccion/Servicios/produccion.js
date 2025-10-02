@@ -966,7 +966,8 @@ export class ProduccionModel {
       let query = 'SELECT *FROM tbl2_guias_traslado_cab where 1=1 ' + (search !== '' ? extra : '') + ' limit 50'
       console.log("Query de busqueda:", query)
 
-      const [results, fields] = await conn.query('SELECT *FROM tbl2_guias_traslado_cab where 1=1 ' + (search !== '_' ? extra : '') + ' limit 50');
+      const [results, fields] = await conn.query('SELECT t1.*,(SELECT SUM(COALESCE(t2.cantidad,0)) FROM tbl2_guias_traslado_det t2 WHERE t2.id_guia_CAB = t1.idx) as cantidad_servicio FROM tbl2_guias_traslado_cab t1 where 1=1 ' + (search !== '_' ? extra : '') + ' limit 50');
+
       await conn.end();
       return results
     } catch (err) {
@@ -1299,8 +1300,8 @@ export class ProduccionModel {
       let respuesta = await this.UpdateMasterProduccionGLB(param1,param2,cabecera.id_orden_CAB,conn,1)
       if(!respuesta.ok) throw respuesta.message
 
-      // if (conn) conn.rollback()
-      if (conn) conn.commit()
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return {ok:true,message:'Registro completo y terminado'}
     } catch (err) {
       console.log(err)
@@ -1494,8 +1495,8 @@ export class ProduccionModel {
         }
       }
 
-      // if (conn) conn.rollback()
-      if (conn) conn.commit()
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return {ok:true,message:'Registro completo'}
     } catch (err) {
       console.log(err)
