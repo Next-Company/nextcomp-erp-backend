@@ -576,10 +576,12 @@ export class ProductosService{
 
   }
 
-  static async getProductosConStock(search){
+  static async getProductosConStock(search,filters = {}){
     const conn = await mysql.createConnection(configs[1]);
     await conn.connect();
     try {
+      let newfilters = Object.keys(filters).length > 0 ? Object.keys(filters).map(key=>` and ${key}=${filters[key]}`) : 'asdfsdf'
+      console.log("Los filtro de busqueda son :",filters,newfilters)
       let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(COALESCE(TRIM(producto),''),' ',COALESCE(TRIM(color),''),' ',COALESCE(TRIM(modelo),''),' ',COALESCE(TRIM(marca),''),' ',COALESCE(TRIM(presentacion),''))) > 0").join(" ") : ""
 
       // tp.idx AS id_producto_CAB,
@@ -603,29 +605,30 @@ export class ProductosService{
       // ts.sku AS sku2
 
       const [rows] = await conn.execute(`
-        select *
-        from
+        SELECT *
+        FROM
         (
-          select
-            tp.idx as idx_prod,
-            ts.idx as idx_subprod,
-            tp.codigo,
-            tp.tipo,
-            tp.codUnidadMedida as unidad,
-            tp.nom as producto,
-            ts.idx_CAB_COLOR,
-            (select tc.nom from tbl2_colores tc where tc.idx = ts.idx_CAB_COLOR) as color,
-            ts.idx_talla,
-            (select tt.detalle from tbl2_tallas tt where tt.idx = ts.idx_talla) as talla,
-            tad.lote,
-            tad.cantidad as stock
-            from tbl2_productos tp
-            left join tbl2_subproductos ts on tp.idx = ts.idx_CAB_PROD
-            left join tbl2_almacen_det tad on tad.idx_subproducto = ts.idx and tad.id_cabprod = ts.idx_CAB_PROD
-          where tp.ruc_ = '20522094120' and tp.tipo in ('I','A') and ts.idx_CAB_COLOR is not null
-        ) as cc
-        where 1=1 ${extra} 
-        limit 100
+          SELECT
+              tad.id_CAB_DET,
+              tp.idx as idx_prod,
+              ts.idx as idx_subprod,
+              tp.codigo,
+              tp.tipo,
+              tp.codUnidadMedida as unidad,
+              tp.nom as producto,
+              ts.idx_CAB_COLOR,
+              (select tc.nom from tbl2_colores tc where tc.idx = ts.idx_CAB_COLOR) as color,
+              ts.idx_talla,
+              (select tt.detalle from tbl2_tallas tt where tt.idx = ts.idx_talla) as talla,
+              tad.lote,
+              tad.cantidad as stock
+            FROM tbl2_productos tp
+            LEFT join tbl2_subproductos ts on tp.idx = ts.idx_CAB_PROD
+            LEFT join tbl2_almacen_det tad on tad.idx_subproducto = ts.idx and tad.id_cabprod = ts.idx_CAB_PROD ${newfilters}
+            WHERE tp.ruc_ = '20522094120' and tp.tipo in ('I','A') and ts.idx_CAB_COLOR is not null 
+        ) AS cc
+        WHERE 1=1 ${extra}
+        LIMIT 100
       `);
       console.log(rows);
       return rows;

@@ -19,6 +19,7 @@ ALMACEN_ROUTER.delete('/deleteguiamov/:idguia',AlmacenController.deleteGuia)
 
 ALMACEN_ROUTER.get('/getdespacho/:idmov',AlmacenController.getDespacho)
 ALMACEN_ROUTER.post('/savedespacho',AlmacenController.saveDespacho)
+ALMACEN_ROUTER.put('/updatedespacho/:idguia',AlmacenController.updateDespacho)
 ALMACEN_ROUTER.delete('/deletedespacho/:idguia',AlmacenController.deleteDespacho)
 
 ALMACEN_ROUTER.get('/disponibilidadreq/:idreq',AlmacenController.getDisponibilidadRequerimiento)

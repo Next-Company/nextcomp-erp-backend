@@ -46,6 +46,13 @@ export default class AlmacenController{
     const data = await AlmacenModel.saveDespacho(info,session)
     reply.send(data)
   }
+  static async updateDespacho(req,reply,next){
+    let info = req.body
+    let idguia = req.params.idguia
+    let session = req.session ?? {id:0}
+    const data = await AlmacenModel.updateDespacho(info,session,idguia)
+    reply.send(data)
+  }
   static async deleteGuia(req,reply){
     let id = req.params.idguia
     const data = await AlmacenModel.deleteGuia(id)

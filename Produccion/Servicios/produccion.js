@@ -1813,6 +1813,7 @@ export class ProduccionModel {
     }
   }
   static async anularInfoGuias(id) {
+    console.log("Dentro de la anulacion de guias simples")
     let conn
     try {
       conn = await mysql.createConnection(configs[1])
@@ -1834,12 +1835,12 @@ export class ProduccionModel {
         return c
       },[])
       console.log("Info del parametro 1:",param1)
-
+                                                                                                                                                                                  
       let resultado = await this.UpdateMasterProduccion(param1,[],info_orden[0].id_orden_CAB,conn,1)
       if(!resultado.ok) throw resultado.message
 
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return {ok:true,message:"El servicio fue anulado con éxito."}
     } catch (err) {
       console.log(err)
@@ -3344,6 +3345,7 @@ export class ProduccionModel {
     }
   }
   static async eliminarInfoDespachosPedido(id) {
+    console.log("Dentro del eliminado de despacho de pedido ;)")
     let conn
     console.log("El id de eliminado es el siguientes:",id)
     try {
