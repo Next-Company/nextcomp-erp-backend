@@ -1067,6 +1067,7 @@ export class OrdenesController {
         nrocorte: data[0].oc,
         ruta: eval(data[0].ruta_proceso).join(" - "),
         cabecera: data[0],
+        rutaimg: `https://jsjfact.com/facturador/imagenez/op_${params.idorden}.jpg`,
         helpers: {
           comercial: function(fechacomercial){
             const partes = fechacomercial.split('-'); 
