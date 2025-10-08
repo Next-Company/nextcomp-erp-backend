@@ -81,7 +81,9 @@ export class ProductosService{
             round((tp.costo + ((tp.utilidad1 * tp.costo) / 100)), 1) AS precio,
             tp.presentacion,
             tp.marca,
-            tp.modelo
+            tp.modelo,
+            tp.tipoFabricacion,
+            tp.tipoProduccion
         from tbl2_productos tp
         where 1=1 ${extra} and tp.ruc_ = '20522094120'
         limit 150
