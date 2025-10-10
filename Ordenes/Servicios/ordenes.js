@@ -792,7 +792,9 @@ export class OrdenesModel {
         fields.filter(row => row.name !== 'idx').map(row => row.name).includes(current) && carry.push(current)
         return carry
       }, [])
+      console.log("La lista de campos es:",campos)
       const values = campos.map(row => info[row])
+      console.log("La lista de valores es:",values)
       const [result] = await conn.execute('INSERT INTO tbl2_fases_prod_ordenes(' + campos.toString() + ') VALUES (' + campos.map(row => "NULLIF(?, '')").toString() + ')', values)
       const idinsert = result.insertId
 
@@ -833,7 +835,7 @@ export class OrdenesModel {
     }
   }
   static async updateFaseOrden(info, user_data) {
-    console.log("Empezando con la actualizacion de las ordenes")
+    console.log("Empezando con la actualizacion de las ordenes melcochita")
     let conn
     let nameimg = null
     try {
@@ -860,6 +862,7 @@ export class OrdenesModel {
       }, [])
       const values = campos.map(row => info[row])
       console.log("Informacion de campos :",campos)
+      console.log("Informacion de values :",values)
       let result_update = await conn.query('UPDATE tbl2_fases_prod_ordenes SET ' + campos.map(row => row + " = NULLIF(?,'')").toString() + ' WHERE idx = ' + id,values)
 
       console.log("Resultado de la actualziaoo : ",result_update)
@@ -886,8 +889,8 @@ export class OrdenesModel {
       }
 
       nameimg = `op_${id}.jpg`
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito',filename: nameimg }
     } catch (err) {
       console.log(err)
