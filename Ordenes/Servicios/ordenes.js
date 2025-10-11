@@ -492,6 +492,27 @@ export class OrdenesModel {
       }
     }
   }
+  static async getRequerimientosByOrden(id) {
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      
+      const [requerimientos] = await conn.query(`select t2.orden_ref,t2.fec_emision,t2.fec_retorno,t2.proveedor,t2.forma_pago,t2.estado,t1.*
+      from tbl2_fases_prod_ordenes_requerimientos t1
+      join tbl2_pedidos_insumos_cab t2 on t1.id_pedido_CAB = t2.idx
+      where t1.id_orden_CAB = ?`,[id]);
+
+      await conn.end();
+      return requerimientos
+    } catch (err) {
+      console.log("Estamos en error:", err);
+    } finally {
+      if (conn) {
+        await conn.end();
+      }
+    }
+  }
   static async testMultiSelect(info) {
     let conn
     try {
