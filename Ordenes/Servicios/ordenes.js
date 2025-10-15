@@ -492,6 +492,27 @@ export class OrdenesModel {
       }
     }
   }
+  static async getRequerimientosByOrden(id) {
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      
+      const [requerimientos] = await conn.query(`select t2.orden_ref,t2.fec_emision,t2.fec_retorno,t2.proveedor,t2.forma_pago,t2.estado,t1.*
+      from tbl2_fases_prod_ordenes_requerimientos t1
+      join tbl2_pedidos_insumos_cab t2 on t1.id_pedido_CAB = t2.idx
+      where t1.id_orden_CAB = ?`,[id]);
+
+      await conn.end();
+      return requerimientos
+    } catch (err) {
+      console.log("Estamos en error:", err);
+    } finally {
+      if (conn) {
+        await conn.end();
+      }
+    }
+  }
   static async testMultiSelect(info) {
     let conn
     try {
@@ -792,7 +813,9 @@ export class OrdenesModel {
         fields.filter(row => row.name !== 'idx').map(row => row.name).includes(current) && carry.push(current)
         return carry
       }, [])
+      console.log("La lista de campos es:",campos)
       const values = campos.map(row => info[row])
+      console.log("La lista de valores es:",values)
       const [result] = await conn.execute('INSERT INTO tbl2_fases_prod_ordenes(' + campos.toString() + ') VALUES (' + campos.map(row => "NULLIF(?, '')").toString() + ')', values)
       const idinsert = result.insertId
 
@@ -833,7 +856,7 @@ export class OrdenesModel {
     }
   }
   static async updateFaseOrden(info, user_data) {
-    console.log("Empezando con la actualizacion de las ordenes")
+    console.log("Empezando con la actualizacion de las ordenes melcochita")
     let conn
     let nameimg = null
     try {
@@ -860,6 +883,7 @@ export class OrdenesModel {
       }, [])
       const values = campos.map(row => info[row])
       console.log("Informacion de campos :",campos)
+      console.log("Informacion de values :",values)
       let result_update = await conn.query('UPDATE tbl2_fases_prod_ordenes SET ' + campos.map(row => row + " = NULLIF(?,'')").toString() + ' WHERE idx = ' + id,values)
 
       console.log("Resultado de la actualziaoo : ",result_update)
@@ -886,8 +910,8 @@ export class OrdenesModel {
       }
 
       nameimg = `op_${id}.jpg`
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito',filename: nameimg }
     } catch (err) {
       console.log(err)
