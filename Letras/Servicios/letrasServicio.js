@@ -8,8 +8,10 @@ export class LetrasService{
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect()
-      // let [result] = await conn.query(`SELECT tlc.*,COALESCE(DATEDIFF(STR_TO_DATE(tlc.fec_vencimiento,'%Y-%m-%d'),date(now())),0) as dias_pendientes FROM tbl2_letras_cab tlc WHERE 1=1 ORDER BY tlc.idx DESC LIMIT 100`)
-      let [result] = await conn.query(`
+
+      let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(COALESCE(TRIM(tlc.proveedor),''),' ',COALESCE(TRIM(tlc.num_letra),''),' ',COALESCE(TRIM(tlc.fec_emision),''),' ',COALESCE(TRIM(tlc.fec_vencimiento),''),' ',COALESCE(TRIM(tlc.estado),'') )) > 0").join(" ") : ""
+
+      let query_search = `
         SELECT tlc.idx,tlc.id_proveedor_CAB,tlc.proveedor,tlc.documentos_ref,tlc.num_letra,tlc.moneda,DATE_FORMAT(tlc.fec_emision,'%d/%m/%Y') as fec_emision,DATE_FORMAT(tlc.fec_vencimiento,'%d/%m/%Y') as fec_vencimiento,
         tlc.importe,tlc.estado,tlc.observaciones,
         COALESCE(DATEDIFF(STR_TO_DATE(tlc.fec_vencimiento,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
@@ -23,11 +25,14 @@ export class LetrasService{
         LEFT JOIN tbl2_letras_adi tla on tlc.idx = tla.id_letra_CAB 
         LEFT JOIN tbl2_despachos_cab tdc on tdc.id_pedido_origen =  tla.id_pedido_CAB
         LEFT JOIN tbl2_despachos_adi tda on tda.id_despacho_CAB = tdc.idx
-        WHERE 1=1 
+        WHERE 1=1 ${extra}
         group by tlc.idx,tlc.id_proveedor_CAB,tlc.proveedor,tlc.documentos_ref,tlc.num_letra,tlc.moneda,tlc.fec_emision,tlc.fec_vencimiento,tlc.importe,tlc.estado,tlc.observaciones
         ORDER BY tlc.idx DESC
         LIMIT 100
-        `)
+        `
+      console.log("Consulta letraSsD:",query_search)
+      
+      let [result] = await conn.query(query_search)
       // console.log(result)
 
       // await conn.end()
@@ -78,6 +83,7 @@ export class LetrasService{
         ) as cancelado
         FROM tbl2_pedidos_insumos_cab tb1
         JOIN tbl2_letras_adi tla ON tla.id_pedido_CAB = tb1.idx
+        WHERE tla.id_letra_CAB = ?
         `,[id]);
         console.log("Consultando info cancela pedido:",result2)
 
@@ -167,17 +173,15 @@ export class LetrasService{
         }
         // await conn.end();
       }
+
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return results
     } catch (err) {
-      console.log(err)
-      conn.rollback()
+      if (conn) conn.rollback()
       return [err]
     } finally {
-      if (conn) {
-        conn.commit()
-        // conn.rollback()
-        await conn.end();
-      }
+      if (conn) await conn.end()
     }
   }
   static async getFacturasByProveedor(idproveedor){
@@ -244,38 +248,114 @@ export class LetrasService{
       await conn.connect();
       // let extra = (search !== '' && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(TRIM(orden_ref),' ',TRIM(proveedor),' ',TRIM(produccion),' ',TRIM(estado))) > 0").join(" ") : ""
 
-      const [results, fields] = await conn.query(`
-        SELECT tb1.idx,tb1.orden_ref,tb1.tipo,tb1.proveedor,tb1.fec_emision,tb1.fec_retorno,COALESCE(DATEDIFF(tb1.fec_retorno,tb1.fec_emision),'') as tiempo_produccion,
-        COALESCE(DATEDIFF(STR_TO_DATE(tb1.fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,tb1.forma_pago,tb1.estado,
+      const [results] = await conn.query(`
+        SELECT 
+          cc.idx,
+          cc.orden_ref,
+          cc.tipo,
+          cc.proveedor,
+          cc.fec_emision,
+          cc.fec_retorno,
+          cc.tiempo_produccion,
+          cc.dias_pendientes,
+          cc.forma_pago,
+          cc.estado,
+          sum(cc.cantidad) as cantidad,
+          sum(cc.importe) as importe,
+          sum(cc.despacho) as despacho,
+          sum(cc.cancelado) as cancelado,
+          sum(if(cc.facturado = 0,cc.importe_sugerido,cc.importe_despacho)) as importe_despacho
+        FROM
         (
-          SELECT SUM(COALESCE(cantidad,0)) FROM tbl2_pedidos_insumos_det tpid 
-          WHERE tpid.id_pedido_CAB = tb1.idx
-        ) as cantidad,
-        (
-          SELECT SUM(COALESCE(cantidad,0)*COALESCE(precio,0)) FROM tbl2_pedidos_insumos_det tpid 
-          WHERE tpid.id_pedido_CAB = tb1.idx
-        ) as importe,
-        (
-          SELECT COALESCE(sum(despacho),0) as despacho FROM tbl2_despachos_cab tdc
-          JOIN tbl2_despachos_det tdd ON tdc.idx = tdd.id_despacho_CAB
-          WHERE tdc.id_pedido_origen = tb1.idx
-        ) as despacho,
-        ( 
-          select COALESCE(SUM(IF(tipodoc = '2',COALESCE(importe_total,0)*-1,COALESCE(importe_total,0))),0) FROM tbl2_despachos_cab tdc
-          JOIN tbl2_despachos_adi tda ON tda.id_despacho_CAB = tdc.idx
-          where tdc.id_pedido_origen = tb1.idx 
-        ) as importe_despacho,
-        (
-          SELECT COALESCE(sum(COALESCE(tlc.importe,0)),0) 
-          FROM tbl2_letras_cab tlc 
-          JOIN tbl2_letras_adi tla on tlc.idx = tla.id_letra_CAB 
-          WHERE tla.id_pedido_CAB = tb1.idx
-        ) as cancelado
-        FROM tbl2_pedidos_insumos_cab tb1
-        WHERE tb1.id_proveedor_CAB = ?
-        ORDER BY created_at DESC 
-        LIMIT 100
-        `,[idproveedor]);
+          select
+          tpic.idx,
+          tpic.orden_ref,
+          tpic.tipo,
+          tpic.proveedor,
+          tpic.fec_emision,
+          tpic.fec_retorno,
+          COALESCE(DATEDIFF(tpic.fec_retorno,tpic.fec_emision),'') as tiempo_produccion,
+          COALESCE(DATEDIFF(STR_TO_DATE(tpic.fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
+          tpic.forma_pago,
+          tpic.estado,
+          tdc.facturado,
+          (
+            SELECT SUM(COALESCE(cantidad,0)) FROM tbl2_pedidos_insumos_det tpid 
+            WHERE tpid.id_pedido_CAB = tpic.idx
+          ) as cantidad,
+          (
+            SELECT SUM(COALESCE(cantidad,0)*COALESCE(precio,0)) FROM tbl2_pedidos_insumos_det tpid 
+            WHERE tpid.id_pedido_CAB = tpic.idx
+          ) as importe,
+          (
+            SELECT COALESCE(sum(despacho),0) as despacho FROM tbl2_despachos_cab tdc
+            JOIN tbl2_despachos_det tdd ON tdc.idx = tdd.id_despacho_CAB
+            WHERE tdc.id_pedido_origen = tpic.idx
+          ) as despacho,
+          (
+            SELECT COALESCE(sum(COALESCE(tlc.importe,0)),0) 
+            FROM tbl2_letras_cab tlc 
+            JOIN tbl2_letras_adi tla on tlc.idx = tla.id_letra_CAB 
+            WHERE tla.id_pedido_CAB = tpic.idx
+          ) as cancelado,
+          (
+            select COALESCE(SUM(IF(tda.tipodoc = '2',COALESCE(tda.importe_total,0)*-1,COALESCE(tda.importe_total,0))),0) FROM tbl2_despachos_adi tda
+            where tda.id_despacho_CAB = tdc.idx
+          ) as importe_despacho,
+          (
+            select COALESCE(SUM(COALESCE(tdd.precio,0)*COALESCE(tdd.despacho,0)),0) from tbl2_despachos_det tdd
+            where tdd.id_despacho_CAB = tdc.idx
+          ) as importe_sugerido
+          from tbl2_despachos_cab tdc 
+          join tbl2_pedidos_insumos_cab tpic on tdc.id_pedido_origen = tpic.idx
+          where tdc.tipo in ('PEDIDOS','AVIOS') and tdc.id_proveedor_CAB = ?
+          having importe_despacho - cancelado > 0
+        ) as cc
+        group by
+        cc.idx,
+        cc.orden_ref,
+        cc.tipo,
+        cc.proveedor,
+        cc.fec_emision,
+        cc.fec_retorno,
+        cc.tiempo_produccion,
+        cc.dias_pendientes,
+        cc.forma_pago,
+        cc.estado
+      `,[idproveedor])
+
+      // const [results, fields] = await conn.query(`
+      //   SELECT tb1.idx,tb1.orden_ref,tb1.tipo,tb1.proveedor,tb1.fec_emision,tb1.fec_retorno,COALESCE(DATEDIFF(tb1.fec_retorno,tb1.fec_emision),'') as tiempo_produccion,
+      //   COALESCE(DATEDIFF(STR_TO_DATE(tb1.fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,tb1.forma_pago,tb1.estado,
+      //   (
+      //     SELECT SUM(COALESCE(cantidad,0)) FROM tbl2_pedidos_insumos_det tpid 
+      //     WHERE tpid.id_pedido_CAB = tb1.idx
+      //   ) as cantidad,
+      //   (
+      //     SELECT SUM(COALESCE(cantidad,0)*COALESCE(precio,0)) FROM tbl2_pedidos_insumos_det tpid 
+      //     WHERE tpid.id_pedido_CAB = tb1.idx
+      //   ) as importe,
+      //   (
+      //     SELECT COALESCE(sum(despacho),0) as despacho FROM tbl2_despachos_cab tdc
+      //     JOIN tbl2_despachos_det tdd ON tdc.idx = tdd.id_despacho_CAB
+      //     WHERE tdc.id_pedido_origen = tb1.idx
+      //   ) as despacho,
+      //   ( 
+      //     select COALESCE(SUM(IF(tipodoc = '2',COALESCE(importe_total,0)*-1,COALESCE(importe_total,0))),0) FROM tbl2_despachos_cab tdc
+      //     JOIN tbl2_despachos_adi tda ON tda.id_despacho_CAB = tdc.idx
+      //     where tdc.id_pedido_origen = tb1.idx 
+      //   ) as importe_despacho,
+      //   (
+      //     SELECT COALESCE(sum(COALESCE(tlc.importe,0)),0) 
+      //     FROM tbl2_letras_cab tlc 
+      //     JOIN tbl2_letras_adi tla on tlc.idx = tla.id_letra_CAB 
+      //     WHERE tla.id_pedido_CAB = tb1.idx
+      //   ) as cancelado
+      //   FROM tbl2_pedidos_insumos_cab tb1
+      //   WHERE tb1.id_proveedor_CAB = ? AND tb1.estado <> 'ANULADO'
+      //   ORDER BY created_at DESC 
+      //   LIMIT 100
+      //   `,[idproveedor]);
       
       return results
     } catch (error) {

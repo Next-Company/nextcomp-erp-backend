@@ -3,6 +3,7 @@ import { configs } from "../../Main/utils.js";
 import mysql from "mysql2/promise"
 export class LoginModel {
   static async validarLogin({ usu, paz }) {
+    console.log("Validando usuario :", usu,paz)
     let conn = undefined
     const resp = { ok: false, message: 'Credenciales incorrectas' }
 
@@ -10,7 +11,10 @@ export class LoginModel {
 
     await conn.connect()
     const [results, fields] = await conn.query(
-      "SELECT tu.*, now() as current FROM tbl_user tu WHERE tu.usu = ? AND tu.paz = ?",
+      `SELECT tu.*, now() as current, t2.modules 
+      FROM tbl_user tu 
+      JOIN tbl_user_modules_access t2 ON tu.idx = t2.id_user
+      WHERE tu.usu = ? AND tu.paz = ?`,
       [usu.split('@')[0], paz]
     )
     // const [results,fields] = await connection.query(

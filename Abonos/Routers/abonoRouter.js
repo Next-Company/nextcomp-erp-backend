@@ -30,6 +30,7 @@ AbonoRouter.get('/letrastatusdetalle/:idletra',AbonoController.getLetrasStatusDe
 AbonoRouter.get('/prestamostatusdetalle/:idprestamo',AbonoController.getPrestamoStatusDetalle)
 
 AbonoRouter.get('/getsaldos/:idproveedor',AbonoController.getSaldosServicio)
+AbonoRouter.get('/getsaldosletra/:idletra',AbonoController.getSaldosLetra)
 AbonoRouter.get('/listacuentasbancos/:search', AbonoController.getCuentasList)
 AbonoRouter.get('/listacuentasbancos', AbonoController.getCuentasList)
 AbonoRouter.get('/test', AbonoController.getServiciosStatus)

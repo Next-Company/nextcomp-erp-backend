@@ -1,0 +1,154 @@
+{{#if condicion}}
+  <style>
+    .main_informe *{
+      font-size: 14px
+    }
+  </style>
+  {{else}}
+  <style>
+    .main_informe *{
+      font-size: 14px
+    }
+  </style>
+{{/if}}
+
+<style>
+  :root{
+    font-size: 14px;
+    font-family: Arial, Helvetica, sans-serif;
+    color:green;
+  }
+  body{
+    padding: 0px;
+    margin: 0px;
+  }
+  .cuerpo_estampado{
+    width: 100%;
+    /*height: 200px;*/
+    border:1px solid gray;
+    border-radius: 10px;
+    background-color: rgba(241, 241, 241, 0.5);
+    margin-bottom: 10px;
+    position: relative;
+  }
+  .main_informe{
+    /*padding:0.2cm;*/
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    border:0px solid red;
+    /*height: 27cm;*/
+  }
+  .main_informe h2{
+    font-size: 1.2rem;
+  }
+  .indice_estampado{
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    left: -15px;
+    top: -10px;
+    background-color: white;
+    border: 0.2px solid black;
+  }
+  .cuerpo_estampado .indicador span{
+    font-size: .8rem;
+  }
+  .cuerpo_estampado .indicador div{
+    padding: 5px;
+  }
+  .indicador{
+    flex:1;
+  }
+  .nowrap_space{
+    white-space: nowrap;
+  }
+</style>
+<div class="main_informe">
+  <div style="flex:1;display:flex;flex-direction:column;">
+    <section style="flex:1;">
+      <br/>
+      <div style="font-weight:bolder;text-align:center;border-bottom:1.5px solid black;border-top:1.5px solid black;padding:8px 0px;position:relative;display:flex;flex-direction:row;justify-content:space-between;align-items:center;">
+        <div style="font-size:1.8rem;display:flex;gap:10px;align-items:center;">
+          GUIA DE INGRESO
+        </div>
+        <div style="font-size:1.5rem;">#{{idguia}}</div>
+      </div>
+      <p style="font-size: .9rem;font-weight:bolder;margin:10px 0px;">
+        DATOS DEL INGRESO:<br/>
+      </p>
+      <section style="border-bottom:.5px dashed black;font-size:.9rem;padding-bottom: 10px;">
+        <table>
+          <tbody>
+            <tr>
+              <td>Proveedor:</td>
+              <td style="width: 400px;">{{proveedor.nom}}</td>
+              <td></td>
+              <td style="width: 300px;"></td>
+              <td>#GuiaRef:</td>
+              <td>{{idref}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+      <p style="font-size: .9rem;font-weight:bold;">
+        RESUMEN DETALLE:<br/>
+      </p>
+      <section style="font-size:.9rem; padding-bottom: 10px;">
+        <table style="border-collapse: collapse;width:100%;">
+          <thead>
+            <tr style="border-bottom:.2px solid gray;height:20px;">
+              <th>#</th>
+              <th style="text-align:left;">Artículos de producción</th>
+              <th style="text-align:center;">UM</th>
+              <th style="text-align:center;">Qty.</th>
+              <th style="text-align:center;">Ingreso</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each detalle}}
+              <tr style="">
+                <td style="text-align: center;width:.5cm;">{{plusindex @index}}</td>
+                <td>{{producto}}</td>
+                <td style="width:1.5px;text-align: center;">NIU</td>
+                <td style="text-align: center;">{{cantidad}}</td>
+                <td style="text-align: center;">{{despacho}}</td>
+              </tr>
+            {{/each}}
+            <tfoot>
+              <tr>
+                <td colspan="2"></td>
+                <td style="text-align: center;font-size:.9rem;"><strong>Total</strong></td>
+                <td style="text-align: center;font-size:.9rem;"><strong>{{totalunid}}</strong></td>
+                <td style="text-align: center;font-size:.9rem;"><strong>{{totaldespacho}}</strong></td>
+              </tr>
+            </tfoot>
+          </tbody>
+        </table>
+      </section>
+    </section>
+    <footer>
+      <section style="display:flex;justify-content:space-around;gap:15px;">
+        <div style="border-top:.5px dashed black;padding:5px;text-align:center;flex:1;font-size:.9rem;">
+          Asistente almacén
+          <div style="text-align:left;height:30px;border-bottom:.5px dotted gray;display:flex;align-items:center;">Nom:</div>
+        </div>
+        <div style="border-top:.5px dashed black;padding:5px;text-align:center;flex:1;font-size:.9rem;">
+          Control de ingreso
+          <div style="text-align:left;height:30px;border-bottom:.5px dotted gray;display:flex;align-items:center;">Nom:</div>
+        </div>
+      </section>
+      <section style="padding-top:10px;font-size:.9rem;display:flex;justify-content:between;">
+        <div style="flex:1;">
+        </div>
+        <div>
+          <strong>Fecha/hora emisión: {{date}} {{time}}</strong><br/>
+        </div>
+      </section>
+    </footer>
+  </div>
+</div>

@@ -1,3 +1,4 @@
+import { response } from "express"
 import AbonoServicio from "../Servicios/abonoServicio.js"
 
 export default class AbonoController {
@@ -54,6 +55,11 @@ export default class AbonoController {
     const saldos = await AbonoServicio.getSaldosServicios(idproveedor)
     res.json(saldos)
   }
+  static async getSaldosLetra(req, res) {
+    const { idletra } = req.params
+    const saldos = await AbonoServicio.getSaldosLetra(idletra)
+    res.json(saldos)
+  }
   static async saveAbonoServicio(req, res) {
     const params = req.body
     const resp = await AbonoServicio.saveAbonoServicio(params)
@@ -62,7 +68,11 @@ export default class AbonoController {
   static async saveAbonoLetra(req, res) {
     const params = req.body
     const resp = await AbonoServicio.saveAbonoLetra(params)
-    res.json(resp)
+    res.json(resp)  
+    // if(resp.ok){
+    // }else{
+    //   res.http json(resp)
+    // }
   }
   static async saveAbonoPrestamo(req, res) {
     const params = req.body

@@ -1,0 +1,278 @@
+{{!-- <style>
+  *{
+    font-size: 10px;
+    color:red;
+  }
+  #main{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100vw;
+    height: 100vh;
+    transform: rotateZ(45deg);
+  }
+</style>
+<div id="main">
+  Example App: HomeHandlebarsaasdasd en la misma cnas
+</div>
+ --}}
+<style>
+  /*html{
+    overflow: hidden;
+  }*/
+  html::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+    /* background: #efefef; */
+    background: transparent;
+  }
+  html::-webkit-scrollbar-thumb {
+    background: #c2c2c2;
+    border-radius: 6px;
+  }
+  html::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+
+  * {
+      font-family: calibri;
+      font-size: 10px;
+      
+      color: #000000;
+  }
+
+  body {
+      background-color: white;
+      padding: 0px 20px 0px;
+      margin: 0px;
+      width: 21cm;
+      height: 29cm;
+      position: relative;
+      box-sizing: border-box;
+      /*border-right: 1px dashed gray;*/
+  }
+
+  table {
+      padding: 2px
+  }
+  table#principal {
+      /* border-spacing: 2px 5px; */
+  }
+  table#principal td {
+      /* padding:0xpx */
+  }
+
+  table.contenido {
+      /* width: 100%; */
+      border-collapse: collapse;
+      text-transform: uppercase;
+      border-left: 0.5px solid #004080;
+      /* padding-left:20px; */
+  }
+
+
+  table.contenido tr th {
+      background-color: #a8ac5c;
+      border-right: 0.5px solid #004080;
+      border-bottom: 0.5px solid #004080;
+      border-top: 0.5px solid #004080;
+      text-align: center;
+      font-weight: bolder;
+      height: 16px;
+      line-height: 11px;
+      color:white;
+  }
+
+
+  table.contenido tr td {
+
+      border-right: 0.5px solid #a8ac5c;
+      border-bottom: 0.5px solid #a8ac5c;
+
+      padding: 5px 5px;
+      line-height: 8px;
+  }
+  table.contenido2 {
+    border-collapse: collapse; 
+  }
+  table.contenido2 tr td {
+    border-left: 0.5px solid black;
+    border-top: 0.5px solid black;
+    border-right: 0.5px solid black;
+    border-bottom: 0.5px solid black;
+    padding: 5px 5px;
+    line-height: 8px;
+  }
+
+  table.tabla_datos {
+    border: 0.5px solid #004080;
+    border-collapse: separate;
+    border-spacing: 3px;
+    padding: 0.0px;
+    line-height: 7px;
+  }
+  .saltopagina {
+      display: block;
+      border: none;
+      page-break-after: always;
+  }
+  .tipo_orden td{
+      border:0.5px solid black;
+  }
+</style>
+<body>
+    <table id="principal" style="width: 100%;">
+        <tr>
+            <td>
+                <table style="border: 1px solid white;">
+                    <tr>
+                        <td style="width: 45%; padding: 5px; text-align: center; ">
+                            <table border="0">
+                                <tr>
+                                    <td style="text-align:left;">
+                                        <img src="data:image/jpg;base64,{{this.BINARY_CHUNKS2}}" class="logo" style="width:260px;">
+                                    </td>
+                                </tr>
+                                <tr>
+                                    {{#if emisor}}
+                                    <td style="padding-left: 38px;font-size:8px;">
+                                        Calle Felipo Santiago Crespo Nro 581 - San Luis - Lima - Lima
+                                        <br />R.U.C. 20522094120
+                                        <br />Telf: 3233128
+                                        <br /><a href="#" style="font-weight:bold;color:blue;">next.company.sac@gmail.com</a>
+                                    </td>
+                                    {{else}}
+                                    <td style="padding-left: 38px;font-size:8px;">
+                                        Calle Felipo Santiago Crespo Nro 581 - San Luis - Lima - Lima
+                                        <br />R.U.C. 20563546035
+                                    </td>
+                                    {{/if}}
+                                </tr>
+                            </table>
+                        </td>
+                        <td style="text-align: center; width: 55%; border: 0.5px solid white;">
+                            <table style="border-collapse: collapse; padding: 6px 1px;margin: 0px; ">
+                                <tr>
+                                    <td>
+                                        <table class="tipo_orden">
+                                            <tr>
+                                              <td style="border:none;">
+                                                <table style="border-collapse: collapse; padding: 6px 1px;margin: 0px;width:380px;">
+                                                  <tr>
+                                                    <td style="border:1px solid black;font-weight:bold;font-size:16px;text-align:center;padding:5px;">
+                                                      <img src="data:image/jpg;base64,{{this.BINARY_CHUNKS3}}" class="logo" style="width:240px;">
+                                                    </td>
+                                                  </tr>
+                                                </table>
+                                              </td>
+                                            </tr>
+                                            <tr>
+                                              <td style="border:none;">
+                                                <table class="contenido" style="">
+                                                  {{!-- <thead>
+                                                    <tr>
+                                                      <th style="height:25px;width:100px;font-weight:bolder;font-size:15px;" valing="middle">N° ORDEN</td>
+                                                      <th style="height:25px;width:45px;font-weight:bolder">AL.</td>
+                                                      <th style="height:25px;width:280px;font-size:18px;" colspan="8">{{datos.orden_ref}}</td>
+                                                    </tr>
+                                                  </thead> --}}
+                                                  <tbody>
+                                                    <tr>
+                                                      <td style="height:20px;width:80px;font-size:8px;">FECHA EMISIÓN</td>
+                                                      {{!-- <td colspan="2" style="font-size:8px;"><strong style="font-size: inherit;">{{#fechaCorta datos.fec_emision}}{{/fechaCorta}}</strong></td> --}}
+                                                      <td colspan="2" style="font-size:8px;width:80px;"><strong style="font-size: inherit;">{{datos.fec_emision}}</strong></td>
+                                                      <td colspan="2" style="font-size:8px;">FECHA RETORNO</td>
+                                                      <td colspan="2" style="font-size:8px;width:80px;"><strong style="font-size: inherit;">{{datos.fec_retorno}}</strong></td>
+                                                      {{!-- <td colspan="2" style="font-size:8px;">DÍAS PRODUCCIÓN</td>
+                                                      <td colspan="2" style="font-size:8px;"><strong style="font-size: inherit;">{{datos.duracion}}</strong></td> --}}
+                                                    </tr>
+                                                  </tbody>
+                                                </table>
+                                              </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        <!-- fin de cabecera -->
+        <tr>
+          <td>
+
+            <table class="tabla_datos" style="width: 100%;height:62px;">
+              <tbody >
+                <tr >
+                    <td style="font-weight:100;font-size: 14px;"><strong style="font-size: 14px;font-weight:100;">PROVEEDOR: </strong>{{datos.proveedor}}</td>
+                    <td style="font-weight:100;font-size: 14px;"><strong style="font-size: 14px;font-weight:100;">OP: </strong>{{datos.oc}}</td>
+                </tr>
+                <tr >
+                    <td style="font-weight:100;font-size: 14px;"><strong style="font-size: 14px;font-weight:100;">RUC: </strong>{{datos.ruc}}</td>
+                    <td style="font-weight:100;font-size: 14px;"><strong style="font-size: 14px;font-weight:100;">NRO CORTE: </strong>{{datos.nro_corte}}</td>
+                </tr>
+                <tr >
+                    <td style="font-weight:100;font-size: 14px;"><strong style="font-size: 14px;font-weight:100;">NRO REQUERIMIENTO: </strong>{{datos.orden_ref}}</td>
+                    <td style="font-weight:100;font-size: 14px;"><strong style="font-size: 14px;font-weight:100;">GIRADO POR: </strong>{{datos.responsable}}</td>
+                </tr>
+              </tbody>
+            </table>
+
+          </td>
+        </tr>
+    </table>
+    <br />
+    <table class="contenido" style="width:100%;">
+        <thead>
+            <tr nobr="true" style="height:40px;">
+                <th style="width:35px;font-size:8px;">ITEM</th>
+                <th style="width:750px;font-size:8px;">DESCRIPCI&Oacute;N</th>
+                <th style="font-size:8px;">ROLLO</th>
+                <th style="font-size:8px;">CANTIDAD PEDIDA</th>
+                <th style="font-size:8px;">UNIDAD MEDIDA</th>
+                <th style="font-size:8px;">SALIDA</th>
+            </tr>
+        </thead>
+        <tbody>
+          {{#foo detalle}}
+          {{/foo}}
+      </tbody>
+      <tfoot>
+      </tfoot>
+    </table>
+    <div style="position:absolute;bottom:0px;display:flex;width:100%;gap:15px;">
+      <div style="display:flex;width:95%;gap:15px;">
+        <div style="height:20px;background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">JEFFERSON TAPIA MONTOYA</br> JEFE DE PRODUCCION</div>
+        <div style="height:20px;background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">CARLOS GASPAR</br> ALMACENISTA</div>
+        {{!-- <div style="height:20px;background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">NOMBRE RESPONSABLE</br> RESONSABLE DE COMPRA</div> --}}
+      </div>
+    </div>
+    <style>
+        table#totales {
+            border: 0.5px solid #004080;
+        }
+
+        table#totales .texto {
+            border-right: 0.5 solid #004080;
+            width: 72px;
+        }
+
+        table#totales .numero {
+            text-align: right;
+            width: 69px;
+        }
+
+        table#totales .borde_alto {
+            border-top: 0.5px solid #004080;
+        }
+
+        table#totales .sombra {
+            background-color: #a2d8f4;
+            border: 0.5px solid #004080;
+        }
+    </style>
+    <br />
+
+</body>

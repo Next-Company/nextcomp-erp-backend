@@ -1,3 +1,17 @@
+{{#if condicion}}
+  <style>
+    .main_informe *{
+      font-size: 10px
+    }
+  </style>
+  {{else}}
+  <style>
+    .main_informe *{
+      font-size: 14px
+    }
+  </style>
+{{/if}}
+
 <style>
   :root{
     font-size: 10px;
@@ -55,32 +69,12 @@
     white-space: nowrap;
   }
 </style>
-<div class="main_informe">  
+<div class="main_informe">
+  {{!-- <div style="flex:1;padding:5px;border:1px solid red;"> --}}
   {{!-- <div style="flex:1;padding:5px;border:1px solid green;"> --}}
   <div style="flex:1;display:flex;flex-direction:column;border-bottom:.2px dashed rgb(199, 199, 199);padding-bottom:30px;">
     <section style="flex:1;">
       <br/>
-      {{!-- <p style="font-size: 1.2rem;font-weight:600;text-align:center;">
-        NEXT COMPANY S.A.C<br/>
-        NEXT
-      </p>
-      <section style="font-size:.8rem;border-bottom:.5px dashed black;text-align:center;">
-        <p>
-          DOMICILIO FISCAL: CAL.FELIPE SANTIAGO CRESPO NRO. 581 LIMA - LIMA - SAN LUIS, RUC: 20522094120<br/>
-        </p>
-      </section> --}}
-      {{!-- <div style="text-align:center;margin-bottom:10px;display:flex;justify-content:space-between;border-bottom:.5px dashed black;padding-bottom:10px;">
-        <div style="text-align:left;font-size: 1.1rem;font-weight:bolder;">
-        NEXT COMPANY S.A.C<br/>
-        GUIA DE TRASLADO INTERNO - MUESTRAS<br/>
-        #{{idguia}}
-        </div>
-        <div style="text-align:right;font-size: 1rem">
-          <strong style="font-size: 1.1rem;">FECHA DE EMISIÓN:</strong> {{cabecera.fec_emision_guia}}<br/>
-          <strong style="font-size: 1.1rem;">HORA DE EMISIÓN:</strong> {{time}}<br/>
-          <strong style="font-size: 1.1rem;">FECHA DE RETORNO:</strong> {{cabecera.fec_retorno_guia}}<br/>
-        </div>
-      </div> --}}
       <div style="font-size: 1.1rem;font-weight:bolder;text-align:center;margin-bottom:10px;border-bottom:.5px dashed black;padding-bottom:10px;">
         GUIA DE TRASLADO INTERNO - MUESTRAS<br/>
         {{idguia}}
