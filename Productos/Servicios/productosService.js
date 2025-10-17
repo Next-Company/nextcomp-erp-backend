@@ -750,7 +750,7 @@ export class ProductosService{
             tp.genero,
             tp.tipoPlan
         FROM tbl2_productos tp
-        WHERE 1=1 ${extra} and tp.ruc_ = '20522094120'
+        WHERE 1=1 ${extra} and tp.ruc_ = '20522094120' and tp.activo = 1
         LIMIT 150
       `
       console.log("La consulta de producto es la siguiente:",query)

@@ -800,6 +800,8 @@ export class OrdenesModel {
       const insumos = JSON.parse(info.insumos)
       const requerimientos = JSON.parse(info.requerimientos)
 
+      console.log("La info de los combos es:",combos)
+
       const [consulta,fields] = await conn.execute("SELECT *FROM tbl2_fases_prod_ordenes WHERE idx = ?",[id])
       let [validacion] = await conn.query(`SELECT *FROM tbl2_fases_prod_ordenes tfpo WHERE tfpo.oc = ?`,[info.oc])
       if(validacion.length > 0) throw new Error("La oc ingresada ya se encuentra registrada. Por favor verifique.")
@@ -821,7 +823,7 @@ export class OrdenesModel {
 
       for(let combo of [...combos]){
         console.log("Ejecutando nuevamente",combo)
-        let [insert_combo] = await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos(id_orden_CAB,color_combo,cantidad_combo) VALUES (?,?,?)",[idinsert,combo.color_combo,combo.cantidad_combo])
+        let [insert_combo] = await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos(id_orden_CAB,color_combo,cantidad_combo,insumos) VALUES (?,?,?,?)",[idinsert,combo.color_combo,combo.cantidad_combo,(combo.insumos ? JSON.stringify(combo.insumos) : [])])
 
         let fraccionado = [];
         ['xs','s','m','l','xl','xxl'].reduce((c,v)=>{
@@ -891,7 +893,7 @@ export class OrdenesModel {
       await conn.query("DELETE FROM tbl2_fases_prod_ordenes_combos WHERE id_orden_CAB = ?",[id])
       await conn.query("DELETE FROM tbl2_fases_prod_ordenes_combos_fracciones WHERE id_combo_CAB in (select idx from tbl2_fases_prod_ordenes_combos where id_orden_CAB = ?)",[id])
       for(let rdata of [...combos]){
-        let [insert_info] = await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos(id_orden_CAB,color_combo,cantidad_combo) VALUES (?,?,?)",[id,rdata.color_combo,rdata.cantidad_combo])
+        let [insert_info] = await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos(id_orden_CAB,color_combo,cantidad_combo,insumos) VALUES (?,?,?,?)",[id,rdata.color_combo,rdata.cantidad_combo,(rdata.insumos ? JSON.stringify(rdata.insumos) : [])])
 
           let fracciones = ['xs','s','m','l','xl','xxl'].reduce((c,v)=>{
             c.push([insert_info.insertId,v,parseInt(rdata[v]) > 0 ? parseInt(rdata[v]) : 0])
@@ -910,8 +912,8 @@ export class OrdenesModel {
       }
 
       nameimg = `op_${id}.jpg`
-      // if (conn) conn.rollback()
-      if (conn) conn.commit()
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito',filename: nameimg }
     } catch (err) {
       console.log(err)
