@@ -250,28 +250,30 @@ export class ProductosService{
 
       console.log("La informacion del combo es:",JSON.parse(info.combos))
 
-      for(let combo of [...JSON.parse(info.combos)]){
-        for(let talla of [...JSON.parse(combo.talla)]){    
-          let [info_talla] = await conn.execute("select *from tbl2_tallas where detalle = ?",[talla])
-          let result = await ProductosService.createNewSubProduct(
-            {
-              idx_CAB_PROD: info_prod[0].idx,
-              codigo: info_prod[0].codigo,
-              isbn: info_prod[0].isbn,
-              nom: info_prod[0].nom,
-              idx_CAB_COLOR: combo.idcolor,
-              idx_talla: info_talla[0].idx,
-              talla: info_talla[0].detalle,
-              estado: 'primera',
-              nro_lote: 0
-            },
-            conn
-          )
-          if(!result.ok) throw new Error(result.message)
+      if(info.combos){
+        for(let combo of [...JSON.parse(info.combos)]){
+          for(let talla of [...JSON.parse(combo.talla)]){    
+            let [info_talla] = await conn.execute("select *from tbl2_tallas where detalle = ?",[talla])
+            let result = await ProductosService.createNewSubProduct(
+              {
+                idx_CAB_PROD: info_prod[0].idx,
+                codigo: info_prod[0].codigo,
+                isbn: info_prod[0].isbn,
+                nom: info_prod[0].nom,
+                idx_CAB_COLOR: combo.idcolor,
+                idx_talla: info_talla[0].idx,
+                talla: info_talla[0].detalle,
+                estado: 'primera',
+                nro_lote: 0
+              },
+              conn
+            )
+            if(!result.ok) throw new Error(result.message)
+          }
         }
       }
-      if(conn) conn.rollback()
-      // if(conn) conn.commit()
+      // if(conn) conn.rollback()
+      if(conn) conn.commit()
       return {ok:true,message:'',info:''}
     } catch(error){
       if(conn) conn.rollback()
@@ -341,8 +343,8 @@ export class ProductosService{
         await conn.execute("delete from tbl2_subproductos where idx_CAB_PROD = ? and idx = ?",[c.idx_CAB_PROD,c.idx])
       }
 
-      if(conn) conn.rollback()
-      // if(conn) conn.commit()
+      // if(conn) conn.rollback()
+      if(conn) conn.commit()
       return {ok:true,message:'',info:''}
     } catch(error){
       if(conn) conn.rollback()
