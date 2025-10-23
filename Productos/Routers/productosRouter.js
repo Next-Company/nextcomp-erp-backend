@@ -35,6 +35,8 @@ ProductosRouter.post('/productosTotal/:search',ProductosController.getProductosT
 
 ProductosRouter.get('/productosEstilo',ProductosController.getProductosEstilo)
 ProductosRouter.get('/productosEstilo/:search',ProductosController.getProductosEstilo)
+ProductosRouter.get('/productosBase',ProductosController.getProductosBase)
+ProductosRouter.get('/productosBase/:search',ProductosController.getProductosBase)
 ProductosRouter.get('/productosMarca',ProductosController.getProductosMarca)
 ProductosRouter.get('/productosMarca/:search',ProductosController.getProductosMarca)
 ProductosRouter.get('/productosPresentacion',ProductosController.getProductosPresentacion)

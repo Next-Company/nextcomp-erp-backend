@@ -248,9 +248,8 @@ export class ProductosService{
       if(!result.ok) throw new Error(result.message)
       let [info_prod] = await conn.execute("select *from tbl2_productos where ruc_ = ? and idx = ?",['20522094120',result.info])
 
-      console.log("La informacion del combo es:",JSON.parse(info.combos))
-
       if(info.combos){
+        console.log("La informacion del combo es:",JSON.parse(info.combos))
         for(let combo of [...JSON.parse(info.combos)]){
           for(let talla of [...JSON.parse(combo.talla)]){    
             let [info_talla] = await conn.execute("select *from tbl2_tallas where detalle = ?",[talla])
@@ -776,6 +775,28 @@ export class ProductosService{
       const [rows,fields] = await conn.execute(`
         SELECT t1.*
         FROM tbl2_estilo t1
+        WHERE 1=1 ${extra} and t1.ruc_ = '20522094120'
+        LIMIT 150
+      `);
+      // console.log(rows);
+      return rows;
+    }
+    catch(e){
+      console.log(e);
+    }
+    finally{
+      await conn.end();
+    }
+  } 
+  static async getProductosBase(busqueda){
+    const conn = await mysql.createConnection(configs[1]);
+    await conn.connect();
+    try {
+      let extra = busqueda.split(" ").length > 0 ? busqueda.split(" ").map(word=>"AND LOCATE('"+word+"',CONCAT(TRIM(nom))) > 0").join(" ") : ""
+
+      const [rows,fields] = await conn.execute(`
+        SELECT t1.*
+        FROM tbl2_base t1
         WHERE 1=1 ${extra} and t1.ruc_ = '20522094120'
         LIMIT 150
       `);
