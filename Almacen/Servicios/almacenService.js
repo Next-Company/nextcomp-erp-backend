@@ -400,7 +400,8 @@ export default class AlmacenModel{
 
       if(conn) conn.rollback()
       // if(conn) conn.commit()
-      return {ok:true,message:'Guardado exitoso'}
+      // return {ok:true,message:'Guardado exitoso'}
+      return {ok:true,message:'Ingreso de despacho registrado con éxito.'}
     } catch (error) {
       console.log(error)
       if(conn) conn.rollback()
