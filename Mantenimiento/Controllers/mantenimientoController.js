@@ -6,4 +6,9 @@ export default class MantenimientoController {
     let respuesta = await MantenimientoService.getListaColores(search)
     res.send(respuesta)
   }
+  static async getListaTallas(req,res) {
+    let search = req.params.search || ''
+    let respuesta = await MantenimientoService.getListaTallas(search)
+    res.send(respuesta)
+  }
 }

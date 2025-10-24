@@ -85,6 +85,7 @@ export class ProduccionModel {
                               'id_orden_CAB', tb2.id_orden_CAB,
                               'color_combo', tb2.color_combo,
                               'cantidad_combo', tb2.cantidad_combo,
+                              'insumos', COALESCE(tb2.insumos,JSON_ARRAY()),
                               'fracciones', COALESCE((SELECT JSON_ARRAYAGG(JSON_OBJECT('talla', tfr.talla, 'cantidad', tfr.cantidad))
                                             FROM tbl2_fases_prod_ordenes_combos_fracciones tfr
                                             WHERE tfr.id_combo_CAB = tb2.idx)
@@ -2175,8 +2176,7 @@ export class ProduccionModel {
       } else {
         console.log("Creandsssso")
         try {
-
-          const correlativo = await this.getNuevoPedido('TELAS',cabecera.emisor)
+          const correlativo = await this.getNuevoPedido('AVIOS',cabecera.emisor)
 
           const [res, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_cab(orden_ref,fec_emision,fec_retorno,tipo,id_proveedor_CAB,proveedor,responsable,forma_pago,nro_contacto,observaciones,estado,moneda,igv,produccion,afec_retencion,emisor) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [correlativo, cabecera.fec_emision, cabecera.fec_retorno, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.forma_pago, cabecera.nro_contacto, cabecera.observaciones, cabecera.estado, cabecera.moneda, cabecera.igv, cabecera.produccion, cabecera.afec_retencion, cabecera.emisor]);
 
