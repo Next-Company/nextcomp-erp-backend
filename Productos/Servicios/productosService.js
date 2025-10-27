@@ -270,8 +270,8 @@ export class ProductosService{
           if(!result.ok) throw new Error(result.message)
         }
       }
-      if(conn) conn.rollback()
-      // if(conn) conn.commit()
+      // if(conn) conn.rollback()
+      if(conn) conn.commit()
       return {ok:true,message:'',info:''}
     } catch(error){
       if(conn) conn.rollback()
