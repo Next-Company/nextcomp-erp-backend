@@ -2100,11 +2100,11 @@ export class ProduccionModel {
       }
     }
   }
-  static async getNuevoPedido(tipo,origen = 'NEXT') {
-    let conn
+  static async getNuevoPedido(tipo,origen = 'NEXT',conn) {
+    // let conn
     try {
-      conn = await mysql.createConnection(configs[1])
-      await conn.connect();
+      // conn = await mysql.createConnection(configs[1])
+      // await conn.connect();
       // const [results, fields] = await conn.query("SELECT (orden_ref + 1) as correlativo FROM tbl2_pedidos_insumos_cab tpic WHERE estado <> 'ANULADO' ORDER BY idx DESC LIMIT 1");
       // const [results, fields] = await conn.query("SELECT (orden_ref + 1) as correlativo FROM tbl2_pedidos_insumos_cab tpic ORDER BY idx DESC LIMIT 1");
 
@@ -2113,8 +2113,6 @@ export class ProduccionModel {
       return results[0].correlativo
     } catch (err) {
       return [err]
-    } finally {
-      if (conn) await conn.end();
     }
   }
   static async saveInfoPedidosAvios(data) {
@@ -2176,7 +2174,7 @@ export class ProduccionModel {
       } else {
         console.log("Creandsssso")
         try {
-          const correlativo = await this.getNuevoPedido('AVIOS','NEXT')
+          const correlativo = await this.getNuevoPedido('AVIOS','NEXT',conn)
 
           const [res, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_cab(orden_ref,fec_emision,fec_retorno,tipo,id_proveedor_CAB,proveedor,responsable,forma_pago,nro_contacto,observaciones,estado,moneda,igv,produccion,afec_retencion,emisor) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [correlativo, cabecera.fec_emision, cabecera.fec_retorno, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.forma_pago, cabecera.nro_contacto, cabecera.observaciones, cabecera.estado, cabecera.moneda, cabecera.igv, cabecera.produccion, cabecera.afec_retencion, cabecera.emisor]);
 
@@ -2298,7 +2296,7 @@ export class ProduccionModel {
         console.log("Creandsssso")
         try {
 
-          const correlativo = await this.getNuevoPedido('TELAS',cabecera.emisor)
+          const correlativo = await this.getNuevoPedido('TELAS',cabecera.emisor,conn)
 
           const [res, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_cab(orden_ref,fec_emision,fec_retorno,tipo,id_proveedor_CAB,proveedor,responsable,forma_pago,nro_contacto,observaciones,estado,moneda,igv,produccion,afec_retencion,emisor) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [correlativo, cabecera.fec_emision, cabecera.fec_retorno, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.forma_pago, cabecera.nro_contacto, cabecera.observaciones, cabecera.estado, cabecera.moneda, cabecera.igv, cabecera.produccion, cabecera.afec_retencion, cabecera.emisor]);
 
@@ -2336,6 +2334,10 @@ export class ProduccionModel {
           }
 
           await conn.query("UPDATE tbl2_pedidos_insumos_correlativo SET codigo_num = codigo_num + 1 WHERE ruc_ = ? AND anio = YEAR(NOW()) AND tipo = ? AND origen = ?",['20522094120','TELAS',cabecera.emisor])
+
+          let [verificacion] = await conn.query("SELECT *FROM tbl2_pedidos_insumos_correlativo WHERE ruc_ = ? AND anio = YEAR(NOW()) AND tipo = ? AND origen = ?",['20522094120','TELAS',cabecera.emisor])
+          
+          console.log("Verificacion de correlativo despues de la actualizacion:",verificacion)
 
         } catch (err) {
           console.log("error en la consulta", err)
