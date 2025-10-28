@@ -307,7 +307,8 @@ export class OrdenesModel {
       }
     }
   }
-  static async ExtraerItemsCaja_backup(idorden,idhoja) {
+  // static async ExtraerItemsCaja_backup(idorden,idhoja) {
+  static async ExtraerItemsCaja(idorden,idhoja) {
     let conn
     try {
       conn = await mysql.createConnection(configs[1])
@@ -366,7 +367,7 @@ export class OrdenesModel {
       }
     }
   }
-  static async ExtraerItemsCaja(idorden,idhoja) {
+  static async ExtraerItemsCaja_(idorden,idhoja) {
     let conn
     try {
       conn = await mysql.createConnection(configs[1])

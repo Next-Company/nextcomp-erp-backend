@@ -1496,8 +1496,8 @@ export class ProduccionModel {
         }
       }
 
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return {ok:true,message:'Registro completo'}
     } catch (err) {
       console.log(err)
@@ -2709,7 +2709,7 @@ export class ProduccionModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      conn.beginTransaction()
+      conn.beginTransaction();
 
       [data_backup] = await conn.query(`select tdd.id_combo,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',t1.talla,'despachos',t1.despachos,'caidos',t1.caidos,'incompletos',t1.incompletos)) from tbl2_despachos_det_fracciones t1 where t1.id_despacho_DET = tdd.idx),JSON_ARRAY()) as fracciones from tbl2_despachos_det tdd where tdd.id_despacho_CAB = ?`,[data.id]);
       [info_orden] = await conn.query('select *from tbl2_guias_traslado_cab where idx = ?',[parseInt(cabecera.id_guia_origen)])
@@ -2838,6 +2838,7 @@ export class ProduccionModel {
       ///// UPDATE MASTES DE PRODUCCION /////////
       if(parseInt(cabecera.fase)){
         console.log("Comenzando actulizacion master de produccion")
+        console.log("Data backup :",data_backup)
         // muestra info [{idcombo:22,xs:[0,3],s:[0,3],m:[0,3],l:[0,3],xl:[0,3],xxl:[0,3]},{},{},...]
         let param1 = data_backup.reduce((c,v)=>{
           let pp = v.fracciones.reduce((cc,vv)=>{
