@@ -3499,8 +3499,8 @@ export class ProduccionModel {
         await conn.query('DELETE FROM `tbl2_despachos_det` WHERE `id_despacho_CAB` = "' + id + '"');
       }
 
-      if (conn) await conn.rollback();
-      // if (conn) await conn.commit();
+      // if (conn) await conn.rollback();
+      if (conn) await conn.commit();
       return {ok:true,message:'Ingreso eliminado con éxtio!'}
     } catch (err) {
       console.log("Error en la eliminacion de despacho:",err)
