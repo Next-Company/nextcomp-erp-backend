@@ -78,6 +78,7 @@ export class ProductosService{
             (select tr.nom from tbl2_rubros tr where tr.idx = tp.RUBROS  ) AS rubro,
             tp.temporada,
             tp.estilo,
+            tp.base,
             round((tp.costo + ((tp.utilidad1 * tp.costo) / 100)), 1) AS precio,
             tp.presentacion,
             tp.marca,
