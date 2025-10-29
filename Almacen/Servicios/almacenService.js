@@ -376,7 +376,7 @@ export default class AlmacenModel{
             id_subprod_CAB:item.id_subprod,
             lote:item?.sinlote ? 0 : (item.num_lote || 0),
             tipo:item.tipo,
-            despacho:parseFloat(item.despacho)
+            despacho:parseFloat(item.Cant_despacho_DET)
           }
         )
       }
@@ -395,12 +395,11 @@ export default class AlmacenModel{
         articulos: JSON.stringify(articulos),
       };
       console.log("El detalle a insertar es el siguiente:",data_comprobante)
-      // let res_mov = await AlmacenModel.saveMovimiento(data_comprobante,conn)
-      // if(!res_mov.ok) throw new Error(res_mov.message)
+      let res_mov = await AlmacenModel.saveMovimiento(data_comprobante,conn)
+      if(!res_mov.ok) throw new Error(res_mov.message)
 
       if(conn) conn.rollback()
       // if(conn) conn.commit()
-      // return {ok:true,message:'Guardado exitoso'}
       return {ok:true,message:'Ingreso de despacho registrado con éxito.'}
     } catch (error) {
       console.log(error)
