@@ -130,16 +130,23 @@
                             <table border="0">
                                 <tr>
                                     <td style="text-align:left;">
-                                        <img src="data:image/jpg;base64,{{this.BINARY_CHUNKS2}}" class="logo" style="width:260px;">
+                                        <img src="data:image/jpg;base64,{{this.BINARY_CHUNKS2}}" class="logo" height="20" width="20">
                                     </td>
                                 </tr>
                                 <tr>
+                                    {{#if emisor}}
                                     <td style="padding-left: 38px;font-size:8px;">
                                         Calle Felipo Santiago Crespo Nro 581 - San Luis - Lima - Lima
                                         <br />R.U.C. 20522094120
                                         <br />Telf: 3233128
                                         <br /><a href="#" style="font-weight:bold;color:blue;">next.company.sac@gmail.com</a>
                                     </td>
+                                    {{else}}
+                                    <td style="padding-left: 38px;font-size:8px;">
+                                        Calle Felipo Santiago Crespo Nro 581 - San Luis - Lima - Lima
+                                        <br />R.U.C. 20563546035
+                                    </td>
+                                    {{/if}}
                                 </tr>
                             </table>
                         </td>
@@ -234,7 +241,7 @@
       </tbody>
       <tfoot>
         <tr>
-          <td colspan="7" style="height:15px;padding:10px;"><strong>OBSERVACIONES:</strong></td>
+          <td colspan="7" style="height:15px;padding:10px;"><strong>OBSERVACIONES:</strong>{{datos.observaciones}}</td>
         </tr>
         {{!-- <tr>
           <td colspan="7" style="padding:10px 10px 10px;font-size:8px;">

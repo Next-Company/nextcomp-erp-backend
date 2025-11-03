@@ -15,8 +15,10 @@ export default class PrestamoService {
             JOIN tbl2_conciliaciones tc ON ta.idx = tc.id_abono_CAB
             JOIN tbl2_prestamos_det tpd on tpd.idx = tc.id_prestamo_CAB
             WHERE tpd.id_prestamo_CAB = tb1.idx
-          ) as abono
+          ) as abono,
+          DATE_FORMAT(fec_solicitud,'%d/%m/%Y') as fec_solicitud_prestamo
         FROM tbl2_prestamos_cab tb1
+        ORDER BY tb1.created_at DESC
         LIMIT 100
       `)
       return result
@@ -96,14 +98,14 @@ export default class PrestamoService {
         console.log("Actualizacion de nuevo prestamos")
         try {
 
-          let [rows,fields] = await conn.query("select *from tbl2_prestamos_det")
+          let [rows,fields] = await conn.query("select *from tbl2_prestamos_det")                                                                                                                             
           let list_articulos_update = [];
           let list_articulos_insert = [];
           let list_articulos_delete = [];
 
           const new_fields = fields.map(row=>row.name).filter(column=>!['created_at','updated_at','estado_cuota'].includes(column))
 
-          await conn.query('UPDATE tbl2_prestamos_cab SET id_proveedor_CAB=NULLIF(?, ""),tipo_tasa_interes=NULLIF(?, ""),proveedor=NULLIF(?, ""),moneda=NULLIF(?, ""),tcea=NULLIF(?, ""),plazo_pago=NULLIF(?, ""),numero_cuotas=NULLIF(?, ""),fec_solicitud=NULLIF(?, ""),fec_ultimo_vencimiento=NULLIF(?, ""),monto_capital=NULLIF(?, ""),monto_intereses=NULLIF(?, ""),monto_prestamo=NULLIF(?, ""),estado_prestamo=NULLIF(?, ""),observaciones=NULLIF(?, "") WHERE idx = ?', [cabecera.id_proveedor_CAB, cabecera.tipo_tasa_interes, cabecera.proveedor, cabecera.moneda, cabecera.tcea, cabecera.plazo_pago, cabecera.numero_cuotas, cabecera.fec_solicitud, cabecera.fec_ultimo_vencimiento, cabecera.monto_capital, cabecera.monto_intereses, cabecera.monto_prestamo, cabecera.estado_prestamo, cabecera.observaciones, parseInt(data.id)])
+          await conn.query('UPDATE tbl2_prestamos_cab SET id_proveedor_CAB=NULLIF(?, ""),tipo_tasa_interes=NULLIF(?, ""),proveedor=NULLIF(?, ""),id_cliente_CAB=NULLIF(?, ""),cliente=NULLIF(?, ""),moneda=NULLIF(?, ""),tcea=NULLIF(?, ""),plazo_pago=NULLIF(?, ""),numero_cuotas=NULLIF(?, ""),fec_solicitud=NULLIF(?, ""),fec_ultimo_vencimiento=NULLIF(?, ""),monto_capital=NULLIF(?, ""),monto_intereses=NULLIF(?, ""),monto_prestamo=NULLIF(?, ""),estado_prestamo=NULLIF(?, ""),observaciones=NULLIF(?, "") WHERE idx = ?', [cabecera.id_proveedor_CAB, cabecera.tipo_tasa_interes, cabecera.proveedor, cabecera.id_cliente_CAB, cabecera.cliente, cabecera.moneda, cabecera.tcea, cabecera.plazo_pago, cabecera.numero_cuotas, cabecera.fec_solicitud, cabecera.fec_ultimo_vencimiento, cabecera.monto_capital, cabecera.monto_intereses, cabecera.monto_prestamo, cabecera.estado_prestamo, cabecera.observaciones, parseInt(data.id)])
   
           let info_sanitized = articulos.map((propiedad,key)=>{
             let new_object = new_fields.reduce((row,field)=>{
@@ -212,7 +214,7 @@ export default class PrestamoService {
       } else {
         console.log("Creacion de nuevo prestamo ")
         try {
-          const [res, fields] = await conn.query('INSERT INTO tbl2_prestamos_cab(ruc_,tipo_tasa_interes,id_proveedor_CAB,proveedor,moneda,tcea,plazo_pago,numero_cuotas,fec_solicitud,fec_ultimo_vencimiento,monto_capital,monto_intereses,monto_prestamo,estado_prestamo) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', ['20522094120', cabecera.tipo_tasa_interes, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.moneda, cabecera.tcea, cabecera.plazo_pago, cabecera.numero_cuotas, cabecera.fec_solicitud, cabecera.fec_ultimo_vencimiento, cabecera.monto_capital, cabecera.monto_intereses, cabecera.monto_prestamo, cabecera.estado_prestamo])
+          const [res, fields] = await conn.query('INSERT INTO tbl2_prestamos_cab(ruc_,tipo_tasa_interes,id_proveedor_CAB,proveedor,id_cliente_CAB,cliente,moneda,tcea,plazo_pago,numero_cuotas,fec_solicitud,fec_ultimo_vencimiento,monto_capital,monto_intereses,monto_prestamo,estado_prestamo) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', ['20522094120', cabecera.tipo_tasa_interes, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.id_cliente_CAB, cabecera.cliente, cabecera.moneda, cabecera.tcea, cabecera.plazo_pago, cabecera.numero_cuotas, cabecera.fec_solicitud, cabecera.fec_ultimo_vencimiento, cabecera.monto_capital, cabecera.monto_intereses, cabecera.monto_prestamo, cabecera.estado_prestamo])
 
           let data_insert = []
           articulos.forEach(row => {
@@ -227,19 +229,15 @@ export default class PrestamoService {
         }
       }
       
-      conn.commit()
-      // conn.rollback()
-      // return results 
+      if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      return {ok:true,message:'Proceso de registro de prestamo exitoso'} 
     } catch (error) {
-      if (conn) {
-        conn.rollback()
-        await conn.end()
-        return {msg:error}
-      }
+      if (conn) conn.rollback()
+      // return {msg:error}
+      return error
     } finally {
-      if (conn) {
-        await conn.end()
-      }
+      if (conn) await conn.end()
     }
   }
   static async deletePrestamoById(id) {
