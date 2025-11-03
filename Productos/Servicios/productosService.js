@@ -81,7 +81,9 @@ export class ProductosService{
             round((tp.costo + ((tp.utilidad1 * tp.costo) / 100)), 1) AS precio,
             tp.presentacion,
             tp.marca,
-            tp.modelo
+            tp.modelo,
+            tp.tipoFabricacion,
+            tp.tipoProduccion
         from tbl2_productos tp
         where 1=1 ${extra} and tp.ruc_ = '20522094120'
         limit 150
@@ -204,6 +206,15 @@ export class ProductosService{
         FROM tbl2_productos tp
         WHERE tp.ruc_ = '20522094120' AND tp.idx = ?
       `,[id])
+
+      const [combos] = await conn.execute(`select  
+        idx_CAB_COLOR as idcolor,
+        (select tc.nom from tbl2_colores tc where tc.idx = ts.idx_CAB_COLOR) as color,
+        JSON_ARRAYAGG(talla) as tallas
+      from tbl2_subproductos ts where ts.idx_CAB_PROD = ?
+      group by ts.idx_CAB_COLOR`,[id])
+      result[1] = combos
+
       return result;
     }
     catch(e){
@@ -213,8 +224,8 @@ export class ProductosService{
       await conn.end();
     }
   }
-
   static async generateProducto(info){
+    console.log("Dentro de la generacion de avios e insumoss")
     let conn = undefined
     try {
       conn = await mysql.createConnection(configs[1])
@@ -232,15 +243,35 @@ export class ProductosService{
       let newinfo = Object.keys(info).reduce((c,v)=>{
         if (fields.map(row=>row.name).includes(v) && v !== 'idx') c[v] = info[v]
         return c
-      },{})
-      
-      console.log("La nueva info esS:",newinfo)
-
+      },{})                                                                                                                                                                      
       result = await ProductosService.createNewProduct(newinfo,conn)
       if(!result.ok) throw new Error(result.message)
+      let [info_prod] = await conn.execute("select *from tbl2_productos where ruc_ = ? and idx = ?",['20522094120',result.info])
 
-      // if(conn) conn.rollback()
-      if(conn) conn.commit()
+      console.log("La informacion del combo es:",JSON.parse(info.combos))
+
+      for(let combo of [...JSON.parse(info.combos)]){
+        for(let talla of [...JSON.parse(combo.talla)]){    
+          let [info_talla] = await conn.execute("select *from tbl2_tallas where detalle = ?",[talla])
+          let result = await ProductosService.createNewSubProduct(
+            {
+              idx_CAB_PROD: info_prod[0].idx,
+              codigo: info_prod[0].codigo,
+              isbn: info_prod[0].isbn,
+              nom: info_prod[0].nom,
+              idx_CAB_COLOR: combo.idcolor,
+              idx_talla: info_talla[0].idx,
+              talla: info_talla[0].detalle,
+              estado: 'primera',
+              nro_lote: 0
+            },
+            conn
+          )
+          if(!result.ok) throw new Error(result.message)
+        }
+      }
+      if(conn) conn.rollback()
+      // if(conn) conn.commit()
       return {ok:true,message:'',info:''}
     } catch(error){
       if(conn) conn.rollback()
@@ -270,8 +301,48 @@ export class ProductosService{
       let [result] = await conn.execute(`UPDATE tbl2_productos SET ${cake.toString(',')} WHERE ruc_ = '20522094120' and idx = ?`,[info.idx])
       console.log("Row Afectada:",result.affectedRows)
 
-      // if(conn) conn.rollback()
-      if(conn) conn.commit()
+      let c_delete = [], c_add = []
+      let [backcombos] = await conn.query("select *from tbl2_subproductos where idx_CAB_PROD = ?",[info.idx])
+      c_delete = JSON.parse(JSON.stringify(backcombos))
+      console.log("El arrau delete es :",c_delete)
+      for(let combo of [...JSON.parse(info.combos)]){
+        for(let talla of [...JSON.parse(combo.talla)]){
+          const busqueda = c_delete.filter(row=>row.idx_CAB_COLOR == parseInt(combo.idcolor) && row.talla == talla)
+          console.log("El resultado de la busqueda es:",busqueda)
+          if(busqueda.length > 0){
+            c_delete = c_delete.filter(row=>row.idx !== busqueda[0].idx)
+            console.log("Tomate:",c_delete)
+          }else{
+            c_add.push({idcolor:combo.idcolor,talla:talla})
+            console.log("Mango:",c_add)
+          }
+        }
+      }
+      console.log("Los arrays son",c_delete,c_add)
+      for(let c of [...c_add]){
+        const [info_talla] = await conn.execute("select *from tbl2_tallas where detalle = ?",[c.talla])
+        let result = await ProductosService.createNewSubProduct(
+          {
+            idx_CAB_PROD: info.idx,
+            codigo: validacion[0].codigo,
+            isbn: validacion[0].isbn,
+            nom: info.nom,
+            idx_CAB_COLOR: c.idcolor,
+            idx_talla: info_talla[0].idx,
+            talla: info_talla[0].detalle,
+            estado: 'primera',
+            nro_lote: 0
+          },
+          conn
+        )
+        if(!result.ok) throw new Error(result.message)
+      }
+      for(let c of [...c_delete]){
+        await conn.execute("delete from tbl2_subproductos where idx_CAB_PROD = ? and idx = ?",[c.idx_CAB_PROD,c.idx])
+      }
+
+      if(conn) conn.rollback()
+      // if(conn) conn.commit()
       return {ok:true,message:'',info:''}
     } catch(error){
       if(conn) conn.rollback()
@@ -323,7 +394,7 @@ export class ProductosService{
     console.log("La informacion recibida para crear un subproducto es la siguiente:",info)
     let resultid = null
     try {
-      let [validation,fields] = await conn.query("SELECT *FROM tbl2_subproductos WHERE idx_CAB_PROD = ? AND idx_CAB_COLOR = ?",[info.idx_CAB_PROD,info.idx_CAB_COLOR])
+      let [validation,fields] = await conn.query("SELECT *FROM tbl2_subproductos WHERE idx_CAB_PROD = ? AND idx_CAB_COLOR = ? AND talla = ?",[info.idx_CAB_PROD,info.idx_CAB_COLOR,info.talla])
       if(validation.length > 0) throw new Error('Se ha detectado un producto existente con el mismo nombre')
       if (info.idx) {
         
@@ -576,10 +647,12 @@ export class ProductosService{
 
   }
 
-  static async getProductosConStock(search){
+  static async getProductosConStock(search,filters = {}){
     const conn = await mysql.createConnection(configs[1]);
     await conn.connect();
     try {
+      let newfilters = Object.keys(filters).length > 0 ? Object.keys(filters).map(key=>` and ${key}=${filters[key]}`) : 'asdfsdf'
+      console.log("Los filtro de busqueda son :",filters,newfilters)
       let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(COALESCE(TRIM(producto),''),' ',COALESCE(TRIM(color),''),' ',COALESCE(TRIM(modelo),''),' ',COALESCE(TRIM(marca),''),' ',COALESCE(TRIM(presentacion),''))) > 0").join(" ") : ""
 
       // tp.idx AS id_producto_CAB,
@@ -603,29 +676,30 @@ export class ProductosService{
       // ts.sku AS sku2
 
       const [rows] = await conn.execute(`
-        select *
-        from
+        SELECT *
+        FROM
         (
-          select
-            tp.idx as idx_prod,
-            ts.idx as idx_subprod,
-            tp.codigo,
-            tp.tipo,
-            tp.codUnidadMedida as unidad,
-            tp.nom as producto,
-            ts.idx_CAB_COLOR,
-            (select tc.nom from tbl2_colores tc where tc.idx = ts.idx_CAB_COLOR) as color,
-            ts.idx_talla,
-            (select tt.detalle from tbl2_tallas tt where tt.idx = ts.idx_talla) as talla,
-            tad.lote,
-            tad.cantidad as stock
-            from tbl2_productos tp
-            left join tbl2_subproductos ts on tp.idx = ts.idx_CAB_PROD
-            left join tbl2_almacen_det tad on tad.idx_subproducto = ts.idx and tad.id_cabprod = ts.idx_CAB_PROD
-          where tp.ruc_ = '20522094120' and tp.tipo in ('I','A') and ts.idx_CAB_COLOR is not null
-        ) as cc
-        where 1=1 ${extra} 
-        limit 100
+          SELECT
+              tad.id_CAB_DET,
+              tp.idx as idx_prod,
+              ts.idx as idx_subprod,
+              tp.codigo,
+              tp.tipo,
+              tp.codUnidadMedida as unidad,
+              tp.nom as producto,
+              ts.idx_CAB_COLOR,
+              (select tc.nom from tbl2_colores tc where tc.idx = ts.idx_CAB_COLOR) as color,
+              ts.idx_talla,
+              (select tt.detalle from tbl2_tallas tt where tt.idx = ts.idx_talla) as talla,
+              tad.lote,
+              tad.cantidad as stock
+            FROM tbl2_productos tp
+            LEFT join tbl2_subproductos ts on tp.idx = ts.idx_CAB_PROD
+            LEFT join tbl2_almacen_det tad on tad.idx_subproducto = ts.idx and tad.id_cabprod = ts.idx_CAB_PROD ${newfilters}
+            WHERE tp.ruc_ = '20522094120' and tp.tipo in ('I','A') and ts.idx_CAB_COLOR is not null 
+        ) AS cc
+        WHERE 1=1 ${extra}
+        LIMIT 100
       `);
       console.log(rows);
       return rows;
@@ -642,7 +716,7 @@ export class ProductosService{
     await conn.connect();
     try {
 
-      let extra = busqueda.split(" ").length > 0 ? busqueda.split(" ").map(word=>"AND LOCATE('"+word+"',CONCAT(TRIM(nom),' ',TRIM(tipo),' ',TRIM(estilo),' ',TRIM(temporada),' ',TRIM(presentacion),' ',TRIM(marca),' ',TRIM(modelo))) > 0").join(" ") : ""
+      let extra = busqueda.split(" ").length > 0 ? busqueda.split(" ").map(word=>"AND LOCATE('"+word+"',CONCAT(TRIM(nom),' ',TRIM(COALESCE(tipo,'')),' ',TRIM(COALESCE(estilo,'')),' ',TRIM(COALESCE(temporada,'')),' ',TRIM(COALESCE(presentacion,'')),' ',TRIM(COALESCE(marca,'')),' ',TRIM(COALESCE(modelo,'')))) > 0").join(" ") : ""
 
       const filters_query = Object.keys(filters).length > 0 ? Object.keys(filters).map(f=>{
         if(Array.isArray(filters[f]) && filters[f].length > 0){
@@ -679,6 +753,7 @@ export class ProductosService{
         WHERE 1=1 ${extra} and tp.ruc_ = '20522094120'
         LIMIT 150
       `
+      console.log("La consulta de producto es la siguiente:",query)
       const [rows] = await conn.execute(query);
       // console.log(rows);
       return rows;

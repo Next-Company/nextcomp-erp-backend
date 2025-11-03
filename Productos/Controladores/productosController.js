@@ -75,7 +75,9 @@ export class ProductosController{
   static async getProductosConStock(req,res){
     console.log("Buscando producos")
     const search = req.params.search ?? ''
-    const info = await ProductosService.getProductosConStock(search);
+    let filters = req.body.filters ?? {} 
+    console.log("Doña tomaza :",filters)
+    const info = await ProductosService.getProductosConStock(search,filters);
     res.send(info);
   }
   static async getProductosTotal(req,res){

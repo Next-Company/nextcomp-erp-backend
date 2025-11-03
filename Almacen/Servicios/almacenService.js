@@ -232,6 +232,7 @@ export default class AlmacenModel{
       let [cabmov] = await conn.execute(`
         SELECT
           DATE_FORMAT(STR_TO_DATE(t1.fec_Emision_DOC,'%d/%m/%Y'),'%Y-%m-%d') as fec_emision,
+          t1.Suc_Tienda,
           t1.Nro_Doc_Prov,
           t1.Raz_social_DOC,
           tpic.id_proveedor_CAB,
@@ -252,8 +253,13 @@ export default class AlmacenModel{
 
       let [detmov] = await conn.execute(`
         select 
-          t1.*
-        from tbl_kard_compras_DET t1
+          t1.*,
+          (select tp.codUnidadMedida from tbl2_productos tp where tp.idx = ts.idx_CAB_PROD) as unidad,
+          ts.nom as producto,
+          ts.talla,
+          (select tc.nom from tbl2_colores tc where tc.idx = ts.idx_CAB_COLOR ) as color
+        from tbl_kard_compras_DET t1 
+        left join tbl2_subproductos ts on t1.id_subprod = ts.idx
         where t1.id_CAB_DET = ?
       `,[idmov])
 
@@ -316,13 +322,13 @@ export default class AlmacenModel{
           id_CAB_DET: id_guia,
           id_producto_DET: parseInt(element.id_producto_DET),
           Cant_producto_DET: 0,
-          Cant_despacho_DET: parseFloat(element.despacho),
+          Cant_despacho_DET: parseFloat(element.Cant_despacho_DET),
           Suc_Tienda: parseInt(cabecera.Suc_Tienda),
           Precio_Unid_Det: 0,
           id_subprod: parseInt(element.id_subprod),
           metros:parseFloat(element.metros ?? 0),
           rollos:parseFloat(element.rollos ?? 0),
-          num_lote:parseInt(element.lote ?? 0)
+          num_lote:parseInt(element.num_lote ?? 0)
         };
         const [resultGuiaDet] = await conn.execute(
           `INSERT INTO tbl_kard_compras_DET (${Object.keys(data_guia_det).join(',')}) VALUES (${Object.keys(data_guia_det).map(() => '?').join(',')})`,
@@ -354,7 +360,7 @@ export default class AlmacenModel{
         if(item.id_subprod == ''){
           let [newprod] = await conn.query(`SELECT *FROM tbl2_productos WHERE ruc_ = '20522094120' AND idx = ?`,[item.id_producto_DET])
           console.log("La informacion del producto consultado es:",newprod)
-          let resultsubprod = await ProductosService.createNewSubProduct({idx_CAB_PROD:item.id_producto_DET,codigo:newprod[0].codigo,isbn:newprod[0].isbn,nom:newprod[0].nom,idx_CAB_COLOR:item.idx_color,idx_talla:26,talla:'S/T',estado:'primera',nro_lote:item.lote},conn)
+          let resultsubprod = await ProductosService.createNewSubProduct({idx_CAB_PROD:item.id_producto_DET,codigo:newprod[0].codigo,isbn:newprod[0].isbn,nom:newprod[0].nom,idx_CAB_COLOR:item.idx_color,idx_talla:26,talla:'S/T',estado:'primera',nro_lote:item.num_lote},conn)
           if(!resultsubprod.ok) throw new Error(resultsubprod.message)
           console.log("Info de la creacion del subproducto:",resultsubprod)
           item.id_subprod = resultsubprod.resultid
@@ -368,7 +374,7 @@ export default class AlmacenModel{
             // almacen_destino:parseInt(centro[0].valor),
             almacen_destino:parseInt(cabecera.Suc_Tienda),
             id_subprod_CAB:item.id_subprod,
-            lote:item?.sinlote ? 0 : (item.lote || 0),
+            lote:item?.sinlote ? 0 : (item.num_lote || 0),
             tipo:item.tipo,
             despacho:parseFloat(item.despacho)
           }
@@ -391,6 +397,224 @@ export default class AlmacenModel{
       console.log("El detalle a insertar es el siguiente:",data_comprobante)
       // let res_mov = await AlmacenModel.saveMovimiento(data_comprobante,conn)
       // if(!res_mov.ok) throw new Error(res_mov.message)
+
+      if(conn) conn.rollback()
+      // if(conn) conn.commit()
+      return {ok:true,message:'Guardado exitoso'}
+    } catch (error) {
+      console.log(error)
+      if(conn) conn.rollback()
+      return {ok:false,message:error.message ?? error}
+    } finally {
+      if(conn) await conn.end()
+    }
+  }
+  static async updateDespacho(data,session,idguia){
+    console.log("Inicia el proceso de actualizado de movimiento")
+    let conn = undefined
+
+    // conn = await mysql.createConnection(configs[1])
+    // await conn.connect()
+    // console.log("La info recibida es:",data)
+    // let cabecera = JSON.parse(data.info)
+    // let detalle = JSON.parse(data.detalle)
+    // console.log("La informacion de la cebecra es:",cabecera)
+    // console.log("La informacion del detalle es:",detalle)
+
+    // const [backup] = await conn.query("SELECT *FROM tbl_kard_compras_DET WHERE id_CAB_DET = ?",[idguia])
+    // console.log("La informacion del backup es:",backup)
+
+    // if(conn) await conn.end()
+    // return {ok:true,message:"Proceso ok"};
+
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect()
+      conn.beginTransaction()
+
+      console.log("La info recibida es:",data)
+      let cabecera = JSON.parse(data.info)
+      let detalle = JSON.parse(data.detalle)
+      console.log("La informacion de la cebecra es:",cabecera)
+      console.log("La informacion del detalle es:",detalle)
+
+      // const [backup] = await conn.query("SELECT t1.* FROM tbl_kard_compras_DET t1 join tbl2_subproductos ts WHERE id_CAB_DET = ?",[idguia])
+      const [backup] = await conn.query(`SELECT
+        t1.*,
+        (select tp.codUnidadMedida from tbl2_productos tp where tp.idx = ts.idx_CAB_PROD) as unidad,
+        ts.nom as producto,
+        ts.talla,
+        (SELECT tc.nom FROM tbl2_colores tc WHERE tc.idx = ts.idx_CAB_COLOR ) as color
+      FROM tbl_kard_compras_DET t1 
+      LEFT JOIN tbl2_subproductos ts on t1.id_subprod = ts.idx
+      WHERE t1.id_CAB_DET = ?`,[parseInt(idguia)])
+      console.log("La informacion del backup es:",backup)
+
+      // return {ok:true,message:"Proceso ok"};
+
+      // ///////////////////////////////////////////////
+
+      // const [consulta,fields] = await conn.execute("SELECT *FROM tbl_kard_compras_CAB WHERE id_CAB = ?",[idguia])
+
+      // const campos = Object.keys(cabecera).reduce((carry, current) => {
+      //   fields.filter(row => row.name !== 'idx').map(row => row.name).includes(current) && carry.push(current)
+      //   return carry
+      // }, [])
+      // const values = campos.map(row => cabecera[row])
+      // console.log("Informacion de campos :",campos)
+      // await conn.query('UPDATE tbl_kard_compras_CAB SET ' + campos.map(row => row + " = NULLIF(?,'')").toString() + ' WHERE id_CAB = ' + idguia,values)
+
+      // Obtener cod_cuenta
+      const cod_cnta = 20;
+      const tip_prod_cdp = 2;
+      const serie_prod = 0;
+
+      // Actualizar tabla tbl_kard_compras_CAB
+      const data_guia = {
+        ruc: '20522094120',
+        tip_DOC: tip_prod_cdp,
+        serie_DOC: serie_prod,
+        num_doc_CDP: 0,
+        id_proveedor_CAB: cabecera.id_proveedor_CAB,
+        Nro_Doc_Prov: cabecera.ruc,
+        Raz_social_DOC: cabecera.proveedor,
+        Dir_DOC: '',
+        Suc_Tienda: parseInt(cabecera.Suc_Tienda),
+        observaciones: cabecera.observaciones,
+        fec_Reg_DOC: cabecera.fec_emision.split('-').reverse().join('/'),
+        fec_Emision_DOC: cabecera.fec_emision.split('-').reverse().join('/'),
+        idx_usu: session.id,
+        tipomov: cabecera.tipo_operacion,
+        id_requerimiento: parseInt(cabecera.id_pedido_origen ?? 0),
+        id_modelo: parseInt(cabecera.id_modelo ?? 0)
+      };
+      console.log("El detalle a insertar es:",data_guia)
+      await conn.query('UPDATE tbl_kard_compras_CAB SET ' + Object.keys(data_guia).map(row => row + " = NULLIF(?,'')").toString() + ' WHERE id_CAB = ' + idguia,Object.keys(data_guia).map(row => cabecera[row]))
+
+      await conn.execute("DELETE FROM tbl_kard_compras_DET WHERE ruc = '20522094120' and id_CAB_DET = ?",[idguia])
+      for(let element of detalle){
+        const data_guia_det = {
+          ruc: '20522094120', 
+          id_CAB_DET: idguia,
+          id_producto_DET: parseInt(element.id_producto_DET),
+          Cant_producto_DET: 0,
+          Cant_despacho_DET: parseFloat(element.Cant_despacho_DET),
+          Suc_Tienda: parseInt(cabecera.Suc_Tienda),
+          Precio_Unid_Det: 0,
+          id_subprod: parseInt(element.id_subprod),
+          metros:parseFloat(element.metros ?? 0),
+          rollos:parseFloat(element.rollos ?? 0),
+          num_lote:parseInt(element.num_lote ?? 0)
+        };
+        const [resultGuiaDet] = await conn.execute(
+          `INSERT INTO tbl_kard_compras_DET (${Object.keys(data_guia_det).join(',')}) VALUES (${Object.keys(data_guia_det).map(() => '?').join(',')})`,
+          Object.values(data_guia_det)
+        );
+      }
+
+
+      let res_mov = undefined ,articulos = [] ,data_comprobante = {}, busqueda = undefined;
+      // 9	INGR	Ingreso de productos	10285		2023-06-01 09:29:16
+      // 10	RETR	Retiro de productos	75303		2023-06-01 09:29:18
+
+      // ////////////////////////////////////////
+
+      [busqueda] = await conn.execute("SELECT *FROM tbl2_cptes_ordenes_tipo WHERE idx = ?",[parseInt(cabecera.tipo_operacion) == 9 ? 10 : 9]);
+      articulos = []
+      for(let item of [...backup]){
+        articulos.push(
+          {
+            producto:item.producto,
+            id_producto_CAB:item.id_producto_DET,
+            // almacen_destino:parseInt(centro[0].valor),
+            almacen_destino:parseInt(cabecera.Suc_Tienda),
+            id_subprod_CAB:item.id_subprod,
+            lote:item?.sinlote ? 0 : (item.num_lote || 0),
+            tipo:item.tipo,
+            despacho:parseFloat(item.Cant_despacho_DET)
+          }
+        )
+      }
+      console.log("La lista de articulos formateados es:",articulos)
+
+      data_comprobante = {
+        id_comprobante_CAB: busqueda[0].idx,
+        cod_comprobante: busqueda[0].codigo,
+        num_comprobante: parseInt(busqueda[0].correlativo) + 1,
+        observaciones: cabecera.observaciones,
+        idx_documento_asoc: idguia,
+        lote: cabecera.id_pedido_origen ?? 0,
+        origen: 'KARD',
+        almacen_destino: parseInt(cabecera.Suc_Tienda),
+        // articulos: JSON.stringify(detalle),
+        articulos: JSON.stringify(articulos),
+      };
+      console.log("El detalle a insertar es el siguiente:",data_comprobante)
+      res_mov = await AlmacenModel.saveMovimiento(data_comprobante,conn)
+      if(!res_mov.ok) throw new Error(res_mov.message);
+
+      console.log("CONTINUA TODO OKK =================>");
+
+      // /////////////////////////////////////////////////////////
+
+      [busqueda] = await conn.execute("SELECT *FROM tbl2_cptes_ordenes_tipo WHERE idx = ?",[parseInt(cabecera.tipo_operacion)]);
+      articulos = [];
+      for(let item of [...detalle]){
+        if(item.idx_color == ''){
+          console.log("Creando nuevo color")
+          let [busqueda] = await conn.query("SELECT idx FROM tbl2_colores WHERE nom = ? AND ruc IN ('20522094120','20523875583') LIMIT 1",[item.color.trim()])
+          if(busqueda.length > 0){
+            console.log("Color hallado")
+            item.idx_color = busqueda[0].idx
+          }else{
+            console.log("Creadndo cnuevo cokir")
+            let resultcolor = await ProductosService.createNewColor({codigo:'',nom:item.color.trim(),ruc:'20522094120'},conn)
+            if(!resultcolor.ok) throw new Error(resultcolor.message)
+            console.log("Info de la creacion del color:",resultcolor)
+            item.idx_color = resultcolor.idcolor
+          }
+        }
+        if(item.id_subprod == ''){
+          let [newprod] = await conn.query(`SELECT *FROM tbl2_productos WHERE ruc_ = '20522094120' AND idx = ?`,[item.id_producto_DET])
+          console.log("La informacion del producto consultado es:",newprod)
+          let resultsubprod = await ProductosService.createNewSubProduct({idx_CAB_PROD:item.id_producto_DET,codigo:newprod[0].codigo,isbn:newprod[0].isbn,nom:newprod[0].nom,idx_CAB_COLOR:item.idx_color,idx_talla:26,talla:'S/T',estado:'primera',nro_lote:item.num_lote},conn)
+          if(!resultsubprod.ok) throw new Error(resultsubprod.message)
+          console.log("Info de la creacion del subproducto:",resultsubprod)
+          item.id_subprod = resultsubprod.resultid
+        }
+
+        articulos.push(
+          {
+            producto:item.producto,
+            id_producto_CAB:item.id_producto_DET,
+            // almacen_destino:parseInt(centro[0].valor),
+            almacen_destino:parseInt(cabecera.Suc_Tienda),
+            id_subprod_CAB:item.id_subprod,
+            lote:item?.sinlote ? 0 : (item.num_lote || 0),
+            tipo:item.tipo,
+            despacho:parseFloat(item.Cant_despacho_DET)
+          }
+        )
+      }
+      console.log("La lista de articulos formateados es:",articulos)
+
+      data_comprobante = {
+        id_comprobante_CAB: busqueda[0].idx,
+        cod_comprobante: busqueda[0].codigo,
+        num_comprobante: parseInt(busqueda[0].correlativo) + 1,
+        observaciones: cabecera.observaciones,
+        idx_documento_asoc: idguia,
+        lote: cabecera.id_pedido_origen ?? 0,
+        origen: 'KARD',
+        almacen_destino: parseInt(cabecera.Suc_Tienda),
+        // articulos: JSON.stringify(detalle),
+        articulos: JSON.stringify(articulos),
+      };
+      console.log("El detalle a insertar es el siguiente:",data_comprobante)
+      res_mov = await AlmacenModel.saveMovimiento(data_comprobante,conn)
+      if(!res_mov.ok) throw new Error(res_mov.message)
+
+      
 
       if(conn) conn.rollback()
       // if(conn) conn.commit()

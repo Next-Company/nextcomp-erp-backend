@@ -24,6 +24,8 @@
     display: flex;
     flex-direction: row;
     height: 60px;
+    margin-right: 100px;
+    margin-top: 5px;
   }
   #head div{
     display: flex;
@@ -31,14 +33,11 @@
     justify-content: center;
     padding: 0px 20px;
   }
-  #head div:first-child{
-    width: 100px;
+  #head div:nth-child(1){
+    border: 0px solid;
+    width: 150px;
   }
-  #head div:nth-child(2){
-    border: 2px solid;
-    flex:1;
-  }
-  #head div:nth-child(4){
+  #head div:nth-child(3){
     border:2px solid;
     width:150px;
   }
@@ -108,17 +107,62 @@
   table#liquidacion tfoot tr:nth-child(2){
     height: 100px;
   }
+  table#table_articulo td,th{
+    border:1px solid;
+  }
 </style>
 <div class="main">
   <div id="head">
-    <div style="font-size: 16px;text-align:center;">HOJA DE<br/> CORTE</div>
-    <div id="title" style="font-size: 24px;font-weight:bold;background-color:yellow;text-align:center;">{{cabecera.marca}} {{cabecera.producto}} MOD.- {{cabecera.modelos}}</div>
-    <div style="font-size: 16px;text-align:center;">ORDEN<br/> PRODUCCIÓN</div>
-    <div style="font-size:29px;font-weight:bold;background-color:yellow;">{{nrocorte}}</div>
+    {{!-- <div style="font-size: 16px;text-align:center;">HOJA DE<br/> CORTE</div> --}}
+    {{!-- <div id="title" style="font-size: 24px;font-weight:bold;background-color:yellow;text-align:center;"> --}}
+    <div style="font-size:29px;font-weight:bold;background-color:yellow;display:flex;flex-direction:column;border:0px solid;margin-right:10px;">
+      <div style="font-size: 8px;font-weight:bold;">ORDEN PRODUCCION</div>
+      <div>{{nrocorte}}</div>
+    </div>
+    <div id="title" style="font-weight:bold;text-align:center;border:0px solid;padding:0px;width:100%;">
+      <table id="table_articulo" style="width:100%;border-collapse:collapse;margin:0px;height:100%;background-color:yellow;border:2px solid;">
+        <thead style="background-color:#b5e1ff">
+          <tr>
+            <th style="font-size: 10px;">MARCA</th>
+            <th style="font-size: 10px;">ARTICULO</th>
+            <th style="font-size: 10px;">BASE</th>
+            <th style="font-size: 10px;">MODELO</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="font-size: 24px;">{{cabecera.marca}}</td>
+            <td style="font-size: 24px;">{{cabecera.rubro}}</td>
+            <td style="font-size: 24px;">{{cabecera.base}}</td>
+            <td style="font-size: 24px;">{{cabecera.modelos}}</td>
+            {{!-- <td style="font-size: 24px;">ALTERNATIVO</td>
+            <td style="font-size: 24px;">SHORT PLAYERO</td>
+            <td style="font-size: 24px;">CAMPANA</td>
+            <td style="font-size: 24px;">MAHOMA</td> --}}
+          </tr>
+        </tbody>
+        
+      </table>
+      {{!-- <div style="display: grid;">
+        <div>
+          <div></div>
+          <div></div>
+        </div>
+      </div> --}}
+      {{!-- {{cabecera.marca}}-{{cabecera.rubro}}-{{cabecera.base}}-{{cabecera.modelos}} --}}
+    </div>
+    {{!-- <div style="font-size: 16px;text-align:center;">ORDEN<br/> PRODUCCIÓN</div> --}}
+    {{!-- <div style="font-size: 16px;text-align:center;">ORDEN</div> --}}
+    {{!-- <div style="font-size:29px;font-weight:bold;background-color:yellow;">{{nrocorte}}</div> --}}
+
+    {{!-- <div style="font-size:29px;font-weight:bold;background-color:yellow;display:flex;flex-direction:column;">
+      <div style="font-size: 8px;font-weight:bold;">ORDEN PRODUCCION</div>
+      <div>{{nrocorte}}</div>
+    </div> --}}
   </div>
   <div id="subhead">
     <div>FECHA COMERCIAL: {{#comercial cabecera.fec_entrega}}{{/comercial}}</div>
-    <div>ORDEN DE PEDIDO: {{cabecera.oc}}</div>
+    <div>DIAS DE PRODUCCIÓN: {{cabecera.dias_produccion}}</div>
     <div>FECHA GENERADA: {{cabecera.fec_emitida}}</div>
   </div>
   <div>
@@ -131,13 +175,13 @@
         <th>METRO</th>
         <th>PESO</th>
         <th>PAÑOS</th>
-        <th>26/XS</th>
-        <th>28/S</th>
-        <th>30/M</th>
-        <th>32/L</th>
-        <th>34/XL</th>
-        <th>36/XXL</th>
-        <th>TOTAL</th>
+        <th style="width:70px;">26/XS</th>
+        <th style="width:70px;">28/S</th>
+        <th style="width:70px;">30/M</th>
+        <th style="width:70px;">32/L</th>
+        <th style="width:70px;">34/XL</th>
+        <th style="width:70px;">36/XXL</th>
+        <th style="width:70px;">TOTAL</th>
       </thead>
       <tbody>
         {{#relleno}}
@@ -225,6 +269,12 @@
 <div style="break-after: page">
   {{#relleno3 cabecera}}
   {{/relleno3}}
+</div>
+<div style="break-after: page;position:relative;">
+  <div style="display:flex;flex-direction:row;justify-content:center;align-items: center;height:100vh;">
+    {{!-- <img src="https://jsjfact.com/facturador/imagenez/op_{{cabecera.idx}}.jpg" width="600" height="600" /> --}}
+    <img src={{rutaimg}} width="600" height="600" />
+  </div>
 </div>
 {{!-- <div style="break-after: page">
 </div> --}}

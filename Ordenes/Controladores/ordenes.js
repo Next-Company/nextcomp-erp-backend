@@ -1056,7 +1056,9 @@ export class OrdenesController {
     // const data = await OrdenesModel.getInfoPrintSugerido(params.idorden)
     // console.log("La info de la orde es:",data[0].ordenes_combos,data[0].ordenes_combos[0].fracciones)
     const data = await OrdenesModel.getInfoPrintSugerido(params.idorden)
+    const requerimientos = await OrdenesModel.getRequerimientosByOrden(params.idorden)
     console.log("Info cabecera:",data)
+    console.log("Info requerimientos:",requerimientos)
     try {
       
     
@@ -1067,6 +1069,7 @@ export class OrdenesController {
         nrocorte: data[0].oc,
         ruta: eval(data[0].ruta_proceso).join(" - "),
         cabecera: data[0],
+        rutaimg: `https://jsjfact.com/facturador/imagenez/op_${params.idorden}.jpg`,
         helpers: {
           comercial: function(fechacomercial){
             const partes = fechacomercial.split('-'); 
@@ -1202,8 +1205,8 @@ export class OrdenesController {
                                 <tr><td>MARCA</td><td>${info.marca}</td></tr>
                                 <tr><td>MODELO</td><td>${info.modelos}</td></tr>
                                 <tr><td>BASE</td><td>${info.base}</td></tr>
-                                <tr><td>PROVEEDOR</td><td>${info.proveedor}</td></tr>
-                                <tr><td>TELA</td><td>OP/${('00000000' + info.orden_ref).substring(5)}</td></tr>
+                                <tr><td>PROVEEDOR</td><td>${info.modalidad_pedido == 'STK' ? '-' : requerimientos.map(row=>row.proveedor).join(' / ')}</td></tr>
+                                <tr><td>TELA</td><td>${info.modalidad_pedido == 'STK' ? 'STOCK' : requerimientos.map(row=>'OP/' + ('00000000' + row.orden_ref).substring(5)).join('-') }</td></tr>
                                 <tr><td>CURVA</td><td>${info.curva ?? 'curva'}</td></tr>
                                 <tr><td>TALLAS</td><td style="font-size:10px;">${row[0].fracciones.map(item=>item.talla).join("-")}</td></tr>
                                 <tr><td>CANTIDAD</td><td>${info.ordenes_combos.reduce((c,v)=>c+v.cantidad_combo,0)}</td></tr>
@@ -1273,7 +1276,7 @@ export class OrdenesController {
    
             return `
               <table id="sugerido">
-                <thead style="height:80px;">
+                <thead style="height:60px;">
                   <tr style="background-color:#b5e1ff;">
                     <th style="min-width:200px;">FOTO DE PRENDA</th>
                     <th style="min-width:${consolidado[0].length > 1 ? '85' : '120'}px;">COLOR</th>
