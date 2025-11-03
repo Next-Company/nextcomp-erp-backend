@@ -23,6 +23,9 @@ import { ReportRouter } from "./Reports/Routers/reportRouter.js";
 import { ordenesRouter } from "./Ordenes/Routers/ordenes.js";
 import { COBROS_ROUTER } from "./Cobros/Routers/cobros.js";
 import { CAJA_ROUTER } from "./Caja/Routers/caja.js";
+import ALMACEN_ROUTER from "./Almacen/Routers/almacenRouter.js";
+import PROVEEDOR_ROUTER from "./Proveedores/Routers/proveedorRouter.js";
+import MANTENIMIENTO_ROUTER from "./Mantenimiento/Routers/mantenimientoRouter.js";
 const app = express()
 
 
@@ -80,7 +83,7 @@ app.use((req, resp, next) => {
       })
       next()
     } catch (error) {
-      console.log("Error:" + error)
+      console.log("Errorf:" + error)
       let info = {
         ok: false,
         message: 'Expiro el token de session.'
@@ -106,6 +109,13 @@ app.use('/letras', LetrasRouter)
 app.use('/reports', ReportRouter)
 app.use('/cobros', COBROS_ROUTER)
 app.use('/caja', CAJA_ROUTER)
+app.use('/almacen', ALMACEN_ROUTER)
+app.use('/proveedores', PROVEEDOR_ROUTER )
+app.use('/mantenimiento', MANTENIMIENTO_ROUTER )
+
+// app.use((err,req,res,next)=>{
+//   console.log("Hola hay un error")
+// })
 
 app.listen(PORT_DEFAULT, () => {
   console.log('Servidor corriendo en el puerto ' + PORT_DEFAULT)

@@ -4,6 +4,7 @@ import { LetrasController } from "../Controladores/letrasController.js";
 export const LetrasRouter = Router()
 
 LetrasRouter.get('/',LetrasController.getLetrasLista)
+LetrasRouter.get('/:search',LetrasController.getLetrasLista)
 LetrasRouter.put('/saveLetra',LetrasController.saveInfoLetra)
 LetrasRouter.get('/getLetraById/:id',LetrasController.getLetraById)
 LetrasRouter.get('/getfacturasbypedido/:idpedido',LetrasController.getFacturasByPedido)

@@ -19,9 +19,14 @@ ordenesRouter.get('/updatecombos/combos', OrdenesController.updateCombos)
 ordenesRouter.get('/extraeritemscaja/:id/:id_corte', OrdenesController.ExtraerItemsCaja)
 
 ordenesRouter.post("/saveFaseOrden",OrdenesController.saveFaseOrden)
-ordenesRouter.post("/saveFaseMolde",OrdenesController.saveFaseMolde)
-ordenesRouter.post("/saveFaseCorte",OrdenesController.saveFaseCorte)
+ordenesRouter.put("/updateFaseOrden",OrdenesController.updateFaseOrden)
+ordenesRouter.put("/saveFaseMolde",OrdenesController.saveFaseMolde)
+ordenesRouter.put("/saveFaseCorte",OrdenesController.saveFaseCorte)
+ordenesRouter.put("/saveFaseMateriales",OrdenesController.saveFaseMateriales)
 
 ordenesRouter.get("/lizzet/:id",OrdenesController.regulaLizzet)
-ordenesRouter.get("/printsugerido/:idorden",OrdenesController.printSugeridoV3)
+ordenesRouter.get("/printhojacorte/:idorden",OrdenesController.printHojaCorte)
+// ordenesRouter.get("/printsugerido/:idorden",OrdenesController.printSugeridoV3)
+
+ordenesRouter.get("/getCorrelativoProduccionPreview/:tipo",OrdenesController.getCorrelativoProduccionPreview)
 

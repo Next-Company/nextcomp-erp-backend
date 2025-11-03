@@ -3,6 +3,7 @@ import { configs } from "../../Main/utils.js";
 import mysql from "mysql2/promise"
 export class LoginModel {
   static async validarLogin({ usu, paz }) {
+    console.log("Validando usuario :", usu,paz)
     let conn = undefined
     const resp = { ok: false, message: 'Credenciales incorrectas' }
 

@@ -8,8 +8,10 @@ export class LetrasService{
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect()
-      // let [result] = await conn.query(`SELECT tlc.*,COALESCE(DATEDIFF(STR_TO_DATE(tlc.fec_vencimiento,'%Y-%m-%d'),date(now())),0) as dias_pendientes FROM tbl2_letras_cab tlc WHERE 1=1 ORDER BY tlc.idx DESC LIMIT 100`)
-      let [result] = await conn.query(`
+
+      let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(COALESCE(TRIM(tlc.proveedor),''),' ',COALESCE(TRIM(tlc.num_letra),''),' ',COALESCE(TRIM(tlc.fec_emision),''),' ',COALESCE(TRIM(tlc.fec_vencimiento),''),' ',COALESCE(TRIM(tlc.estado),'') )) > 0").join(" ") : ""
+
+      let query_search = `
         SELECT tlc.idx,tlc.id_proveedor_CAB,tlc.proveedor,tlc.documentos_ref,tlc.num_letra,tlc.moneda,DATE_FORMAT(tlc.fec_emision,'%d/%m/%Y') as fec_emision,DATE_FORMAT(tlc.fec_vencimiento,'%d/%m/%Y') as fec_vencimiento,
         tlc.importe,tlc.estado,tlc.observaciones,
         COALESCE(DATEDIFF(STR_TO_DATE(tlc.fec_vencimiento,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
@@ -23,11 +25,14 @@ export class LetrasService{
         LEFT JOIN tbl2_letras_adi tla on tlc.idx = tla.id_letra_CAB 
         LEFT JOIN tbl2_despachos_cab tdc on tdc.id_pedido_origen =  tla.id_pedido_CAB
         LEFT JOIN tbl2_despachos_adi tda on tda.id_despacho_CAB = tdc.idx
-        WHERE 1=1 
+        WHERE 1=1 ${extra}
         group by tlc.idx,tlc.id_proveedor_CAB,tlc.proveedor,tlc.documentos_ref,tlc.num_letra,tlc.moneda,tlc.fec_emision,tlc.fec_vencimiento,tlc.importe,tlc.estado,tlc.observaciones
         ORDER BY tlc.idx DESC
         LIMIT 100
-        `)
+        `
+      console.log("Consulta letraSsD:",query_search)
+      
+      let [result] = await conn.query(query_search)
       // console.log(result)
 
       // await conn.end()
