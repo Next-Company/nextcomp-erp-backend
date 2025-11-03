@@ -85,6 +85,7 @@ export class ProduccionModel {
                               'id_orden_CAB', tb2.id_orden_CAB,
                               'color_combo', tb2.color_combo,
                               'cantidad_combo', tb2.cantidad_combo,
+                              'insumos', COALESCE(tb2.insumos,JSON_ARRAY()),
                               'fracciones', COALESCE((SELECT JSON_ARRAYAGG(JSON_OBJECT('talla', tfr.talla, 'cantidad', tfr.cantidad))
                                             FROM tbl2_fases_prod_ordenes_combos_fracciones tfr
                                             WHERE tfr.id_combo_CAB = tb2.idx)
@@ -1141,8 +1142,8 @@ export class ProduccionModel {
         if(!respuesta.ok) throw respuesta.message
       }
 
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return {ok:true,message:'Registro completo'}
     } catch (err) {
       console.log(err)
@@ -1495,8 +1496,8 @@ export class ProduccionModel {
         }
       }
 
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return {ok:true,message:'Registro completo'}
     } catch (err) {
       console.log(err)
@@ -2099,11 +2100,11 @@ export class ProduccionModel {
       }
     }
   }
-  static async getNuevoPedido(tipo,origen = 'NEXT') {
-    let conn
+  static async getNuevoPedido(tipo,origen = 'NEXT',conn) {
+    // let conn
     try {
-      conn = await mysql.createConnection(configs[1])
-      await conn.connect();
+      // conn = await mysql.createConnection(configs[1])
+      // await conn.connect();
       // const [results, fields] = await conn.query("SELECT (orden_ref + 1) as correlativo FROM tbl2_pedidos_insumos_cab tpic WHERE estado <> 'ANULADO' ORDER BY idx DESC LIMIT 1");
       // const [results, fields] = await conn.query("SELECT (orden_ref + 1) as correlativo FROM tbl2_pedidos_insumos_cab tpic ORDER BY idx DESC LIMIT 1");
 
@@ -2112,8 +2113,6 @@ export class ProduccionModel {
       return results[0].correlativo
     } catch (err) {
       return [err]
-    } finally {
-      if (conn) await conn.end();
     }
   }
   static async saveInfoPedidosAvios(data) {
@@ -2175,8 +2174,7 @@ export class ProduccionModel {
       } else {
         console.log("Creandsssso")
         try {
-
-          const correlativo = await this.getNuevoPedido('TELAS',cabecera.emisor)
+          const correlativo = await this.getNuevoPedido('AVIOS','NEXT',conn)
 
           const [res, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_cab(orden_ref,fec_emision,fec_retorno,tipo,id_proveedor_CAB,proveedor,responsable,forma_pago,nro_contacto,observaciones,estado,moneda,igv,produccion,afec_retencion,emisor) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [correlativo, cabecera.fec_emision, cabecera.fec_retorno, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.forma_pago, cabecera.nro_contacto, cabecera.observaciones, cabecera.estado, cabecera.moneda, cabecera.igv, cabecera.produccion, cabecera.afec_retencion, cabecera.emisor]);
 
@@ -2192,7 +2190,7 @@ export class ProduccionModel {
           await insert()
 
           // await conn.query("update tbl2_pedidos_insumos_correlativo set codigo_num = codigo_num + 1 where ruc_ = ? and anio = YEAR(NOW()) and tipo = ?",['20522094120',cabecera.tipo])
-          await conn.query("update tbl2_pedidos_insumos_correlativo set codigo_num = codigo_num + 1 where ruc_ = ? and anio = YEAR(NOW()) and tipo = ? and origen = ?",['20522094120','TELAS',cabecera.emisor])
+          await conn.query("update tbl2_pedidos_insumos_correlativo set codigo_num = codigo_num + 1 where ruc_ = ? and anio = YEAR(NOW()) and tipo = ?",['20522094120','AVIOS'])
 
         } catch (err) {
           console.log("error en la consulta", err)
@@ -2201,8 +2199,8 @@ export class ProduccionModel {
         // return resultS
       }
 
-      if(conn) conn.rollback()
-      // if(conn) conn.commit()
+      // if(conn) conn.rollback()
+      if(conn) conn.commit()
       return {ok:true,message:'Registro completo'}
     } catch (err) {
       if (conn) conn.rollback()
@@ -2298,7 +2296,7 @@ export class ProduccionModel {
         console.log("Creandsssso")
         try {
 
-          const correlativo = await this.getNuevoPedido('TELAS',cabecera.emisor)
+          const correlativo = await this.getNuevoPedido('TELAS',cabecera.emisor,conn)
 
           const [res, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_cab(orden_ref,fec_emision,fec_retorno,tipo,id_proveedor_CAB,proveedor,responsable,forma_pago,nro_contacto,observaciones,estado,moneda,igv,produccion,afec_retencion,emisor) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [correlativo, cabecera.fec_emision, cabecera.fec_retorno, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.forma_pago, cabecera.nro_contacto, cabecera.observaciones, cabecera.estado, cabecera.moneda, cabecera.igv, cabecera.produccion, cabecera.afec_retencion, cabecera.emisor]);
 
@@ -2336,6 +2334,10 @@ export class ProduccionModel {
           }
 
           await conn.query("UPDATE tbl2_pedidos_insumos_correlativo SET codigo_num = codigo_num + 1 WHERE ruc_ = ? AND anio = YEAR(NOW()) AND tipo = ? AND origen = ?",['20522094120','TELAS',cabecera.emisor])
+
+          let [verificacion] = await conn.query("SELECT *FROM tbl2_pedidos_insumos_correlativo WHERE ruc_ = ? AND anio = YEAR(NOW()) AND tipo = ? AND origen = ?",['20522094120','TELAS',cabecera.emisor])
+          
+          console.log("Verificacion de correlativo despues de la actualizacion:",verificacion)
 
         } catch (err) {
           console.log("error en la consulta", err)
@@ -2709,7 +2711,7 @@ export class ProduccionModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      conn.beginTransaction()
+      conn.beginTransaction();
 
       [data_backup] = await conn.query(`select tdd.id_combo,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',t1.talla,'despachos',t1.despachos,'caidos',t1.caidos,'incompletos',t1.incompletos)) from tbl2_despachos_det_fracciones t1 where t1.id_despacho_DET = tdd.idx),JSON_ARRAY()) as fracciones from tbl2_despachos_det tdd where tdd.id_despacho_CAB = ?`,[data.id]);
       [info_orden] = await conn.query('select *from tbl2_guias_traslado_cab where idx = ?',[parseInt(cabecera.id_guia_origen)])
@@ -2838,6 +2840,7 @@ export class ProduccionModel {
       ///// UPDATE MASTES DE PRODUCCION /////////
       if(parseInt(cabecera.fase)){
         console.log("Comenzando actulizacion master de produccion")
+        console.log("Data backup :",data_backup)
         // muestra info [{idcombo:22,xs:[0,3],s:[0,3],m:[0,3],l:[0,3],xl:[0,3],xxl:[0,3]},{},{},...]
         let param1 = data_backup.reduce((c,v)=>{
           let pp = v.fracciones.reduce((cc,vv)=>{
@@ -2863,8 +2866,8 @@ export class ProduccionModel {
         if(!respuesta.ok) throw respuesta.message
         // console.log("Resultado del update master :",resp_update)
       }
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return {ok:true,message:'Proceso ejecutado con éxito'}
     } catch (err) {
       console.log("asdlkfaslfjlaskdfjlf:",err)
@@ -3496,8 +3499,8 @@ export class ProduccionModel {
         await conn.query('DELETE FROM `tbl2_despachos_det` WHERE `id_despacho_CAB` = "' + id + '"');
       }
 
-      if (conn) await conn.rollback();
-      // if (conn) await conn.commit();
+      // if (conn) await conn.rollback();
+      if (conn) await conn.commit();
       return {ok:true,message:'Ingreso eliminado con éxtio!'}
     } catch (err) {
       console.log("Error en la eliminacion de despacho:",err)
