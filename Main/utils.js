@@ -32,6 +32,14 @@ export const configs = [
     user: 'facturador_seguro',
     password: 'JSJ@1984+-+',
     database: 'BD_FACTURADOR',
+
+
+    // host: '192.168.18.20',
+    // port: '3306',
+    // user: 'ubuntu',
+    // password: '',
+    // database: 'bd_next',
+
     // waitForConnections: true,
     // connectionLimit: 10,
     // maxIdle: 10,

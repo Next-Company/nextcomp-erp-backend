@@ -178,11 +178,11 @@
                                                   <tbody>
                                                     <tr>
                                                       <td style="height:20px;width:80px;font-size:8px;">FECHA PEDIDO</td>
-                                                      <td colspan="2" style="font-size:8px;"><strong style="font-size: inherit;">2-May</strong></td>
+                                                      <td colspan="2" style="font-size:8px;"><strong style="font-size: inherit;">{{#fechaCorta datos.fec_emision_cuadre}}{{/fechaCorta}}</strong></td>
                                                       <td colspan="2" style="font-size:8px;">FECHA ENTREGA</td>
-                                                      <td colspan="2" style="font-size:8px;width:50px;"><strong style="font-size: inherit;">2-May</strong></td>
-                                                      <td colspan="2" style="font-size:8px;">DÍAS PRODUCCIÓN</td>
-                                                      <td colspan="2" style="font-size:8px;"><strong style="font-size: inherit;">177</strong></td>
+                                                      <td colspan="2" style="font-size:8px;width:50px;"><strong style="font-size: inherit;">{{#fechaCorta datos.fec_retorno_cuadre}}{{/fechaCorta}}</strong></td>
+                                                      {{!-- <td colspan="2" style="font-size:8px;">DÍAS PRODUCCIÓN</td>
+                                                      <td colspan="2" style="font-size:8px;"><strong style="font-size: inherit;">177</strong></td> --}}
                                                     </tr>
                                                   </tbody>
                                                 </table>
@@ -204,16 +204,16 @@
             <table class="tabla_datos" style="width: 100%;height:62px;">
               <tbody >
               <tr >
-                  <td style="font-weight:100;"><strong style="font-size: 14px;font-weight:100;">PROVEEDOR: </strong>{{datos.proveedor}}</td>
-                  <td style="font-weight:100;"><strong style="font-size: 14px;font-weight:100;">PRODUCCIÓN :</strong></td>
+                  <td style="font-size:12px;"><strong style="font-size: 12px;font-weight:200;">PROVEEDOR: </strong>{{datos.proveedor}}</td>
+                  <td style="font-weight:100;font-size:12px"><strong style="font-size:12px;font-weight:100;">PRODUCCIÓN :</strong></td>
               </tr>
               <tr >
-                  <td style="font-weight:100;"><strong style="font-size: 14px;font-weight:100;">RUC: </strong>{{datos.ruc}}</td>
-                  <td style="font-weight:100;"><strong style="font-size: 14px;font-weight:100;">GIRADO POR: </strong>{{datos.responsable}}</td>
+                  <td style="font-weight:100;font-size:12px"><strong style="font-size:12px;font-weight:100;">RUC: </strong>{{datos.ruc}}</td>
+                  <td style="font-weight:100;font-size:12px"><strong style="font-size:12px;font-weight:100;">GIRADO POR: </strong>{{datos.responsable}}</td>
               </tr>
               <tr >
-                  <td style="font-weight:100;"><strong style="font-size: 14px;font-weight:100;">FORMA DE PAGO: </strong>{{datos.forma_pago}}</td>
-                  <td style="font-weight:100;"><strong style="font-size: 14px;font-weight:100;">NRO.CONTACTO: </strong>{{datos.nro_contacto}}</td>
+                  <td style="font-weight:100;font-size:12px"><strong style="font-size:12px;font-weight:100;">FORMA DE PAGO: </strong>{{datos.forma_pago}}</td>
+                  <td style="font-weight:100;font-size:12px"><strong style="font-size:12px;font-weight:100;">NRO.CONTACTO: </strong>{{datos.nro_contacto}}</td>
               </tr>
               </tbody>
             </table>
@@ -227,8 +227,10 @@
         <thead>
             <tr nobr="true" style="height:40px;">
                 <th style="width:35px;font-size:8px;">ITEM</th>
+                <th style="width:150px;font-size:8px;">MODELO</th>
+                <th style="width:50px;font-size:8px;">CORTE</th>
+                <th style="width:550px;font-size:8px;">DESCRIPCI&Oacute;N</th>
                 <th style="font-size:8px;">COLOR</th>
-                <th style="width:750px;font-size:8px;">DESCRIPCI&Oacute;N</th>
                 <th style="font-size:8px;">CANTIDAD PEDIDA</th>
                 <th style="font-size:8px;">UND</th>
                 <th style="font-size:8px;">PRECIO X UND</th>
@@ -240,19 +242,21 @@
           {{/foo}}
       </tbody>
       <tfoot>
-        <tr>
-          <td colspan="7" style="height:15px;padding:10px;"><strong>OBSERVACIONES:</strong></td>
+        {{#fuu datos}}
+        {{!-- <tr>
+          <td colspan="9" style="height:15px;padding:10px;"><strong>OBSERVACIONES:</strong></td>
         </tr>
         <tr>
-          <td colspan="7" style="padding:10px 10px 10px;font-size:8px;">
+          <td colspan="9" style="padding:10px 10px 10px;font-size:8px;">
             <strong style="font-size:inherit;">CONDICIONES DE PAGO:</strong> Las fechas de cierre son los días miércoles de cada semana. La programación de pagos variaran dependiendo de si los despachos fueron recepcionados antes o después de la fecha de cierre. Los proveedores cuyos despachos sean recibidos antes de la fecha de cierre(<strong style="font-size:inherit;">lunes, martes o miércoles</strong>), recibirán el pago en un plazo máximo de 10 días a partir de dicha fecha de cierre; por el contrario, los proveedores cuyos despachos sean recibidos después de la fecha de cierre(<strong style="font-size:inherit;">jueves, viernes o sábado</strong>), recibirán el pago en un plazo máximo de 10 días a partir de la fecha de cierre de la semana siguiente.
           </td>
         </tr>
         <tr>
-          <td colspan="7" style="padding:10px 10px 10px;font-size:8px;">
+          <td colspan="9" style="padding:10px 10px 10px;font-size:8px;">
             <strong style="font-size:inherit;">PENALIDADES:</strong> El despacho deberá ejecutarse segun las fechas indicadas en el presente documento, despues de la fecha de vencimineto se aplicará una penalidad sobre el valor costo de la OC: de 1 a 5 días de retraso la penalidad sera de 5%, de 6 a 10 días la penalidad serea de 10% y de 11 a 15 días sera %15, de 16 días a más se evaluará la recepción de la OC. El proveedor consignado en el presente documento autoriza a Next Company a retener de forma automática el pago de facturas del proveedor por el valor de lo adeudado.
           </td>
-        </tr>
+        </tr> --}}
+        {{/fuu}}
       </tfoot>
     </table>
     
@@ -260,9 +264,16 @@
     {{!-- {{#each foo}}
       {{this}}
     {{/each}} --}}
-    <div style="position: absolute;bottom:150px;right:50px;">
+    <div style="position:absolute;bottom:0px;display:flex;width:100%;gap:15px;">
       {{!-- <img src="images/firma_jefferson.png" style="width:120px;" /> --}}
       {{!-- <img src="data:image/png;base64,{{this.BINARY_CHUNKS}}" class="logo" style="width:140px;"> --}}
+      <div style="display:flex;width:95%;gap:15px;">
+        <div style="height:20px;background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">JEFFERSON TAPIA MONTOYA</br> JEFE DE PRODUCCION</div>
+        <div style="height:20px;background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">RAQUEL MONTOYA CESPEDES</br> JEFE DE FINANZAS</div>
+        <div style="height:20px;background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">NOMBRE RESPONSABLE</br> RESONSABLE DE COMPRA</div>
+      </div>
+      {{!-- <div style="height:20px;background-color:green;flex:1;">d</div>
+      <div style="height:20px;background-color:orange;flex:1;">d</div> --}}
     </div>
 
     <style>

@@ -4,6 +4,7 @@ import fs from "node:fs/promises"
 import puppeteer from 'puppeteer';
 import { OtherTarget } from "puppeteer-core";
 import { concat } from "puppeteer-core/lib/esm/third_party/rxjs/rxjs.js";
+import { OrdenesModel } from "../../Ordenes/Servicios/ordenes.js";
 // import { width } from "pdfkit/js/page";
 // import { height } from "pdfkit/js/page";
 // import PDFDocument from "pdfkit";
@@ -54,8 +55,10 @@ export class ProduccionController {
       });
   }
   static async exportInfoGuia(req, resp) {
+    console.log("Iniciando la exportacion de la guia")
     const params = req.params
     const data = await ProduccionModel.getInfoGuiaCab(params.id)
+    console.log("La informacion de la guia es:",data)
     const data2 = await ProduccionModel.getInfoGuiaDet(params.id)
     const data3 = data[0].id_proveedor_CAB ? await ProduccionModel.searchProveedorById(data[0].id_proveedor_CAB) : [{ nom: data[0].responsable, ruc: '', direccion: data[0].destino }]
     // let relleno = []
@@ -73,6 +76,7 @@ export class ProduccionController {
     resp.render(
       data[0].tipo == 'SERVICIOS' ? 'guia_back' : 'guia_muestras_v2',
       {
+        condicion: parseInt(params.modo),
         color: data[0].servicio == 'ACABADOS' ? 'red' : 'black',
         info: params,
         cabecera: data[0],
@@ -98,30 +102,33 @@ export class ProduccionController {
       },
       async (err, html) => {
         try {
-          const browser = await puppeteer.launch();
-
-          const version = await browser.version();
-          console.log(`Versión de Chrome: ${version}`);
-          const page = await browser.newPage();
-          await page.setContent(html);
-
-          const pdfOptions = {
-            // format: 'A4',        // Puedes usar 'A4', 'Letter' o un tamaño personalizado como { width: '210mm', height: '297mm' }
-            // width: '24.1cm',
-            width: '20cm',
-            // height: data[0].tipo == 'SERVICIOS' ? '27.94cm' : '13.97cm',
-            height: '27.94cm',
-            landscape: false,    // Para orientación horizontal (landscape) usa `true`
-            printBackground: true, // Incluir el fondo en el PDF
-            margin: {
-              left: 0,
-              right: 0
-            }
-          };
-
-          const pdfBuffer = await page.pdf(pdfOptions);
-          await browser.close();
-          resp.send({ data: pdfBuffer.toString('base64') })
+          if(params.modo == 1){
+            const browser = await puppeteer.launch();
+            const version = await browser.version();
+            console.log(`Versión de Chrome: ${version}`);
+            const page = await browser.newPage();
+            await page.setContent(html);
+  
+            const pdfOptions = {
+              // format: 'A4',        // Puedes usar 'A4', 'Letter' o un tamaño personalizado como { width: '210mm', height: '297mm' }
+              // width: '24.1cm',
+              width: '20cm',
+              // height: data[0].tipo == 'SERVICIOS' ? '27.94cm' : '13.97cm',
+              height: '27.94cm',
+              landscape: false,    // Para orientación horizontal (landscape) usa `true`
+              printBackground: true, // Incluir el fondo en el PDF
+              margin: {
+                left: 0,
+                right: 0
+              }
+            };
+  
+            const pdfBuffer = await page.pdf(pdfOptions);
+            await browser.close();
+            resp.send({ data: pdfBuffer.toString('base64') })
+          }else{
+            resp.send(html)
+          }
         } catch (error) {
           resp.status(500).send('Error al generar el PDF');
           // await browser.close();
@@ -130,6 +137,531 @@ export class ProduccionController {
         }
       });
   }
+  static async exportInfoGuiaV2(req, resp) {
+    const params = req.params
+    const data = await ProduccionModel.getInfoGuiaCab(params.id)
+    const data2 = await ProduccionModel.getInfoGuiaDet(params.id)
+    const data3 = data[0].id_proveedor_CAB ? await ProduccionModel.searchProveedorById(data[0].id_proveedor_CAB) : [{ nom: data[0].responsable, ruc: '', direccion: data[0].destino }]
+    resp.render(
+      data[0].tipo == 'SERVICIOS' ? 'guia_back' : 'guia_muestras_v2',
+      {
+        condicion: parseInt(params.modo),
+        size: '14px',
+        color: data[0].servicio == 'ACABADOS' ? 'red' : 'black',
+        info: params,
+        cabecera: data[0],
+        detalle: data2.filter(row => !row.isprototipo),
+        // relleno:data2.filter(),
+        prototipos: data2.filter(row => row.isprototipo),
+        numproto: data2.filter(row => row.isprototipo).length,
+        date: (new Date(data[0].created_at)).toLocaleDateString('en-GB'),
+        time: (new Date(data[0].created_at)).toLocaleTimeString('en-GB'),
+        idguia: `${data[0].idx}`.padStart(10, 0),
+        totalunid: data2.reduce((carry, valor) => {
+          carry += valor.isprototipo ? 0 : parseFloat(valor.cantidad)
+          return carry;
+        }, 0),
+        proveedor: data3[0],
+        helpers: {
+          plusindex(index) {
+            return index + 1
+          }
+        }
+        // diasprod:7
+        // fecha:new Date(Date.parse(data2[0].created_at)).toLocaleDateString()
+      },
+      async (err, html) => {
+        try {
+          if(params.modo == 1){
+            const browser = await puppeteer.launch();
+            const version = await browser.version();
+            console.log(`Versión de Chrome: ${version}`);
+            const page = await browser.newPage();
+            await page.setContent(html);
+
+            const pdfOptions = {
+              // format: 'A4',        // Puedes usar 'A4', 'Letter' o un tamaño personalizado como { width: '210mm', height: '297mm' }
+              // width: '24.1cm',
+              width: '20cm',
+              // height: data[0].tipo == 'SERVICIOS' ? '27.94cm' : '13.97cm',
+              height: '27.94cm',
+              landscape: false,    // Para orientación horizontal (landscape) usa `true`
+              printBackground: true, // Incluir el fondo en el PDF
+              margin: {
+                left: 0,
+                right: 0
+              }
+            };
+
+            const pdfBuffer = await page.pdf(pdfOptions);
+            await browser.close();
+            resp.send({ data: pdfBuffer.toString('base64') })
+
+          }else{
+            resp.send(html)
+          }
+
+          // resp.send({ data: pdfBuffer.toString('base64') })
+          // resp.send(html)
+        } catch (error) {
+          resp.status(500).send('Error al generar el PDF');
+          // await browser.close();
+        } finally {
+          // await browser.close();
+        }
+      });
+  }
+  static async verInfoDespachoGuia(req, resp) {
+    const params = req.params
+    console.log("La informacion de los parametros es otro cambio:",params)
+    // const BINARY_CHUNKS = await fs.readFile('public/images/logo_elenex.png')
+    const data = await ProduccionModel.getInfoGuiaCab(params.idguia)
+    console.log("Mostrando informacin de la guia:",data)
+    // const data2 = await ProduccionModel.getInfoGuiaDet(params.id)
+    let data1 = await ProduccionModel.getInfoDespachoCab(params.id)
+    let data2 = await ProduccionModel.getInfoDespachoDet(params.id)
+    console.log("Mostrando la informacion del detalle del despacho:",data2)
+    console.log("Reestructurando la variable data2",data2.map(row=>row.fracciones_despacho))
+
+    try {
+      data2 = data2.filter(row=>row.fracciones_despacho.length > 0).reduce((c,v)=>{
+        // [
+        //   {"talla": "l", "caidos": 0, "cantidad": 36, "incompletos": 0}, 
+        //   {"talla": "m", "caidos": 4, "cantidad": 32, "incompletos": 0}, 
+        //   {"talla": "s", "caidos": 3, "cantidad": 21, "incompletos": 0}, 
+        //   {"talla": "xl", "caidos": 0, "cantidad": 12, "incompletos": 0}, 
+        //   {"talla": "xs", "caidos": 0, "cantidad": 0, "incompletos": 0}, 
+        //   {"talla": "xxl", "caidos": 0, "cantidad": 0, "incompletos": 0}
+        // ]
+
+        let lista = ['cantidad','caidos','incompletos']
+        let tallas = ['xs','s','m','l','xl','xxl']
+        v.fracciones_despacho = ['xs','s','m','l','xl','xxl'].reduce((c3,v3)=>{
+          c3.push(v.fracciones_despacho.filter(row=>row['talla'] == v3)[0])
+          return c3
+        },[])
+        v.fracciones_despacho_cantidad = v.fracciones_despacho.map(row=>row['cantidad'])
+        console.log("Fracciones despacho :",v.fracciones_despacho)
+        let nuevo = lista.reduce((c2,v2) => {
+          let newnames = {cantidad:'Despacho',caidos:'Caidos',incompletos:'Incompletos'}
+          c2.push([newnames[v2],...v.fracciones_despacho.map(row=>row[v2]),'-',v.fracciones_despacho.map(row=>row[v2]).reduce((c,v)=>c+v,0)])
+          return c2
+        },[]);
+        console.log("Nuefo formateddo:",nuevo)
+        // let new_fracciones = 
+        c.push({...v,new_fracciones:nuevo})
+        return c
+      },[])
+
+      const data3 = data[0].id_proveedor_CAB ? await ProduccionModel.searchProveedorById(data[0].id_proveedor_CAB) : [{ nom: data[0].responsable, ruc: '', direccion: data[0].destino }]
+      resp.render(
+        'guia_despacho',
+        {
+          color: 'black',
+          info: params,
+          cabecera: data[0],
+          // detalle:data2.filter(row=>!row.isprototipo),
+          detalle: data2,
+          // relleno:data2.filter(),
+          prototipos: data2.filter(row => row.isprototipo),
+          numproto: data2.filter(row => row.isprototipo).length,
+          date: (new Date(data1[0].created_at)).toLocaleDateString('en-GB'),
+          time: (new Date(data1[0].created_at)).toLocaleTimeString('en-GB'),
+          idguia: `${params.id}`.padStart(10, 0),
+          idref: `${data[0].idx}`.padStart(10, 0),
+          totalunid: data2.reduce((carry, valor) => {
+            carry += valor.isprototipo ? 0 : parseFloat(valor.cantidad)
+            return carry;
+          }, 0),
+          totaldespacho: data2.reduce((carry, valor) => {
+            carry += valor.isprototipo ? 0 : parseFloat(valor.despacho)
+            return carry;
+          }, 0),
+          totalcaidos: data2.reduce((carry, valor) => {
+            carry += valor.isprototipo ? 0 : parseFloat(valor.caidos)
+            return carry;
+          }, 0),
+          totalincompletos: data2.reduce((carry, valor) => {
+            carry += valor.isprototipo ? 0 : parseFloat(valor.incompletos)
+            return carry;
+          }, 0),
+          proveedor: data3[0],
+          helpers: {
+            plusindex(index) {
+              return index + 1
+            }
+          }
+        }
+        ,async (err, html) => {
+          try {  
+            console.log("La condicion de busqueda es la siguiente:",params.condicion)
+            if(params.condicion == 2){
+              console.log("Dentro de la codicion 1 vista pdf")
+              const browser = await puppeteer.launch();
+              const version = await browser.version();
+              console.log(`Versión de Chrome: ${version}`);
+              const page = await browser.newPage();
+              await page.setContent(html);
+              const pdfOptions = {
+                width: '20cm',
+                height: '27.94cm',
+                landscape: true,
+                printBackground: true,
+                margin: {
+                  left: 0,
+                  right: 0
+                }
+              };
+              const pdfBuffer = await page.pdf(pdfOptions);
+              await browser.close();
+              resp.send({ data: pdfBuffer.toString('base64') })
+            }else{
+              console.log("Dentro de la condicion 2 vista html")
+              resp.send(html)
+            }
+          } catch (error) {
+            resp.status(500).send('Error al generar el PDF');
+            // await browser.close();
+          } finally {
+            // await browser.close();
+          }
+        }
+      );
+
+    } catch (err) {
+      resp.status(500).json({ error: err.message });
+    }
+
+  }
+  static async verInfoDespachoGuiaGLB(req, resp) {
+    console.log("Dentro de impresion GLB")
+    const params = req.params
+    console.log("La informacion de los parametros es otro cambio:",params)
+    // const BINARY_CHUNKS = await fs.readFile('public/images/logo_elenex.png')
+    const data = await ProduccionModel.getInfoGuiaCab(params.idguia)
+    console.log("Mostrando informacin de la guia:",data)
+    // const data2 = await ProduccionModel.getInfoGuiaDet(params.id)
+    let data1 = await ProduccionModel.getInfoDespachoCab(params.id)
+    let data2 = await ProduccionModel.getInfoDespachoDet(params.id)
+    console.log("Mostrando la informacion del detalle del despacho:",data2)
+    console.log("Reestructurando la variable data2",data2.map(row=>row.fracciones_despacho))
+
+    try {
+
+      data2 = data2.reduce((c,v)=>{
+        let lista = ['cantidad','caidos','incompletos']
+
+        v.fracciones_despacho = ['xs','s','m','l','xl','xxl'].reduce((c3,v3)=>{
+          c3.push({cantidad:0,caidos:0,incompletos:0,talla:v3})
+          return c3
+        },[])
+
+        // v.fracciones_despacho_cantidad = v.fracciones_despacho.map(row=>row['cantidad'])
+        v.fracciones_despacho_cantidad = (v.despacho ?? 0) + (v.caidos ?? 0) + (v.incompletos ?? 0)
+
+        console.log("Fracciones despacho :",v.fracciones_despacho)
+
+        let nuevo = lista.reduce((c2,v2) => {
+          let newnames = {cantidad:'Despacho',caidos:'Caidos',incompletos:'Incompletos'}
+          // c2.push([newnames[v2],...v.fracciones_despacho.map(row=>row[v2]),'-',v.fracciones_despacho.map(row=>row[v2]).reduce((c,v)=>c+v,0)])
+          c2.push([newnames[v2],...v.fracciones_despacho.map(row=>row[v2]),'-',{cantidad:v.despacho ?? 0,caidos:v.caidos ?? 0,incompletos:v.incompletos ?? 0}[v2]])
+          return c2
+        },[]);
+
+        console.log("Nuefo formateddo:",nuevo)
+        c.push({...v,new_fracciones:nuevo})
+        return c
+      },[])
+
+      console.log("Data 2 reestructurado:",data2)
+
+      data2 = data2.filter(row=>row.fracciones_despacho.length > 0).reduce((c,v)=>{
+
+        let lista = ['cantidad','caidos','incompletos']
+        let tallas = ['xs','s','m','l','xl','xxl']
+        v.fracciones_despacho = ['xs','s','m','l','xl','xxl'].reduce((c3,v3)=>{
+          c3.push(v.fracciones_despacho.filter(row=>row['talla'] == v3)[0])
+          return c3
+        },[])
+        v.fracciones_despacho_cantidad = v.fracciones_despacho.map(row=>row['cantidad'])
+        console.log("Fracciones despacho :",v.fracciones_despacho)
+        let nuevo = lista.reduce((c2,v2) => {
+          let newnames = {cantidad:'Despacho',caidos:'Caidos',incompletos:'Incompletos'}
+          c2.push([newnames[v2],...v.fracciones_despacho.map(row=>row[v2]),'-',v.fracciones_despacho.map(row=>row[v2]).reduce((c,v)=>c+v,0)])
+          return c2
+        },[]);
+        console.log("Nuefo formateddo:",nuevo)
+        // let new_fracciones = 
+        c.push({...v,new_fracciones:nuevo})
+        return c
+      },[])
+
+      const data3 = data[0].id_proveedor_CAB ? await ProduccionModel.searchProveedorById(data[0].id_proveedor_CAB) : [{ nom: data[0].responsable, ruc: '', direccion: data[0].destino }]
+      resp.render(
+        'guia_despacho',
+        {
+          color: 'black',
+          info: params,
+          cabecera: data[0],
+          // detalle:data2.filter(row=>!row.isprototipo),
+          detalle: data2,
+          // relleno:data2.filter(),
+          prototipos: data2.filter(row => row.isprototipo),
+          numproto: data2.filter(row => row.isprototipo).length,
+          date: (new Date(data1[0].created_at)).toLocaleDateString('en-GB'),
+          time: (new Date(data1[0].created_at)).toLocaleTimeString('en-GB'),
+          idguia: `${params.id}`.padStart(10, 0),
+          idref: `${data[0].idx}`.padStart(10, 0),
+          totalunid: data2.reduce((carry, valor) => {
+            carry += valor.isprototipo ? 0 : parseFloat(valor.cantidad)
+            return carry;
+          }, 0),
+          totaldespacho: data2.reduce((carry, valor) => {
+            carry += valor.isprototipo ? 0 : parseFloat(valor.despacho)
+            return carry;
+          }, 0),
+          totalcaidos: data2.reduce((carry, valor) => {
+            carry += valor.isprototipo ? 0 : parseFloat(valor.caidos)
+            return carry;
+          }, 0),
+          totalincompletos: data2.reduce((carry, valor) => {
+            carry += valor.isprototipo ? 0 : parseFloat(valor.incompletos)
+            return carry;
+          }, 0),
+          proveedor: data3[0],
+          helpers: {
+            plusindex(index) {
+              return index + 1
+            }
+          }
+        }
+        ,async (err, html) => {
+          try {  
+            console.log("La condicion de busqueda es la siguiente:",params.condicion)
+            if(params.condicion == 2){
+              console.log("Dentro de la codicion 1 vista pdf")
+              const browser = await puppeteer.launch();
+              const version = await browser.version();
+              console.log(`Versión de Chrome: ${version}`);
+              const page = await browser.newPage();
+              await page.setContent(html);
+              const pdfOptions = {
+                width: '20cm',
+                height: '27.94cm',
+                landscape: true,
+                printBackground: true,
+                margin: {
+                  left: 0,
+                  right: 0
+                }
+              };
+              const pdfBuffer = await page.pdf(pdfOptions);
+              await browser.close();
+              resp.send({ data: pdfBuffer.toString('base64') })
+            }else{
+              console.log("Dentro de la condicion 2 vista html")
+              resp.send(html)
+            }
+          } catch (error) {
+            resp.status(500).send('Error al generar el PDF');
+            // await browser.close();
+          } finally {
+            // await browser.close();
+          }
+        }
+      );
+
+    } catch (err) {
+      resp.status(500).json({ error: err.message });
+    }
+
+  }
+  static async verInfoDespachoPedido(req, resp) {
+    console.log("Dentro del proceso ver info despacho pedido")
+    const params = req.params
+    console.log("Los paramentros del despacho por pedido es:",params)
+    const data = await ProduccionModel.getInfoPedidoCab(params.idpedido)
+    console.log("Mostrando informacin de la guia:",data)
+
+    let data2 = await ProduccionModel.getInfoDespachoDet(params.id,'PEDIDOS')
+    console.log("Mostrando la informacion del detalle del despacho:",data2)
+    // console.log("Reestructurando la variable data2",data2.map(row=>row.fracciones_despacho))
+    // resp.status(200).send("Reporte generado con exito")
+    // return 0
+    try {
+      // data2 = data2.filter(row=>row.fracciones_despacho.length > 0).reduce((c,v)=>{
+
+      //   let lista = ['cantidad','caidos','incompletos']
+      //   let tallas = ['xs','s','m','l','xl','xxl']
+      //   v.fracciones_despacho = ['xs','s','m','l','xl','xxl'].reduce((c3,v3)=>{
+      //     c3.push(v.fracciones_despacho.filter(row=>row['talla'] == v3)[0])
+      //     return c3
+      //   },[])
+      //   v.fracciones_despacho_cantidad = v.fracciones_despacho.map(row=>row['cantidad'])
+      //   console.log("Fracciones despacho :",v.fracciones_despacho)
+      //   let nuevo = lista.reduce((c2,v2) => {
+      //     let newnames = {cantidad:'Despacho',caidos:'Caidos',incompletos:'Incompletos'}
+      //     c2.push([newnames[v2],...v.fracciones_despacho.map(row=>row[v2]),'-',v.fracciones_despacho.map(row=>row[v2]).reduce((c,v)=>c+v,0)])
+      //     return c2
+      //   },[]);
+      //   console.log("Nuefo formateddo:",nuevo)
+      //   // let new_fracciones = 
+      //   c.push({...v,new_fracciones:nuevo})
+      //   return c
+      // },[])
+
+      const data3 = data[0].id_proveedor_CAB ? await ProduccionModel.searchProveedorById(data[0].id_proveedor_CAB) : [{ nom: data[0].responsable, ruc: '', direccion: data[0].destino }]
+      resp.render(
+        'guia_despacho_pedido',
+        {
+          color: 'black',
+          info: params,
+          cabecera: data[0],
+          detalle: data2,
+          date: (new Date(data[0].created_at)).toLocaleDateString('en-GB'),
+          time: (new Date(data[0].created_at)).toLocaleTimeString('en-GB'),
+          idguia: `${params.id}`.padStart(10, 0),
+          idref: `${data[0].idx}`.padStart(10, 0),
+          totalunid: data2.reduce((carry, valor) => {
+            carry += parseFloat(valor.cantidad)
+            return carry;
+          }, 0),
+          // totalunid: data2.reduce((carry, valor) => {
+          //   carry += valor.isprototipo ? 0 : parseFloat(valor.cantidad)
+          //   return carry;
+          // }, 0),
+          totaldespacho: data2.reduce((carry, valor) => {
+            carry += parseFloat(valor.despacho)
+            return carry;
+          }, 0).toFixed(2),
+          totalcaidos: 0,
+          totalincompletos: 0,
+          proveedor: data3[0],
+          helpers: {
+            plusindex(index) {
+              return index + 1
+            }
+          }
+        }
+        ,async (err, html) => {
+          try {  
+            console.log("La condicion de busqueda es la siguiente:",params.condicion)
+            if(params.condicion == 2){
+              console.log("Dentro de la codicion 1 vista pdf")
+              const browser = await puppeteer.launch();
+              const version = await browser.version();
+              console.log(`Versión de Chrome: ${version}`);
+              const page = await browser.newPage();
+              await page.setContent(html);
+              const pdfOptions = {
+                width: '20cm',
+                height: '27.94cm',
+                landscape: true,
+                printBackground: true,
+                margin: {
+                  left: 0,
+                  right: 0
+                }
+              };
+              const pdfBuffer = await page.pdf(pdfOptions);
+              await browser.close();
+              resp.send({ data: pdfBuffer.toString('base64') })
+            }else{
+              console.log("Dentro de la condicion 2 vista html")
+              resp.send(html)
+            }
+          } catch (error) {
+            resp.status(500).send('Error al generar el PDF');
+            // await browser.close();
+          } finally {
+            // await browser.close();
+          }
+        }
+      );
+
+    } catch (err) {
+      resp.status(500).json({ error: err.message });
+    }
+
+  }
+  static async verInfoDespachoMuestra(req, resp) {
+    const params = req.params
+    console.log("La informacion de los parametros es otro cambio:",params)
+    const data = await ProduccionModel.getInfoGuiaCab(params.idguia)
+    console.log("Mostrando informacin de la guia:",data)
+    let data1 = await ProduccionModel.getInfoDespachoCab(params.id)
+    let data2 = await ProduccionModel.getInfoDespachoDet(params.id)
+    console.log("Mostrando la informacion del detalle del despacho:",data2)
+
+    try {
+      const data3 = data[0]?.id_proveedor_CAB ? await ProduccionModel.searchProveedorById(data[0].id_proveedor_CAB) : [{ nom: data[0].responsable, ruc: '', direccion: data[0].destino }]
+      console.log("Info del proveedor es:",data3)
+      resp.render(
+        'guia_despacho_muestra',
+        {
+          color: 'black',
+          info: params,
+          cabecera: data[0],
+          detalle: data2,
+          condicion:params.condicion,
+          prototipos: data2.filter(row => row.isprototipo),
+          numproto: data2.filter(row => row.isprototipo).length,
+          date: (new Date(data1[0].created_at)).toLocaleDateString('en-GB'),
+          time: (new Date(data1[0].created_at)).toLocaleTimeString('en-GB'),
+          idguia: `${params.id}`.padStart(10, 0),
+          idref: `${data[0].idx}`.padStart(10, 0),
+          totalunid: data2.reduce((c,v)=>c+v.despacho,0),
+          proveedor: data3[0],
+          helpers: {
+            plusindex(index) {
+              return index + 1
+            }
+          }
+        }
+        ,async (err, html) => {
+          try {  
+            console.log("La condicion de busqueda es la siguiente:",params.condicion)
+            if(params.condicion == 2){
+              console.log("Dentro de la codicion 1 vista pdf")
+              const browser = await puppeteer.launch();
+              const version = await browser.version();
+              console.log(`Versión de Chrome: ${version}`);
+              const page = await browser.newPage();
+              await page.setContent(html);
+              const pdfOptions = {
+                // width: '21cm',
+                // height: '14.8cm',
+                // pageFormat:'A5',
+                width: '20cm',
+                height: '27.94cm',
+                landscape: true,
+                printBackground: true,
+                margin: {
+                  left: 0,
+                  right: 0
+                }
+              };
+              const pdfBuffer = await page.pdf(pdfOptions);
+              await browser.close();
+              resp.send({ data: pdfBuffer.toString('base64') })
+            }else{
+              console.log("Dentro de la condicion 2 vista html")
+              resp.send(html)
+            }
+          } catch (error) {
+            resp.status(500).send('Error al generar el PDF');
+          } finally {
+          }
+        }
+      );
+
+    } catch (err) {
+      // return {ok:false,message:error.message ?? error}
+      resp.status(500).json({ error: err.message });
+    }
+
+  }
+
   static async exportInfoDespacho(req, resp) {
     const params = req.params
     const data = await ProduccionModel.getInfoGuiaCab(params.idguia)
@@ -576,22 +1108,71 @@ export class ProduccionController {
     const data2 = await ProduccionModel.getInfoGuiaDet(id)
     const data3 = await ProduccionModel.getInfoGuiaPenalidades(id)
     const data4 = await ProduccionModel.getListaPenalidades()
-    res.json([data[0], data2, data3, data4])
+    const data5 = await OrdenesModel.getFasesProduccion('')
+    const data6 = await ProduccionModel.getListaReprogramacionGuias(id)
+    // const data4 = await ProduccionModel.()
+    res.json([data[0], data2, data3, data4, data5, data6])
+  }
+  static async getInfoMuestras(req, res) {
+    const id = req.params.id
+    const data = await ProduccionModel.getInfoMuestraCab(id)
+    const data2 = await ProduccionModel.getInfoMuestraDet(id)
+    res.json([data[0], data2])
   }
   static async searchGuia(req, res) {
     const { info } = req.params
     const data = await ProduccionModel.searchGuia(info)
     res.json(data)
   }
-
+  static async saveInfoMuestras(req, res) {
+    const data = await ProduccionModel.saveInfoMuestras(req.body)
+    res.json(data)
+  }
   static async saveInfoGuias(req, res) {
     const data = await ProduccionModel.saveInfoGuias(req.body)
     res.json(data)
-    // res.json({ ok: true, message: 'datos guardados' })
+  }
+  static async saveInfoGuiasGLB(req, res) {
+    const data = await ProduccionModel.saveInfoGuiasGLB(req.body)
+    res.json(data)
+  }
+  static async saveInfoGuiasXPQ(req, res) {
+    const data = await ProduccionModel.saveInfoGuiasXPQ(req.body)
+    res.json(data)
   }
   static async eliminarInfoGuias(req, res) {
     const id = req.params.id
     const data = await ProduccionModel.eliminarInfoGuias(id)
+    res.json(data)
+  }
+  static async eliminarInfoGuiasGLB(req, res) {
+    const id = req.params.id
+    const data = await ProduccionModel.eliminarInfoGuiasGLB(id)
+    res.json(data)
+  }
+  static async eliminarInfoMuestras(req, res) {
+    const id = req.params.id
+    const data = await ProduccionModel.eliminarInfoMuestras(id)
+    res.json(data)
+  }
+  static async eliminarInfoGuiasXPQ(req, res) {
+    const id = req.params.id
+    const data = await ProduccionModel.eliminarInfoGuiasXPQ(id)
+    res.json(data)
+  }
+  static async anularInfoGuias(req, res) {
+    const id = req.params.id
+    const data = await ProduccionModel.anularInfoGuias(id)
+    res.json(data)
+  }
+  static async anularInfoGuiasGLB(req, res) {
+    const id = req.params.id
+    const data = await ProduccionModel.anularInfoGuiasGLB(id)
+    res.json(data)
+  }
+  static async anularInfoGuiasXPQ(req, res) {
+    const id = req.params.id
+    const data = await ProduccionModel.anularInfoGuiasXPQ(id)
     res.json(data)
   }
   static async getStatusGuia(req, res) {
@@ -690,36 +1271,15 @@ export class ProduccionController {
           // await browser.close();
         }
       }
-
     )
-
   }
-  static async VistaPreviaPedido(req, res) {
-    const tipo = req.params.tipo
-    const data = req.body
-    console.log("La informacion es:", data)
-    let cabecera = []
-    let detalle = []
-    // console.log("El tipo de pedido es :",tipo)
-    // console.log("La info pasada a la vista es :",JSON.parse(data.info),JSON.parse(data.detalle))
-
-    if (data.id) {
-      cabecera = (await ProduccionModel.getInfoPedidoCab(data.id))[0]
-      detalle = await ProduccionModel.getInfoPedidoDet(data.id)
-      console.log("Cabecera:", cabecera)
-      console.log("Detalle:", detalle)
-    } else {
-      cabecera = JSON.parse(data.info)
-      detalle = JSON.parse(data.detalle)
-    }
-    console.log("DEtalle de la cabecerea es: ", cabecera)
+  static async GeneraPedidoAvios(cabecera,detalle,res,mode){
+    console.log("Generando pedido avios, dentro del controller genera pedido avios")
     const BINARY_CHUNKS = await fs.readFile('public/images/firma_jefferson.png')
     const BINARY_CHUNKS2 = await fs.readFile('public/images/logo_next.png')
-    const BINARY_CHUNKS3 = await fs.readFile('public/images/orden_pedido.png')
-    // const tipo = JSON.parse(data.info).tipo
-    console.log("El tipo de pedido es :", tipo)
+    const BINARY_CHUNKS3 = await fs.readFile('public/images/requerimiento.png')
     res.render(
-      `${tipo == 'avios' ? 'avios_v2' : 'telas_v2'}`,
+      'avios_v3',
       {
         BINARY_CHUNKS: BINARY_CHUNKS.toString('base64'),
         BINARY_CHUNKS2: BINARY_CHUNKS2.toString('base64'),
@@ -742,26 +1302,958 @@ export class ProduccionController {
             }
             return formateo
           },
+          fuu(cabecera){
+            console.log("asldfalsdfj:",cabecera.id_proveedor_CAB,parseInt(cabecera.id_proveedor_CAB) !== 30208 ? 'a' : 'b')
+            let condiciones = parseInt(cabecera.id_proveedor_CAB) !== 30208
+            ? `
+              <tr>
+                <td colspan="9" style="height:15px;padding:10px;"><strong>OBSERVACIONES:</strong></td>
+              </tr>
+              <tr>
+                <td colspan="9" style="padding:10px 10px 10px;font-size:8px;">
+                  <strong style="font-size:inherit;">CONDICIONES DE PAGO:</strong> Las fechas de cierre son los días miércoles de cada semana. La programación de pagos variaran dependiendo de si los despachos fueron recepcionados antes o después de la fecha de cierre. Los proveedores cuyos despachos sean recibidos antes de la fecha de cierre(<strong style="font-size:inherit;">lunes, martes o miércoles</strong>), recibirán el pago en un plazo máximo de 10 días a partir de dicha fecha de cierre; por el contrario, los proveedores cuyos despachos sean recibidos después de la fecha de cierre(<strong style="font-size:inherit;">jueves, viernes o sábado</strong>), recibirán el pago en un plazo máximo de 10 días a partir de la fecha de cierre de la semana siguiente.
+                </td>
+              </tr>
+              <tr>
+                <td colspan="9" style="padding:10px 10px 10px;font-size:8px;">
+                  <strong style="font-size:inherit;">PENALIDADES:</strong> El despacho deberá ejecutarse segun las fechas indicadas en el presente documento, despues de la fecha de vencimineto se aplicará una penalidad sobre el valor costo de la OC: de 1 a 5 días de retraso la penalidad sera de 5%, de 6 a 10 días la penalidad serea de 10% y de 11 a 15 días sera %15, de 16 días a más se evaluará la recepción de la OC. El proveedor consignado en el presente documento autoriza a Next Company a retener de forma automática el pago de facturas del proveedor por el valor de lo adeudado.
+                </td>
+              </tr>
+              `
+            : ''
+            return condiciones
+          },
+          foo(items) {
+            let itemsAsHtml = null
+            let extra = 20 - items.length
+
+            itemsAsHtml = items.map((item, key) => `
+            <tr style="height:14px;font-size:10px;">
+              <td style="text-align: center;background-color:#ddebf7;">${key + 1}</td>
+              <td style="width:60px;text-align: center;">` + item['modelo'] + `</td>
+              <td style="width:60px;text-align: center;">` + (item['corte'] ? ('#' + item['corte']) : '') + `</td>
+              <td style="width:60px;text-align: center;">` + item['producto'] + `</td>
+              <td style="width:60px;text-align:left;background-color:#ddebf7;text-align:center;">` + (item['color'] ?? '') + `</td>
+              <td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['cantidad'] + `</td>
+              <td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['unidad'] + `</td>
+              <td style="width: 60px;text-align: center;background-color:#ddebf7;">` + item['precio'] + `</td>
+              <td style="width: 60px;text-align: center;background-color:#ddebf7;">` + (parseFloat(item['cantidad']) * parseFloat(item['precio'])).toFixed(2) + `</td>
+            </tr>
+            `)
+
+            for (let i = 0; i < extra; i++) {
+              itemsAsHtml.push(`
+                <tr style="height:14px;">
+                  <td style="width:35px;text-align: center;background-color:#ddebf7;"></td>
+                  <td style="width:60px;text-align: center;"></td>
+                  <td style="width:60px;text-align: center;"></td>
+                  <td style="width:60px;text-align: center;"></td>
+                  <td style="width:60px;text-align:left;background-color:#ddebf7;"></td>
+                  <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                  <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                  <td style="width: 60px;text-align: center;background-color:#ddebf7;"></td>
+                  <td style="width: 60px;text-align: center;background-color:#ddebf7;"></td>
+                </tr>`)
+            }
+            const total = items.reduce((carry, valor) => { carry += parseFloat(valor['cantidad']) * parseFloat(valor['precio']); return carry }, 0).toFixed(2)
+            return itemsAsHtml.join("\n")
+          },
+          consolidado(items) {
+            let itemsAsHtml = ''
+            let extra = 12 - items.length
+            const total = items.reduce((carry, valor) => { carry += parseFloat(valor['cantidad']) * parseFloat(valor['precio']); return carry }, 0).toFixed(2)
+
+            itemsAsHtml = `
+              <div style="height:14px;padding-top:5px;border-top:1px solid black;">
+                <div style="text-align: center;display:flex;flex-direction: row;">
+                  <div style="flex:1;text-align:right;font-weight:bold;">SUBTOTAL</div>
+                  <div style="width:60px;text-align:left;padding-left:10px;">${cabecera.moneda == 'USD' ? '$' : 'S/.'} ${total}</div>
+                </div>
+                <div style="text-align: center;display:flex;flex-direction: row;">
+                  <div style="flex:1;text-align:right;font-weight:bold;">IGV 18%</div>
+                  <div style="width:60px;text-align:left;padding-left:10px;">${cabecera.moneda == 'USD' ? '$' : 'S/.'} ${parseInt(cabecera.igv) ? (total * 0.18).toFixed(2) : 0}</div>
+                </div>
+                <div style="text-align: center;display:flex;flex-direction: row;">
+                  <div style="flex:1;text-align:right;font-weight:bold;">TOTAL</div>
+                  <div style="width:60px;text-align:left;padding-left:10px;">${cabecera.moneda == 'USD' ? '$' : 'S/.'} ${parseInt(cabecera.igv) ? (total * 1.18).toFixed(2) : total}</div>
+                </div>
+              </div>
+            `
+            return itemsAsHtml
+          }
+        },
+
+      },
+      async (err, html) => {
+        console.log(html)
+        try {
+          if(mode === 'download') {
+            const browser = await puppeteer.launch();
+            const version = await browser.version();
+            console.log(`Versión de Chrome: ${version}`);
+            const page = await browser.newPage();
+            await page.setContent(html);
+
+            const pdfOptions = {
+              // format: 'A4',
+              width: '20cm',
+              height: '27.94cm',
+              landscape: false,
+              printBackground: true,
+              margin: {
+                left: 0,
+                right: 0
+              }
+              , scale: 1
+            };
+
+            const pdfBuffer = await page.pdf(pdfOptions);
+            await browser.close();
+            res.send({ data: pdfBuffer.toString('base64') })
+          } else {
+            console.log("Enviando html")
+            res.send(html)
+          }
+          
+          // res.send(pdfBuffer)
+        } catch (error) {
+          res.status(500).send('Error al generar el PDF');
+          // await browser.close();
+        } finally {
+          // await browser.close();
+        }
+      }
+    )
+  }
+  static async VistaPreviaPedidoAvios(req, res) {
+    console.log("Iniciando exportado del formato de avios")
+    const tipo = req.params.tipo
+    const mode = req.params.mode || 'download' // 'view' or 'download'
+    const data = req.body
+    console.log("La informacion es:", data)
+    let cabecera = []
+    let detalle = []
+
+    if (data.id) {
+      cabecera = (await ProduccionModel.getInfoPedidoCab(data.id))[0]
+      detalle = await ProduccionModel.getInfoPedidoDet(data.id)
+      console.log("Cabecera:", cabecera)
+      console.log("Detalle:", detalle)
+    } else {
+      cabecera = JSON.parse(data.info)
+      detalle = JSON.parse(data.detalle)
+    }
+    console.log("DEtalle de la cabecerea es: ", cabecera)
+    const BINARY_CHUNKS = await fs.readFile('public/images/firma_jefferson.png')
+    const BINARY_CHUNKS2 = await fs.readFile('public/images/logo_next.png')
+    const BINARY_CHUNKS3 = await fs.readFile('public/images/requerimiento.png')
+    // const tipo = JSON.parse(data.info).tipo
+    console.log("El tipo de pedido es :", tipo)
+    res.render(
+      'avios_v3',
+      {
+        BINARY_CHUNKS: BINARY_CHUNKS.toString('base64'),
+        BINARY_CHUNKS2: BINARY_CHUNKS2.toString('base64'),
+        BINARY_CHUNKS3: BINARY_CHUNKS3.toString('base64'),
+        datos: cabecera,
+        detalle: detalle,
+        helpers: {
+          fechaCorta(fechaStr) {
+            let formateo = ''
+            if (fechaStr) {
+              const partes = fechaStr.split('/');
+              const dia = parseInt(partes[0], 10);
+              const mes = parseInt(partes[1], 10) - 1;
+              const anio = parseInt(partes[2], 10);
+
+              const fecha = new Date(anio, mes, dia);
+              const nombreMes = fecha.toLocaleString('es-ES', { month: 'short' });
+              formateo = `${dia}-${nombreMes}`;
+              console.log("La fecha corta es:", nombreMes)
+            }
+            return formateo
+          },
+          fuu(cabecera){
+            console.log("asldfalsdfj:",cabecera.id_proveedor_CAB,parseInt(cabecera.id_proveedor_CAB) !== 30208 ? 'a' : 'b')
+            let condiciones = parseInt(cabecera.id_proveedor_CAB) !== 30208
+            ? `
+              <tr>
+                <td colspan="9" style="height:15px;padding:10px;"><strong>OBSERVACIONES:</strong></td>
+              </tr>
+              <tr>
+                <td colspan="9" style="padding:10px 10px 10px;font-size:8px;">
+                  <strong style="font-size:inherit;">CONDICIONES DE PAGO:</strong> Las fechas de cierre son los días miércoles de cada semana. La programación de pagos variaran dependiendo de si los despachos fueron recepcionados antes o después de la fecha de cierre. Los proveedores cuyos despachos sean recibidos antes de la fecha de cierre(<strong style="font-size:inherit;">lunes, martes o miércoles</strong>), recibirán el pago en un plazo máximo de 10 días a partir de dicha fecha de cierre; por el contrario, los proveedores cuyos despachos sean recibidos después de la fecha de cierre(<strong style="font-size:inherit;">jueves, viernes o sábado</strong>), recibirán el pago en un plazo máximo de 10 días a partir de la fecha de cierre de la semana siguiente.
+                </td>
+              </tr>
+              <tr>
+                <td colspan="9" style="padding:10px 10px 10px;font-size:8px;">
+                  <strong style="font-size:inherit;">PENALIDADES:</strong> El despacho deberá ejecutarse segun las fechas indicadas en el presente documento, despues de la fecha de vencimineto se aplicará una penalidad sobre el valor costo de la OC: de 1 a 5 días de retraso la penalidad sera de 5%, de 6 a 10 días la penalidad serea de 10% y de 11 a 15 días sera %15, de 16 días a más se evaluará la recepción de la OC. El proveedor consignado en el presente documento autoriza a Next Company a retener de forma automática el pago de facturas del proveedor por el valor de lo adeudado.
+                </td>
+              </tr>
+              `
+            : ''
+            return condiciones
+          },
+          foo(items) {
+            let itemsAsHtml = null
+            let extra = 20 - items.length
+
+            itemsAsHtml = items.map((item, key) => `
+            <tr style="height:14px;font-size:10px;">
+              <td style="text-align: center;background-color:#ddebf7;">${key + 1}</td>
+              <td style="width:60px;text-align: center;">` + item['modelo'] + `</td>
+              <td style="width:60px;text-align: center;">` + (item['corte'] ? ('#' + item['corte']) : '') + `</td>
+              <td style="width:60px;text-align: center;">` + item['producto'] + `</td>
+              <td style="width:60px;text-align:left;background-color:#ddebf7;text-align:center;">` + (item['color'] ?? '') + `</td>
+              <td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['cantidad'] + `</td>
+              <td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['unidad'] + `</td>
+              <td style="width: 60px;text-align: center;background-color:#ddebf7;">` + item['precio'] + `</td>
+              <td style="width: 60px;text-align: center;background-color:#ddebf7;">` + (parseFloat(item['cantidad']) * parseFloat(item['precio'])).toFixed(2) + `</td>
+            </tr>
+            `)
+
+            for (let i = 0; i < extra; i++) {
+              itemsAsHtml.push(`
+                <tr style="height:14px;">
+                  <td style="width:35px;text-align: center;background-color:#ddebf7;"></td>
+                  <td style="width:60px;text-align: center;"></td>
+                  <td style="width:60px;text-align: center;"></td>
+                  <td style="width:60px;text-align: center;"></td>
+                  <td style="width:60px;text-align:left;background-color:#ddebf7;"></td>
+                  <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                  <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                  <td style="width: 60px;text-align: center;background-color:#ddebf7;"></td>
+                  <td style="width: 60px;text-align: center;background-color:#ddebf7;"></td>
+                </tr>`)
+            }
+            const total = items.reduce((carry, valor) => { carry += parseFloat(valor['cantidad']) * parseFloat(valor['precio']); return carry }, 0).toFixed(2)
+            return itemsAsHtml.join("\n")
+          },
+          consolidado(items) {
+            let itemsAsHtml = ''
+            let extra = 12 - items.length
+            const total = items.reduce((carry, valor) => { carry += parseFloat(valor['cantidad']) * parseFloat(valor['precio']); return carry }, 0).toFixed(2)
+
+            itemsAsHtml = `
+              <div style="height:14px;padding-top:5px;border-top:1px solid black;">
+                <div style="text-align: center;display:flex;flex-direction: row;">
+                  <div style="flex:1;text-align:right;font-weight:bold;">SUBTOTAL</div>
+                  <div style="width:60px;text-align:left;padding-left:10px;">${cabecera.moneda == 'USD' ? '$' : 'S/.'} ${total}</div>
+                </div>
+                <div style="text-align: center;display:flex;flex-direction: row;">
+                  <div style="flex:1;text-align:right;font-weight:bold;">IGV 18%</div>
+                  <div style="width:60px;text-align:left;padding-left:10px;">${cabecera.moneda == 'USD' ? '$' : 'S/.'} ${parseInt(cabecera.igv) ? (total * 0.18).toFixed(2) : 0}</div>
+                </div>
+                <div style="text-align: center;display:flex;flex-direction: row;">
+                  <div style="flex:1;text-align:right;font-weight:bold;">TOTAL</div>
+                  <div style="width:60px;text-align:left;padding-left:10px;">${cabecera.moneda == 'USD' ? '$' : 'S/.'} ${parseInt(cabecera.igv) ? (total * 1.18).toFixed(2) : total}</div>
+                </div>
+              </div>
+            `
+            return itemsAsHtml
+          }
+        },
+
+      },
+      async (err, html) => {
+        try {
+          if(mode === 'download') {
+            const browser = await puppeteer.launch();
+            const version = await browser.version();
+            console.log(`Versión de Chrome: ${version}`);
+            const page = await browser.newPage();
+            await page.setContent(html);
+
+            const pdfOptions = {
+              // format: 'A4',
+              width: '20cm',
+              height: '27.94cm',
+              landscape: false,
+              printBackground: true,
+              margin: {
+                left: 0,
+                right: 0
+              }
+              , scale: 1
+            };
+
+            const pdfBuffer = await page.pdf(pdfOptions);
+            await browser.close();
+            res.send({ data: pdfBuffer.toString('base64') })
+          } else {
+            res.send(html)
+          }
+          
+          // res.send(pdfBuffer)
+        } catch (error) {
+          res.status(500).send('Error al generar el PDF');
+          // await browser.close();
+        } finally {
+          // await browser.close();
+        }
+      }
+    )
+  }
+  static async VistaRapidaPedidoAvios(req, res) {
+    console.log("Iniciando exportado del formato de avios otros")
+    const id = req.params.id || ''
+    const mode = req.params.mode || 'download'
+    const data = req.body
+    console.log("La informacion es:", data)
+    let cabecera = []
+    let detalle = []
+
+    if(id !== '') {
+      cabecera = (await ProduccionModel.getInfoPedidoCab(id))[0]
+      detalle = await ProduccionModel.getInfoPedidoDet(id)
+    } else {
+      if(data.id){
+        cabecera = (await ProduccionModel.getInfoPedidoCab(data.id))[0]
+        detalle = await ProduccionModel.getInfoPedidoDet(data.id)
+      }else{
+        cabecera = JSON.parse(data.info)
+        detalle = JSON.parse(data.detalle)
+      }
+    }
+    ProduccionController.GeneraPedidoAvios(cabecera,detalle,res,mode)
+  }
+  static async VistaRapidaPedidoTelas(req, res) {
+    console.log("Hla platanos maduros")
+    const id = req.params.id || ''
+    const mode = req.params.mode || 'download'
+    const tipo = req.params.tipo || 'telas'
+    const data = req.body
+    console.log("La informacion es:", data)
+    let cabecera = []
+    let detalle = []
+    // console.log("El tipo de pedido es :",tipo)
+    // console.log("La info pasada a la vista es :",JSON.parse(data.info),JSON.parse(data.detalle))
+
+    if(id !== '') {
+      cabecera = (await ProduccionModel.getInfoPedidoCab(id))[0]
+      detalle = await ProduccionModel.getInfoPedidoDet(id)
+    } else {
+      if(data.id){
+        cabecera = (await ProduccionModel.getInfoPedidoCab(data.id))[0]
+        detalle = await ProduccionModel.getInfoPedidoDet(data.id)
+      }else{
+        cabecera = JSON.parse(data.info)
+        detalle = JSON.parse(data.detalle)
+      }
+    }
+
+    // if (data.id) {
+    //   cabecera = (await ProduccionModel.getInfoPedidoCab(data.id))[0]
+    //   detalle = await ProduccionModel.getInfoPedidoDet(data.id)
+    //   console.log("Cabecera:", cabecera)
+    //   console.log("Detalle:", detalle)
+    // } else {
+    //   cabecera = JSON.parse(data.info)
+    //   detalle = JSON.parse(data.detalle)
+    // }
+    ProduccionController.GenerarPedidoTelas(cabecera,detalle,res,mode,tipo)
+    
+  }
+  static async GenerarPedidoTelas(cabecera,detalle,res,mode){
+    const tipo = 'telas'
+    const BINARY_CHUNKS = await fs.readFile('public/images/firma_jefferson.png')
+    let BINARY_CHUNKS2 = null
+    if(cabecera.emisor == 'NEXT'){
+      BINARY_CHUNKS2 = await fs.readFile('public/images/logo_next.png')
+    }else{
+      BINARY_CHUNKS2 = await fs.readFile('public/images/logo_elenex_company.png')
+    }
+    const BINARY_CHUNKS3 = await fs.readFile('public/images/orden_pedido.png')
+    
+    res.render(
+      // `${tipo == 'avios' ? 'avios_v3' : 'telas_v2'}`,
+      'telas_v2',
+      {
+        BINARY_CHUNKS: BINARY_CHUNKS.toString('base64'),
+        BINARY_CHUNKS2: BINARY_CHUNKS2.toString('base64'),
+        BINARY_CHUNKS3: BINARY_CHUNKS3.toString('base64'),
+        datos: cabecera,
+        detalle: detalle,
+        emisor: cabecera.emisor == 'NEXT' ? 1 : 0,
+        helpers: {
+          fechaCorta(fechaStr) {
+            let formateo = ''
+            if (fechaStr) {
+              const partes = fechaStr.split('/');
+              const dia = parseInt(partes[0], 10);
+              const mes = parseInt(partes[1], 10) - 1;
+              const anio = parseInt(partes[2], 10);
+
+              const fecha = new Date(anio, mes, dia);
+              const nombreMes = fecha.toLocaleString('es-ES', { month: 'short' });
+              formateo = `${dia}-${nombreMes}`;
+              console.log("La fecha corta es:", nombreMes)
+            }
+            return formateo
+          },
+          fuu(cabecera){
+            console.log("asldfalsdfj:",cabecera.id_proveedor_CAB,parseInt(cabecera.id_proveedor_CAB) !== 30208 ? 'a' : 'b')
+            let condiciones = parseInt(cabecera.id_proveedor_CAB) !== 30208
+            ? `
+              <tr>
+                <td colspan="9" style="height:15px;padding:10px;"><strong>OBSERVACIONES:</strong></td>
+              </tr>
+              <tr>
+                <td colspan="9" style="padding:10px 10px 10px;font-size:8px;">
+                  <strong style="font-size:inherit;">CONDICIONES DE PAGO:</strong> Las fechas de cierre son los días miércoles de cada semana. La programación de pagos variaran dependiendo de si los despachos fueron recepcionados antes o después de la fecha de cierre. Los proveedores cuyos despachos sean recibidos antes de la fecha de cierre(<strong style="font-size:inherit;">lunes, martes o miércoles</strong>), recibirán el pago en un plazo máximo de 10 días a partir de dicha fecha de cierre; por el contrario, los proveedores cuyos despachos sean recibidos después de la fecha de cierre(<strong style="font-size:inherit;">jueves, viernes o sábado</strong>), recibirán el pago en un plazo máximo de 10 días a partir de la fecha de cierre de la semana siguiente.
+                </td>
+              </tr>
+              <tr>
+                <td colspan="9" style="padding:10px 10px 10px;font-size:8px;">
+                  <strong style="font-size:inherit;">PENALIDADES:</strong> El despacho deberá ejecutarse segun las fechas indicadas en el presente documento, despues de la fecha de vencimineto se aplicará una penalidad sobre el valor costo de la OC: de 1 a 5 días de retraso la penalidad sera de 5%, de 6 a 10 días la penalidad serea de 10% y de 11 a 15 días sera %15, de 16 días a más se evaluará la recepción de la OC. El proveedor consignado en el presente documento autoriza a Next Company a retener de forma automática el pago de facturas del proveedor por el valor de lo adeudado.
+                </td>
+              </tr>
+              `
+            : ''
+            return condiciones
+          },
           foo(items) {
             let itemsAsHtml = null
             let extra = 20 - items.length
             if (tipo == 'avios') {
-              itemsAsHtml = items.map((item, key) => `<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;">${key + 1}</td><td style="width:60px;text-align:left;background-color:#ddebf7;">` + item['color'] + `</td><td style="width:60px;text-align: center;">` + item['producto'] + `</td><td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['cantidad'] + `</td><td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['unidad'] + `</td><td style="width: 60px;text-align: center;background-color:#ddebf7;">` + item['precio'] + `</td><td style="width: 60px;text-align: center;background-color:#ddebf7;">` + (parseFloat(item['cantidad']) * parseFloat(item['precio'])).toFixed(2) + `</td></tr>`)
+              itemsAsHtml = items.map((item, key) => `
+              <tr style="height:22px;">
+                <td style="width:35px;text-align: center;background-color:#ddebf7;">${key + 1}</td>
+                <td style="width:60px;text-align: center;">` + item['modelo'] + `</td>
+                <td style="width:60px;text-align: center;">` + item['corte'] + `</td>
+                <td style="width:60px;text-align: center;">` + item['producto'] + `</td>
+                <td style="width:60px;text-align:left;background-color:#ddebf7;">` + item['color'] + `</td>
+                <td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['cantidad'] + `</td>
+                <td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['unidad'] + `</td>
+                <td style="width: 60px;text-align: center;background-color:#ddebf7;">` + item['precio'] + `</td>
+                <td style="width: 60px;text-align: center;background-color:#ddebf7;">` + (parseFloat(item['cantidad']) * parseFloat(item['precio'])).toFixed(2) + `</td>
+              </tr>`)
             } else {
-              itemsAsHtml = items.map((item, key) => `<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;">${key + 1}</td><td style="width:60px;">` + `${item['producto']} ${item['color']}` + `</td><td style="width:60px;text-align:center;background-color:#ddebf7;">` + (item['rollos'] ? item['rollos'] : '') + `</td><td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['cantidad'] + `</td><td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['unidad'] + `</td><td style="text-align: center;background-color:#ddebf7;">` + item['precio'] + `</td><td style="text-align: center;background-color:#ddebf7;">` + (parseFloat(item['cantidad']) * parseFloat(item['precio'])).toFixed(2) + `</td></tr>`)
+              itemsAsHtml = items.map((item, key) => `
+              <tr style="height:22px;">
+                <td style="width:35px;text-align: center;background-color:#ddebf7;">${key + 1}</td>
+                <td style="width:60px;">` + `${item['producto']} ${item['color']}` + `</td>
+                <td style="width:60px;text-align:center;background-color:#ddebf7;">` + (item['rollos'] ? item['rollos'] : '') + `</td>
+                <td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['cantidad'] + `</td>
+                <td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['unidad'] + `</td>
+                <td style="text-align: center;background-color:#ddebf7;">` + item['precio'] + `</td>
+                <td style="text-align: center;background-color:#ddebf7;">` + (parseFloat(item['cantidad']) * parseFloat(item['precio'])).toFixed(2) + `</td>
+              </tr>`)
             }
             for (let i = 0; i < extra; i++) {
               tipo == 'avios'
                 ?
-                itemsAsHtml.push(`<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align:left;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width: 60px;text-align: center;background-color:#ddebf7;"></td><td style="width: 60px;text-align: center;background-color:#ddebf7;"></td></tr>`)
+                itemsAsHtml.push(`
+                  <tr style="height:22px;">
+                    <td style="width:35px;text-align: center;background-color:#ddebf7;"></td>
+                    <td style="width:60px;text-align: center;"></td>
+                    <td style="width:60px;text-align: center;"></td>
+                    <td style="width:60px;text-align: center;"></td>
+                    <td style="width:60px;text-align:left;background-color:#ddebf7;"></td>
+                    <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                    <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                    <td style="width: 60px;text-align: center;background-color:#ddebf7;"></td>
+                    <td style="width: 60px;text-align: center;background-color:#ddebf7;"></td>
+                  </tr>`)
                 :
-                itemsAsHtml.push(`<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;"></td><td style="width:60px;text-align:center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="text-align: center;background-color:#ddebf7;"></td><td style="text-align: center;background-color:#ddebf7;"></td></tr>`)
+                itemsAsHtml.push(`
+                  <tr style="height:22px;">
+                    <td style="width:35px;text-align: center;background-color:#ddebf7;"></td>
+                    <td style="width:60px;text-align: center;"></td>
+                    <td style="width:60px;text-align:center;background-color:#ddebf7;"></td>
+                    <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                    <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                    <td style="text-align: center;background-color:#ddebf7;"></td>
+                    <td style="text-align: center;background-color:#ddebf7;"></td>
+                  </tr>`)
               // items.push({color:'',producto:'',cantidad:0,unidad:'',precio:0,importe:0})
             }
             const total = items.reduce((carry, valor) => { carry += parseFloat(valor['cantidad']) * parseFloat(valor['precio']); return carry }, 0).toFixed(2)
-            itemsAsHtml.push(`<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;"></td>${tipo == 'avios' ? '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>' : ''}<td style="width:60px;text-align: center;"></td>${tipo !== 'avios' ? '<td style="width:60px;text-align: center;background-color:#ddebf7;">' : ''}</td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width:100px;text-align: center;background-color:#ddebf7;text-wrap-mode:nowrap"><strong>SUB TOTAL</strong></td><td style="width:90px;text-align: center;background-color:#ddebf7;">${cabecera.moneda == 'USD' ? '$' : 'S/.'} ${total}</td></tr>`)
-            itemsAsHtml.push(`<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;"></td>${tipo == 'avios' ? '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>' : ''}<td style="width:60px;text-align: center;"></td>${tipo !== 'avios' ? '<td style="width:60px;text-align: center;background-color:#ddebf7;">' : ''}<td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="text-align: center;background-color:#ddebf7;"><strong>IGV 18%</strong></td><td style="text-align: center;background-color:#ddebf7;">${cabecera.moneda == 'USD' ? '$' : 'S/.'} ${parseInt(cabecera.igv) ? (total * 0.18).toFixed(2) : 0}</td></tr>`)
-            itemsAsHtml.push(`<tr style="height:22px;"><td style="width:35px;text-align: center;background-color:#ddebf7;"></td>${tipo == 'avios' ? '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>' : ''}<td style="width:60px;text-align: center;"></td>${tipo !== 'avios' ? '<td style="width:60px;text-align: center;background-color:#ddebf7;">' : ''}</td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="width:60px;text-align: center;background-color:#ddebf7;"></td><td style="text-align: center;background-color:#ddebf7;"><strong>TOTAL</strong></td><td style="text-align: center;background-color:#ddebf7;">${cabecera.moneda == 'USD' ? '$' : 'S/.'} ${parseInt(cabecera.igv) ? (total * 1.18).toFixed(2) : total}</td></tr>`)
+            itemsAsHtml.push(`
+              <tr style="height:22px;">
+                <td style="width:35px;text-align: center;background-color:#ddebf7;"></td>
+                ${tipo == 'avios' ? '<td style="width:60px;text-align: center;"></td>' : ''}
+                ${tipo == 'avios' ? '<td style="width:60px;text-align: center;"></td>' : ''}
+                <td style="width:60px;text-align: center;"></td>
+                ${tipo == 'avios' ? '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>' : ''}
+                ${tipo !== 'avios' ? '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>' : ''}
+                <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                <td style="width:100px;text-align: center;background-color:#ddebf7;text-wrap-mode:nowrap"><strong>SUB TOTAL</strong></td>
+                <td style="width:90px;text-align: center;background-color:#ddebf7;">${cabecera.moneda == 'USD' ? '$' : 'S/.'} ${total}</td>
+              </tr>`)
+            itemsAsHtml.push(`
+              <tr style="height:22px;">
+                <td style="width:35px;text-align: center;background-color:#ddebf7;"></td>
+                ${tipo == 'avios' ? '<td style="width:60px;text-align: center;"></td>' : ''}
+                ${tipo == 'avios' ? '<td style="width:60px;text-align: center;"></td>' : ''}
+                <td style="width:60px;text-align: center;"></td>
+                ${tipo == 'avios' ? '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>' : ''}
+                ${tipo !== 'avios' ? '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>' : ''}
+                <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                <td style="text-align: center;background-color:#ddebf7;"><strong>IGV 18%</strong></td>
+                <td style="text-align: center;background-color:#ddebf7;">${cabecera.moneda == 'USD' ? '$' : 'S/.'} ${parseInt(cabecera.igv) ? (total * 0.18).toFixed(2) : 0}</td>
+              </tr>`)
+            itemsAsHtml.push(`
+              <tr style="height:22px;">
+                <td style="width:35px;text-align: center;background-color:#ddebf7;"></td>
+                ${tipo == 'avios' ? '<td style="width:60px;text-align: center;"></td>' : ''}
+                ${tipo == 'avios' ? '<td style="width:60px;text-align: center;"></td>' : ''}
+                <td style="width:60px;text-align: center;"></td>
+                ${tipo == 'avios' ? '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>' : ''}
+                ${tipo !== 'avios' ? '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>' : ''}
+                <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                <td style="text-align: center;background-color:#ddebf7;"><strong>TOTAL</strong></td>
+                <td style="text-align: center;background-color:#ddebf7;">${cabecera.moneda == 'USD' ? '$' : 'S/.'} ${parseInt(cabecera.igv) ? (total * 1.18).toFixed(2) : total}</td>
+              </tr>`)
+            return itemsAsHtml.join("\n")
+          }
+        },
+
+      },
+      async (err, html) => {
+        try {
+          if(mode === 'download') {
+            const browser = await puppeteer.launch();
+            const version = await browser.version();
+            console.log(`Versión de Chrome: ${version}`);
+            const page = await browser.newPage();
+            await page.setContent(html);
+
+            const pdfOptions = {
+              // format: 'A4',
+              width: '20cm',
+              height: '27.94cm',
+              landscape: false,
+              printBackground: true,
+              margin: {
+                left: 0,
+                right: 0
+              }
+              , scale: 1
+            };
+
+            const pdfBuffer = await page.pdf(pdfOptions);
+            await browser.close();
+            res.send({ data: pdfBuffer.toString('base64') })
+          } else {
+            res.send(html)
+          }
+        } catch (error) {
+          res.status(500).send('Error al generar el PDF');
+          // await browser.close();
+        } finally {
+          // await browser.close();
+        }
+      }
+    )
+  }
+  static async VistaRapidaPedidoTelas_(req, res){
+    console.log("Iniciando exportado del formato de telas,preview get")
+    const id = req.params.id || ''
+    const mode = req.params.mode || 'download'
+    const data = req.body
+    let cabecera = []
+    let detalle = []
+
+    if(id !== '') {
+      cabecera = (await ProduccionModel.getInfoPedidoCab(id))[0]
+      detalle = await ProduccionModel.getInfoPedidoDet(id)
+    } else {
+      if(data.id){
+        cabecera = (await ProduccionModel.getInfoPedidoCab(data.id))[0]
+        detalle = await ProduccionModel.getInfoPedidoDet(data.id)
+      }else{
+        cabecera = JSON.parse(data.info)
+        detalle = JSON.parse(data.detalle)
+      }
+    }
+    console.log("Cabecera:", cabecera)
+    console.log("Detalle:", detalle)
+    // const data = req.body
+    // console.log("La informacion es:", data)
+    // let cabecera = []
+    // let detalle = []
+    // if (data.id) {
+    //   cabecera = (await ProduccionModel.getInfoPedidoCab(data.id))[0]
+    //   detalle = await ProduccionModel.getInfoPedidoDet(data.id)
+    // } else {
+    //   cabecera = JSON.parse(data.info)
+    //   detalle = JSON.parse(data.detalle)
+    // }
+    ProduccionController.GenerarPedidoTelas(cabecera,detalle,res,mode)
+  }
+  static async GenerarPedidoTelas_(cabecera,detalle,res,mode) {
+    const BINARY_CHUNKS = await fs.readFile('public/images/firma_jefferson.png')
+    let BINARY_CHUNKS2 = null
+    if(cabecera.emisor == 'NEXT'){
+      BINARY_CHUNKS2 = await fs.readFile('public/images/logo_next.png')
+    }else{
+      BINARY_CHUNKS2 = await fs.readFile('public/images/logo_elenex_company.png')
+    }
+    const BINARY_CHUNKS3 = await fs.readFile('public/images/orden_pedido.png')
+    res.render(
+      'telas_v2',
+      {
+        BINARY_CHUNKS: BINARY_CHUNKS.toString('base64'),
+        BINARY_CHUNKS2: BINARY_CHUNKS2.toString('base64'),
+        BINARY_CHUNKS3: BINARY_CHUNKS3.toString('base64'),
+        datos: cabecera,
+        detalle: detalle,
+        emisor: cabecera.emisor == 'NEXT' ? 1 : 0,
+        helpers: {
+          fechaCorta(fechaStr) {
+            let formateo = ''
+            if (fechaStr) {
+              const partes = fechaStr.split('/');
+              const dia = parseInt(partes[0], 10);
+              const mes = parseInt(partes[1], 10) - 1;
+              const anio = parseInt(partes[2], 10);
+
+              const fecha = new Date(anio, mes, dia);
+              const nombreMes = fecha.toLocaleString('es-ES', { month: 'short' });
+              formateo = `${dia}-${nombreMes}`;
+              console.log("La fecha corta es:", nombreMes)
+            }
+            return formateo
+          },
+          fuu(cabecera){
+            console.log("asldfalsdfj:",cabecera.id_proveedor_CAB,parseInt(cabecera.id_proveedor_CAB) !== 30208 ? 'a' : 'b')
+            let condiciones = parseInt(cabecera.id_proveedor_CAB) !== 30208
+            ? `
+              <tr>
+                <td colspan="9" style="height:15px;padding:10px;"><strong>OBSERVACIONES:</strong></td>
+              </tr>
+              <tr>
+                <td colspan="9" style="padding:10px 10px 10px;font-size:8px;">
+                  <strong style="font-size:inherit;">CONDICIONES DE PAGO:</strong> Las fechas de cierre son los días miércoles de cada semana. La programación de pagos variaran dependiendo de si los despachos fueron recepcionados antes o después de la fecha de cierre. Los proveedores cuyos despachos sean recibidos antes de la fecha de cierre(<strong style="font-size:inherit;">lunes, martes o miércoles</strong>), recibirán el pago en un plazo máximo de 10 días a partir de dicha fecha de cierre; por el contrario, los proveedores cuyos despachos sean recibidos después de la fecha de cierre(<strong style="font-size:inherit;">jueves, viernes o sábado</strong>), recibirán el pago en un plazo máximo de 10 días a partir de la fecha de cierre de la semana siguiente.
+                </td>
+              </tr>
+              <tr>
+                <td colspan="9" style="padding:10px 10px 10px;font-size:8px;">
+                  <strong style="font-size:inherit;">PENALIDADES:</strong> El despacho deberá ejecutarse segun las fechas indicadas en el presente documento, despues de la fecha de vencimineto se aplicará una penalidad sobre el valor costo de la OC: de 1 a 5 días de retraso la penalidad sera de 5%, de 6 a 10 días la penalidad serea de 10% y de 11 a 15 días sera %15, de 16 días a más se evaluará la recepción de la OC. El proveedor consignado en el presente documento autoriza a Next Company a retener de forma automática el pago de facturas del proveedor por el valor de lo adeudado.
+                </td>
+              </tr>
+              `
+            : ''
+            return condiciones
+          },
+          foo(items) {
+            let itemsAsHtml = null
+            let extra = 20 - items.length
+            if (tipo == 'avios') {
+              itemsAsHtml = items.map((item, key) => `
+              <tr style="height:22px;">
+                <td style="width:35px;text-align: center;background-color:#ddebf7;">${key + 1}</td>
+                <td style="width:60px;text-align: center;">` + item['modelo'] + `</td>
+                <td style="width:60px;text-align: center;">` + item['corte'] + `</td>
+                <td style="width:60px;text-align: center;">` + item['producto'] + `</td>
+                <td style="width:60px;text-align:left;background-color:#ddebf7;">` + item['color'] + `</td>
+                <td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['cantidad'] + `</td>
+                <td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['unidad'] + `</td>
+                <td style="width: 60px;text-align: center;background-color:#ddebf7;">` + item['precio'] + `</td>
+                <td style="width: 60px;text-align: center;background-color:#ddebf7;">` + (parseFloat(item['cantidad']) * parseFloat(item['precio'])).toFixed(2) + `</td>
+              </tr>`)
+            } else {
+              itemsAsHtml = items.map((item, key) => `
+              <tr style="height:22px;">
+                <td style="width:35px;text-align: center;background-color:#ddebf7;">${key + 1}</td>
+                <td style="width:60px;">` + `${item['producto']} ${item['color']}` + `</td>
+                <td style="width:60px;text-align:center;background-color:#ddebf7;">` + (item['rollos'] ? item['rollos'] : '') + `</td>
+                <td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['cantidad'] + `</td>
+                <td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['unidad'] + `</td>
+                <td style="text-align: center;background-color:#ddebf7;">` + item['precio'] + `</td>
+                <td style="text-align: center;background-color:#ddebf7;">` + (parseFloat(item['cantidad']) * parseFloat(item['precio'])).toFixed(2) + `</td>
+              </tr>`)
+            }
+            for (let i = 0; i < extra; i++) {
+              tipo == 'avios'
+                ?
+                itemsAsHtml.push(`
+                  <tr style="height:22px;">
+                    <td style="width:35px;text-align: center;background-color:#ddebf7;"></td>
+                    <td style="width:60px;text-align: center;"></td>
+                    <td style="width:60px;text-align: center;"></td>
+                    <td style="width:60px;text-align: center;"></td>
+                    <td style="width:60px;text-align:left;background-color:#ddebf7;"></td>
+                    <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                    <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                    <td style="width: 60px;text-align: center;background-color:#ddebf7;"></td>
+                    <td style="width: 60px;text-align: center;background-color:#ddebf7;"></td>
+                  </tr>`)
+                :
+                itemsAsHtml.push(`
+                  <tr style="height:22px;">
+                    <td style="width:35px;text-align: center;background-color:#ddebf7;"></td>
+                    <td style="width:60px;text-align: center;"></td>
+                    <td style="width:60px;text-align:center;background-color:#ddebf7;"></td>
+                    <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                    <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                    <td style="text-align: center;background-color:#ddebf7;"></td>
+                    <td style="text-align: center;background-color:#ddebf7;"></td>
+                  </tr>`)
+              // items.push({color:'',producto:'',cantidad:0,unidad:'',precio:0,importe:0})
+            }
+            const total = items.reduce((carry, valor) => { carry += parseFloat(valor['cantidad']) * parseFloat(valor['precio']); return carry }, 0).toFixed(2)
+            itemsAsHtml.push(`
+              <tr style="height:22px;">
+                <td style="width:35px;text-align: center;background-color:#ddebf7;"></td>
+                ${tipo == 'avios' ? '<td style="width:60px;text-align: center;"></td>' : ''}
+                ${tipo == 'avios' ? '<td style="width:60px;text-align: center;"></td>' : ''}
+                <td style="width:60px;text-align: center;"></td>
+                ${tipo == 'avios' ? '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>' : ''}
+                ${tipo !== 'avios' ? '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>' : ''}
+                <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                <td style="width:100px;text-align: center;background-color:#ddebf7;text-wrap-mode:nowrap"><strong>SUB TOTAL</strong></td>
+                <td style="width:90px;text-align: center;background-color:#ddebf7;">${cabecera.moneda == 'USD' ? '$' : 'S/.'} ${total}</td>
+              </tr>`)
+            itemsAsHtml.push(`
+              <tr style="height:22px;">
+                <td style="width:35px;text-align: center;background-color:#ddebf7;"></td>
+                ${tipo == 'avios' ? '<td style="width:60px;text-align: center;"></td>' : ''}
+                ${tipo == 'avios' ? '<td style="width:60px;text-align: center;"></td>' : ''}
+                <td style="width:60px;text-align: center;"></td>
+                ${tipo == 'avios' ? '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>' : ''}
+                ${tipo !== 'avios' ? '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>' : ''}
+                <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                <td style="text-align: center;background-color:#ddebf7;"><strong>IGV 18%</strong></td>
+                <td style="text-align: center;background-color:#ddebf7;">${cabecera.moneda == 'USD' ? '$' : 'S/.'} ${parseInt(cabecera.igv) ? (total * 0.18).toFixed(2) : 0}</td>
+              </tr>`)
+            itemsAsHtml.push(`
+              <tr style="height:22px;">
+                <td style="width:35px;text-align: center;background-color:#ddebf7;"></td>
+                ${tipo == 'avios' ? '<td style="width:60px;text-align: center;"></td>' : ''}
+                ${tipo == 'avios' ? '<td style="width:60px;text-align: center;"></td>' : ''}
+                <td style="width:60px;text-align: center;"></td>
+                ${tipo == 'avios' ? '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>' : ''}
+                ${tipo !== 'avios' ? '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>' : ''}
+                <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                <td style="text-align: center;background-color:#ddebf7;"><strong>TOTAL</strong></td>
+                <td style="text-align: center;background-color:#ddebf7;">${cabecera.moneda == 'USD' ? '$' : 'S/.'} ${parseInt(cabecera.igv) ? (total * 1.18).toFixed(2) : total}</td>
+              </tr>`)
+            return itemsAsHtml.join("\n")
+          }
+        },
+
+      },
+      async (err, html) => {
+        try {
+          console.log("Dentro del renderizado de la vista")
+          if(mode === 'download') {
+            const browser = await puppeteer.launch();
+            const version = await browser.version();
+            console.log(`Versión de Chrome: ${version}`);
+            const page = await browser.newPage();
+            await page.setContent(html);
+
+            const pdfOptions = {
+              // format: 'A4',
+              width: '20cm',
+              height: '27.94cm',
+              landscape: false,
+              printBackground: true,
+              margin: {
+                left: 0,
+                right: 0
+              }
+              , scale: 1
+            };
+
+            const pdfBuffer = await page.pdf(pdfOptions);
+            await browser.close();
+            res.send({ data: pdfBuffer.toString('base64') })
+          } else {
+            console.log("Enviando html")
+            res.send(html)
+          }
+          // res.send(pdfBuffer)
+        } catch (error) {
+          console.log("Error al generar el PDF:", error)
+          res.status(500).send('Error al generar el PDF');
+          // await browser.close();
+        } finally {
+          // await browser.close();
+        }
+      }
+    )
+  }
+  static async VistaPreviaPedido(req, res) {
+    const tipo = req.params.tipo
+    const data = req.body
+    console.log("La informacion es:", data)
+    let cabecera = []
+    let detalle = []
+    // console.log("El tipo de pedido es :",tipo)
+    // console.log("La info pasada a la vista es :",JSON.parse(data.info),JSON.parse(data.detalle))
+
+    if (data.id) {
+      cabecera = (await ProduccionModel.getInfoPedidoCab(data.id))[0]
+      detalle = await ProduccionModel.getInfoPedidoDet(data.id)
+      console.log("Cabecera:", cabecera)
+      console.log("Detalle:", detalle)
+    } else {
+      cabecera = JSON.parse(data.info)
+      detalle = JSON.parse(data.detalle)
+    }
+    console.log("DEtalle de la cabecerea es: ", cabecera)
+    const BINARY_CHUNKS = await fs.readFile('public/images/firma_jefferson.png')
+    let BINARY_CHUNKS2 = null
+    if(cabecera.emisor == 'NEXT'){
+      BINARY_CHUNKS2 = await fs.readFile('public/images/logo_next.png')
+    }else{
+      BINARY_CHUNKS2 = await fs.readFile('public/images/logo_elenex_company.png')
+    }
+    
+    const BINARY_CHUNKS3 = await fs.readFile('public/images/requerimiento.png')
+    // const tipo = JSON.parse(data.info).tipo
+    console.log("El tipo de pedido es :", tipo)
+    res.render(
+      `${tipo == 'avios' ? 'avios_v3' : 'telas_v2'}`,
+      {
+        BINARY_CHUNKS: BINARY_CHUNKS.toString('base64'),
+        BINARY_CHUNKS2: BINARY_CHUNKS2.toString('base64'),
+        BINARY_CHUNKS3: BINARY_CHUNKS3.toString('base64'),
+        datos: cabecera,
+        detalle: detalle,
+        emisor: cabecera.emisor == 'NEXT' ? 1 : 0,
+        helpers: {
+          fechaCorta(fechaStr) {
+            let formateo = ''
+            if (fechaStr) {
+              const partes = fechaStr.split('/');
+              const dia = parseInt(partes[0], 10);
+              const mes = parseInt(partes[1], 10) - 1;
+              const anio = parseInt(partes[2], 10);
+
+              const fecha = new Date(anio, mes, dia);
+              const nombreMes = fecha.toLocaleString('es-ES', { month: 'short' });
+              formateo = `${dia}-${nombreMes}`;
+              console.log("La fecha corta es:", nombreMes)
+            }
+            return formateo
+          },
+          fuu(cabecera){
+            console.log("asldfalsdfj:",cabecera.id_proveedor_CAB,parseInt(cabecera.id_proveedor_CAB) !== 30208 ? 'a' : 'b')
+            let condiciones = parseInt(cabecera.id_proveedor_CAB) !== 30208
+            ? `
+              <tr>
+                <td colspan="9" style="height:15px;padding:10px;"><strong>OBSERVACIONES:</strong></td>
+              </tr>
+              <tr>
+                <td colspan="9" style="padding:10px 10px 10px;font-size:8px;">
+                  <strong style="font-size:inherit;">CONDICIONES DE PAGO:</strong> Las fechas de cierre son los días miércoles de cada semana. La programación de pagos variaran dependiendo de si los despachos fueron recepcionados antes o después de la fecha de cierre. Los proveedores cuyos despachos sean recibidos antes de la fecha de cierre(<strong style="font-size:inherit;">lunes, martes o miércoles</strong>), recibirán el pago en un plazo máximo de 10 días a partir de dicha fecha de cierre; por el contrario, los proveedores cuyos despachos sean recibidos después de la fecha de cierre(<strong style="font-size:inherit;">jueves, viernes o sábado</strong>), recibirán el pago en un plazo máximo de 10 días a partir de la fecha de cierre de la semana siguiente.
+                </td>
+              </tr>
+              <tr>
+                <td colspan="9" style="padding:10px 10px 10px;font-size:8px;">
+                  <strong style="font-size:inherit;">PENALIDADES:</strong> El despacho deberá ejecutarse segun las fechas indicadas en el presente documento, despues de la fecha de vencimineto se aplicará una penalidad sobre el valor costo de la OC: de 1 a 5 días de retraso la penalidad sera de 5%, de 6 a 10 días la penalidad serea de 10% y de 11 a 15 días sera %15, de 16 días a más se evaluará la recepción de la OC. El proveedor consignado en el presente documento autoriza a Next Company a retener de forma automática el pago de facturas del proveedor por el valor de lo adeudado.
+                </td>
+              </tr>
+              `
+            : ''
+            return condiciones
+          },
+          foo(items) {
+            let itemsAsHtml = null
+            let extra = 20 - items.length
+            if (tipo == 'avios') {
+              itemsAsHtml = items.map((item, key) => `
+              <tr style="height:22px;">
+                <td style="width:35px;text-align: center;background-color:#ddebf7;">${key + 1}</td>
+                <td style="width:60px;text-align: center;">` + item['modelo'] + `</td>
+                <td style="width:60px;text-align: center;">` + item['corte'] + `</td>
+                <td style="width:60px;text-align: center;">` + item['producto'] + `</td>
+                <td style="width:60px;text-align:left;background-color:#ddebf7;">` + item['color'] + `</td>
+                <td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['cantidad'] + `</td>
+                <td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['unidad'] + `</td>
+                <td style="width: 60px;text-align: center;background-color:#ddebf7;">` + item['precio'] + `</td>
+                <td style="width: 60px;text-align: center;background-color:#ddebf7;">` + (parseFloat(item['cantidad']) * parseFloat(item['precio'])).toFixed(2) + `</td>
+              </tr>`)
+            } else {
+              itemsAsHtml = items.map((item, key) => `
+              <tr style="height:22px;">
+                <td style="width:35px;text-align: center;background-color:#ddebf7;">${key + 1}</td>
+                <td style="width:60px;">` + `${item['producto']} ${item['color']}` + `</td>
+                <td style="width:60px;text-align:center;background-color:#ddebf7;">` + (item['rollos'] ? item['rollos'] : '') + `</td>
+                <td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['cantidad'] + `</td>
+                <td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['unidad'] + `</td>
+                <td style="text-align: center;background-color:#ddebf7;">` + item['precio'] + `</td>
+                <td style="text-align: center;background-color:#ddebf7;">` + (parseFloat(item['cantidad']) * parseFloat(item['precio'])).toFixed(2) + `</td>
+              </tr>`)
+            }
+            for (let i = 0; i < extra; i++) {
+              tipo == 'avios'
+                ?
+                itemsAsHtml.push(`
+                  <tr style="height:22px;">
+                    <td style="width:35px;text-align: center;background-color:#ddebf7;"></td>
+                    <td style="width:60px;text-align: center;"></td>
+                    <td style="width:60px;text-align: center;"></td>
+                    <td style="width:60px;text-align: center;"></td>
+                    <td style="width:60px;text-align:left;background-color:#ddebf7;"></td>
+                    <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                    <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                    <td style="width: 60px;text-align: center;background-color:#ddebf7;"></td>
+                    <td style="width: 60px;text-align: center;background-color:#ddebf7;"></td>
+                  </tr>`)
+                :
+                itemsAsHtml.push(`
+                  <tr style="height:22px;">
+                    <td style="width:35px;text-align: center;background-color:#ddebf7;"></td>
+                    <td style="width:60px;text-align: center;"></td>
+                    <td style="width:60px;text-align:center;background-color:#ddebf7;"></td>
+                    <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                    <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                    <td style="text-align: center;background-color:#ddebf7;"></td>
+                    <td style="text-align: center;background-color:#ddebf7;"></td>
+                  </tr>`)
+              // items.push({color:'',producto:'',cantidad:0,unidad:'',precio:0,importe:0})
+            }
+            const total = items.reduce((carry, valor) => { carry += parseFloat(valor['cantidad']) * parseFloat(valor['precio']); return carry }, 0).toFixed(2)
+            itemsAsHtml.push(`
+              <tr style="height:22px;">
+                <td style="width:35px;text-align: center;background-color:#ddebf7;"></td>
+                ${tipo == 'avios' ? '<td style="width:60px;text-align: center;"></td>' : ''}
+                ${tipo == 'avios' ? '<td style="width:60px;text-align: center;"></td>' : ''}
+                <td style="width:60px;text-align: center;"></td>
+                ${tipo == 'avios' ? '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>' : ''}
+                ${tipo !== 'avios' ? '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>' : ''}
+                <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                <td style="width:100px;text-align: center;background-color:#ddebf7;text-wrap-mode:nowrap"><strong>SUB TOTAL</strong></td>
+                <td style="width:90px;text-align: center;background-color:#ddebf7;">${cabecera.moneda == 'USD' ? '$' : 'S/.'} ${total}</td>
+              </tr>`)
+            itemsAsHtml.push(`
+              <tr style="height:22px;">
+                <td style="width:35px;text-align: center;background-color:#ddebf7;"></td>
+                ${tipo == 'avios' ? '<td style="width:60px;text-align: center;"></td>' : ''}
+                ${tipo == 'avios' ? '<td style="width:60px;text-align: center;"></td>' : ''}
+                <td style="width:60px;text-align: center;"></td>
+                ${tipo == 'avios' ? '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>' : ''}
+                ${tipo !== 'avios' ? '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>' : ''}
+                <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                <td style="text-align: center;background-color:#ddebf7;"><strong>IGV 18%</strong></td>
+                <td style="text-align: center;background-color:#ddebf7;">${cabecera.moneda == 'USD' ? '$' : 'S/.'} ${parseInt(cabecera.igv) ? (total * 0.18).toFixed(2) : 0}</td>
+              </tr>`)
+            itemsAsHtml.push(`
+              <tr style="height:22px;">
+                <td style="width:35px;text-align: center;background-color:#ddebf7;"></td>
+                ${tipo == 'avios' ? '<td style="width:60px;text-align: center;"></td>' : ''}
+                ${tipo == 'avios' ? '<td style="width:60px;text-align: center;"></td>' : ''}
+                <td style="width:60px;text-align: center;"></td>
+                ${tipo == 'avios' ? '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>' : ''}
+                ${tipo !== 'avios' ? '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>' : ''}
+                <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                <td style="text-align: center;background-color:#ddebf7;"><strong>TOTAL</strong></td>
+                <td style="text-align: center;background-color:#ddebf7;">${cabecera.moneda == 'USD' ? '$' : 'S/.'} ${parseInt(cabecera.igv) ? (total * 1.18).toFixed(2) : total}</td>
+              </tr>`)
             return itemsAsHtml.join("\n")
           }
         },
@@ -816,9 +2308,15 @@ export class ProduccionController {
     const data = await ProduccionModel.getNuevoPedido()
     res.json(data)
   }
-  static async saveInfoPedidos(req, res) {
-    const data = await ProduccionModel.saveInfoPedidos(req.body)
-    res.json({ ok: true, message: 'datos guardados' })
+  static async saveInfoPedidosTelas(req, res) {
+    const data = await ProduccionModel.saveInfoPedidosTelas(req.body)
+    // res.json({ ok: true, message: 'datos guardados' })
+    res.json(data)
+  }
+  static async saveInfoPedidosAvios(req, res) {
+    const data = await ProduccionModel.saveInfoPedidosAvios(req.body)
+    // res.json({ ok: true, message: 'datos guardados' })
+    res.json(data)
   }
   static async getInfoPedidos(req, res) {
     const id = req.params.id
@@ -941,6 +2439,7 @@ export class ProduccionController {
     // })
   }
   static async ShowInformeServicio(req, res) {
+    console.log("Mostrando el procesos de informe de muestra por q esta fallando")
     const params = req.params
     const data = await ProduccionModel.getInfoGuiaCab(params.id)
     const cruce = await ProduccionModel.getInfoGuiaDespacho(params.id)
@@ -1031,8 +2530,8 @@ export class ProduccionController {
 
         const pdfBuffer = await page.pdf(pdfOptions);
         await browser.close();
-        res.send({ data: pdfBuffer.toString('base64') })
-        // res.send(pdfBuffer)
+        // res.send({ data: pdfBuffer.toString('base64') })
+        res.send(html)
       } catch (error) {
         res.status(500).send('Error al generar el PDF');
         // await browser.close();
@@ -1273,9 +2772,21 @@ export class ProduccionController {
     const data = await ProduccionModel.getListaDespachos(tipo, search)
     res.json(data)
   }
-  static async saveInfoDespachos(req, res) {
-    const data = await ProduccionModel.saveInfoDespachos(req.body)
-    res.json({ ok: true, message: 'datos guardados' })
+  static async saveInfoDespachosPedido(req, res) {
+    const data = await ProduccionModel.saveInfoDespachosPedido(req.body)
+    res.json(data)
+  }
+  static async saveInfoDespachosGuia(req, res) {
+    const data = await ProduccionModel.saveInfoDespachosGuia(req.body)
+    res.json(data)
+  }
+  static async saveInfoDespachosGuiaGLB(req, res) {
+    const data = await ProduccionModel.saveInfoDespachosGuiaGLB(req.body)
+    res.json(data)
+  }
+  static async saveInfoDespachosGuiaXPQ(req, res) {
+    const data = await ProduccionModel.saveInfoDespachosGuiaXPQ(req.body)
+    res.json(data)
   }
   static async getInfoDespachos(req, res) {
     const id = req.params.id
@@ -1285,9 +2796,24 @@ export class ProduccionController {
     console.log("chifa", data3)
     res.json([data[0], data2, data3])
   }
-  static async eliminarInfoDespachos(req, res) {
+  static async eliminarInfoDespachosPedido(req, res) {
     const id = req.params.id
-    const data = await ProduccionModel.eliminarInfoDespachos(id)
+    const data = await ProduccionModel.eliminarInfoDespachosPedido(id)
+    res.json(data)
+  }
+  static async eliminarInfoDespachosGuia(req, res) {
+    const id = req.params.id
+    const data = await ProduccionModel.eliminarInfoDespachosGuia(id)
+    res.json(data)
+  }
+  static async eliminarInfoDespachosGuiaGLB(req, res) {
+    const id = req.params.id
+    const data = await ProduccionModel.eliminarInfoDespachosGuiaGLB(id)
+    res.json(data)
+  }
+  static async eliminarInfoDespachosGuiaXPQ(req, res) {
+    const id = req.params.id
+    const data = await ProduccionModel.eliminarInfoDespachosGuiaXPQ(id)
     res.json(data)
   }
   static async validaInventario(req, res) {
@@ -1297,6 +2823,21 @@ export class ProduccionController {
   }
   static async getPenalidadesServicios(req, res) {
     const data = await ProduccionModel.getPenalidadesServicios()
+    res.json(data)
+  }
+  static async getListaRetiros(req, res) {
+    const search = req.params.search ?? ''
+    const data = await ProduccionModel.getListaRetiros(search)
+    res.json(data)
+  }
+  static async getInfoRetiros(req, res) {
+    const id = req.params.id
+    const data = await ProduccionModel.getInfoRetiroCab(id)
+    const data2 = await ProduccionModel.getInfoRetiroDet(id, data[0].tipo)
+    res.json([data[0], data2])
+  }
+  static async saveInfoRetiro(req, res) {
+    const data = await ProduccionModel.saveInfoRetiro(req.body)
     res.json(data)
   }
 }
