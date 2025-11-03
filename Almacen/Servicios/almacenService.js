@@ -69,7 +69,8 @@ export default class AlmacenModel{
       await conn.connect()
 
       const [cabmov] = await conn.execute(`
-        SELECT tkc.*, tp.idx as id_proveedor_CAB, tp.nom as proveedor, tmc.cod_comprobante, tmc.anulado
+        SELECT tkc.*, tp.idx as id_proveedor_CAB, tp.nom as proveedor, tmc.cod_comprobante, tmc.anulado,
+        COALESCE((select tbu.usu from tbl_user tbu where tbu.ruc = '20522094120' and tbu.idx = tkc.idx_usu),'') as usuario
         FROM tbl_kard_compras_CAB tkc 
         JOIN tbl2_almacen_mov_cab tmc ON tkc.id_CAB = tmc.idx_documento_asoc
         JOIN tbl2_proveedor tp ON tkc.Nro_Doc_Prov = tp.ruc

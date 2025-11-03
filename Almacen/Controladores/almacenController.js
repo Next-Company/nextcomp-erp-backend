@@ -352,7 +352,8 @@ export default class AlmacenController{
     const BINARY_CHUNKS = await fs.readFile('public/images/firma_jefferson.png')
     let BINARY_CHUNKS2 = null
     BINARY_CHUNKS2 = await fs.readFile('public/images/logo_next.png')
-    const BINARY_CHUNKS3 = await fs.readFile('public/images/guia_despacho.png')
+    // const BINARY_CHUNKS3 = await fs.readFile('public/images/guia_despacho.png')
+    const BINARY_CHUNKS3 = await fs.readFile('public/images/guia_despacho_title.png')
     const BINARY_CHUNKS4 = await fs.readFile('public/images/cuadre_tela.png')
     // const tipo = JSON.parse(data.info).tipo
     console.log("El tipo de pedido es :", tipo)
@@ -363,6 +364,7 @@ export default class AlmacenController{
         BINARY_CHUNKS2: BINARY_CHUNKS2.toString('base64'),
         BINARY_CHUNKS3: BINARY_CHUNKS3.toString('base64'),
         BINARY_CHUNKS4: BINARY_CHUNKS4.toString('base64'),
+        cabecera: cabecera,
         datos: requerimiento,
         detalle: detalle,
         cuadre: cuadre,
@@ -382,6 +384,37 @@ export default class AlmacenController{
               console.log("La fecha corta es:", nombreMes)
             }
             return formateo
+          },
+          encabezado(datos){
+            let info = undefined
+            let motivo = datos.motivo ?? 'ajt'
+            if(motivo == 'crt'){
+              info = `
+              <tr >
+                <td style="font-weight:100;font-size: 14px;"><strong style="font-size: 14px;font-weight:100;">PROVEEDOR: </strong>`+ datos.Raz_social_DOC +`</td>
+                <td style="font-weight:100;font-size: 14px;"><strong style="font-size: 14px;font-weight:100;">OP: </strong>-</td>
+              </tr>
+              <tr >
+                <td style="font-weight:100;font-size: 14px;"><strong style="font-size: 14px;font-weight:100;">RUC: </strong>` + datos.Nro_Doc_Prov + `</td>
+                <td style="font-weight:100;font-size: 14px;"><strong style="font-size: 14px;font-weight:100;">NRO CORTE: </strong>-</td>
+              </tr>
+              <tr >
+                <td style="font-weight:100;font-size: 14px;"><strong style="font-size: 14px;font-weight:100;">NRO REQUERIMIENTO: </strong>`+ datos.nro_requerimiento +`</td>
+                <td style="font-weight:100;font-size: 14px;"><strong style="font-size: 14px;font-weight:100;">GIRADO POR: </strong>-</td>
+              </tr>`
+            }else{
+              info = `
+              <tr >
+                <td style="font-weight:100;font-size: 14px;"><strong style="font-size: 14px;font-weight:100;">PROVEEDOR: </strong>`+ datos.Raz_social_DOC +`</td>
+                <td style="font-weight:100;font-size: 14px;"><strong style="font-size: 14px;font-weight:100;">TIPO MOV.: </strong>`+ (datos.cod_comprobante == 'INGR' ? 'INGRESO' : 'RETIRO') +`</td>
+              </tr>
+              <tr >
+                <td style="font-weight:100;font-size: 14px;"><strong style="font-size: 14px;font-weight:100;">RUC: </strong>` + datos.Nro_Doc_Prov + `</td>
+                <td style="font-weight:100;font-size: 14px;"><strong style="font-size: 14px;font-weight:100;">GIRADO POR: </strong>` + datos.usuario + `</td>
+              </tr>
+              `
+            }
+            return info
           },
           foo(items) {
             let itemsAsHtml = null
@@ -405,6 +438,7 @@ export default class AlmacenController{
                 <td style="width:35px;text-align: center;background-color:#ddebf7;">${key + 1}</td>
                 <td style="width:60px;">` + `${item['producto']} ${item['color']}` + `</td>
                 <td style="width:60px;text-align:center;background-color:#ddebf7;">` + (item['rollos'] ? item['rollos'] : '') + `</td>
+                <td style="width:60px;text-align:center;background-color:#ddebf7;">` + (item['metros'] ? item['metros'] : '') + `</td>
                 <td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['cantidad'] + `</td>
                 <td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['unidad'] + `</td>
                 <td style="text-align: center;background-color:#ddebf7;">` + item['despacho'] + `</td>
@@ -431,6 +465,7 @@ export default class AlmacenController{
                     <td style="width:35px;text-align: center;background-color:#ddebf7;"></td>
                     <td style="width:60px;text-align: center;"></td>
                     <td style="width:60px;text-align:center;background-color:#ddebf7;"></td>
+                    <td style="width:60px;text-align:center;background-color:#ddebf7;"></td>
                     <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
                     <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
                     <td style="text-align: center;background-color:#ddebf7;"></td>
@@ -446,6 +481,7 @@ export default class AlmacenController{
                 <td style="width:60px;text-align: center;"></td>
                 ${tipo == 'avios' ? '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>' : ''}
                 ${tipo !== 'avios' ? '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>' : ''}
+                <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
                 <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
                 <td style="text-align: center;background-color:#ddebf7;"><strong>TOTAL</strong></td>
                 <td style="text-align: center;background-color:#ddebf7;">${total}</td>
