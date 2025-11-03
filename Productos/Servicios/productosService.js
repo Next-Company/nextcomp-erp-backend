@@ -78,6 +78,7 @@ export class ProductosService{
             (select tr.nom from tbl2_rubros tr where tr.idx = tp.RUBROS  ) AS rubro,
             tp.temporada,
             tp.estilo,
+            tp.base,
             round((tp.costo + ((tp.utilidad1 * tp.costo) / 100)), 1) AS precio,
             tp.presentacion,
             tp.marca,
@@ -248,30 +249,31 @@ export class ProductosService{
       if(!result.ok) throw new Error(result.message)
       let [info_prod] = await conn.execute("select *from tbl2_productos where ruc_ = ? and idx = ?",['20522094120',result.info])
 
-      console.log("La informacion del combo es:",JSON.parse(info.combos))
-
-      for(let combo of [...JSON.parse(info.combos)]){
-        for(let talla of [...JSON.parse(combo.talla)]){    
-          let [info_talla] = await conn.execute("select *from tbl2_tallas where detalle = ?",[talla])
-          let result = await ProductosService.createNewSubProduct(
-            {
-              idx_CAB_PROD: info_prod[0].idx,
-              codigo: info_prod[0].codigo,
-              isbn: info_prod[0].isbn,
-              nom: info_prod[0].nom,
-              idx_CAB_COLOR: combo.idcolor,
-              idx_talla: info_talla[0].idx,
-              talla: info_talla[0].detalle,
-              estado: 'primera',
-              nro_lote: 0
-            },
-            conn
-          )
-          if(!result.ok) throw new Error(result.message)
+      if(info.combos){
+        console.log("La informacion del combo es:",JSON.parse(info.combos))
+        for(let combo of [...JSON.parse(info.combos)]){
+          for(let talla of [...JSON.parse(combo.talla)]){    
+            let [info_talla] = await conn.execute("select *from tbl2_tallas where detalle = ?",[talla])
+            let result = await ProductosService.createNewSubProduct(
+              {
+                idx_CAB_PROD: info_prod[0].idx,
+                codigo: info_prod[0].codigo,
+                isbn: info_prod[0].isbn,
+                nom: info_prod[0].nom,
+                idx_CAB_COLOR: combo.idcolor,
+                idx_talla: info_talla[0].idx,
+                talla: info_talla[0].detalle,
+                estado: 'primera',
+                nro_lote: 0
+              },
+              conn
+            )
+            if(!result.ok) throw new Error(result.message)
+          }
         }
       }
-      if(conn) conn.rollback()
-      // if(conn) conn.commit()
+      // if(conn) conn.rollback()
+      if(conn) conn.commit()
       return {ok:true,message:'',info:''}
     } catch(error){
       if(conn) conn.rollback()
@@ -301,48 +303,54 @@ export class ProductosService{
       let [result] = await conn.execute(`UPDATE tbl2_productos SET ${cake.toString(',')} WHERE ruc_ = '20522094120' and idx = ?`,[info.idx])
       console.log("Row Afectada:",result.affectedRows)
 
+      let [valida] = await conn.execute("select *from tbl2_productos where ruc_ = '20522094120' and idx = ?",[info.idx])
+      console.log("La validacion despues de update es:",valida)
+
       let c_delete = [], c_add = []
       let [backcombos] = await conn.query("select *from tbl2_subproductos where idx_CAB_PROD = ?",[info.idx])
       c_delete = JSON.parse(JSON.stringify(backcombos))
+
       console.log("El arrau delete es :",c_delete)
-      for(let combo of [...JSON.parse(info.combos)]){
-        for(let talla of [...JSON.parse(combo.talla)]){
-          const busqueda = c_delete.filter(row=>row.idx_CAB_COLOR == parseInt(combo.idcolor) && row.talla == talla)
-          console.log("El resultado de la busqueda es:",busqueda)
-          if(busqueda.length > 0){
-            c_delete = c_delete.filter(row=>row.idx !== busqueda[0].idx)
-            console.log("Tomate:",c_delete)
-          }else{
-            c_add.push({idcolor:combo.idcolor,talla:talla})
-            console.log("Mango:",c_add)
+      if(info.combos){
+        for(let combo of [...JSON.parse(info.combos)]){
+          for(let talla of [...JSON.parse(combo.talla)]){
+            const busqueda = c_delete.filter(row=>row.idx_CAB_COLOR == parseInt(combo.idcolor) && row.talla == talla)
+            console.log("El resultado de la busqueda es:",busqueda)
+            if(busqueda.length > 0){
+              c_delete = c_delete.filter(row=>row.idx !== busqueda[0].idx)
+              console.log("Tomate:",c_delete)
+            }else{
+              c_add.push({idcolor:combo.idcolor,talla:talla})
+              console.log("Mango:",c_add)
+            }
           }
         }
-      }
-      console.log("Los arrays son",c_delete,c_add)
-      for(let c of [...c_add]){
-        const [info_talla] = await conn.execute("select *from tbl2_tallas where detalle = ?",[c.talla])
-        let result = await ProductosService.createNewSubProduct(
-          {
-            idx_CAB_PROD: info.idx,
-            codigo: validacion[0].codigo,
-            isbn: validacion[0].isbn,
-            nom: info.nom,
-            idx_CAB_COLOR: c.idcolor,
-            idx_talla: info_talla[0].idx,
-            talla: info_talla[0].detalle,
-            estado: 'primera',
-            nro_lote: 0
-          },
-          conn
-        )
-        if(!result.ok) throw new Error(result.message)
-      }
-      for(let c of [...c_delete]){
-        await conn.execute("delete from tbl2_subproductos where idx_CAB_PROD = ? and idx = ?",[c.idx_CAB_PROD,c.idx])
+        console.log("Los arrays son",c_delete,c_add)
+        for(let c of [...c_add]){
+          const [info_talla] = await conn.execute("select *from tbl2_tallas where detalle = ?",[c.talla])
+          let result = await ProductosService.createNewSubProduct(
+            {
+              idx_CAB_PROD: info.idx,
+              codigo: validacion[0].codigo,
+              isbn: validacion[0].isbn,
+              nom: info.nom,
+              idx_CAB_COLOR: c.idcolor,
+              idx_talla: info_talla[0].idx,
+              talla: info_talla[0].detalle,
+              estado: 'primera',
+              nro_lote: 0
+            },
+            conn
+          )
+          if(!result.ok) throw new Error(result.message)
+        }
+        for(let c of [...c_delete]){
+          await conn.execute("delete from tbl2_subproductos where idx_CAB_PROD = ? and idx = ?",[c.idx_CAB_PROD,c.idx])
+        }
       }
 
-      if(conn) conn.rollback()
-      // if(conn) conn.commit()
+      // if(conn) conn.rollback()
+      if(conn) conn.commit()
       return {ok:true,message:'',info:''}
     } catch(error){
       if(conn) conn.rollback()
@@ -432,11 +440,12 @@ export class ProductosService{
     }
   }
   static async getRubrosList(limit){
+    console.log("Dentro del servicio de rubros con limite")
     let conn = undefined
     try {
       conn = await mysql.createConnection(configs[1]);
       await conn.connect();
-      const [rows] = await conn.execute(`SELECT *FROM tbl2_rubros WHERE ruc_ = '20522094120' LIMIT ?`,[limit]);
+      const [rows] = await conn.execute(`SELECT *FROM tbl2_rubros WHERE ruc_ = '20522094120' and origen = 'PROD' LIMIT ?`,[limit]);
       // console.log(rows);
       return rows;
     }
@@ -453,9 +462,9 @@ export class ProductosService{
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
 
-      let extra = search.split(" ").length > 0 ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(TRIM(nom),' ',TRIM(det))) > 0").join(" ") : ""
+      let extra = search.split(" ").length > 0 ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(TRIM(COALESCE(nom,'')),' ',TRIM(COALESCE(det,'')))) > 0").join(" ") : ""
 
-      const [results, fields] = await conn.query(`select *from tbl2_rubros where 1=1 ${extra} and ruc_ = '20522094120'`);
+      const [results, fields] = await conn.query(`select *from tbl2_rubros where 1=1 ${extra} and ruc_ = '20522094120' and origen = 'PROD'`);
       // const [results, fields] = await conn.query('SELECT *FROM tbl2_rubros WHERE ruc_ = "20522094120" ' + (search !== '_' ? extra : '') + ' limit 50');
       await conn.end();
       return results
@@ -750,7 +759,7 @@ export class ProductosService{
             tp.genero,
             tp.tipoPlan
         FROM tbl2_productos tp
-        WHERE 1=1 ${extra} and tp.ruc_ = '20522094120'
+        WHERE 1=1 ${extra} and tp.ruc_ = '20522094120' and tp.activo = 1
         LIMIT 150
       `
       console.log("La consulta de producto es la siguiente:",query)
@@ -769,12 +778,40 @@ export class ProductosService{
     const conn = await mysql.createConnection(configs[1]);
     await conn.connect();
     try {
-      let extra = busqueda.split(" ").length > 0 ? busqueda.split(" ").map(word=>"AND LOCATE('"+word+"',CONCAT(TRIM(nom))) > 0").join(" ") : ""
+      let extra = busqueda.split(" ").length > 0 ? busqueda.split(" ").map(word=>"AND LOCATE('"+word+"',CONCAT(TRIM(t1.nom),' ',TRIM(t2.id_articulo_CAB))) > 0").join(" ") : ""
 
+      console.log("Extra consulta estilo:",extra)
       const [rows,fields] = await conn.execute(`
         SELECT t1.*
         FROM tbl2_estilo t1
+        join tbl2_articulo_estilo t2 on t1.idx = t2.id_estilo_CAB 
         WHERE 1=1 ${extra} and t1.ruc_ = '20522094120'
+        group by t1.idx,t1.nom
+        LIMIT 150
+      `);
+      // console.log(rows);
+      return rows;
+    }
+    catch(e){
+      console.log(e);
+    }
+    finally{
+      await conn.end();
+    }
+  } 
+  static async getProductosBase(busqueda){
+    const conn = await mysql.createConnection(configs[1]);
+    await conn.connect();
+    try {
+      let extra = busqueda.split(" ").length > 0 ? busqueda.split(" ").map(word=>"AND LOCATE('"+word+"',CONCAT(TRIM(t1.nom),' ',TRIM(t2.id_articulo_CAB))) > 0").join(" ") : ""
+
+      console.log("Extra consulta base:",extra)
+      const [rows,fields] = await conn.execute(`
+        SELECT t1.idx,t1.nom
+        FROM tbl2_base t1
+        JOIN tbl2_articulo_base t2 on t1.idx = t2.id_base_CAB 
+        WHERE 1=1 ${extra} and t1.ruc_ = '20522094120'
+        GROUP BY t1.idx,t1.nom
         LIMIT 150
       `);
       // console.log(rows);

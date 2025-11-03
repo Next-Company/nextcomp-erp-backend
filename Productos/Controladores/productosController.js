@@ -86,11 +86,16 @@ export class ProductosController{
     const info = await ProductosService.getProductosTotal(search,filters);
     res.send(info);
   }
-
   static async getProductosEstilo(req,res){
     console.log("Buscando producos")
     const search = req.params.search ?? ''
     const info = await ProductosService.getProductosEstilo(search);
+    res.send(info);
+  }
+  static async getProductosBase(req,res){
+    console.log("Buscando producos")
+    const search = req.params.search ?? ''
+    const info = await ProductosService.getProductosBase(search);
     res.send(info);
   }
   static async getProductosMarca(req,res){
