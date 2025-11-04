@@ -660,7 +660,7 @@ export class ProductosService{
     const conn = await mysql.createConnection(configs[1]);
     await conn.connect();
     try {
-      let newfilters = Object.keys(filters).length > 0 ? Object.keys(filters).map(key=>` and ${key}=${filters[key]}`) : 'asdfsdf'
+      let newfilters = Object.keys(filters).length > 0 ? Object.keys(filters).map(key=>` and ${key}=${filters[key]}`) : ''
       console.log("Los filtro de busqueda son :",filters,newfilters)
       let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(COALESCE(TRIM(producto),''),' ',COALESCE(TRIM(color),''),' ',COALESCE(TRIM(modelo),''),' ',COALESCE(TRIM(marca),''),' ',COALESCE(TRIM(presentacion),''))) > 0").join(" ") : ""
 
