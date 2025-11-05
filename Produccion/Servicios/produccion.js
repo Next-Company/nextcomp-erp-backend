@@ -2100,20 +2100,11 @@ export class ProduccionModel {
       }
     }
   }
-<<<<<<< HEAD
-  static async getNuevoPedido(tipo,origen = 'NEXT',conn) {
-=======
   static async getNuevoPedido(tipo,origen = 'NEXT',conn = null) {
->>>>>>> feature/pedidos-ingresos-avios-almacen-15102025
     // let conn
     try {
       // conn = await mysql.createConnection(configs[1])
       // await conn.connect();
-<<<<<<< HEAD
-      // const [results, fields] = await conn.query("SELECT (orden_ref + 1) as correlativo FROM tbl2_pedidos_insumos_cab tpic WHERE estado <> 'ANULADO' ORDER BY idx DESC LIMIT 1");
-      // const [results, fields] = await conn.query("SELECT (orden_ref + 1) as correlativo FROM tbl2_pedidos_insumos_cab tpic ORDER BY idx DESC LIMIT 1");
-=======
->>>>>>> feature/pedidos-ingresos-avios-almacen-15102025
 
       const [results] = await conn.query("SELECT (codigo_num + 1) as correlativo FROM tbl2_pedidos_insumos_correlativo WHERE ruc_ = ? AND anio = YEAR(NOW()) AND tipo = ? AND origen = ?",['20522094120',tipo,origen])
 
@@ -2204,10 +2195,6 @@ export class ProduccionModel {
             const [results, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_det(id_pedido_CAB,id_subprod_CAB,id_producto_CAB,producto,modelo,corte,color,rollos,cantidad,unidad,precio,conversion) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.id_subprod_CAB ?? null,fila.idx_producto, fila.producto, fila.modelo, fila.corte, fila.color, fila.rollos, fila.cantidad, fila.unidad, fila.precio, fila.conversion ?? 1]);
           }
 
-<<<<<<< HEAD
-          // await conn.query("update tbl2_pedidos_insumos_correlativo set codigo_num = codigo_num + 1 where ruc_ = ? and anio = YEAR(NOW()) and tipo = ?",['20522094120',cabecera.tipo])
-          await conn.query("update tbl2_pedidos_insumos_correlativo set codigo_num = codigo_num + 1 where ruc_ = ? and anio = YEAR(NOW()) and tipo = ?",['20522094120','AVIOS'])
-=======
           // const insert = async () => {
           //   const fila = articulos.shift()
           //   if (fila) {
@@ -2220,7 +2207,6 @@ export class ProduccionModel {
           // await insert()
 
           await conn.query("update tbl2_pedidos_insumos_correlativo set codigo_num = codigo_num + 1 where ruc_ = ? and anio = YEAR(NOW()) and tipo = ? and origen = ?",['20522094120','AVIOS','NEXT'])
->>>>>>> feature/pedidos-ingresos-avios-almacen-15102025
 
         } catch (err) {
           console.log("error en la consulta", err)
@@ -2229,15 +2215,9 @@ export class ProduccionModel {
         // return results
       }
 
-<<<<<<< HEAD
       // if(conn) conn.rollback()
       if(conn) conn.commit()
       return {ok:true,message:'Registro completo'}
-=======
-      if(conn) conn.rollback()
-      // if(conn) conn.commit()
-      return {ok:true,message:'Registro completo con éxito.'}
->>>>>>> feature/pedidos-ingresos-avios-almacen-15102025
     } catch (err) {
       if (conn) conn.rollback()
       return {ok:false,message:err}
