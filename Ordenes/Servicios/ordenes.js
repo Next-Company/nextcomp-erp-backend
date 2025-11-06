@@ -1587,38 +1587,40 @@ export class OrdenesModel {
       return {ok:false,resp:0}
     }
   }
-  // static async getCorrelativoProduccion(tipo,conn){
-  //   let correlativo = null
-  //   try {
-  //     const [result] = await conn.execute("SELECT CONCAT(YEAR(NOW()),numero) as numero FROM tbl2_fases_produccion_correlativo WHERE ruc_ = ? AND anio = YEAR(NOW()) AND tipo = ? FOR UPDATE",['20522094120',tipo])
-  //     if(result.length == 0){
-  //       await conn.execute("UPDATE tbl2_fases_produccion_correlativo SET anio = YEAR(NOW()), numero = 1 WHERE ruc_ = ? AND tipo = ?",['20522094120',tipo])
-  //       correlativo = (new Date()).toLocaleDateString("es-MX",{year:"numeric"}) + '000001'
-  //     } else{
-  //       correlativo = result[0].numero
-  //     }
-  //     await conn.execute("UPDATE tbl2_fases_produccion_correlativo SET anio = YEAR(NOW()), numero = numero + 1 WHERE ruc_ = ? AND tipo = ?",['20522094120',tipo])
-  //     return {ok:true,resp:correlativo}
-  //   } catch (error) {
-  //     return {ok:false,resp:0}
-  //   }
-  // }
-  // static async getCorrelativoProduccionPreview(tipo){
-  //   let correlativo = null
-  //   let conn = undefined
-  //   try {
-  //     conn = await mysql.createConnection(configs[1])
-  //     await conn.connect()
-  //     const [result] = await conn.execute("SELECT CONCAT(YEAR(NOW()),numero) as numero FROM tbl2_fases_produccion_correlativo WHERE ruc_ = ? AND anio = YEAR(NOW()) AND tipo = ? FOR UPDATE",['20522094120',tipo])
-  //     if(result.length == 0){
-  //       correlativo = (new Date()).toLocaleDateString("es-MX",{year:"numeric"}) + '000001'
-  //     } else{
-  //       correlativo = result[0].numero
-  //     }
-  //     return {ok:true,resp:correlativo}
-  //   } catch (error) {
-  //     console.log(error)
-  //     return {ok:false,resp:0}
-  //   }
-  // }
+  static async getInsumosOrden(idorden) {
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      
+      let [results] = await conn.query(`
+        SELECT
+          t1.id_subprod_CAB,
+          t1.id_producto_CAB,
+          (select tp.nom from tbl2_productos tp where tp.idx = t1.id_producto_CAB) as producto,
+          ts.idx_CAB_COLOR,
+          (select tc.nom from tbl2_colores tc where tc.idx = ts.idx_CAB_COLOR) as color,
+          ts.idx_talla,
+          ts.talla,
+          (select tp.codUnidadMedida from tbl2_productos tp where tp.idx = t1.id_producto_CAB) as unidad,
+          (select tp.tipo from tbl2_productos tp where tp.idx = t1.id_producto_CAB) as tipo,
+          COALESCE(pc.lote,0) AS lote
+        FROM tbl2_fases_prod_ordenes_insumos t1
+        JOIN tbl2_subproductos ts ON t1.id_subprod_CAB = ts.idx
+        LEFT JOIN (
+          SELECT tor.id_pedido_CAB as lote,tor.id_orden_CAB,tpi.id_subprod_CAB 
+          FROM tbl2_fases_prod_ordenes_requerimientos tor
+          JOIN tbl2_pedidos_insumos_det tpi ON tor.id_pedido_CAB = tpi.id_pedido_CAB
+        ) as pc ON pc.id_orden_CAB = t1.id_orden_CAB and pc.id_subprod_CAB = t1.id_subprod_CAB
+        WHERE t1.id_orden_CAB = ?
+      `,[idorden])
+
+      return results
+    } catch (err) {
+      console.log(err);
+      return { 'msg': err }
+    } finally {
+      if (conn) await conn.end();
+    }
+  }
 }

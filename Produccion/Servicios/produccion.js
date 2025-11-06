@@ -2499,6 +2499,9 @@ export class ProduccionModel {
 
           await conn.query("UPDATE tbl2_pedidos_insumos_correlativo SET codigo_num = codigo_num + 1 WHERE ruc_ = ? AND anio = YEAR(NOW()) AND tipo = ? AND origen = ?",['20522094120','TELAS',cabecera.emisor])
 
+          let [verificacion] = await conn.query("SELECT *FROM tbl2_pedidos_insumos_correlativo WHERE ruc_ = ? AND anio = YEAR(NOW()) AND tipo = ? AND origen = ?",['20522094120','TELAS',cabecera.emisor])
+          console.log("Verificacion de correlativo despues de la actualizacion:",verificacion)
+
         } catch (err) {
           console.log("error en la consulta", err)
         } 
@@ -2506,8 +2509,8 @@ export class ProduccionModel {
         // return resultS
       }
 
-      if(conn) conn.rollback()
-      // if(conn) conn.commit()
+      // if(conn) conn.rollback()
+      if(conn) conn.commit()
       return {ok:true,message:'Registro completo'}
     } catch (err) {
       console.log("Error en el proceso:", err)

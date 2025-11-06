@@ -27,6 +27,7 @@ ordenesRouter.put("/saveFaseMateriales",OrdenesController.saveFaseMateriales)
 ordenesRouter.get("/lizzet/:id",OrdenesController.regulaLizzet)
 ordenesRouter.get("/printhojacorte/:idorden",OrdenesController.printHojaCorte)
 // ordenesRouter.get("/printsugerido/:idorden",OrdenesController.printSugeridoV3)
+ordenesRouter.get("/insumosorden/:idorden",OrdenesController.getInsumosOrden)
 
 ordenesRouter.get("/getCorrelativoProduccionPreview/:tipo",OrdenesController.getCorrelativoProduccionPreview)
 
