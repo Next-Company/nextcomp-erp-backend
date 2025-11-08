@@ -434,14 +434,14 @@ export default class AlmacenController{
               </tr>`)
             } else {
               itemsAsHtml = items.map((item, key) => `
-              <tr style="height:22px;">
+              <tr style="height:22px;font-size:10px;">
                 <td style="width:35px;text-align: center;background-color:#ddebf7;">${key + 1}</td>
-                <td style="width:60px;">` + `${item['producto']} ${item['color']}` + `</td>
-                <td style="width:60px;text-align:center;background-color:#ddebf7;">` + (item['rollos'] ? item['rollos'] : '') + `</td>
-                <td style="width:60px;text-align:center;background-color:#ddebf7;">` + (item['metros'] ? item['metros'] : '') + `</td>
-                <td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['cantidad'] + `</td>
-                <td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['unidad'] + `</td>
-                <td style="text-align: center;background-color:#ddebf7;">` + item['despacho'] + `</td>
+                <td style="width:60px;font-size:12px;">` + `${item['nom']} ${item['color']}(#Lt-${item['num_lote']})` + `</td>
+                <td style="width:60px;font-size:12px;text-align:center;background-color:#ddebf7;">` + (item['rollos'] ? item['rollos'] : '') + `</td>
+                <td style="width:60px;font-size:12px;text-align:center;background-color:#ddebf7;">` + (item['metros'] ? item['metros'] : '') + `</td>
+                <td style="width:60px;font-size:12px;text-align: center;background-color:#ddebf7;">` + item['comprometido'] + `</td>
+                <td style="width:60px;font-size:12px;text-align: center;background-color:#ddebf7;">` + item['unidad'] + `</td>
+                <td style="font-size:12px;text-align: center;background-color:#ddebf7;">` + item['Cant_despacho_DET'] + `</td>
               </tr>`)
             }
             for (let i = 0; i < extra; i++) {
@@ -472,7 +472,7 @@ export default class AlmacenController{
                   </tr>`)
               // items.push({color:'',producto:'',cantidad:0,unidad:'',precio:0,importe:0})
             }
-            const total = items.reduce((carry, valor) => { carry += parseFloat(valor['despacho']); return carry }, 0).toFixed(2)
+            const total = items.reduce((carry, valor) => { carry += parseFloat(tipo == 'avios' ? valor['despacho'] : valor['Cant_despacho_DET']); return carry }, 0).toFixed(2)
             itemsAsHtml.push(`
               <tr style="height:22px;">
                 <td style="width:35px;text-align: center;background-color:#ddebf7;"></td>

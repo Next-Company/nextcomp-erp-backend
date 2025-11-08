@@ -65,9 +65,28 @@
           {{!-- <img src="data:image/jpg;base64,{{this.BINARY_CHUNKS}}" class="logo" style="width:30px;"> --}}
           {{!-- <div style="width: 10px; height:20px; background-color:black;"></div> --}}
           <div>GUIA DE INGRESO</div>
+          {{!-- <div>GUIA DE INGRESO(<span style="font-size:1.5rem;">#{{idguia}}</span>)</div> --}}
+          {{!-- <div style="display: flex;flex-direction:column;align-items:start;">
+            <div style="font-size: 14px;">#{{idguia}}</div>
+            <div>GUIA DE INGRESO</div>
+          </div> --}}
         </div>
         {{!-- <div><img src="data:image/jpg;base64,{{this.BINARY_CHUNKS}}" class="logo" style="width:30px;"></div> --}}
-        <div style="font-size:1.5rem;">#{{idguia}}</div>
+        {{!-- <div style="font-size:1.5rem;">#{{idguia}}</div> --}}
+        <div style="display: flex;gap:20px;">
+          <div style="display: flex;flex-direction: column;">
+            <div style="font-size: 10px;"># ORDEN</div>
+            <div style="font-size: 1.5rem;">2500234</div>
+          </div>
+          <div style="display: flex;flex-direction: column;">
+            <div style="font-size: 10px;"># GUIA</div>
+            <div style="font-size: 1.5rem;">{{idguia}}</div>
+          </div>
+          {{!-- <div style="display: flex;flex-direction: column;">
+            <div style="font-size: 10px;">SERVICIO/MOTIVO</div>
+            <div style="font-size: 1.5rem;">{{cabecera.servicio}}</div>
+          </div> --}}
+        </div>
       </div>
       
       {{!-- <section style="display: flex;justify-content:space-between;border-bottom:.5px dashed black;border-top:.5px dashed black;padding-bottom: 10px;">
@@ -90,7 +109,9 @@
               <td>Contacto:</td>
               <td style="width: 200px;">{{cabecera.responsable}}</td>
               <td>#GuiaRef:</td>
-              <td>{{idref}}</td>
+              <td style="width: 120px;">{{idref}}</td>
+              <td>Servicio/Motivo:</td>
+              <td>{{cabecera.servicio}}</td>
             </tr>
           </tbody>
         </table>

@@ -3380,7 +3380,12 @@ export class ProduccionModel {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
       const [results, fields] = await conn.query(`
-        SELECT t1.*,COALESCE(t2.distribucion,'') as distribucion 
+        SELECT 
+          t1.*,
+          COALESCE(t2.distribucion,'') as distribucion,
+          (select tfpo.oc from tbl2_fases_prod_ordenes tfpo where tfpo.idx = t2.id_orden_CAB) as oc,
+          t2.servicio,
+	        t2.responsable 
         FROM tbl2_despachos_cab t1 
         left join tbl2_guias_traslado_cab t2 on t2.idx = t1.id_guia_origen
         where t1.idx = ?`, [id]);
