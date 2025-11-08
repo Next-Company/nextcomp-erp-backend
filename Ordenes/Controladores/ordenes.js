@@ -1607,7 +1607,8 @@ export class OrdenesController {
   }
   static async getInsumosOrden(req, reply) {
     let idorden = req.params.idorden ?? 0
-    const data = await OrdenesModel.getInsumosOrden(idorden)
+    let idalmacen = req.params.idalmacen ?? 0
+    const data = await OrdenesModel.getInsumosOrden(idorden,idalmacen)
     reply.json(data)
   }
 }

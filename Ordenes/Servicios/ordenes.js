@@ -1587,7 +1587,7 @@ export class OrdenesModel {
       return {ok:false,resp:0}
     }
   }
-  static async getInsumosOrden(idorden) {
+  static async getInsumosOrden(idorden,idalmacen) {
     let conn
     try {
       conn = await mysql.createConnection(configs[1])
@@ -1604,7 +1604,16 @@ export class OrdenesModel {
           ts.talla,
           (select tp.codUnidadMedida from tbl2_productos tp where tp.idx = t1.id_producto_CAB) as unidad,
           (select tp.tipo from tbl2_productos tp where tp.idx = t1.id_producto_CAB) as tipo,
-          COALESCE(pc.lote,0) AS lote
+          COALESCE(pc.lote,0) AS lote,
+          COALESCE(t1.cantidad,0) as comprometido,
+          COALESCE((
+            select SUM(COALESCE(tkcd.Cant_despacho_DET,0)) from tbl_kard_compras_CAB tkcc 
+            join tbl_kard_compras_DET tkcd on tkcc.id_CAB = tkcd.id_CAB_DET 
+            where tkcc.id_orden = t1.id_orden_CAB and tkcd.id_subprod = t1.id_subprod_CAB and tkcd.num_lote = COALESCE(pc.lote,0)
+          ),0) as entregado,
+          COALESCE((
+            select SUM(COALESCE(tad.cantidad,0)) from tbl2_almacen_det tad where tad.id_CAB_DET = ? and tad.idx_subproducto = t1.id_subprod_CAB and tad.lote = COALESCE(pc.lote,0)
+          ),0) as stock
         FROM tbl2_fases_prod_ordenes_insumos t1
         JOIN tbl2_subproductos ts ON t1.id_subprod_CAB = ts.idx
         LEFT JOIN (
@@ -1613,7 +1622,7 @@ export class OrdenesModel {
           JOIN tbl2_pedidos_insumos_det tpi ON tor.id_pedido_CAB = tpi.id_pedido_CAB
         ) as pc ON pc.id_orden_CAB = t1.id_orden_CAB and pc.id_subprod_CAB = t1.id_subprod_CAB
         WHERE t1.id_orden_CAB = ?
-      `,[idorden])
+      `,[idalmacen,idorden])
 
       return results
     } catch (err) {

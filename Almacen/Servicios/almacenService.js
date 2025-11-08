@@ -241,6 +241,7 @@ export default class AlmacenModel{
           tpic.idx as id_pedido_origen,
           tpic.orden_ref as nro_requerimiento,
           t1.tipomov,
+          t1.motivo,
           t1.id_modelo,
           (select tfpo.modelos from tbl2_fases_prod_ordenes tfpo where tfpo.idx = t1.id_modelo) as modelos,
           (select tfpo.oc from tbl2_fases_prod_ordenes tfpo where tfpo.idx = t1.id_modelo) as oc,
@@ -308,7 +309,8 @@ export default class AlmacenModel{
         idx_usu: session.id,
         tipomov: cabecera.tipo_operacion,
         id_requerimiento: parseInt(cabecera.id_pedido_origen ?? 0),
-        id_modelo: parseInt(cabecera.id_modelo ?? 0)
+        id_modelo: parseInt(cabecera.id_modelo ?? 0),
+        motivo: cabecera.motivo
       };
       console.log("El detalle a insertar es:",data_guia)
       const [resultGuia] = await conn.execute(
@@ -399,8 +401,8 @@ export default class AlmacenModel{
       let res_mov = await AlmacenModel.saveMovimiento(data_comprobante,conn)
       if(!res_mov.ok) throw new Error(res_mov.message)
 
-      if(conn) conn.rollback()
-      // if(conn) conn.commit()
+      // if(conn) conn.rollback()
+      if(conn) conn.commit()
       return {ok:true,message:'Ingreso de despacho registrado con éxito.'}
     } catch (error) {
       console.log(error)
