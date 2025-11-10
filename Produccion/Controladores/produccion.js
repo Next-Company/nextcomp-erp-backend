@@ -262,19 +262,23 @@ export class ProduccionController {
           idguia: `${params.id}`.padStart(7, 0),
           idref: `${data[0].idx}`.padStart(7, 0),
           totalunid: data2.reduce((carry, valor) => {
-            carry += valor.isprototipo ? 0 : parseFloat(valor.cantidad)
+            // carry += valor.isprototipo ? 0 : parseFloat(valor.cantidad)
+            carry += parseFloat(valor.cantidad ?? 0)
             return carry;
           }, 0),
           totaldespacho: data2.reduce((carry, valor) => {
-            carry += valor.isprototipo ? 0 : parseFloat(valor.despacho)
+            // carry += valor.isprototipo ? 0 : parseFloat(valor.despacho)
+            carry += parseFloat(valor.despacho ?? 0)
             return carry;
           }, 0),
           totalcaidos: data2.reduce((carry, valor) => {
-            carry += valor.isprototipo ? 0 : parseFloat(valor.caidos)
+            // carry += valor.isprototipo ? 0 : parseFloat(valor.caidos)
+            carry += parseFloat(valor.caidos ?? 0)
             return carry;
           }, 0),
           totalincompletos: data2.reduce((carry, valor) => {
-            carry += valor.isprototipo ? 0 : parseFloat(valor.incompletos)
+            // carry += valor.isprototipo ? 0 : parseFloat(valor.incompletos)
+            carry += parseFloat(valor.incompletos ?? 0)
             return carry;
           }, 0),
           proveedor: data3[0],
