@@ -286,7 +286,7 @@ export class OrdenesModel {
 
       let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(COALESCE(TRIM(oc),''),' ',COALESCE(TRIM(cliente),''),' ',COALESCE(TRIM(marca),''),' ',COALESCE(TRIM(producto),''),' ',COALESCE(TRIM(modelos),''),' ',COALESCE(TRIM(estado_orden),''))) > 0").join(" ") : ""
 
-      let [results] = await conn.query(`
+      let query = `
         SELECT *,
         DATE_FORMAT(fec_emitida,'%d/%m/%Y') as fec_emitida_orden,
         DATE_FORMAT(fec_entrega,'%d/%m/%Y') as fec_entrega_orden,
@@ -294,7 +294,110 @@ export class OrdenesModel {
         COALESCE(DATEDIFF(STR_TO_DATE(fec_entrega,'%Y-%m-%d'),date(now())),0) as dias_pendientes
         FROM viewProduccionOrdenes t1
         WHERE 1=1 ${extra} ORDER BY idx desc
-      `);
+      `
+      console.log('Consulta de listado de ordenes:',query)
+      let [results] = await conn.query(query);
+      await conn.end();
+
+      return results
+    } catch (err) {
+      console.log(err);
+      return { 'msg': err }
+    } finally {
+      if (conn) {
+        await conn.end();
+      }
+    }
+  }
+  static async getOrdenesFull(search) {
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+
+      let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(COALESCE(TRIM(oc),''),' ',COALESCE(TRIM(cliente),''),' ',COALESCE(TRIM(marca),''),' ',COALESCE(TRIM(producto),''),' ',COALESCE(TRIM(modelos),''),' ',COALESCE(TRIM(estado_orden),''))) > 0").join(" ") : ""
+
+      let query = `
+        SELECT *,
+        DATE_FORMAT(fec_emitida,'%d/%m/%Y') as fec_emitida_orden,
+        DATE_FORMAT(fec_entrega,'%d/%m/%Y') as fec_entrega_orden,
+        COALESCE(DATEDIFF(STR_TO_DATE(fec_entrega,'%Y-%m-%d'),STR_TO_DATE(fec_emitida,'%Y-%m-%d') ),0) as dias_produccion,
+        COALESCE(DATEDIFF(STR_TO_DATE(fec_entrega,'%Y-%m-%d'),date(now())),0) as dias_pendientes
+        FROM (
+          select
+            tfpo.idx AS idx,
+            tfpo.oc AS oc,
+            tfpo.cliente AS cliente,
+            tfpo.fec_emitida AS fec_emitida,
+            tfpo.fec_entrega AS fec_entrega,
+            tfpo.marca AS marca,
+            tfpo.producto AS producto,
+            tfpo.base AS base,
+            tfpo.precio AS precio,
+            tfpo.modelos AS modelos,
+            tfpo.estado_orden AS estado_orden,
+            tfph.observaciones_fase_hojacorte AS observaciones_fase_hojacorte,
+            if(((tfph.estado_corte is not null) and (tfph.estado_corte <> '-')), 'CORTE', if(((tfpm.estado_molde is not null) and (tfpm.estado_molde <> '-')), 'MOLDES', if(((tfpt.estado_telas is not null) and (tfpt.estado_telas <> '-')), 'TELAS', 'ORDENES'))) AS status,
+            (
+            select
+                count(0)
+            from
+                BD_FACTURADOR.tbl2_guias_traslado_cab tgtc
+            where
+                ((tgtc.id_orden_CAB = tfpo.idx)
+                    and (tgtc.estado <> 'ANULADO'))) AS nro_guias,
+            (
+            select
+                count(0)
+            from
+                BD_FACTURADOR.tbl2_guias_traslado_cab tgtc
+            where
+                ((tgtc.id_orden_CAB = tfpo.idx)
+                    and (tgtc.servicio = 'ACABADOS')
+                        and (tgtc.estado = 'FINALIZADO'))) AS nro_guias_acabados,
+            (
+            select
+                coalesce(group_concat(distinct tgtc.servicio separator '-'), 'TRANSITO')
+            from
+                BD_FACTURADOR.tbl2_guias_traslado_cab tgtc
+            where
+                ((tgtc.id_orden_CAB = tfpo.idx)
+                    and (tgtc.estado = 'PENDIENTE'))) AS status_servicio,
+            (
+            select
+                group_concat(distinct tgtc.servicio separator ',')
+            from
+                BD_FACTURADOR.tbl2_guias_traslado_cab tgtc
+            where
+                ((tgtc.id_orden_CAB = tfpo.idx)
+                    and (tgtc.estado <> 'ANULADO'))) AS lista_servicios,
+            (
+            select
+                group_concat(distinct tgtc.servicio separator ',')
+            from
+                BD_FACTURADOR.tbl2_guias_traslado_cab tgtc
+            where
+                ((tgtc.id_orden_CAB = tfpo.idx)
+                    and (cast(now() as date) > cast(tgtc.fec_retorno as date))
+                        and (tgtc.estado not in ('FINALIZADO', 'ANULADO')))) AS servicios_caducos,
+            coalesce((select sum(coalesce(tfphcf.produccion_total, 0)) from (BD_FACTURADOR.tbl2_fases_prod_hojacorte_combos tfphc join 
+            BD_FACTURADOR.tbl2_fases_prod_hojacorte_combos_fracciones tfphcf on((tfphc.idx = tfphcf.id_combo_CAB))) where (tfphc.id_hojacorte_CAB = tfph.idx)), 0) AS disponible
+          from
+              (((BD_FACTURADOR.tbl2_fases_prod_ordenes tfpo
+          left join BD_FACTURADOR.tbl2_fases_prod_telas tfpt on
+              ((tfpo.idx = tfpt.id_cab_orden)))
+          left join BD_FACTURADOR.tbl2_fases_prod_molde tfpm on
+              ((tfpo.idx = tfpm.id_cab_orden)))
+          left join BD_FACTURADOR.tbl2_fases_prod_hojacorte tfph on
+              ((tfpo.idx = tfph.id_cab_orden)))
+          where
+              ((tfpo.estado_orden <> 'OTRO') and (tfpo.estado_orden <> 'ANULADO'))
+        ) t1
+        WHERE 1=1 ${extra} ORDER BY idx desc
+      `
+      
+      console.log('Consulta de listado de ordenes:',query)
+      let [results] = await conn.query(query);
       await conn.end();
 
       return results
@@ -1027,8 +1130,8 @@ export class OrdenesModel {
 
                       // Insertar combo de hoja de corte
                       const [comboInsertResult] = await conn.query(
-                          "INSERT INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB, idx_color, color_combo, cantidad_combo, disponible_total) VALUES (?,?,?,?,?)",
-                          [idHojaCorte, combo.idx_color, combo.color_combo, combo.cantidad_combo, combo.cantidad_combo]
+                          "INSERT INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB, idx_color, color_combo, cantidad_combo, disponible_total, insumos) VALUES (?,?,?,?,?,?)",
+                          [idHojaCorte, combo.idx_color, combo.color_combo, combo.cantidad_combo, combo.cantidad_combo, JSON.stringify(combo.insumos ?? [])]
                       );
                       const idComboCorte = comboInsertResult.insertId;
 
@@ -1145,8 +1248,8 @@ export class OrdenesModel {
       console.log("Verificando la informacion de corte :",verificar)
       console.log("Terminando el actulizado de corte")
 
-      // if (conn) conn.rollback()
-      if (conn) conn.commit()
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito' }
     } catch (err) {
       console.log(err)
@@ -1605,7 +1708,11 @@ export class OrdenesModel {
           (select tp.codUnidadMedida from tbl2_productos tp where tp.idx = t1.id_producto_CAB) as unidad,
           (select tp.tipo from tbl2_productos tp where tp.idx = t1.id_producto_CAB) as tipo,
           COALESCE(pc.lote,0) AS lote,
-          COALESCE(t1.cantidad,0) as comprometido,
+          COALESCE((
+            select sum(tboc.cantidad_combo) from tbl2_fases_prod_ordenes_combos tboc 
+            where tboc.id_orden_CAB = t1.id_orden_CAB and JSON_CONTAINS(tboc.insumos,CAST(ifnull(t1.id_subprod_CAB,-1) as CHAR))
+          ),0)*t1.cantidad as comprometido,
+          -- COALESCE(t1.cantidad,0) as comprometido,
           COALESCE((
             select SUM(COALESCE(tkcd.Cant_despacho_DET,0)) from tbl_kard_compras_CAB tkcc 
             join tbl_kard_compras_DET tkcd on tkcc.id_CAB = tkcd.id_CAB_DET 

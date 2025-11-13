@@ -69,11 +69,22 @@ export default class AlmacenModel{
       await conn.connect()
 
       const [cabmov] = await conn.execute(`
-        SELECT tkc.*, tp.idx as id_proveedor_CAB, tp.nom as proveedor, tmc.cod_comprobante, tmc.anulado,
-        COALESCE((select tbu.usu from tbl_user tbu where tbu.ruc = '20522094120' and tbu.idx = tkc.idx_usu),'') as usuario
+        SELECT 
+          tkc.*, 
+          tp.idx as id_proveedor_CAB, 
+          tp.nom as proveedor, 
+          tmc.cod_comprobante, 
+          tmc.anulado,
+          COALESCE((select tbu.usu from tbl_user tbu where tbu.ruc = '20522094120' and tbu.idx = tkc.idx_usu),'') as usuario,
+          COALESCE(tfpo.oc,'') as oc,
+	        COALESCE(tfpo.modelos,'') as modelo,
+	        COALESCE(tfpo.rubro,'') as articulo,
+          DATE_FORMAT(tkc.fecha_sys,'%d/%m/%Y %h:%m:%s') as fecha_sistema,
+          LPAD(CAST(tkc.id_CAB as SIGNED),8,'0') as id_despacho
         FROM tbl_kard_compras_CAB tkc 
         JOIN tbl2_almacen_mov_cab tmc ON tkc.id_CAB = tmc.idx_documento_asoc
         JOIN tbl2_proveedor tp ON tkc.Nro_Doc_Prov = tp.ruc
+        LEFT JOIN tbl2_fases_prod_ordenes tfpo ON tfpo.idx = tkc.id_orden
         WHERE Suc_Tienda in (509,508) and tkc.id_CAB = ?
       `,[id]);
 
@@ -90,11 +101,16 @@ export default class AlmacenModel{
           ts.nom,
           COALESCE((select tp.codUnidadMedida from tbl2_productos tp where tp.idx = ts.idx_CAB_PROD),'') as unidad,
           COALESCE((select tc.nom from tbl2_colores tc where tc.idx = ts.idx_CAB_COLOR),'') as color,
-          COALESCE((select COALESCE(tpoi.cantidad,0) from tbl2_fases_prod_ordenes_insumos tpoi where tpoi.id_orden_CAB = ? and tpoi.id_subprod_CAB = t1.id_subprod ),0) AS comprometido
+          -- COALESCE((select COALESCE(tpoi.cantidad,0) from tbl2_fases_prod_ordenes_insumos tpoi where tpoi.id_orden_CAB = ? and tpoi.id_subprod_CAB = t1.id_subprod ),0) AS comprometido
+          COALESCE((
+            select sum(tboc.cantidad_combo) from tbl2_fases_prod_ordenes_combos tboc 
+            where tboc.id_orden_CAB = ? and JSON_CONTAINS(tboc.insumos,CAST(ifnull(t1.id_subprod,-1) as CHAR))
+          ),0)*tpoi.cantidad as comprometido
         from tbl_kard_compras_DET t1 
         join tbl2_subproductos ts on t1.id_subprod = ts.idx
+        left join tbl2_fases_prod_ordenes_insumos tpoi on tpoi.id_orden_CAB = ? and tpoi.id_subprod_CAB = t1.id_subprod
         where t1.id_CAB_DET = ?
-      `,[cabmov[0].id_orden,id])
+      `,[cabmov[0].id_orden,cabmov[0].id_orden,id])
 
       const [detbmov] = await conn.execute(`
         SELECT 
@@ -346,6 +362,7 @@ export default class AlmacenModel{
           Precio_Unid_Det: 0,
           id_subprod: parseInt(element.id_subprod),
           metros:parseFloat(element.metros ?? 0),
+          peso:parseFloat(element.peso ?? 0),
           rollos:parseFloat(element.rollos ?? 0),
           num_lote:parseInt(element.num_lote ?? 0)
         };
@@ -509,6 +526,7 @@ export default class AlmacenModel{
           id_subprod: parseInt(element.id_subprod),
           metros:parseFloat(element.metros ?? 0),
           rollos:parseFloat(element.rollos ?? 0),
+          peso:parseFloat(element.peso ?? 0),
           num_lote:parseInt(element.num_lote ?? 0)
         };
         const [resultGuiaDet] = await conn.execute(

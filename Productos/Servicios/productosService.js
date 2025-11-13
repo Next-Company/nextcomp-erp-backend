@@ -31,7 +31,8 @@ export class ProductosService{
               upper(tt.detalle) AS talla,
               tcn.condicion AS condicion,
               ts.idx AS idxsub,
-              ts.sku AS sku2
+              ts.sku AS sku2,
+              COALESCE((select SUM(COALESCE(tad.cantidad,0)) from tbl2_almacen_det tad where tad.id_cabprod = tp.idx and tad.idx_subproducto = ts.idx),0) as stock
           from
               (((((BD_FACTURADOR.tbl2_productos tp
           left join BD_FACTURADOR.tbl2_subproductos ts on
@@ -138,7 +139,8 @@ export class ProductosService{
             '' AS talla,
             '' AS condicion,
             '' AS idxsub,
-            '' AS sku2
+            '' AS sku2,
+            COALESCE((select SUM(COALESCE(tad.cantidad,0)) from tbl2_almacen_det tad where tad.id_cabprod = tp.idx and tad.idx_subproducto = ts.idx),0) as stock
         from tbl2_productos tp
         join tbl2_rubros tr on tr.idx = tp.rubros
         left join tbl2_subproductos ts on tp.idx = ts.idx_CAB_PROD 
@@ -165,7 +167,8 @@ export class ProductosService{
             upper(tt.detalle) AS talla,
             tcn.condicion AS condicion,
             ts.idx AS idxsub,
-            ts.sku AS sku2
+            ts.sku AS sku2,
+            COALESCE((select SUM(COALESCE(tad.cantidad,0)) from tbl2_almacen_det tad where tad.id_cabprod = tp.idx and tad.idx_subproducto = ts.idx),0) as stock
         from
             (((((BD_FACTURADOR.tbl2_productos tp
         join BD_FACTURADOR.tbl2_subproductos ts on

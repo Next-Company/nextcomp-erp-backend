@@ -24,6 +24,13 @@ export class OrdenesController {
     // console.log(data)
     reply.json(data)
   }
+  static async getOrdenesFull(req, reply) {
+    // const user_data = req.session
+    const search = req.params.search ?? ''
+    const data = await OrdenesModel.getOrdenesFull(search)
+    // console.log(data)
+    reply.json(data)
+  }
   static async getOrdenesByParams(req, reply) {
     const info = req.body
     const data = await OrdenesModel.getOrdenesByParams(info.params)

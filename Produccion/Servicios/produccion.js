@@ -131,7 +131,12 @@ export class ProduccionModel {
       
       const [moldes] = await conn.query('SELECT tb1.* FROM tbl2_fases_prod_molde tb1 WHERE tb1.id_cab_orden = ?',[info.id]);
       const [materiales] = await conn.query('SELECT tb1.* FROM tbl2_fases_prod_materiales tb1 WHERE tb1.id_cab_orden = ?',[info.id]);
-      const [insumos] = await conn.query(`select t2.nom as producto,t2.talla,(select nom from tbl2_colores tc where tc.idx = t2.idx_CAB_COLOR) as color,t1.*
+      const [insumos] = await conn.query(`
+        select 
+          t2.nom as producto,t2.talla,
+          (select nom from tbl2_colores tc where tc.idx = t2.idx_CAB_COLOR) as color,
+          COALESCE((select sum(COALESCE(tad.cantidad,0)) from tbl2_almacen_det tad where tad.id_cabprod = t2.idx_CAB_PROD and tad.idx_subproducto = t2.idx),0) as stock,
+          t1.*
       from tbl2_fases_prod_ordenes_insumos t1
       join tbl2_subproductos t2 on t1.id_subprod_CAB = t2.idx
       where t1.id_orden_CAB = ?

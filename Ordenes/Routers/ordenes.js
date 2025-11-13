@@ -10,6 +10,10 @@ ordenesRouter.get("/getordenes/",OrdenesController.getOrdenes)
 ordenesRouter.get("/getordenes/:search",OrdenesController.getOrdenes)
 ordenesRouter.get("/getordenescorte/",OrdenesController.getOrdenesCorte)
 ordenesRouter.get("/getordenescorte/:search",OrdenesController.getOrdenesCorte)
+
+ordenesRouter.get("/getordenesfull/",OrdenesController.getOrdenesFull)
+ordenesRouter.get("/getordenesfull/:search",OrdenesController.getOrdenesFull)
+
 ordenesRouter.get('/:id', OrdenesController.getOrdenesById) 
 ordenesRouter.post("/",OrdenesController.saveInfoOrdenes)
 ordenesRouter.post("/getstatusgeneral/:id",OrdenesController.getStatusGeneral)
