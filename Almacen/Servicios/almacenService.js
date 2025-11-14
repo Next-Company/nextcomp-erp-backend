@@ -854,8 +854,8 @@ export default class AlmacenModel{
 
       await conn.execute("UPDATE tbl_kard_compras_CAB SET estado = 'ANULADO' WHERE ruc = ? and id_CAB = ?",['20522094120',id])
 
-      if(conn) conn.rollback()
-      // if(conn) conn.commit()
+      // if(conn) conn.rollback()
+      if(conn) conn.commit()
       return {ok:true,message:'Guardado exitoso'}
     } catch (error) {
       console.log(error)

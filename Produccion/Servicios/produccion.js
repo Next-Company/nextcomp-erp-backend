@@ -3030,8 +3030,8 @@ export class ProduccionModel {
         if(!respuesta.ok) throw respuesta.message
         // console.log("Resultado del update master :",resp_update)
       }
-      // if (conn) conn.rollback()
-      if (conn) conn.commit()
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return {ok:true,message:'Proceso ejecutado con éxito'}
     } catch (err) {
       console.log("asdlkfaslfjlaskdfjlf:",err)
@@ -3368,8 +3368,8 @@ export class ProduccionModel {
         }
       }
 
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return {ok:true,message:'Proceso ejecutado con éxito'}
     } catch (err) {
       console.log("asdlkfaslfjlaskdfjlf:",err)
