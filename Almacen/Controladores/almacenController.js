@@ -358,7 +358,7 @@ export default class AlmacenController{
     // const tipo = JSON.parse(data.info).tipo
     console.log("El tipo de pedido es :", tipo)
     res.render(
-      'guia_despacho_almacen',
+      'guia_movimiento_almacen',
       {
         BINARY_CHUNKS: BINARY_CHUNKS.toString('base64'),
         BINARY_CHUNKS2: BINARY_CHUNKS2.toString('base64'),
@@ -646,7 +646,7 @@ export default class AlmacenController{
     // const tipo = JSON.parse(data.info).tipo
     console.log("El tipo de pedido es :", tipo)
     res.render(
-      'guia_despacho_almacen',
+      cabecera.Suc_Tienda == '508' ? 'guia_despacho_almacen_avios' : 'guia_despacho_almacen_telas',
       {
         BINARY_CHUNKS: BINARY_CHUNKS.toString('base64'),
         BINARY_CHUNKS2: BINARY_CHUNKS2.toString('base64'),
@@ -708,7 +708,7 @@ export default class AlmacenController{
           },
           foo(items) {
             let itemsAsHtml = null
-            let extra = 20 - items.length
+            let extra = 30 - items.length
             if (tipo == 'avios') {
               itemsAsHtml = items.map((item, key) => `
               <tr style="height:22px;">
@@ -723,16 +723,32 @@ export default class AlmacenController{
                 <td style="width: 60px;text-align: center;background-color:#ddebf7;">` + (parseFloat(item['cantidad']) * parseFloat(item['precio'])).toFixed(2) + `</td>
               </tr>`)
             } else {
-              itemsAsHtml = items.map((item, key) => `
-              <tr style="height:22px;font-size:10px;">
-                <td style="width:35px;text-align: center;background-color:#ddebf7;">${key + 1}</td>
-                <td style="width:60px;font-size:12px;">` + `${item['nom']} ${item['color']}(#Lt-${item['num_lote']})` + `</td>
-                <td style="width:60px;font-size:12px;text-align:center;background-color:#ddebf7;">` + (item['rollos'] ? item['rollos'] : '') + `</td>
-                <td style="width:60px;font-size:12px;text-align:center;background-color:#ddebf7;">` + (item['metros'] ? item['metros'] : '') + `</td>
-                <td style="width:60px;font-size:12px;text-align: center;background-color:#ddebf7;">` + item['comprometido'] + `</td>
-                <td style="width:60px;font-size:12px;text-align: center;background-color:#ddebf7;">` + item['unidad'] + `</td>
-                <td style="font-size:12px;text-align: center;background-color:#ddebf7;">` + item['Cant_despacho_DET'] + `</td>
-              </tr>`)
+              console.log("HOlalaa",items[0].info_rollos)
+              itemsAsHtml = items.map((item, key) =>{
+                return `<tr style="height:22px;font-size:10px;">
+                  <td style="width:35px;text-align: center;background-color:#ddebf7;">${key + 1}</td>
+                  <td style="width:60px;font-size:12px;">` + `${item['nom']} ${item['color']}(#Lt-${item['num_lote']})` + `</td>
+                  <td style="width:60px;font-size:12px;text-align:center;background-color:#ddebf7;">` + (item['rollos'] ? item['rollos'] : '') + `</td>
+                  <td style="width:60px;font-size:12px;text-align:center;background-color:#ddebf7;">` + (item['peso'] ? item['peso'] : '') + `</td>
+                  <td style="width:60px;font-size:12px;text-align: center;background-color:#ddebf7;">` + item['comprometido'] + `</td>
+                  <td style="width:60px;font-size:12px;text-align: center;background-color:#ddebf7;">` + item['unidad'] + `</td>
+                  <td style="font-size:12px;text-align: center;background-color:#ddebf7;">` + item['Cant_despacho_DET'] + `</td>
+                </tr>
+                ${
+                  item.info_rollos.map((row,key)=>`
+                    <tr>
+                      <td style="width:35px;text-align: center;background-color:#ddebf7;"></td>
+                      <td style="width:60px;font-size:10px;text-align:right;">${item['nom']}(${row.partida ?? '-'}) Rollo # ${key + 1}</td>
+                      <td style="width:60px;font-size:10px;text-align:center;background-color:#ddebf7;">-</td>
+                      <td style="width:60px;font-size:10px;text-align:center;background-color:#ddebf7;">${row.peso}</td>
+                      <td style="width:60px;font-size:10px;text-align: center;background-color:#ddebf7;">-</td>
+                      <td style="width:60px;font-size:10px;text-align: center;background-color:#ddebf7;">-</td>
+                      <td style="font-size:10px;text-align: center;background-color:#ddebf7;">${row.cantidad}</td>
+                    </tr>
+                  `).join("\n")
+                }
+                `
+              })
             }
             for (let i = 0; i < extra; i++) {
               tipo == 'avios'

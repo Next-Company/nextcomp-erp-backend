@@ -1208,7 +1208,7 @@ export class OrdenesModel {
                   await conn.query("DELETE FROM tbl2_fases_prod_hojacorte_combos WHERE idx = ?",[combo.idx])
                   await conn.query("DELETE FROM tbl2_fases_prod_hojacorte_combos_fracciones WHERE id_combo_CAB = ?",[combo.idx])
   
-                  let [info_insert] = await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB,idx_color,color_combo,cantidad_combo,disponible_total) VALUES (?,?,?,?,?)",[corte.idx,combo.idx_color,combo.color_combo,combo.cantidad_combo,combo.cantidad_combo])
+                  let [info_insert] = await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB,idx_color,color_combo,cantidad_combo,disponible_total,insumos) VALUES (?,?,?,?,?,?)",[corte.idx,combo.idx_color,combo.color_combo,combo.cantidad_combo,combo.cantidad_combo,JSON.stringify(combo.insumos)])
   
                   let fraccionado = []
                   if(combo.idx && combo.idx !== ''){
@@ -1223,7 +1223,7 @@ export class OrdenesModel {
                   await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos_fracciones(id_combo_CAB,talla,cantidad,produccion_total) values ? ",[fraccionado])
                 } else {
                   console.log("Dentro del update de combos simple")
-                  await conn.query("UPDATE tbl2_fases_prod_hojacorte_combos SET idx_color = ?,color_combo = ? WHERE idx = ? and id_hojacorte_CAB = ?",[combo.idx_color,combo.color_combo,combo.idx,parseInt(corte['idx'])])
+                  await conn.query("UPDATE tbl2_fases_prod_hojacorte_combos SET idx_color = ?,color_combo = ?, insumos = ? WHERE idx = ? and id_hojacorte_CAB = ?",[combo.idx_color,combo.color_combo,JSON.stringify(combo).insumos,combo.idx,parseInt(corte['idx'])])
                 }
               }
             }
@@ -1708,10 +1708,16 @@ export class OrdenesModel {
           (select tp.codUnidadMedida from tbl2_productos tp where tp.idx = t1.id_producto_CAB) as unidad,
           (select tp.tipo from tbl2_productos tp where tp.idx = t1.id_producto_CAB) as tipo,
           COALESCE(pc.lote,0) AS lote,
-          COALESCE((
-            select sum(tboc.cantidad_combo) from tbl2_fases_prod_ordenes_combos tboc 
-            where tboc.id_orden_CAB = t1.id_orden_CAB and JSON_CONTAINS(tboc.insumos,CAST(ifnull(t1.id_subprod_CAB,-1) as CHAR))
-          ),0)*t1.cantidad as comprometido,
+          if(ISNULL(tc.idx),
+            COALESCE((
+              select sum(tboc.cantidad_combo) from tbl2_fases_prod_ordenes_combos tboc 
+              where tboc.id_orden_CAB = t1.id_orden_CAB and JSON_CONTAINS(tboc.insumos,CAST(ifnull(t1.id_subprod_CAB,-1) as CHAR))
+            ),0),
+            COALESCE((
+              select sum(tbcc.cantidad_combo) from tbl2_fases_prod_hojacorte_combos tbcc 
+              where tbcc.id_hojacorte_CAB = tc.idx and JSON_CONTAINS(tbcc.insumos,CAST(ifnull(t1.id_subprod_CAB,-1) as CHAR))
+            ),0)
+          )*t1.cantidad as comprometido,
           -- COALESCE(t1.cantidad,0) as comprometido,
           COALESCE((
             select SUM(COALESCE(tkcd.Cant_despacho_DET,0)) from tbl_kard_compras_CAB tkcc 
@@ -1721,14 +1727,16 @@ export class OrdenesModel {
           COALESCE((
             select SUM(COALESCE(tad.cantidad,0)) from tbl2_almacen_det tad where tad.id_CAB_DET = ? and tad.idx_subproducto = t1.id_subprod_CAB and tad.lote = COALESCE(pc.lote,0)
           ),0) as stock
-        FROM tbl2_fases_prod_ordenes_insumos t1
+        FROM tbl2_fases_prod_ordenes t0
+        LEFT JOIN tbl2_fases_prod_hojacorte tc on t0.idx = tc.id_cab_orden 
+        JOIN tbl2_fases_prod_ordenes_insumos t1 on t0.idx = t1.id_orden_CAB
         JOIN tbl2_subproductos ts ON t1.id_subprod_CAB = ts.idx
         LEFT JOIN (
           SELECT tor.id_pedido_CAB as lote,tor.id_orden_CAB,tpi.id_subprod_CAB 
           FROM tbl2_fases_prod_ordenes_requerimientos tor
           JOIN tbl2_pedidos_insumos_det tpi ON tor.id_pedido_CAB = tpi.id_pedido_CAB
         ) as pc ON pc.id_orden_CAB = t1.id_orden_CAB and pc.id_subprod_CAB = t1.id_subprod_CAB
-        WHERE t1.id_orden_CAB = ?
+        WHERE t0.idx = ?
       `,[idalmacen,idorden])
 
       return results

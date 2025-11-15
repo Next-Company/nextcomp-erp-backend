@@ -364,7 +364,8 @@ export default class AlmacenModel{
           metros:parseFloat(element.metros ?? 0),
           peso:parseFloat(element.peso ?? 0),
           rollos:parseFloat(element.rollos ?? 0),
-          num_lote:parseInt(element.num_lote ?? 0)
+          num_lote:parseInt(element.num_lote ?? 0),
+          info_rollos:JSON.stringify(element.info_rollos ?? [])
         };
         const [resultGuiaDet] = await conn.execute(
           `INSERT INTO tbl_kard_compras_DET (${Object.keys(data_guia_det).join(',')}) VALUES (${Object.keys(data_guia_det).map(() => '?').join(',')})`,
@@ -527,7 +528,8 @@ export default class AlmacenModel{
           metros:parseFloat(element.metros ?? 0),
           rollos:parseFloat(element.rollos ?? 0),
           peso:parseFloat(element.peso ?? 0),
-          num_lote:parseInt(element.num_lote ?? 0)
+          num_lote:parseInt(element.num_lote ?? 0),
+          info_rollos:JSON.stringify(element.info_rollos ?? [])
         };
         const [resultGuiaDet] = await conn.execute(
           `INSERT INTO tbl_kard_compras_DET (${Object.keys(data_guia_det).join(',')}) VALUES (${Object.keys(data_guia_det).map(() => '?').join(',')})`,

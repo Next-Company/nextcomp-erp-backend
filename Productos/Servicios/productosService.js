@@ -67,7 +67,7 @@ export class ProductosService{
     await conn.connect();
     try {
 
-      let extra = busqueda.split(" ").length > 0 ? busqueda.split(" ").map(word=>"AND LOCATE('"+word+"',CONCAT(TRIM(nom),' ',TRIM(tipo),' ',TRIM(estilo),' ',TRIM(temporada),' ',TRIM(presentacion),' ',TRIM(marca),' ',TRIM(modelo))) > 0").join(" ") : ""
+      let extra = busqueda.split(" ").length > 0 ? busqueda.split(" ").map(word=>"AND LOCATE('"+word+"',CONCAT(TRIM(COALESCE(nom,'')),' ',TRIM(COALESCE(tipo,'')),' ',TRIM(COALESCE(estilo,'')),' ',TRIM(COALESCE(temporada,'')),' ',TRIM(COALESCE(presentacion,'')),' ',TRIM(COALESCE(marca,'')),' ',TRIM(COALESCE(modelo,'')))) > 0").join(" ") : ""
 
       const [rows,fields] = await conn.execute(`
         select
