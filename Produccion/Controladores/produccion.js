@@ -225,14 +225,6 @@ export class ProduccionController {
 
     try {
       data2 = data2.filter(row=>row.fracciones_despacho.length > 0).reduce((c,v)=>{
-        // [
-        //   {"talla": "l", "caidos": 0, "cantidad": 36, "incompletos": 0}, 
-        //   {"talla": "m", "caidos": 4, "cantidad": 32, "incompletos": 0}, 
-        //   {"talla": "s", "caidos": 3, "cantidad": 21, "incompletos": 0}, 
-        //   {"talla": "xl", "caidos": 0, "cantidad": 12, "incompletos": 0}, 
-        //   {"talla": "xs", "caidos": 0, "cantidad": 0, "incompletos": 0}, 
-        //   {"talla": "xxl", "caidos": 0, "cantidad": 0, "incompletos": 0}
-        // ]
 
         let lista = ['cantidad','caidos','incompletos']
         let tallas = ['xs','s','m','l','xl','xxl']
@@ -267,22 +259,26 @@ export class ProduccionController {
           numproto: data2.filter(row => row.isprototipo).length,
           date: (new Date(data1[0].created_at)).toLocaleDateString('en-GB'),
           time: (new Date(data1[0].created_at)).toLocaleTimeString('en-GB'),
-          idguia: `${params.id}`.padStart(10, 0),
-          idref: `${data[0].idx}`.padStart(10, 0),
+          idguia: `${params.id}`.padStart(7, 0),
+          idref: `${data[0].idx}`.padStart(7, 0),
           totalunid: data2.reduce((carry, valor) => {
-            carry += valor.isprototipo ? 0 : parseFloat(valor.cantidad)
+            // carry += valor.isprototipo ? 0 : parseFloat(valor.cantidad)
+            carry += parseFloat(valor.cantidad ?? 0)
             return carry;
           }, 0),
           totaldespacho: data2.reduce((carry, valor) => {
-            carry += valor.isprototipo ? 0 : parseFloat(valor.despacho)
+            // carry += valor.isprototipo ? 0 : parseFloat(valor.despacho)
+            carry += parseFloat(valor.despacho ?? 0)
             return carry;
           }, 0),
           totalcaidos: data2.reduce((carry, valor) => {
-            carry += valor.isprototipo ? 0 : parseFloat(valor.caidos)
+            // carry += valor.isprototipo ? 0 : parseFloat(valor.caidos)
+            carry += parseFloat(valor.caidos ?? 0)
             return carry;
           }, 0),
           totalincompletos: data2.reduce((carry, valor) => {
-            carry += valor.isprototipo ? 0 : parseFloat(valor.incompletos)
+            // carry += valor.isprototipo ? 0 : parseFloat(valor.incompletos)
+            carry += parseFloat(valor.incompletos ?? 0)
             return carry;
           }, 0),
           proveedor: data3[0],

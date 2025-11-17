@@ -91,6 +91,7 @@ export class ProduccionModel {
                                             WHERE tfr.id_combo_CAB = tb2.idx)
                                             ,
                                               JSON_ARRAY(
+                                                JSON_OBJECT('talla','st','cantidad',0),
                                                 JSON_OBJECT('talla','xs','cantidad',0),
                                                 JSON_OBJECT('talla','s','cantidad',0),
                                                 JSON_OBJECT('talla','m','cantidad',0),
@@ -131,7 +132,12 @@ export class ProduccionModel {
       
       const [moldes] = await conn.query('SELECT tb1.* FROM tbl2_fases_prod_molde tb1 WHERE tb1.id_cab_orden = ?',[info.id]);
       const [materiales] = await conn.query('SELECT tb1.* FROM tbl2_fases_prod_materiales tb1 WHERE tb1.id_cab_orden = ?',[info.id]);
-      const [insumos] = await conn.query(`select t2.nom as producto,t2.talla,(select nom from tbl2_colores tc where tc.idx = t2.idx_CAB_COLOR) as color,t1.*
+      const [insumos] = await conn.query(`
+        select 
+          t2.nom as producto,t2.talla,
+          (select nom from tbl2_colores tc where tc.idx = t2.idx_CAB_COLOR) as color,
+          COALESCE((select sum(COALESCE(tad.cantidad,0)) from tbl2_almacen_det tad where tad.id_cabprod = t2.idx_CAB_PROD and tad.idx_subproducto = t2.idx),0) as stock,
+          t1.*
       from tbl2_fases_prod_ordenes_insumos t1
       join tbl2_subproductos t2 on t1.id_subprod_CAB = t2.idx
       where t1.id_orden_CAB = ?
@@ -154,11 +160,13 @@ export class ProduccionModel {
                               'id_orden_CAB', tb2.id_orden_CAB,
                               'color_combo', tb2.color_combo,
                               'cantidad_combo', tb2.cantidad_combo,
+                              'insumos', tb2.insumos,
                               'fracciones', COALESCE((SELECT JSON_ARRAYAGG(JSON_OBJECT('talla', tfr.talla, 'cantidad', tfr.cantidad))
                                             FROM tbl2_fases_prod_hojacorte_combos_fracciones tfr
                                             WHERE tfr.id_combo_CAB = tb2.idx)
                                             ,
                                               JSON_ARRAY(
+                                                JSON_OBJECT('talla','st','cantidad',0),
                                                 JSON_OBJECT('talla','xs','cantidad',0),
                                                 JSON_OBJECT('talla','s','cantidad',0),
                                                 JSON_OBJECT('talla','m','cantidad',0),
@@ -1029,7 +1037,7 @@ export class ProduccionModel {
       /////////////////////////////////////
 
       if (data.id) {
-        await conn.query('UPDATE tbl2_guias_traslado_cab SET orden_ref=NULLIF(?, ""),tipo=NULLIF(?, ""),id_proveedor_CAB=NULLIF(?, ""),proveedor=NULLIF(?, ""),servicio=NULLIF(?, ""),fec_emision=NULLIF(?, ""),fec_retorno=NULLIF(?, ""),fec_recepcion=NULLIF(?, ""),costo=NULLIF(?, ""),observaciones=NULLIF(?, ""),estado=NULLIF(?, ""),motivo_traslado=NULLIF(?, ""),responsable=NULLIF(?, ""),modelo=NULLIF(?, ""),marca=NULLIF(?, ""),producto=NULLIF(?, ""),destino=NULLIF(?, ""),id_orden_CAB=NULLIF(?, "") WHERE idx = ?', [cabecera.orden_ref, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.servicio, cabecera.fec_emision, cabecera.fec_retorno, cabecera.fec_recepcion, cabecera.costo, cabecera.observaciones, cabecera.estado, cabecera.motivo_traslado, cabecera.responsable, cabecera.modelo, cabecera.marca, cabecera.producto, cabecera.destino, cabecera.id_orden_CAB ?? 1 , parseInt(data.id)])
+        await conn.query('UPDATE tbl2_guias_traslado_cab SET orden_ref=NULLIF(?, ""),tipo=NULLIF(?, ""),id_proveedor_CAB=NULLIF(?, ""),proveedor=NULLIF(?, ""),servicio=NULLIF(?, ""),fec_emision=NULLIF(?, ""),fec_retorno=NULLIF(?, ""),fec_recepcion=NULLIF(?, ""),costo=NULLIF(?, ""),observaciones=NULLIF(?, ""),estado=NULLIF(?, ""),motivo_traslado=NULLIF(?, ""),responsable=NULLIF(?, ""),modelo=NULLIF(?, ""),marca=NULLIF(?, ""),producto=NULLIF(?, ""),destino=NULLIF(?, ""),id_orden_CAB=NULLIF(?, ""),distribucion=NULLIF(?, "") WHERE idx = ?', [cabecera.orden_ref, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.servicio, cabecera.fec_emision, cabecera.fec_retorno, cabecera.fec_recepcion, cabecera.costo, cabecera.observaciones, cabecera.estado, cabecera.motivo_traslado, cabecera.responsable, cabecera.modelo, cabecera.marca, cabecera.producto, cabecera.destino, cabecera.id_orden_CAB ?? 1 ,cabecera.distribucion, parseInt(data.id)])
         const [res, fld] = await conn.query("SELECT *FROM tbl2_guias_traslado_det WHERE id_guia_CAB = " + parseInt(data.id))
         const ids_delete = res.filter(row => row.idx !== '' && !articulos.map(fila => parseInt(fila.idx)).includes(parseInt(row.idx)))
 
@@ -1090,7 +1098,7 @@ export class ProduccionModel {
 
       } else {
         try {
-          const [res, fields] = await conn.query('INSERT INTO tbl2_guias_traslado_cab(orden_ref,tipo,id_proveedor_CAB,proveedor,servicio,fec_emision,fec_retorno,costo,observaciones,motivo_traslado,responsable,modelo,marca,producto,destino,id_orden_CAB,id_corte_CAB) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?,""),NULLIF(?,""))', [cabecera.orden_ref, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.servicio, cabecera.fec_emision, cabecera.fec_retorno, cabecera.costo, cabecera.observaciones, cabecera.motivo_traslado, cabecera.responsable, cabecera.modelo, cabecera.marca, cabecera.producto, cabecera.destino, cabecera.id_orden_CAB ?? 1, cabecera.id_corte_CAB ?? 1])
+          const [res, fields] = await conn.query('INSERT INTO tbl2_guias_traslado_cab(orden_ref,tipo,id_proveedor_CAB,proveedor,servicio,fec_emision,fec_retorno,costo,observaciones,motivo_traslado,responsable,modelo,marca,producto,destino,id_orden_CAB,id_corte_CAB,distribucion) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?,""),NULLIF(?,""),NULLIF(?,""))', [cabecera.orden_ref, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.servicio, cabecera.fec_emision, cabecera.fec_retorno, cabecera.costo, cabecera.observaciones, cabecera.motivo_traslado, cabecera.responsable, cabecera.modelo, cabecera.marca, cabecera.producto, cabecera.destino, cabecera.id_orden_CAB ?? 1, cabecera.id_corte_CAB ?? 1,cabecera.distribucion])
 
           const insert = async () => {
             const fila = articulos.shift()
@@ -1184,7 +1192,7 @@ export class ProduccionModel {
       console.log("Info back articulos:",backup_articulos)
 
       if (data.id) {
-        await conn.query('UPDATE tbl2_guias_traslado_cab SET orden_ref=NULLIF(?, ""),tipo=NULLIF(?, ""),id_proveedor_CAB=NULLIF(?, ""),proveedor=NULLIF(?, ""),servicio=NULLIF(?, ""),fec_emision=NULLIF(?, ""),fec_retorno=NULLIF(?, ""),fec_recepcion=NULLIF(?, ""),costo=NULLIF(?, ""),observaciones=NULLIF(?, ""),estado=NULLIF(?, ""),motivo_traslado=NULLIF(?, ""),responsable=NULLIF(?, ""),modelo=NULLIF(?, ""),marca=NULLIF(?, ""),producto=NULLIF(?, ""),destino=NULLIF(?, ""),id_orden_CAB=NULLIF(?, "") WHERE idx = ?', [cabecera.orden_ref, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.servicio, cabecera.fec_emision, cabecera.fec_retorno, cabecera.fec_recepcion, cabecera.costo, cabecera.observaciones, cabecera.estado, cabecera.motivo_traslado, cabecera.responsable, cabecera.modelo, cabecera.marca, cabecera.producto, cabecera.destino, cabecera.id_orden_CAB ?? 1 , parseInt(data.id)])
+        await conn.query('UPDATE tbl2_guias_traslado_cab SET orden_ref=NULLIF(?, ""),tipo=NULLIF(?, ""),id_proveedor_CAB=NULLIF(?, ""),proveedor=NULLIF(?, ""),servicio=NULLIF(?, ""),fec_emision=NULLIF(?, ""),fec_retorno=NULLIF(?, ""),fec_recepcion=NULLIF(?, ""),costo=NULLIF(?, ""),observaciones=NULLIF(?, ""),estado=NULLIF(?, ""),motivo_traslado=NULLIF(?, ""),responsable=NULLIF(?, ""),modelo=NULLIF(?, ""),marca=NULLIF(?, ""),producto=NULLIF(?, ""),destino=NULLIF(?, ""),id_orden_CAB=NULLIF(?, ""),distribucion=NULLIF(?,"") WHERE idx = ?', [cabecera.orden_ref, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.servicio, cabecera.fec_emision, cabecera.fec_retorno, cabecera.fec_recepcion, cabecera.costo, cabecera.observaciones, cabecera.estado, cabecera.motivo_traslado, cabecera.responsable, cabecera.modelo, cabecera.marca, cabecera.producto, cabecera.destino, cabecera.id_orden_CAB ?? 1 ,cabecera.distribucion, parseInt(data.id)])
         const [res, fld] = await conn.query("SELECT *FROM tbl2_guias_traslado_det WHERE id_guia_CAB = " + parseInt(data.id))
         const ids_delete = res.filter(row => row.idx !== '' && !articulos.map(fila => parseInt(fila.idx)).includes(parseInt(row.idx)))
 
@@ -1301,8 +1309,8 @@ export class ProduccionModel {
       let respuesta = await this.UpdateMasterProduccionGLB(param1,param2,cabecera.id_orden_CAB,conn,1)
       if(!respuesta.ok) throw respuesta.message
 
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return {ok:true,message:'Registro completo y terminado'}
     } catch (err) {
       console.log(err)
@@ -1440,7 +1448,7 @@ export class ProduccionModel {
       conn.beginTransaction()
 
       if (data.id) {
-        await conn.query('UPDATE tbl2_guias_traslado_cab SET orden_ref=NULLIF(?, ""),tipo=NULLIF(?, ""),id_proveedor_CAB=NULLIF(?, ""),proveedor=NULLIF(?, ""),servicio=NULLIF(?, ""),fec_emision=NULLIF(?, ""),fec_retorno=NULLIF(?, ""),fec_recepcion=NULLIF(?, ""),costo=NULLIF(?, ""),observaciones=NULLIF(?, ""),estado=NULLIF(?, ""),motivo_traslado=NULLIF(?, ""),responsable=NULLIF(?, ""),modelo=NULLIF(?, ""),marca=NULLIF(?, ""),producto=NULLIF(?, ""),destino=NULLIF(?, ""),id_orden_CAB=NULLIF(?, "") WHERE idx = ?', [cabecera.orden_ref, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.servicio, cabecera.fec_emision, cabecera.fec_retorno, cabecera.fec_recepcion, cabecera.costo, cabecera.observaciones, cabecera.estado, cabecera.motivo_traslado, cabecera.responsable, cabecera.modelo, cabecera.marca, cabecera.producto, cabecera.destino, cabecera.id_orden_CAB ?? 1 , parseInt(data.id)])
+        await conn.query('UPDATE tbl2_guias_traslado_cab SET orden_ref=NULLIF(?, ""),tipo=NULLIF(?, ""),id_proveedor_CAB=NULLIF(?, ""),proveedor=NULLIF(?, ""),servicio=NULLIF(?, ""),fec_emision=NULLIF(?, ""),fec_retorno=NULLIF(?, ""),fec_recepcion=NULLIF(?, ""),costo=NULLIF(?, ""),observaciones=NULLIF(?, ""),estado=NULLIF(?, ""),motivo_traslado=NULLIF(?, ""),responsable=NULLIF(?, ""),modelo=NULLIF(?, ""),marca=NULLIF(?, ""),producto=NULLIF(?, ""),destino=NULLIF(?, ""),id_orden_CAB=NULLIF(?, ""),distribucion=NULLIF(?, "") WHERE idx = ?', [cabecera.orden_ref, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.servicio, cabecera.fec_emision, cabecera.fec_retorno, cabecera.fec_recepcion, cabecera.costo, cabecera.observaciones, cabecera.estado, cabecera.motivo_traslado, cabecera.responsable, cabecera.modelo, cabecera.marca, cabecera.producto, cabecera.destino, cabecera.id_orden_CAB ?? 1 ,cabecera.distribucion, parseInt(data.id)])
         const [res, fld] = await conn.query("SELECT *FROM tbl2_guias_traslado_det WHERE id_guia_CAB = " + parseInt(data.id))
         const ids_delete = res.filter(row => row.idx !== '' && !articulos.map(fila => parseInt(fila.idx)).includes(parseInt(row.idx)))
 
@@ -1483,7 +1491,7 @@ export class ProduccionModel {
         }
 
       } else {
-        const [res] = await conn.query('INSERT INTO tbl2_guias_traslado_cab(orden_ref,tipo,id_proveedor_CAB,proveedor,servicio,fec_emision,fec_retorno,costo,observaciones,motivo_traslado,responsable,modelo,marca,producto,destino,id_orden_CAB,id_corte_CAB) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?,""),NULLIF(?,""))', [cabecera.orden_ref, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.servicio, cabecera.fec_emision, cabecera.fec_retorno, cabecera.costo, cabecera.observaciones, cabecera.motivo_traslado, cabecera.responsable, cabecera.modelo, cabecera.marca, cabecera.producto, cabecera.destino, cabecera.id_orden_CAB ?? 1, cabecera.id_corte_CAB ?? 1])
+        const [res] = await conn.query('INSERT INTO tbl2_guias_traslado_cab(orden_ref,tipo,id_proveedor_CAB,proveedor,servicio,fec_emision,fec_retorno,costo,observaciones,motivo_traslado,responsable,modelo,marca,producto,destino,id_orden_CAB,id_corte_CAB,distribucion) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?,""),NULLIF(?,""),NULLIF(?,""))', [cabecera.orden_ref, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.servicio, cabecera.fec_emision, cabecera.fec_retorno, cabecera.costo, cabecera.observaciones, cabecera.motivo_traslado, cabecera.responsable, cabecera.modelo, cabecera.marca, cabecera.producto, cabecera.destino, cabecera.id_orden_CAB ?? 1, cabecera.id_corte_CAB ?? 1],cabecera.distribucion)
 
         for(let fila of [...articulos]){
           const [results] = await conn.query('INSERT INTO tbl2_guias_traslado_det(id_guia_CAB,articulo,cantidad) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.articulo, fila.cantidad]);
@@ -1878,8 +1886,8 @@ export class ProduccionModel {
       let resultado = await this.UpdateMasterProduccionGLB(param1,[],info_orden[0].id_orden_CAB,conn,1)
       if(!resultado.ok) throw resultado.message
 
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return {ok:true,message:"El servicio fue anulado con éxito."}
     } catch (err) {
       console.log(err)
@@ -2135,7 +2143,7 @@ export class ProduccionModel {
         for(let fila of [...articulos]){
           if (fila.idx && fila.idx !== '') {
             console.log("Dentro de 1 actualizacion")
-            const [results, fields] = await conn.query('UPDATE tbl2_pedidos_insumos_det SET id_pedido_CAB=NULLIF(?, ""),id_producto_CAB=NULLIF(?, ""),producto=NULLIF(?, ""),color=NULLIF(?, ""),rollos=NULLIF(?, ""),cantidad=NULLIF(?, ""),unidad=NULLIF(?, ""),precio=NULLIF(?, ""),anulado=NULLIF(?, ""),modelo=NULLIF(?, ""),corte=NULLIF(?, "") WHERE idx = ?', [parseInt(data.id), fila.id_producto_CAB, fila.producto, fila.color, fila.rollos, fila.cantidad, fila.unidad, fila.precio, fila.anulado, fila.modelo, fila.corte, fila.idx]);
+            const [results, fields] = await conn.query('UPDATE tbl2_pedidos_insumos_det SET id_pedido_CAB=NULLIF(?, ""),id_producto_CAB=NULLIF(?, ""),producto=NULLIF(?, ""),color=NULLIF(?, ""),rollos=NULLIF(?, ""),cantidad=NULLIF(?, ""),unidad=NULLIF(?, ""),precio=NULLIF(?, ""),anulado=NULLIF(?, ""),modelo=NULLIF(?, ""),corte=NULLIF(?, ""),conversion=NULLIF(?, "") WHERE idx = ?', [parseInt(data.id), fila.id_producto_CAB, fila.producto, fila.color, fila.rollos, fila.cantidad, fila.unidad, fila.precio, fila.anulado, fila.modelo, fila.corte, fila.conversion, fila.idx]);
 
           } else {
             console.log("Dentro de 2 insertado")
@@ -2499,6 +2507,9 @@ export class ProduccionModel {
 
           await conn.query("UPDATE tbl2_pedidos_insumos_correlativo SET codigo_num = codigo_num + 1 WHERE ruc_ = ? AND anio = YEAR(NOW()) AND tipo = ? AND origen = ?",['20522094120','TELAS',cabecera.emisor])
 
+          let [verificacion] = await conn.query("SELECT *FROM tbl2_pedidos_insumos_correlativo WHERE ruc_ = ? AND anio = YEAR(NOW()) AND tipo = ? AND origen = ?",['20522094120','TELAS',cabecera.emisor])
+          console.log("Verificacion de correlativo despues de la actualizacion:",verificacion)
+
         } catch (err) {
           console.log("error en la consulta", err)
         } 
@@ -2506,8 +2517,8 @@ export class ProduccionModel {
         // return resultS
       }
 
-      if(conn) conn.rollback()
-      // if(conn) conn.commit()
+      // if(conn) conn.rollback()
+      if(conn) conn.commit()
       return {ok:true,message:'Registro completo'}
     } catch (err) {
       console.log("Error en el proceso:", err)
@@ -3360,8 +3371,8 @@ export class ProduccionModel {
         }
       }
 
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return {ok:true,message:'Proceso ejecutado con éxito'}
     } catch (err) {
       console.log("asdlkfaslfjlaskdfjlf:",err)
@@ -3377,7 +3388,12 @@ export class ProduccionModel {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
       const [results, fields] = await conn.query(`
-        SELECT t1.*,COALESCE(t2.distribucion,'') as distribucion 
+        SELECT 
+          t1.*,
+          COALESCE(t2.distribucion,'') as distribucion,
+          (select tfpo.oc from tbl2_fases_prod_ordenes tfpo where tfpo.idx = t2.id_orden_CAB) as oc,
+          t2.servicio,
+	        t2.responsable 
         FROM tbl2_despachos_cab t1 
         left join tbl2_guias_traslado_cab t2 on t2.idx = t1.id_guia_origen
         where t1.idx = ?`, [id]);
@@ -3702,8 +3718,8 @@ export class ProduccionModel {
         if(!resultado.ok) throw resultado.message
       }
 
-      if (conn) await conn.rollback();
-      // if (conn) await conn.commit();
+      // if (conn) await conn.rollback();
+      if (conn) await conn.commit();
       return {ok:true,message:'Ingreso eliminado con éxtio!'}
     } catch (err) {
       console.log("Error en la eliminacion de despacho:",err)

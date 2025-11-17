@@ -10,6 +10,10 @@ ordenesRouter.get("/getordenes/",OrdenesController.getOrdenes)
 ordenesRouter.get("/getordenes/:search",OrdenesController.getOrdenes)
 ordenesRouter.get("/getordenescorte/",OrdenesController.getOrdenesCorte)
 ordenesRouter.get("/getordenescorte/:search",OrdenesController.getOrdenesCorte)
+
+ordenesRouter.get("/getordenesfull/",OrdenesController.getOrdenesFull)
+ordenesRouter.get("/getordenesfull/:search",OrdenesController.getOrdenesFull)
+
 ordenesRouter.get('/:id', OrdenesController.getOrdenesById) 
 ordenesRouter.post("/",OrdenesController.saveInfoOrdenes)
 ordenesRouter.post("/getstatusgeneral/:id",OrdenesController.getStatusGeneral)
@@ -27,6 +31,7 @@ ordenesRouter.put("/saveFaseMateriales",OrdenesController.saveFaseMateriales)
 ordenesRouter.get("/lizzet/:id",OrdenesController.regulaLizzet)
 ordenesRouter.get("/printhojacorte/:idorden",OrdenesController.printHojaCorte)
 // ordenesRouter.get("/printsugerido/:idorden",OrdenesController.printSugeridoV3)
+ordenesRouter.get("/insumosorden/:idorden/:idalmacen",OrdenesController.getInsumosOrden)
 
 ordenesRouter.get("/getCorrelativoProduccionPreview/:tipo",OrdenesController.getCorrelativoProduccionPreview)
 
