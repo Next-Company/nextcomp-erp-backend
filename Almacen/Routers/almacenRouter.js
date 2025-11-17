@@ -27,7 +27,8 @@ ALMACEN_ROUTER.get('/disponibilidadmod/:idmod',AlmacenController.getDisponibilid
 ALMACEN_ROUTER.get('/getmovimientobyid/:id', AlmacenController.getMovimientosAlmacenById)
 
 ALMACEN_ROUTER.post('/vistapreviadespacho/:tipo', AlmacenController.VistaPreviaDespacho)
-ALMACEN_ROUTER.post('/vistapreviadespachocorte/:tipo', AlmacenController.VistaPreviaDespachoCorte)
+ALMACEN_ROUTER.post('/vistapreviadespachocorte_telas/:tipo', AlmacenController.VistaPreviaDespachoCorteTelas)
+ALMACEN_ROUTER.post('/vistapreviadespachocorte_avios/:tipo', AlmacenController.VistaPreviaDespachoCorteAvios)
 ALMACEN_ROUTER.post('/vistapreviaretiro/:tipo', AlmacenController.VistaPreviaRetiro)
 ALMACEN_ROUTER.get('/infocuadretelas/:idmov',AlmacenController.getInfoCuadreTelas)
 ALMACEN_ROUTER.put('/updateinfocuadretelas/:idmov',AlmacenController.updateInfoCuadreTelas)

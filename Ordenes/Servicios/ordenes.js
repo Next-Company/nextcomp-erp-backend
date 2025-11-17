@@ -296,6 +296,7 @@ export class OrdenesModel {
         WHERE 1=1 ${extra} ORDER BY idx desc
       `
       console.log('Consulta de listado de ordenes:',query)
+      console.log('Otra lista de impresion de observaciones')
       let [results] = await conn.query(query);
       await conn.end();
 
@@ -879,8 +880,8 @@ export class OrdenesModel {
         nameimg = `op_${id}.jpg`
         // console.log(sql)
       }
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito',filename: nameimg }
     } catch (err) {
       console.log(err)
@@ -930,7 +931,7 @@ export class OrdenesModel {
         let [insert_combo] = await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos(id_orden_CAB,color_combo,cantidad_combo,insumos) VALUES (?,?,?,?)",[idinsert,combo.color_combo,combo.cantidad_combo,JSON.stringify(combo.insumos ?? [])])
 
         let fraccionado = [];
-        ['xs','s','m','l','xl','xxl'].reduce((c,v)=>{
+        ['st','xs','s','m','l','xl','xxl'].reduce((c,v)=>{
           c.push([insert_combo.insertId,v,parseInt(combo[v]) > 0 ? parseInt(combo[v]) : 0])
           return c
         },fraccionado)
@@ -1000,7 +1001,7 @@ export class OrdenesModel {
         // console.log("Validacion insumos:",rdata.insumos,JSON.stringify(rdata.insumos ?? []))
         let [insert_info] = await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos(id_orden_CAB,color_combo,cantidad_combo,insumos) VALUES (?,?,?,?)",[id,rdata.color_combo,rdata.cantidad_combo,JSON.stringify(rdata.insumos ?? [])])
 
-          let fracciones = ['xs','s','m','l','xl','xxl'].reduce((c,v)=>{
+          let fracciones = ['st','xs','s','m','l','xl','xxl'].reduce((c,v)=>{
             c.push([insert_info.insertId,v,parseInt(rdata[v]) > 0 ? parseInt(rdata[v]) : 0])
             return c
           },[])
@@ -1248,8 +1249,8 @@ export class OrdenesModel {
       console.log("Verificando la informacion de corte :",verificar)
       console.log("Terminando el actulizado de corte")
 
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito' }
     } catch (err) {
       console.log(err)

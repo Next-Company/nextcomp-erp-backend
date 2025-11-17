@@ -643,8 +643,8 @@ export default class AlmacenModel{
       const [verifica] = await conn.execute('select *from tbl2_almacen_det where idx_subproducto = 14590 and lote = 287')
       console.log("EL stock actual es:",verifica)
 
-      if(conn) conn.rollback()
-      // if(conn) conn.commit()
+      // if(conn) conn.rollback()
+      if(conn) conn.commit()
       return {ok:true,message:'Guardado exitoso'}
     } catch (error) {
       console.log(error)
@@ -744,8 +744,8 @@ export default class AlmacenModel{
       // let res_mov = await AlmacenModel.saveMovimiento(data_comprobante,conn)
       // if(!res_mov.ok) throw new Error(res_mov.message)
 
-      if(conn) conn.rollback()
-      // if(conn) conn.commit()
+      // if(conn) conn.rollback()
+      if(conn) conn.commit()
       return {ok:true,message:'Guardado exitoso'}
     } catch (error) {
       console.log(error)
@@ -800,8 +800,8 @@ export default class AlmacenModel{
 
       await conn.execute("UPDATE tbl_kard_compras_CAB SET estado = 'ANULADO' WHERE ruc = ? and id_CAB = ?",['20522094120',id])
 
-      if(conn) conn.rollback()
-      // if(conn) conn.commit()
+      // if(conn) conn.rollback()
+      if(conn) conn.commit()
       return {ok:true,message:'Guardado exitoso'}
     } catch (error) {
       console.log(error)
@@ -1054,11 +1054,11 @@ export default class AlmacenModel{
       // }
 
       // if(conn) conn.rollback()
-      // if(conn) conn.commit()
+      if(conn) conn.commit()
       return {ok:true,message:'Guardado exitoso'}
     } catch (error) {
       console.log(error)
-      // if(conn) conn.rollback()
+      if(conn) conn.rollback()
       return {ok:false,message:error.message ?? error}
     }
   }

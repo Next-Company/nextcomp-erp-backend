@@ -378,6 +378,7 @@ export class ProductosService{
       insert['moneda']= '';
       insert['codUnidadMedida']= 'NIU';
       insert['tipAfeIGV']= '10';
+      insert['igv']= 18;
       insert['serie'] = 'N';
       insert['isc'] = 0;
       insert['vencimiento'] = 'N';

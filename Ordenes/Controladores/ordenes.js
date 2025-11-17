@@ -1137,7 +1137,7 @@ export class OrdenesController {
           },
           relleno3: function(info){
             console.log("La infomarca de la cabecera es:",info)
-            const tallas = {'10':'10','12':'12','14':'14','16':'16','xs':'XS/26','s':'S/28','m':'M/30','l':'L/32','xl':'XL/34','xxl':'XXL/36'}
+            const tallas = {'st':'S/T','10':'10','12':'12','14':'14','16':'16','xs':'XS/26','s':'S/28','m':'M/30','l':'L/32','xl':'XL/34','xxl':'XXL/36'}
             const materiales = eval(info.materiales_produccion) ?? ['','','']
             const combos = JSON.parse(JSON.stringify(info.ordenes_combos))
             const relleno = {
