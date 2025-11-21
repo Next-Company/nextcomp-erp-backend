@@ -1217,4 +1217,32 @@ export default class AlmacenModel{
       if(conn) await conn.end()
     }
   }
+  static async getInfoEtiqueta(idprod){
+    let conn = undefined
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect()
+      
+      let [result] = await conn.execute(`select 
+        tp.idx as idprod,
+        tp.nom as producto,
+        tp.estilo,
+        tp.base,
+        tp.presentacion,
+        ROUND(tp.costo*(1+tp.utilidad1/100),2) as precio1,	
+        ROUND(tp.costo*(1+tp.utilidad2/100),2) as precio2,
+        ts.idx as id,ts.idx_talla,ts.talla,ts.idx_CAB_COLOR as idcolor,
+        COALESCE((select tc.nom from tbl2_colores tc where tc.idx = ts.idx_CAB_COLOR),'') as color 
+        from tbl2_productos tp
+        left join tbl2_subproductos ts on tp.idx = ts.idx_CAB_PROD
+        where tp.idx = ?`
+      ,[idprod])
+
+      return result
+    } catch (error) {
+      return { ok:false, message:error.message ?? error }
+    } finally {
+      if(conn) await conn.end()
+    }
+  }
 }

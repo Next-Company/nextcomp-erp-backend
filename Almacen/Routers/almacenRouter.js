@@ -34,4 +34,6 @@ ALMACEN_ROUTER.get('/infocuadretelas/:idmov',AlmacenController.getInfoCuadreTela
 ALMACEN_ROUTER.put('/updateinfocuadretelas/:idmov',AlmacenController.updateInfoCuadreTelas)
 ALMACEN_ROUTER.delete('/deleteinfocuadretelas/:idmov',AlmacenController.deleteInfoCuadreTelas)
 
+ALMACEN_ROUTER.get('/getinfoetiqueta/:idprod',AlmacenController.getInfoEtiqueta)
+
 export default ALMACEN_ROUTER

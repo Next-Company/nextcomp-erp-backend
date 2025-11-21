@@ -1274,4 +1274,9 @@ export default class AlmacenController{
     const data = await AlmacenModel.deleteInfoCuadreTelas(idmov)
     reply.send(data)
   }
+  static async getInfoEtiqueta(req,reply){
+    const idprod = req.params.idprod
+    const data = await AlmacenModel.getInfoEtiqueta(idprod)
+    reply.send(data)
+  }
 }
