@@ -1279,4 +1279,77 @@ export default class AlmacenController{
     const data = await AlmacenModel.getInfoEtiqueta(idprod)
     reply.send(data)
   }
+  static async printEtiquetas(req, res) {
+    const data = req.body
+    console.log("La informacion es:", data)
+    let cabecera = []
+    let detalle = []
+    let requerimiento = []
+    let cuadre = []
+    let consulta = null
+
+    if (data.id) {
+      // cabecera = (await AlmacenModel.getMovimientoCab(data.id))[0]
+      // detalle = await AlmacenModel.getMovimientoDet(data.id)
+      [cabecera,requerimiento,detalle,cuadre] = await AlmacenModel.getMovimientosAlmacenById(data.id)
+    } else {
+      cabecera = JSON.parse(data.info)
+      detalle = JSON.parse(data.detalle)
+    }
+
+    console.log("La informacion consultada es la siguiente:",cabecera, detalle, cuadre)
+    // return {ok:true,message:'ok'}
+    // res.send({ ok: true, message: 'ok' })
+    // exit()
+    // console.log("DEtalle de la cabecerea es: ", cabecera)
+    const BINARY_CHUNKS = await fs.readFile('public/images/firma_jefferson.png')
+    let BINARY_CHUNKS2 = null
+    BINARY_CHUNKS2 = await fs.readFile('public/images/logo_next.png')
+    const BINARY_CHUNKS3 = await fs.readFile('public/images/guia_despacho.png')
+    const BINARY_CHUNKS4 = await fs.readFile('public/images/cuadre_tela.png')
+    // const tipo = JSON.parse(data.info).tipo
+    console.log("El tipo de pedido es :", tipo)
+    res.render(
+      'guia_traslado',
+      {
+        BINARY_CHUNKS: BINARY_CHUNKS.toString('base64'),
+        BINARY_CHUNKS2: BINARY_CHUNKS2.toString('base64'),
+        BINARY_CHUNKS3: BINARY_CHUNKS3.toString('base64'),
+        BINARY_CHUNKS4: BINARY_CHUNKS4.toString('base64'),
+      },
+      async (err, html) => {
+        try {
+          const browser = await puppeteer.launch();
+
+          const version = await browser.version();
+          console.log(`Versión de Chrome: ${version}`);
+          const page = await browser.newPage();
+          await page.setContent(html);
+
+          const pdfOptions = {
+            // format: 'A4',
+            width: '103mm',
+            height: '40mm',
+            landscape: false,
+            printBackground: true,
+            margin: {
+              left: 0,
+              right: 0
+            }
+            , scale: 1
+          };
+
+          const pdfBuffer = await page.pdf(pdfOptions);
+          await browser.close();
+          res.send({ data: pdfBuffer.toString('base64') })
+          // res.send(pdfBuffer)
+        } catch (error) {
+          res.status(500).send('Error al generar el PDF');
+          // await browser.close();
+        } finally {
+          // await browser.close();
+        }
+      }
+    )
+  }
 }
