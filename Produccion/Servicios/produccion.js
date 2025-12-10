@@ -2233,6 +2233,118 @@ export class ProduccionModel {
       if (conn) await conn.end();
     }
   }
+  static async saveInfoPedidosAdicionales(data) {
+    let conn
+    const results = { ok: true, message: 'test' }
+    const cabecera = JSON.parse(data.info)
+    const articulos = JSON.parse(data.detalle)
+
+    console.log("Informacion cabecera:", cabecera)
+    console.log("Informacion detalle:", articulos)
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+
+      conn.beginTransaction()
+      if (data.id) {
+        await conn.query('UPDATE tbl2_pedidos_insumos_cab SET orden_ref=NULLIF(?, ""),fec_emision=NULLIF(?, ""),fec_retorno=NULLIF(?, ""),tipo=NULLIF(?, ""),id_proveedor_CAB=NULLIF(?, ""),proveedor=NULLIF(?, ""),responsable=NULLIF(?, ""),forma_pago=NULLIF(?, ""),nro_contacto=NULLIF(?, ""),observaciones=NULLIF(?, ""),estado=NULLIF(?, ""),moneda=NULLIF(?, ""),igv=NULLIF(?, ""),produccion=NULLIF(?, ""),afec_retencion=NULLIF(?, ""),emisor=NULLIF(?, "") WHERE idx = ?', [cabecera.orden_ref, cabecera.fec_emision, cabecera.fec_retorno, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.forma_pago, cabecera.nro_contacto, cabecera.observaciones, cabecera.estado, cabecera.moneda, cabecera.igv, cabecera.produccion, cabecera.afec_retencion, cabecera.emisor, parseInt(data.id)])
+
+        const [res, fld] = await conn.query("SELECT *FROM tbl2_pedidos_insumos_det WHERE id_pedido_CAB = " + parseInt(data.id))
+        const ids_delete = res.filter(row => row.idx !== '' && !articulos.map(fila => parseInt(fila.idx)).includes(parseInt(row.idx)))
+
+        for(let fila of [...articulos]){
+          if (fila.idx && fila.idx !== '') {
+            console.log("Dentro de 1 actualizacion")
+            const [results, fields] = await conn.query('UPDATE tbl2_pedidos_insumos_det SET id_pedido_CAB=NULLIF(?, ""),id_producto_CAB=NULLIF(?, ""),producto=NULLIF(?, ""),color=NULLIF(?, ""),rollos=NULLIF(?, ""),cantidad=NULLIF(?, ""),unidad=NULLIF(?, ""),precio=NULLIF(?, ""),anulado=NULLIF(?, ""),modelo=NULLIF(?, ""),corte=NULLIF(?, ""),conversion=NULLIF(?, "") WHERE idx = ?', [parseInt(data.id), fila.id_producto_CAB, fila.producto, fila.color, fila.rollos, fila.cantidad, fila.unidad, fila.precio, fila.anulado, fila.modelo, fila.corte, fila.conversion, fila.idx]);
+
+          } else {
+            console.log("Dentro de 2 insertado")
+            // const [results, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_det(id_pedido_CAB,id_producto_CAB,producto,color,rollos,cantidad,unidad,precio,anulado,modelo,corte) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [parseInt(data.id), fila.id_producto_CAB, fila.producto, fila.color, fila.rollos, fila.cantidad, fila.unidad, fila.precio, fila.anulado, fila.modelo, fila.corte]);
+
+            const [results, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_det(id_pedido_CAB,id_producto_CAB,producto,color,rollos,cantidad,unidad,precio,anulado,modelo,corte) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [parseInt(data.id), fila.id_producto_CAB, fila.producto, fila.color, fila.rollos, fila.cantidad, fila.unidad, fila.precio, fila.anulado, fila.modelo, fila.corte]);
+
+          }
+
+        }
+
+        // const insert = async () => {
+        //   const fila = articulos.shift()
+        //   if (fila) {
+        //     let fracciones = []
+        //     if (fila.idx && fila.idx !== '') {
+        //       console.log("Dentro de 1 actualizacion")
+        //       const [results, fields] = await conn.query('UPDATE tbl2_pedidos_insumos_det SET id_pedido_CAB=NULLIF(?, ""),id_producto_CAB=NULLIF(?, ""),producto=NULLIF(?, ""),color=NULLIF(?, ""),rollos=NULLIF(?, ""),cantidad=NULLIF(?, ""),unidad=NULLIF(?, ""),precio=NULLIF(?, ""),anulado=NULLIF(?, ""),modelo=NULLIF(?, ""),corte=NULLIF(?, "") WHERE idx = ?', [parseInt(data.id), fila.id_producto_CAB, fila.producto, fila.color, fila.rollos, fila.cantidad, fila.unidad, fila.precio, fila.anulado, fila.modelo, fila.corte, fila.idx]);
+
+        //     } else {
+        //       console.log("Dentro de 2 insertado")
+        //       // const [results, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_det(id_pedido_CAB,id_producto_CAB,producto,color,rollos,cantidad,unidad,precio,anulado,modelo,corte) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [parseInt(data.id), fila.id_producto_CAB, fila.producto, fila.color, fila.rollos, fila.cantidad, fila.unidad, fila.precio, fila.anulado, fila.modelo, fila.corte]);
+
+        //       const [results, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_det(id_pedido_CAB,id_producto_CAB,producto,color,rollos,cantidad,unidad,precio,anulado,modelo,corte) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [parseInt(data.id), fila.id_producto_CAB, fila.producto, fila.color, fila.rollos, fila.cantidad, fila.unidad, fila.precio, fila.anulado, fila.modelo, fila.corte]);
+
+        //     }
+        //     await insert()
+        //   } else {
+        //     console.log("Devolviendo resolve")
+        //     return Promise.resolve('')
+        //   }
+        // }
+        // await insert()
+
+        const eliminar = async () => {
+          const fila = ids_delete.shift()
+          if (fila) {
+            await conn.query('DELETE FROM `tbl2_pedidos_insumos_det` WHERE `id_pedido_CAB` = ? and `idx` = ?', [parseInt(data.id), parseInt(fila.idx)])
+            await eliminar()
+          } else {
+            return Promise.resolve('')
+          }
+        }
+        await eliminar()
+
+        // const [test,otro] = await conn.query("select *from tbl2_pedidos_insumos_det tpid where id_pedido_CAB = 13")
+        // console.log("Comprueba actualizacion:",test)
+
+      } else {
+        console.log("Creandsssso")
+        try {
+          const correlativo = await this.getNuevoPedido('AVIOS','NEXT',conn)
+
+          const [res, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_cab(orden_ref,fec_emision,fec_retorno,tipo,id_proveedor_CAB,proveedor,responsable,forma_pago,nro_contacto,observaciones,estado,moneda,igv,produccion,afec_retencion,emisor) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [correlativo, cabecera.fec_emision, cabecera.fec_retorno, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.forma_pago, cabecera.nro_contacto, cabecera.observaciones, cabecera.estado, cabecera.moneda, cabecera.igv, cabecera.produccion, cabecera.afec_retencion, cabecera.emisor]);
+
+          for(let fila of articulos){
+            const [results, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_det(id_pedido_CAB,id_subprod_CAB,id_producto_CAB,producto,modelo,corte,color,rollos,cantidad,unidad,precio,conversion) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.id_subprod_CAB ?? null,fila.idx_producto, fila.producto, fila.modelo, fila.corte, fila.color, fila.rollos, fila.cantidad, fila.unidad, fila.precio, fila.conversion ?? 1]);
+          }
+
+          // const insert = async () => {
+          //   const fila = articulos.shift()
+          //   if (fila) {
+          //     const [results, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_det(id_pedido_CAB,id_producto_CAB,producto,modelo,corte,color,rollos,cantidad,unidad,precio) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.id_producto_CAB, fila.producto, fila.modelo, fila.corte, fila.color, fila.rollos, fila.cantidad, fila.unidad, fila.precio]);
+          //     await insert()
+          //   } else {
+          //     return Promise.resolve('')
+          //   }
+          // }
+          // await insert()
+
+          await conn.query("update tbl2_pedidos_insumos_correlativo set codigo_num = codigo_num + 1 where ruc_ = ? and anio = YEAR(NOW()) and tipo = ? and origen = ?",['20522094120','AVIOS','NEXT'])
+
+        } catch (err) {
+          console.log("error en la consulta", err)
+        }
+        // await conn.end();
+        // return results
+      }
+
+      // if(conn) conn.rollback()
+      if(conn) conn.commit()
+      return {ok:true,message:'Registro completo'}
+    } catch (err) {
+      if (conn) conn.rollback()
+      return {ok:false,message:err}
+    } finally {
+      if (conn) await conn.end();
+    }
+  }
   static async saveInfoPedidosTelas_back_22102025(data) {
     let conn
     const results = { ok: true, message: 'test' }
@@ -2769,41 +2881,41 @@ export class ProduccionModel {
         /////////////////////////////////////////
         // 9	INGR	Ingreso de productos
         // 10	RETR	Retiro de productos
-        // if(cabecera.tipo === 'PEDIDOS'){
-        //   let [busqueda1] = await conn.execute("SELECT *FROM tbl2_cptes_ordenes_tipo WHERE idx = 10")
-        //   const data_comprobante_salida = {
-        //     id_comprobante_CAB: busqueda1[0].idx,
-        //     cod_comprobante: busqueda1[0].codigo,
-        //     num_comprobante: parseInt(busqueda1[0].correlativo) + 1,
-        //     observaciones: 'ANULACION DE GUIA DE TRASLADO',
-        //     idx_documento_asoc: res.insertId,
-        //     origen: 'KARD',
-        //     almacen_destino: 509,
-        //     articulos: JSON.stringify(
-        //       articulos.map(fila => ({...fila,lote:cabecera.id_pedido_origen}))
-        //     ),
-        //   };
-        //   console.log("El detalle a insertar es el siguiente:",data_comprobante_salida)
-        //   let res_mov_1 = await AlmacenModel.saveMovimiento(data_comprobante_salida,conn)
-        //   if(!res_mov_1.ok) throw new Error(res_mov_1.message)
+        if(cabecera.tipo === 'PEDIDOS'){
+          let [busqueda1] = await conn.execute("SELECT *FROM tbl2_cptes_ordenes_tipo WHERE idx = 10")
+          const data_comprobante_salida = {
+            id_comprobante_CAB: busqueda1[0].idx,
+            cod_comprobante: busqueda1[0].codigo,
+            num_comprobante: parseInt(busqueda1[0].correlativo) + 1,
+            observaciones: 'ANULACION DE GUIA DE TRASLADO',
+            idx_documento_asoc: res.insertId,
+            origen: 'KARD',
+            almacen_destino: 509,
+            articulos: JSON.stringify(
+              articulos.map(fila => ({...fila,lote:cabecera.id_pedido_origen}))
+            ),
+          };
+          console.log("El detalle a insertar es el siguiente:",data_comprobante_salida)
+          let res_mov_1 = await AlmacenModel.saveMovimiento(data_comprobante_salida,conn)
+          if(!res_mov_1.ok) throw new Error(res_mov_1.message)
 
-        //   let [busqueda2] = await conn.execute("SELECT *FROM tbl2_cptes_ordenes_tipo WHERE idx = 9")
-        //   const data_comprobante_ingreso = {
-        //     id_comprobante_CAB: busqueda2[0].idx,
-        //     cod_comprobante: busqueda2[0].codigo,
-        //     num_comprobante: parseInt(busqueda2[0].correlativo) + 1,
-        //     observaciones: 'ACTUALIZACION DE GUIA DE TRASLADO',
-        //     idx_documento_asoc: res.insertId,
-        //     origen: 'KARD',
-        //     almacen_destino: 509,
-        //     articulos: JSON.stringify(
-        //       articulos.map(fila => ({...fila,lote:cabecera.id_pedido_origen}))
-        //     ),
-        //   };
-        //   console.log("El detalle a insertar es el siguiente:",data_comprobante_ingreso)
-        //   let res_mov_2 = await AlmacenModel.saveMovimiento(data_comprobante_ingreso,conn)
-        //   if(!res_mov_2.ok) throw new Error(res_mov_2.message)
-        // }
+          let [busqueda2] = await conn.execute("SELECT *FROM tbl2_cptes_ordenes_tipo WHERE idx = 9")
+          const data_comprobante_ingreso = {
+            id_comprobante_CAB: busqueda2[0].idx,
+            cod_comprobante: busqueda2[0].codigo,
+            num_comprobante: parseInt(busqueda2[0].correlativo) + 1,
+            observaciones: 'ACTUALIZACION DE GUIA DE TRASLADO',
+            idx_documento_asoc: res.insertId,
+            origen: 'KARD',
+            almacen_destino: 509,
+            articulos: JSON.stringify(
+              articulos.map(fila => ({...fila,lote:cabecera.id_pedido_origen}))
+            ),
+          };
+          console.log("El detalle a insertar es el siguiente:",data_comprobante_ingreso)
+          let res_mov_2 = await AlmacenModel.saveMovimiento(data_comprobante_ingreso,conn)
+          if(!res_mov_2.ok) throw new Error(res_mov_2.message)
+        }
         //////////////////////////////////////////////
         //////////////////////////////////////////////
 

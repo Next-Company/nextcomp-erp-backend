@@ -2314,6 +2314,11 @@ export class ProduccionController {
     // res.json({ ok: true, message: 'datos guardados' })
     res.json(data)
   }
+  static async saveInfoPedidosAdicionales(req, res) {
+    const data = await ProduccionModel.saveInfoPedidosAdicionales(req.body)
+    // res.json({ ok: true, message: 'datos guardados' })
+    res.json(data)
+  }
   static async getInfoPedidos(req, res) {
     const id = req.params.id
     const data = await ProduccionModel.getInfoPedidoCab(id)
