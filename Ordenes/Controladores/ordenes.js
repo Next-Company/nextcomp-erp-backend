@@ -24,6 +24,13 @@ export class OrdenesController {
     // console.log(data)
     reply.json(data)
   }
+  static async getOrdenesFull(req, reply) {
+    // const user_data = req.session
+    const search = req.params.search ?? ''
+    const data = await OrdenesModel.getOrdenesFull(search)
+    // console.log(data)
+    reply.json(data)
+  }
   static async getOrdenesByParams(req, reply) {
     const info = req.body
     const data = await OrdenesModel.getOrdenesByParams(info.params)
@@ -1130,7 +1137,7 @@ export class OrdenesController {
           },
           relleno3: function(info){
             console.log("La infomarca de la cabecera es:",info)
-            const tallas = {'10':'10','12':'12','14':'14','16':'16','xs':'XS/26','s':'S/28','m':'M/30','l':'L/32','xl':'XL/34','xxl':'XXL/36'}
+            const tallas = {'st':'S/T','10':'10','12':'12','14':'14','16':'16','xs':'XS/26','s':'S/28','m':'M/30','l':'L/32','xl':'XL/34','xxl':'XXL/36'}
             const materiales = eval(info.materiales_produccion) ?? ['','','']
             const combos = JSON.parse(JSON.stringify(info.ordenes_combos))
             const relleno = {
@@ -1604,5 +1611,11 @@ export class OrdenesController {
     const tipo = req.params.tipo
     let resp = await OrdenesModel.getCorrelativoProduccionPreview(tipo)
     res.json(resp)
+  }
+  static async getInsumosOrden(req, reply) {
+    let idorden = req.params.idorden ?? 0
+    let idalmacen = req.params.idalmacen ?? 0
+    const data = await OrdenesModel.getInsumosOrden(idorden,idalmacen)
+    reply.json(data)
   }
 }
