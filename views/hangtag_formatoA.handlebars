@@ -1,0 +1,83 @@
+<style>
+  body{
+    margin: 0;
+    padding: 0;
+    width: 100mm;
+    height: 45mm;
+  }
+  .row{
+    background-color: aquamarine;
+    display: flex;
+    justify-content: space-between;
+    width: 107.5mm;
+    height: 45mm;
+    gap: 2.5mm;
+    overflow: hidden;
+    break-after: page;
+  }
+  .etiqueta{
+    box-sizing:border-box;
+    background-color: rgb(221, 221, 221);
+    font-size: .6rem;
+    width: 33.5mm;
+    height: 45mm;
+    padding: 2.5mm;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5mm;
+  }
+  #idcodbar{
+    font-size: 5px;
+    letter-spacing: 6px;
+    transform: scale(1, 0.8);
+  }
+  img{
+    width: 100%;
+  }
+  h2{
+    margin:0px;
+  }
+  h3{
+    margin: 0px;
+  }
+  #talla{
+    position: absolute;
+    right: 6px;
+    bottom: 60px;
+    font-size: 2rem;
+    font-weight: bolder;
+  }
+  .bar{
+    width: 2mm;
+    background-color: black;
+    position: absolute;
+  }
+  #bar_left{
+    height: 20mm;
+    left: -.5mm;
+    top: -10mm;
+  }
+  #bar_right{
+    height: 28mm;
+    right: -.5mm;
+    top: 0;
+  }
+</style>
+<body>
+  {{!-- <div id="row"> --}}
+    {{!-- 
+    w:100mm
+    h:45mm
+    w:30mm
+    h:40mm
+    gap:2.5mm 
+    --}}
+    {{#foo this.BINARY_CHUNKS5 this.BASE this.INFO}}
+    {{/foo}}
+    {{!-- <img src="data:image/jpg;base64,{{this.BINARY_CHUNKS5}}" /> --}}
+    {{!-- <div class="etiqueta">que</div>
+    <div class="etiqueta">tal</div>
+    <div class="etiqueta">miguel</div> --}}
+  {{!-- </div> --}}
+</body>

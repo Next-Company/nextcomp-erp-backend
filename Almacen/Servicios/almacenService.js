@@ -1193,6 +1193,7 @@ export default class AlmacenModel{
     }
   }
   static async updateInfoCuadreTelas(info,id){
+    // MOSTRADNO DADOTSA DEL LA FINALIZ
     let conn = undefined
     let cab = info.info
     let det = JSON.parse(info.detalle)
@@ -1224,13 +1225,16 @@ export default class AlmacenModel{
       await conn.connect()
       
       let [result] = await conn.execute(`select 
+        '0000000' as oc,
         tp.idx as idprod,
         tp.nom as producto,
-        tp.estilo,
-        tp.base,
-        tp.presentacion,
-        ROUND(tp.costo*(1+tp.utilidad1/100),2) as precio1,	
-        ROUND(tp.costo*(1+tp.utilidad2/100),2) as precio2,
+        (select tr.nom from tbl2_rubros tr where tr.idx = tp.RUBROS) as articulo,
+	      COALESCE(tp.modelo,'--') as modelo,
+        COALESCE(tp.estilo,'--') as estilo,
+        COALESCE(tp.base,'--') as base,
+        COALESCE(tp.presentacion,'--') as tela,
+        ROUND(tp.costo*(1+tp.utilidad1/100),2) as precio_oferta,
+        ROUND(tp.costo*(1+tp.utilidad2/100),2) as precio_original,
         ts.idx as id,ts.idx_talla,ts.talla,ts.idx_CAB_COLOR as idcolor,
         COALESCE((select tc.nom from tbl2_colores tc where tc.idx = ts.idx_CAB_COLOR),'') as color 
         from tbl2_productos tp

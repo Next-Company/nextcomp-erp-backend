@@ -28,8 +28,6 @@ import PROVEEDOR_ROUTER from "./Proveedores/Routers/proveedorRouter.js";
 import MANTENIMIENTO_ROUTER from "./Mantenimiento/Routers/mantenimientoRouter.js";
 const app = express()
 
-
-
 const hbs = create({
     helpers: {
         foo() { return 'FOO!'; },

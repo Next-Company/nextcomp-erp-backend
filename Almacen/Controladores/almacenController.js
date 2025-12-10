@@ -3,6 +3,14 @@ import puppeteer from 'puppeteer';
 import fs from 'node:fs/promises'
 import { exit } from "node:process";
 import { ReplaySubject } from "puppeteer-core/lib/esm/third_party/rxjs/rxjs.js";
+// import {JsBarcode} from "../../JsBarcode.js";
+import JsBarcode from "jsbarcode";
+import { Canvas } from "canvas";
+import { createRequire } from "node:module";
+import { releaseObject } from "puppeteer-core";
+import { configs, numControlBarcode } from "../../Main/utils.js";
+import mysql from 'mysql2/promise'
+import { Console } from "node:console";
 
 export default class AlmacenController{
   static async getListaAlmacenes(req,reply){
@@ -1281,41 +1289,146 @@ export default class AlmacenController{
   }
   static async printEtiquetas(req, res) {
     const data = req.body
-    console.log("La informacion es:", data)
-    let cabecera = []
-    let detalle = []
-    let requerimiento = []
-    let cuadre = []
-    let consulta = null
+    let canvas = new Canvas(100,50)
+    console.log("La info del body es:",data)
+    // const COUNTRY_CODE = '775';
+    // const CODE_COMPANY = '0062';
+    // const PRE_CODEBAR = COUNTRY_CODE + CODE_COMPANY + ('00000' + $idx_subprod).slice()
+    // const CODEBAR = numControlBarcode(PRE_CODEBAR)
+    let conn = null
+    try {
+      // conn = await mysql.createConnection(configs[1])
+      // await conn.connect()
+      
+      // let consulta = await conn.execute("select *from tbl2_subproductos")
 
-    if (data.id) {
-      // cabecera = (await AlmacenModel.getMovimientoCab(data.id))[0]
-      // detalle = await AlmacenModel.getMovimientoDet(data.id)
-      [cabecera,requerimiento,detalle,cuadre] = await AlmacenModel.getMovimientosAlmacenById(data.id)
-    } else {
-      cabecera = JSON.parse(data.info)
-      detalle = JSON.parse(data.detalle)
+    } catch (error) {
+      
+    } finally {
+      // if(conn) await conn.end()
     }
 
-    console.log("La informacion consultada es la siguiente:",cabecera, detalle, cuadre)
-    // return {ok:true,message:'ok'}
-    // res.send({ ok: true, message: 'ok' })
-    // exit()
-    // console.log("DEtalle de la cabecerea es: ", cabecera)
-    const BINARY_CHUNKS = await fs.readFile('public/images/firma_jefferson.png')
-    let BINARY_CHUNKS2 = null
-    BINARY_CHUNKS2 = await fs.readFile('public/images/logo_next.png')
-    const BINARY_CHUNKS3 = await fs.readFile('public/images/guia_despacho.png')
-    const BINARY_CHUNKS4 = await fs.readFile('public/images/cuadre_tela.png')
-    // const tipo = JSON.parse(data.info).tipo
-    console.log("El tipo de pedido es :", tipo)
+    // const jsbarcode = createRequire("/home/juanjhonv/proyects/api_rest_expressDev/JsBarcode.js");
+    JsBarcode(canvas,'7750062152898',{
+      format:"EAN13",
+      displayValue:false,
+      height:12,
+      width:1,
+      margin:0,
+      flat:true
+    })
+    let inf = canvas.toBuffer('image/png')
+
+    /////////////////////////////////////////
+    const cantidad = 5
+    const combinacion = data.colores.length * data.tallas.length
+    const calculo = Math.floor(Math.ceil((cantidad * combinacion)/3)*3/combinacion)
+    // const calculo = Math.ceil(cantidad*combinacion/3)
+    console.log("Datos generados:",combinacion,calculo)
+    let base = [], group = [], acumulado = []
+    Array(cantidad).fill('p').forEach((v)=>{
+    // Array(calculo).fill('p').forEach((v)=>{
+      data.colores.forEach((color,keyc)=>{
+        const name_c = color.nom
+        data.tallas.forEach((talla,keyt)=>{
+          const name_t = talla.nom
+          // group.push({
+          //   color:name_c,
+          //   talla:name_t
+          // })
+          // if (group.length == 3) {
+          //   base.push(group)
+          //   group = []
+          // }
+          acumulado.push({
+            color:name_c,
+            talla:name_t
+          })
+        })
+      })
+    })
+    console.log("Infoi de acumulado es:",acumulado)
+
+    const k = ()=>{
+      let p = acumulado.shift()
+      if(p){
+        if(group.length == 3){
+          base.push(group)
+          group = []
+          group.push(p)
+        } else if(acumulado.length == 0) {
+          group.push(p)  
+          base.push(group)
+          group = []
+        } else {
+          group.push(p)
+        }
+        k()
+      } else {
+        group.length > 0 && base.push(group)
+      }
+    }
+    k()
+    ///////////////////////////////////////
+
+    // const BINARY_CHUNKS = await fs.readFile('public/images/firma_jefferson.png')
     res.render(
-      'guia_traslado',
+      'hangtag_formatoA',
       {
-        BINARY_CHUNKS: BINARY_CHUNKS.toString('base64'),
-        BINARY_CHUNKS2: BINARY_CHUNKS2.toString('base64'),
-        BINARY_CHUNKS3: BINARY_CHUNKS3.toString('base64'),
-        BINARY_CHUNKS4: BINARY_CHUNKS4.toString('base64'),
+        BINARY_CHUNKS5: inf.toString('base64'),
+        BASE:base,
+        INFO:data.info,
+        helpers: {
+          foo(codebar,base,info){
+            let info_print = []
+            base.forEach((v)=>{
+              const fila = v.map((row)=>{
+                return `
+                  <div class='etiqueta'>
+                    <div>
+                      <div style="font-size:.5rem;">OP:2500712</div>
+                      <h2>${info.articulo + ' ' + info.modelo}</h2>
+                    </div>
+                    <div>
+                      <h3>${info.estilo}</h3>
+                      <h3>${info.base}</h3>
+                      <h3>${row.color.length > 8 ? row.color.substr(0,8) + '.' : row.color }</h3>
+                      <h3>${info.tela}</h3>
+                    </div>
+                    <div>
+                      <div style="display:flex;justify-content:space-between;">
+                        <div>
+                          ORIGINAL
+                        </div>
+                        <div>
+                          <h3>${data.moneda == 'PEN' ? 'S/' : '$'}149.90</h3>
+                        </div>
+                      </div>
+                      <div style="display:flex;justify-content:space-between;">
+                        <div>
+                          OFERTA
+                        </div>
+                        <div>
+                          <h3>${data.moneda == 'PEN' ? 'S/' : '$'}149.90</h3>
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <img src="data:image/jpg;base64,${codebar}"/>
+                      <div id="idcodbar">7750062152898</div>
+                    </div>
+                    <div id="talla">${row.talla}</div>
+                    <div class="bar" id="bar_left"></div>
+                  </div>
+                `
+              })
+              info_print.push('<div class="row">'+fila.join('')+'</div>')
+            })
+            // const example = 
+            // const cuerpo = `<div class="etiqueta">${example}</div><div class="etiqueta">${example}</div><div class="etiqueta">${example}</div>`            
+            return info_print.join('')
+          }
+        }
       },
       async (err, html) => {
         try {
@@ -1328,13 +1441,15 @@ export default class AlmacenController{
 
           const pdfOptions = {
             // format: 'A4',
-            width: '103mm',
-            height: '40mm',
+            width: '107.5mm',
+            height: '45mm',
             landscape: false,
             printBackground: true,
             margin: {
               left: 0,
-              right: 0
+              right: 0,
+              top:0,
+              bottom:0
             }
             , scale: 1
           };
