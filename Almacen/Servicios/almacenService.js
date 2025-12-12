@@ -69,10 +69,22 @@ export default class AlmacenModel{
       await conn.connect()
 
       const [cabmov] = await conn.execute(`
-        SELECT tkc.*, tp.idx as id_proveedor_CAB, tp.nom as proveedor, tmc.cod_comprobante, tmc.anulado
+        SELECT 
+          tkc.*, 
+          tp.idx as id_proveedor_CAB, 
+          tp.nom as proveedor, 
+          tmc.cod_comprobante, 
+          tmc.anulado,
+          COALESCE((select tbu.usu from tbl_user tbu where tbu.ruc = '20522094120' and tbu.idx = tkc.idx_usu),'') as usuario,
+          COALESCE(tfpo.oc,'') as oc,
+	        COALESCE(tfpo.modelos,'') as modelo,
+	        COALESCE(tfpo.rubro,'') as articulo,
+          DATE_FORMAT(tkc.fecha_sys,'%d/%m/%Y %h:%m:%s') as fecha_sistema,
+          LPAD(CAST(tkc.id_CAB as SIGNED),8,'0') as id_despacho
         FROM tbl_kard_compras_CAB tkc 
         JOIN tbl2_almacen_mov_cab tmc ON tkc.id_CAB = tmc.idx_documento_asoc
         JOIN tbl2_proveedor tp ON tkc.Nro_Doc_Prov = tp.ruc
+        LEFT JOIN tbl2_fases_prod_ordenes tfpo ON tfpo.idx = tkc.id_orden
         WHERE Suc_Tienda in (509,508) and tkc.id_CAB = ?
       `,[id]);
 
@@ -82,6 +94,23 @@ export default class AlmacenModel{
         JOIN tbl2_proveedor tp ON tpic.id_proveedor_CAB = tp.idx 
         WHERE tpic.idx = ?
       `,[cabmov[0].id_requerimiento]);
+
+      const [detmov] = await conn.execute(`
+        select
+          t1.*,
+          ts.nom,
+          COALESCE((select tp.codUnidadMedida from tbl2_productos tp where tp.idx = ts.idx_CAB_PROD),'') as unidad,
+          COALESCE((select tc.nom from tbl2_colores tc where tc.idx = ts.idx_CAB_COLOR),'') as color,
+          -- COALESCE((select COALESCE(tpoi.cantidad,0) from tbl2_fases_prod_ordenes_insumos tpoi where tpoi.id_orden_CAB = ? and tpoi.id_subprod_CAB = t1.id_subprod ),0) AS comprometido
+          COALESCE((
+            select sum(tboc.cantidad_combo) from tbl2_fases_prod_ordenes_combos tboc 
+            where tboc.id_orden_CAB = ? and JSON_CONTAINS(tboc.insumos,CAST(ifnull(t1.id_subprod,-1) as CHAR))
+          ),0)*tpoi.cantidad as comprometido
+        from tbl_kard_compras_DET t1 
+        join tbl2_subproductos ts on t1.id_subprod = ts.idx
+        left join tbl2_fases_prod_ordenes_insumos tpoi on tpoi.id_orden_CAB = ? and tpoi.id_subprod_CAB = t1.id_subprod
+        where t1.id_CAB_DET = ?
+      `,[cabmov[0].id_orden,cabmov[0].id_orden,id])
 
       const [detbmov] = await conn.execute(`
         SELECT 
@@ -117,7 +146,7 @@ export default class AlmacenModel{
       `,[id])
   
       console.log("El resultado de la consulta es:", cabmov, detbmov, cuadre)
-      return [cabmov[0],inforeq[0], detbmov, cuadre]
+      return [cabmov[0],inforeq[0], detmov, cuadre]
     } catch (error) {
       console.log(error)
     } finally {
@@ -240,7 +269,10 @@ export default class AlmacenModel{
           tpic.idx as id_pedido_origen,
           tpic.orden_ref as nro_requerimiento,
           t1.tipomov,
+          t1.motivo,
           t1.id_modelo,
+          t1.producto,
+          t1.id_orden,
           (select tfpo.modelos from tbl2_fases_prod_ordenes tfpo where tfpo.idx = t1.id_modelo) as modelos,
           (select tfpo.oc from tbl2_fases_prod_ordenes tfpo where tfpo.idx = t1.id_modelo) as oc,
           (select tbc.numero_corte from tbl2_fases_prod_hojacorte tbc where tbc.id_cab_orden = t1.id_modelo limit 1) as nro_corte,
@@ -307,7 +339,10 @@ export default class AlmacenModel{
         idx_usu: session.id,
         tipomov: cabecera.tipo_operacion,
         id_requerimiento: parseInt(cabecera.id_pedido_origen ?? 0),
-        id_modelo: parseInt(cabecera.id_modelo ?? 0)
+        id_modelo: parseInt(cabecera.id_modelo ?? 0),
+        motivo: cabecera.motivo,
+        id_orden: cabecera.id_orden ?? 0,
+        producto: cabecera.producto ?? ''
       };
       console.log("El detalle a insertar es:",data_guia)
       const [resultGuia] = await conn.execute(
@@ -327,8 +362,10 @@ export default class AlmacenModel{
           Precio_Unid_Det: 0,
           id_subprod: parseInt(element.id_subprod),
           metros:parseFloat(element.metros ?? 0),
+          peso:parseFloat(element.peso ?? 0),
           rollos:parseFloat(element.rollos ?? 0),
-          num_lote:parseInt(element.num_lote ?? 0)
+          num_lote:parseInt(element.num_lote ?? 0),
+          info_rollos:JSON.stringify(element.info_rollos ?? [])
         };
         const [resultGuiaDet] = await conn.execute(
           `INSERT INTO tbl_kard_compras_DET (${Object.keys(data_guia_det).join(',')}) VALUES (${Object.keys(data_guia_det).map(() => '?').join(',')})`,
@@ -376,7 +413,7 @@ export default class AlmacenModel{
             id_subprod_CAB:item.id_subprod,
             lote:item?.sinlote ? 0 : (item.num_lote || 0),
             tipo:item.tipo,
-            despacho:parseFloat(item.despacho)
+            despacho:parseFloat(item.Cant_despacho_DET)
           }
         )
       }
@@ -395,12 +432,12 @@ export default class AlmacenModel{
         articulos: JSON.stringify(articulos),
       };
       console.log("El detalle a insertar es el siguiente:",data_comprobante)
-      // let res_mov = await AlmacenModel.saveMovimiento(data_comprobante,conn)
-      // if(!res_mov.ok) throw new Error(res_mov.message)
+      let res_mov = await AlmacenModel.saveMovimiento(data_comprobante,conn)
+      if(!res_mov.ok) throw new Error(res_mov.message)
 
-      if(conn) conn.rollback()
-      // if(conn) conn.commit()
-      return {ok:true,message:'Guardado exitoso'}
+      // if(conn) conn.rollback()
+      if(conn) conn.commit()
+      return {ok:true,message:'Ingreso de despacho registrado con éxito.'}
     } catch (error) {
       console.log(error)
       if(conn) conn.rollback()
@@ -412,20 +449,6 @@ export default class AlmacenModel{
   static async updateDespacho(data,session,idguia){
     console.log("Inicia el proceso de actualizado de movimiento")
     let conn = undefined
-
-    // conn = await mysql.createConnection(configs[1])
-    // await conn.connect()
-    // console.log("La info recibida es:",data)
-    // let cabecera = JSON.parse(data.info)
-    // let detalle = JSON.parse(data.detalle)
-    // console.log("La informacion de la cebecra es:",cabecera)
-    // console.log("La informacion del detalle es:",detalle)
-
-    // const [backup] = await conn.query("SELECT *FROM tbl_kard_compras_DET WHERE id_CAB_DET = ?",[idguia])
-    // console.log("La informacion del backup es:",backup)
-
-    // if(conn) await conn.end()
-    // return {ok:true,message:"Proceso ok"};
 
     try {
       conn = await mysql.createConnection(configs[1])
@@ -504,7 +527,9 @@ export default class AlmacenModel{
           id_subprod: parseInt(element.id_subprod),
           metros:parseFloat(element.metros ?? 0),
           rollos:parseFloat(element.rollos ?? 0),
-          num_lote:parseInt(element.num_lote ?? 0)
+          peso:parseFloat(element.peso ?? 0),
+          num_lote:parseInt(element.num_lote ?? 0),
+          info_rollos:JSON.stringify(element.info_rollos ?? [])
         };
         const [resultGuiaDet] = await conn.execute(
           `INSERT INTO tbl_kard_compras_DET (${Object.keys(data_guia_det).join(',')}) VALUES (${Object.keys(data_guia_det).map(() => '?').join(',')})`,
@@ -614,10 +639,12 @@ export default class AlmacenModel{
       res_mov = await AlmacenModel.saveMovimiento(data_comprobante,conn)
       if(!res_mov.ok) throw new Error(res_mov.message)
 
-      
 
-      if(conn) conn.rollback()
-      // if(conn) conn.commit()
+      const [verifica] = await conn.execute('select *from tbl2_almacen_det where idx_subproducto = 14590 and lote = 287')
+      console.log("EL stock actual es:",verifica)
+
+      // if(conn) conn.rollback()
+      if(conn) conn.commit()
       return {ok:true,message:'Guardado exitoso'}
     } catch (error) {
       console.log(error)
@@ -717,8 +744,8 @@ export default class AlmacenModel{
       // let res_mov = await AlmacenModel.saveMovimiento(data_comprobante,conn)
       // if(!res_mov.ok) throw new Error(res_mov.message)
 
-      if(conn) conn.rollback()
-      // if(conn) conn.commit()
+      // if(conn) conn.rollback()
+      if(conn) conn.commit()
       return {ok:true,message:'Guardado exitoso'}
     } catch (error) {
       console.log(error)
@@ -773,8 +800,8 @@ export default class AlmacenModel{
 
       await conn.execute("UPDATE tbl_kard_compras_CAB SET estado = 'ANULADO' WHERE ruc = ? and id_CAB = ?",['20522094120',id])
 
-      if(conn) conn.rollback()
-      // if(conn) conn.commit()
+      // if(conn) conn.rollback()
+      if(conn) conn.commit()
       return {ok:true,message:'Guardado exitoso'}
     } catch (error) {
       console.log(error)
@@ -829,8 +856,8 @@ export default class AlmacenModel{
 
       await conn.execute("UPDATE tbl_kard_compras_CAB SET estado = 'ANULADO' WHERE ruc = ? and id_CAB = ?",['20522094120',id])
 
-      if(conn) conn.rollback()
-      // if(conn) conn.commit()
+      // if(conn) conn.rollback()
+      if(conn) conn.commit()
       return {ok:true,message:'Guardado exitoso'}
     } catch (error) {
       console.log(error)
