@@ -2823,14 +2823,16 @@ export class ProduccionModel {
   }
   static async saveInfoDespachosPedido(data) {
     let conn
-    const results = { ok: true, message: 'testD' }
+    // const results = { ok: true, message: 'testD'}
     const cabecera = JSON.parse(data.info)
     const articulos = JSON.parse(data.detalle)
     const facturas = JSON.parse(data.facturas)
+    const subtipo = data.subtipo
 
     console.log("Informacion cabecera:", cabecera)
     console.log("Informacion detalle:", articulos)
     console.log("Informacion facturas:", facturas)
+
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
@@ -2881,7 +2883,7 @@ export class ProduccionModel {
         /////////////////////////////////////////
         // 9	INGR	Ingreso de productos
         // 10	RETR	Retiro de productos
-        if(cabecera.tipo === 'PEDIDOS'){
+        if(cabecera.tipo === 'PEDIDOS' && subtipo !== 'ADICIONALES'){
           let [busqueda1] = await conn.execute("SELECT *FROM tbl2_cptes_ordenes_tipo WHERE idx = 10")
           const data_comprobante_salida = {
             id_comprobante_CAB: busqueda1[0].idx,
@@ -2938,23 +2940,25 @@ export class ProduccionModel {
           ///////////////////////////////////////
           /// INGRESAR MERCADERIA HACIA ALMACEBN
           ///////////////////////////////////////
-          let [infopedido] = await conn.execute("SELECT *FROM tbl2_pedidos_insumos_cab WHERE idx = ?",[cabecera.id_pedido_origen])
-          let [busqueda] = await conn.execute("SELECT *FROM tbl2_cptes_ordenes_tipo WHERE idx = 9")
-          const data_comprobante = {
-            id_comprobante_CAB: busqueda[0].idx,
-            cod_comprobante: busqueda[0].codigo,
-            num_comprobante: parseInt(busqueda[0].correlativo) + 1,
-            observaciones: 'INGRSO DE DESPACHO POR PEDIDO',
-            idx_documento_asoc: res.insertId,
-            origen: 'KARD',
-            almacen_destino: infopedido[0].tipo == 'AVIOS' ? 508 : 509,
-            articulos: JSON.stringify(
-              articulos.map(fila => ({...fila,lote:cabecera.id_pedido_origen}))
-            ),
-          };
-          console.log("El detalle a insertar es el siguiente:",data_comprobante)
-          let res_mov = await AlmacenModel.saveMovimiento(data_comprobante,conn)
-          if(!res_mov.ok) throw new Error(res_mov.message)
+          if(subtipo !== 'ADICIONALES'){
+            let [infopedido] = await conn.execute("SELECT *FROM tbl2_pedidos_insumos_cab WHERE idx = ?",[cabecera.id_pedido_origen])
+            let [busqueda] = await conn.execute("SELECT *FROM tbl2_cptes_ordenes_tipo WHERE idx = 9")
+            const data_comprobante = {
+              id_comprobante_CAB: busqueda[0].idx,
+              cod_comprobante: busqueda[0].codigo,
+              num_comprobante: parseInt(busqueda[0].correlativo) + 1,
+              observaciones: 'INGRSO DE DESPACHO POR PEDIDO',
+              idx_documento_asoc: res.insertId,
+              origen: 'KARD',
+              almacen_destino: infopedido[0].tipo == 'AVIOS' ? 508 : 509,
+              articulos: JSON.stringify(
+                articulos.map(fila => ({...fila,lote:cabecera.id_pedido_origen}))
+              ),
+            };
+            console.log("El detalle a insertar es el siguiente:",data_comprobante)
+            let res_mov = await AlmacenModel.saveMovimiento(data_comprobante,conn)
+            if(!res_mov.ok) throw new Error(res_mov.message)
+          }
           //////////////////////////////////////////////
           //////////////////////////////////////////////
         } catch (err) {

@@ -1054,11 +1054,11 @@ export default class AlmacenModel{
       // }
 
       // if(conn) conn.rollback()
-      if(conn) conn.commit()
+      // if(conn) conn.commit()
       return {ok:true,message:'Guardado exitoso'}
     } catch (error) {
       console.log(error)
-      if(conn) conn.rollback()
+      // if(conn) conn.rollback()
       return {ok:false,message:error.message ?? error}
     }
   }
