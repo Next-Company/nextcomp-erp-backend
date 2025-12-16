@@ -1150,8 +1150,8 @@ export class ProduccionModel {
         if(!respuesta.ok) throw respuesta.message
       }
 
-      // if (conn) conn.rollback()
-      if (conn) conn.commit()
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return {ok:true,message:'Registro completo'}
     } catch (err) {
       console.log(err)
@@ -1491,7 +1491,7 @@ export class ProduccionModel {
         }
 
       } else {
-        const [res] = await conn.query('INSERT INTO tbl2_guias_traslado_cab(orden_ref,tipo,id_proveedor_CAB,proveedor,servicio,fec_emision,fec_retorno,costo,observaciones,motivo_traslado,responsable,modelo,marca,producto,destino,id_orden_CAB,id_corte_CAB,distribucion) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?,""),NULLIF(?,""),NULLIF(?,""))', [cabecera.orden_ref, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.servicio, cabecera.fec_emision, cabecera.fec_retorno, cabecera.costo, cabecera.observaciones, cabecera.motivo_traslado, cabecera.responsable, cabecera.modelo, cabecera.marca, cabecera.producto, cabecera.destino, cabecera.id_orden_CAB ?? 1, cabecera.id_corte_CAB ?? 1],cabecera.distribucion)
+        const [res] = await conn.query('INSERT INTO tbl2_guias_traslado_cab(orden_ref,tipo,id_proveedor_CAB,proveedor,servicio,fec_emision,fec_retorno,costo,observaciones,motivo_traslado,responsable,modelo,marca,producto,destino,id_orden_CAB,id_corte_CAB,distribucion) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?,""),NULLIF(?,""),NULLIF(?,""))', [cabecera.orden_ref, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.servicio, cabecera.fec_emision, cabecera.fec_retorno, cabecera.costo, cabecera.observaciones, cabecera.motivo_traslado, cabecera.responsable, cabecera.modelo, cabecera.marca, cabecera.producto, cabecera.destino, cabecera.id_orden_CAB ?? 1, cabecera.id_corte_CAB ?? 1, cabecera.distribucion])
 
         for(let fila of [...articulos]){
           const [results] = await conn.query('INSERT INTO tbl2_guias_traslado_det(id_guia_CAB,articulo,cantidad) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.articulo, fila.cantidad]);
@@ -2142,8 +2142,13 @@ export class ProduccionModel {
 
         for(let fila of [...articulos]){
           if (fila.idx && fila.idx !== '') {
-            console.log("Dentro de 1 actualizacion")
-            const [results, fields] = await conn.query('UPDATE tbl2_pedidos_insumos_det SET id_pedido_CAB=NULLIF(?, ""),id_producto_CAB=NULLIF(?, ""),producto=NULLIF(?, ""),color=NULLIF(?, ""),rollos=NULLIF(?, ""),cantidad=NULLIF(?, ""),unidad=NULLIF(?, ""),precio=NULLIF(?, ""),anulado=NULLIF(?, ""),modelo=NULLIF(?, ""),corte=NULLIF(?, ""),conversion=NULLIF(?, "") WHERE idx = ?', [parseInt(data.id), fila.id_producto_CAB, fila.producto, fila.color, fila.rollos, fila.cantidad, fila.unidad, fila.precio, fila.anulado, fila.modelo, fila.corte, fila.conversion, fila.idx]);
+            console.log("Dentro de 1 actualizaciones")
+            try {
+              const [results, fields] = await conn.query('UPDATE tbl2_pedidos_insumos_det SET id_pedido_CAB=NULLIF(?, ""),id_producto_CAB=NULLIF(?, ""),producto=NULLIF(?, ""),color=NULLIF(?, ""),rollos=NULLIF(?, ""),cantidad=NULLIF(?, ""),unidad=NULLIF(?, ""),precio=NULLIF(?, ""),anulado=NULLIF(?, ""),modelo=NULLIF(?, ""),corte=NULLIF(?, ""),conversion=NULLIF(?, "") WHERE idx = ?', [parseInt(data.id), fila.id_producto_CAB, fila.producto, fila.color, fila.rollos, fila.cantidad, fila.unidad, fila.precio, fila.anulado, fila.modelo, fila.corte, fila.conversion, fila.idx]);
+              
+            } catch (error) {
+              console.log("Error en actualizado:",error)
+            }
 
           } else {
             console.log("Dentro de 2 insertado")
@@ -2200,8 +2205,17 @@ export class ProduccionModel {
           const [res, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_cab(orden_ref,fec_emision,fec_retorno,tipo,id_proveedor_CAB,proveedor,responsable,forma_pago,nro_contacto,observaciones,estado,moneda,igv,produccion,afec_retencion,emisor) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [correlativo, cabecera.fec_emision, cabecera.fec_retorno, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.forma_pago, cabecera.nro_contacto, cabecera.observaciones, cabecera.estado, cabecera.moneda, cabecera.igv, cabecera.produccion, cabecera.afec_retencion, cabecera.emisor]);
 
           for(let fila of articulos){
-            const [results, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_det(id_pedido_CAB,id_subprod_CAB,id_producto_CAB,producto,modelo,corte,color,rollos,cantidad,unidad,precio,conversion) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.id_subprod_CAB ?? null,fila.idx_producto, fila.producto, fila.modelo, fila.corte, fila.color, fila.rollos, fila.cantidad, fila.unidad, fila.precio, fila.conversion ?? 1]);
+            console.log("Dentro del insertado detalle de avios")
+            try {
+              const [results, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_det(id_pedido_CAB,id_subprod_CAB,id_producto_CAB,producto,modelo,corte,color,rollos,cantidad,unidad,precio,conversion) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.id_subprod_CAB ?? null,fila.idx_producto, fila.producto, fila.modelo, fila.corte, fila.color, fila.rollos, fila.cantidad, fila.unidad, fila.precio, fila.conversion ?? 1]);
+            } catch (error) {
+              console.log("Error:",error)
+            }
           }
+
+          const pp = await conn.query("select *from tbl2_pedidos_insumos_det where id_pedido_CAB = ?",[res.insertId])
+
+          console.log("El detalle de avios detalle es:",pp)
 
           // const insert = async () => {
           //   const fila = articulos.shift()
