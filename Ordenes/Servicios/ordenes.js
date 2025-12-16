@@ -286,7 +286,7 @@ export class OrdenesModel {
 
       let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(COALESCE(TRIM(oc),''),' ',COALESCE(TRIM(cliente),''),' ',COALESCE(TRIM(marca),''),' ',COALESCE(TRIM(producto),''),' ',COALESCE(TRIM(modelos),''),' ',COALESCE(TRIM(estado_orden),''))) > 0").join(" ") : ""
 
-      let [results] = await conn.query(`
+      let query = `
         SELECT *,
         DATE_FORMAT(fec_emitida,'%d/%m/%Y') as fec_emitida_orden,
         DATE_FORMAT(fec_entrega,'%d/%m/%Y') as fec_entrega_orden,
@@ -294,7 +294,111 @@ export class OrdenesModel {
         COALESCE(DATEDIFF(STR_TO_DATE(fec_entrega,'%Y-%m-%d'),date(now())),0) as dias_pendientes
         FROM viewProduccionOrdenes t1
         WHERE 1=1 ${extra} ORDER BY idx desc
-      `);
+      `
+      console.log('Consulta de listado de ordenes:',query)
+      console.log('Otra lista de impresion de observaciones')
+      let [results] = await conn.query(query);
+      await conn.end();
+
+      return results
+    } catch (err) {
+      console.log(err);
+      return { 'msg': err }
+    } finally {
+      if (conn) {
+        await conn.end();
+      }
+    }
+  }
+  static async getOrdenesFull(search) {
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+
+      let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(COALESCE(TRIM(oc),''),' ',COALESCE(TRIM(cliente),''),' ',COALESCE(TRIM(marca),''),' ',COALESCE(TRIM(producto),''),' ',COALESCE(TRIM(modelos),''),' ',COALESCE(TRIM(estado_orden),''))) > 0").join(" ") : ""
+
+      let query = `
+        SELECT *,
+        DATE_FORMAT(fec_emitida,'%d/%m/%Y') as fec_emitida_orden,
+        DATE_FORMAT(fec_entrega,'%d/%m/%Y') as fec_entrega_orden,
+        COALESCE(DATEDIFF(STR_TO_DATE(fec_entrega,'%Y-%m-%d'),STR_TO_DATE(fec_emitida,'%Y-%m-%d') ),0) as dias_produccion,
+        COALESCE(DATEDIFF(STR_TO_DATE(fec_entrega,'%Y-%m-%d'),date(now())),0) as dias_pendientes
+        FROM (
+          select
+            tfpo.idx AS idx,
+            tfpo.oc AS oc,
+            tfpo.cliente AS cliente,
+            tfpo.fec_emitida AS fec_emitida,
+            tfpo.fec_entrega AS fec_entrega,
+            tfpo.marca AS marca,
+            tfpo.producto AS producto,
+            tfpo.base AS base,
+            tfpo.precio AS precio,
+            tfpo.modelos AS modelos,
+            tfpo.estado_orden AS estado_orden,
+            tfph.observaciones_fase_hojacorte AS observaciones_fase_hojacorte,
+            if(((tfph.estado_corte is not null) and (tfph.estado_corte <> '-')), 'CORTE', if(((tfpm.estado_molde is not null) and (tfpm.estado_molde <> '-')), 'MOLDES', if(((tfpt.estado_telas is not null) and (tfpt.estado_telas <> '-')), 'TELAS', 'ORDENES'))) AS status,
+            (
+            select
+                count(0)
+            from
+                BD_FACTURADOR.tbl2_guias_traslado_cab tgtc
+            where
+                ((tgtc.id_orden_CAB = tfpo.idx)
+                    and (tgtc.estado <> 'ANULADO'))) AS nro_guias,
+            (
+            select
+                count(0)
+            from
+                BD_FACTURADOR.tbl2_guias_traslado_cab tgtc
+            where
+                ((tgtc.id_orden_CAB = tfpo.idx)
+                    and (tgtc.servicio = 'ACABADOS')
+                        and (tgtc.estado = 'FINALIZADO'))) AS nro_guias_acabados,
+            (
+            select
+                coalesce(group_concat(distinct tgtc.servicio separator '-'), 'TRANSITO')
+            from
+                BD_FACTURADOR.tbl2_guias_traslado_cab tgtc
+            where
+                ((tgtc.id_orden_CAB = tfpo.idx)
+                    and (tgtc.estado = 'PENDIENTE'))) AS status_servicio,
+            (
+            select
+                group_concat(distinct tgtc.servicio separator ',')
+            from
+                BD_FACTURADOR.tbl2_guias_traslado_cab tgtc
+            where
+                ((tgtc.id_orden_CAB = tfpo.idx)
+                    and (tgtc.estado <> 'ANULADO'))) AS lista_servicios,
+            (
+            select
+                group_concat(distinct tgtc.servicio separator ',')
+            from
+                BD_FACTURADOR.tbl2_guias_traslado_cab tgtc
+            where
+                ((tgtc.id_orden_CAB = tfpo.idx)
+                    and (cast(now() as date) > cast(tgtc.fec_retorno as date))
+                        and (tgtc.estado not in ('FINALIZADO', 'ANULADO')))) AS servicios_caducos,
+            coalesce((select sum(coalesce(tfphcf.produccion_total, 0)) from (BD_FACTURADOR.tbl2_fases_prod_hojacorte_combos tfphc join 
+            BD_FACTURADOR.tbl2_fases_prod_hojacorte_combos_fracciones tfphcf on((tfphc.idx = tfphcf.id_combo_CAB))) where (tfphc.id_hojacorte_CAB = tfph.idx)), 0) AS disponible
+          from
+              (((BD_FACTURADOR.tbl2_fases_prod_ordenes tfpo
+          left join BD_FACTURADOR.tbl2_fases_prod_telas tfpt on
+              ((tfpo.idx = tfpt.id_cab_orden)))
+          left join BD_FACTURADOR.tbl2_fases_prod_molde tfpm on
+              ((tfpo.idx = tfpm.id_cab_orden)))
+          left join BD_FACTURADOR.tbl2_fases_prod_hojacorte tfph on
+              ((tfpo.idx = tfph.id_cab_orden)))
+          where
+              ((tfpo.estado_orden <> 'OTRO') and (tfpo.estado_orden <> 'ANULADO'))
+        ) t1
+        WHERE 1=1 ${extra} ORDER BY idx desc
+      `
+      
+      console.log('Consulta de listado de ordenes:',query)
+      let [results] = await conn.query(query);
       await conn.end();
 
       return results
@@ -776,8 +880,8 @@ export class OrdenesModel {
         nameimg = `op_${id}.jpg`
         // console.log(sql)
       }
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito',filename: nameimg }
     } catch (err) {
       console.log(err)
@@ -827,7 +931,7 @@ export class OrdenesModel {
         let [insert_combo] = await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos(id_orden_CAB,color_combo,cantidad_combo,insumos) VALUES (?,?,?,?)",[idinsert,combo.color_combo,combo.cantidad_combo,JSON.stringify(combo.insumos ?? [])])
 
         let fraccionado = [];
-        ['xs','s','m','l','xl','xxl'].reduce((c,v)=>{
+        ['st','xs','s','m','l','xl','xxl'].reduce((c,v)=>{
           c.push([insert_combo.insertId,v,parseInt(combo[v]) > 0 ? parseInt(combo[v]) : 0])
           return c
         },fraccionado)
@@ -897,7 +1001,7 @@ export class OrdenesModel {
         // console.log("Validacion insumos:",rdata.insumos,JSON.stringify(rdata.insumos ?? []))
         let [insert_info] = await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos(id_orden_CAB,color_combo,cantidad_combo,insumos) VALUES (?,?,?,?)",[id,rdata.color_combo,rdata.cantidad_combo,JSON.stringify(rdata.insumos ?? [])])
 
-          let fracciones = ['xs','s','m','l','xl','xxl'].reduce((c,v)=>{
+          let fracciones = ['st','xs','s','m','l','xl','xxl'].reduce((c,v)=>{
             c.push([insert_info.insertId,v,parseInt(rdata[v]) > 0 ? parseInt(rdata[v]) : 0])
             return c
           },[])
@@ -1027,8 +1131,8 @@ export class OrdenesModel {
 
                       // Insertar combo de hoja de corte
                       const [comboInsertResult] = await conn.query(
-                          "INSERT INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB, idx_color, color_combo, cantidad_combo, disponible_total) VALUES (?,?,?,?,?)",
-                          [idHojaCorte, combo.idx_color, combo.color_combo, combo.cantidad_combo, combo.cantidad_combo]
+                          "INSERT INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB, idx_color, color_combo, cantidad_combo, disponible_total, insumos) VALUES (?,?,?,?,?,?)",
+                          [idHojaCorte, combo.idx_color, combo.color_combo, combo.cantidad_combo, combo.cantidad_combo, JSON.stringify(combo.insumos ?? [])]
                       );
                       const idComboCorte = comboInsertResult.insertId;
 
@@ -1105,7 +1209,7 @@ export class OrdenesModel {
                   await conn.query("DELETE FROM tbl2_fases_prod_hojacorte_combos WHERE idx = ?",[combo.idx])
                   await conn.query("DELETE FROM tbl2_fases_prod_hojacorte_combos_fracciones WHERE id_combo_CAB = ?",[combo.idx])
   
-                  let [info_insert] = await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB,idx_color,color_combo,cantidad_combo,disponible_total) VALUES (?,?,?,?,?)",[corte.idx,combo.idx_color,combo.color_combo,combo.cantidad_combo,combo.cantidad_combo])
+                  let [info_insert] = await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB,idx_color,color_combo,cantidad_combo,disponible_total,insumos) VALUES (?,?,?,?,?,?)",[corte.idx,combo.idx_color,combo.color_combo,combo.cantidad_combo,combo.cantidad_combo,JSON.stringify(combo.insumos)])
   
                   let fraccionado = []
                   if(combo.idx && combo.idx !== ''){
@@ -1120,7 +1224,7 @@ export class OrdenesModel {
                   await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos_fracciones(id_combo_CAB,talla,cantidad,produccion_total) values ? ",[fraccionado])
                 } else {
                   console.log("Dentro del update de combos simple")
-                  await conn.query("UPDATE tbl2_fases_prod_hojacorte_combos SET idx_color = ?,color_combo = ? WHERE idx = ? and id_hojacorte_CAB = ?",[combo.idx_color,combo.color_combo,combo.idx,parseInt(corte['idx'])])
+                  await conn.query("UPDATE tbl2_fases_prod_hojacorte_combos SET idx_color = ?,color_combo = ?, insumos = ? WHERE idx = ? and id_hojacorte_CAB = ?",[combo.idx_color,combo.color_combo,JSON.stringify(combo).insumos,combo.idx,parseInt(corte['idx'])])
                 }
               }
             }
@@ -1587,38 +1691,61 @@ export class OrdenesModel {
       return {ok:false,resp:0}
     }
   }
-  // static async getCorrelativoProduccion(tipo,conn){
-  //   let correlativo = null
-  //   try {
-  //     const [result] = await conn.execute("SELECT CONCAT(YEAR(NOW()),numero) as numero FROM tbl2_fases_produccion_correlativo WHERE ruc_ = ? AND anio = YEAR(NOW()) AND tipo = ? FOR UPDATE",['20522094120',tipo])
-  //     if(result.length == 0){
-  //       await conn.execute("UPDATE tbl2_fases_produccion_correlativo SET anio = YEAR(NOW()), numero = 1 WHERE ruc_ = ? AND tipo = ?",['20522094120',tipo])
-  //       correlativo = (new Date()).toLocaleDateString("es-MX",{year:"numeric"}) + '000001'
-  //     } else{
-  //       correlativo = result[0].numero
-  //     }
-  //     await conn.execute("UPDATE tbl2_fases_produccion_correlativo SET anio = YEAR(NOW()), numero = numero + 1 WHERE ruc_ = ? AND tipo = ?",['20522094120',tipo])
-  //     return {ok:true,resp:correlativo}
-  //   } catch (error) {
-  //     return {ok:false,resp:0}
-  //   }
-  // }
-  // static async getCorrelativoProduccionPreview(tipo){
-  //   let correlativo = null
-  //   let conn = undefined
-  //   try {
-  //     conn = await mysql.createConnection(configs[1])
-  //     await conn.connect()
-  //     const [result] = await conn.execute("SELECT CONCAT(YEAR(NOW()),numero) as numero FROM tbl2_fases_produccion_correlativo WHERE ruc_ = ? AND anio = YEAR(NOW()) AND tipo = ? FOR UPDATE",['20522094120',tipo])
-  //     if(result.length == 0){
-  //       correlativo = (new Date()).toLocaleDateString("es-MX",{year:"numeric"}) + '000001'
-  //     } else{
-  //       correlativo = result[0].numero
-  //     }
-  //     return {ok:true,resp:correlativo}
-  //   } catch (error) {
-  //     console.log(error)
-  //     return {ok:false,resp:0}
-  //   }
-  // }
+  static async getInsumosOrden(idorden,idalmacen) {
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      
+      let [results] = await conn.query(`
+        SELECT
+          t1.id_subprod_CAB,
+          t1.id_producto_CAB,
+          (select tp.nom from tbl2_productos tp where tp.idx = t1.id_producto_CAB) as producto,
+          ts.idx_CAB_COLOR,
+          (select tc.nom from tbl2_colores tc where tc.idx = ts.idx_CAB_COLOR) as color,
+          ts.idx_talla,
+          ts.talla,
+          (select tp.codUnidadMedida from tbl2_productos tp where tp.idx = t1.id_producto_CAB) as unidad,
+          (select tp.tipo from tbl2_productos tp where tp.idx = t1.id_producto_CAB) as tipo,
+          COALESCE(pc.lote,0) AS lote,
+          if(ISNULL(tc.idx),
+            COALESCE((
+              select sum(tboc.cantidad_combo) from tbl2_fases_prod_ordenes_combos tboc 
+              where tboc.id_orden_CAB = t1.id_orden_CAB and JSON_CONTAINS(tboc.insumos,CAST(ifnull(t1.id_subprod_CAB,-1) as CHAR))
+            ),0),
+            COALESCE((
+              select sum(tbcc.cantidad_combo) from tbl2_fases_prod_hojacorte_combos tbcc 
+              where tbcc.id_hojacorte_CAB = tc.idx and JSON_CONTAINS(tbcc.insumos,CAST(ifnull(t1.id_subprod_CAB,-1) as CHAR))
+            ),0)
+          )*t1.cantidad as comprometido,
+          -- COALESCE(t1.cantidad,0) as comprometido,
+          COALESCE((
+            select SUM(COALESCE(tkcd.Cant_despacho_DET,0)) from tbl_kard_compras_CAB tkcc 
+            join tbl_kard_compras_DET tkcd on tkcc.id_CAB = tkcd.id_CAB_DET 
+            where tkcc.id_orden = t1.id_orden_CAB and tkcd.id_subprod = t1.id_subprod_CAB and tkcd.num_lote = COALESCE(pc.lote,0)
+          ),0) as entregado,
+          COALESCE((
+            select SUM(COALESCE(tad.cantidad,0)) from tbl2_almacen_det tad where tad.id_CAB_DET = ? and tad.idx_subproducto = t1.id_subprod_CAB and tad.lote = COALESCE(pc.lote,0)
+          ),0) as stock
+        FROM tbl2_fases_prod_ordenes t0
+        LEFT JOIN tbl2_fases_prod_hojacorte tc on t0.idx = tc.id_cab_orden 
+        JOIN tbl2_fases_prod_ordenes_insumos t1 on t0.idx = t1.id_orden_CAB
+        JOIN tbl2_subproductos ts ON t1.id_subprod_CAB = ts.idx
+        LEFT JOIN (
+          SELECT tor.id_pedido_CAB as lote,tor.id_orden_CAB,tpi.id_subprod_CAB 
+          FROM tbl2_fases_prod_ordenes_requerimientos tor
+          JOIN tbl2_pedidos_insumos_det tpi ON tor.id_pedido_CAB = tpi.id_pedido_CAB
+        ) as pc ON pc.id_orden_CAB = t1.id_orden_CAB and pc.id_subprod_CAB = t1.id_subprod_CAB
+        WHERE t0.idx = ?
+      `,[idalmacen,idorden])
+
+      return results
+    } catch (err) {
+      console.log(err);
+      return { 'msg': err }
+    } finally {
+      if (conn) await conn.end();
+    }
+  }
 }
