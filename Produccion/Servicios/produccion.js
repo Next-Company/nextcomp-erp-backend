@@ -597,7 +597,7 @@ export class ProduccionModel {
   //seccion guias traslado interno
   //////////////////////////////////
   static async getListaGuias(search) {
-    console.log("Obteniendo listado de guais de traslado")
+    console.log("Obteniendo listado de guais de trasladoSS")
     let conn
     try {
       conn = await mysql.createConnection(configs[1])
@@ -968,7 +968,7 @@ export class ProduccionModel {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
 
-      let extra = search.split(" ").length > 0 ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(TRIM(idx),' ',TRIM(COALESCE(proveedor,'')),' ',TRIM(COALESCE(servicio,'')),' ',TRIM(COALESCE(producto,'')),' ',TRIM(COALESCE(marca,'')),' ',TRIM(COALESCE(estado,'')),' ',TRIM(COALESCE(modelo,'')),' ')) > 0").join(" ") : ""
+      let extra = search.split(" ").length > 0 ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(TRIM(COALESCE(orden_ref,'')),' ',TRIM(idx),' ',TRIM(COALESCE(proveedor,'')),' ',TRIM(COALESCE(servicio,'')),' ',TRIM(COALESCE(producto,'')),' ',TRIM(COALESCE(marca,'')),' ',TRIM(COALESCE(estado,'')),' ',TRIM(COALESCE(modelo,'')),' ')) > 0").join(" ") : ""
 
       // const [results, fields] = await conn.query('SELECT *FROM tbl2_proveedor where ruc_ = "20522094120" ' + (search !== '_' ? 'and ( ruc like ? or nom like ? )' : '') + ' limit 50',[`%${search}%`,`%${search}%`]);
 
@@ -1150,8 +1150,8 @@ export class ProduccionModel {
         if(!respuesta.ok) throw respuesta.message
       }
 
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return {ok:true,message:'Registro completo'}
     } catch (err) {
       console.log(err)
@@ -4213,6 +4213,209 @@ export class ProduccionModel {
         // await conn.end();
         await conn.end();
       }
+    }
+  }
+  static async saveRecepcionAcabados(data) {
+    let conn
+    const results = { ok: true, message: 'test' }
+    const cabecera = JSON.parse(data.info)
+    const articulos = JSON.parse(data.detalle)
+    // const facturas = JSON.parse(data.facturas)
+
+    console.log("Informacion cabecera:", cabecera)
+    console.log("Informacion detalle:", articulos)
+    // console.log("Informacion facturas:", facturas)
+
+    // return {ok:true,message:'test'}
+    let data_backup = [], info_orden = undefined
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      conn.beginTransaction();
+
+      [data_backup] = await conn.query(`select tdd.id_combo,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',t1.talla,'despachos',t1.despachos,'caidos',t1.caidos,'incompletos',t1.incompletos)) from tbl2_despachos_det_fracciones t1 where t1.id_despacho_DET = tdd.idx),JSON_ARRAY()) as fracciones from tbl2_despachos_det tdd where tdd.id_despacho_CAB = ?`,[data.id]);
+      // [info_orden] = await conn.query('select *from tbl2_guias_traslado_cab where idx = ?',[parseInt(cabecera.id_guia_origen)])
+
+      try {
+        const [res] = await conn.query('INSERT INTO tbl2_despachos_cab(fec_emision_guia,fec_despacho,tipo,id_proveedor_CAB,proveedor,responsable,id_guia_origen,nro_guia_origen,id_pedido_origen,nro_pedido_origen,observaciones,nro_guia,nro_factura,imp_factura,facturado,fase) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [cabecera.fec_emision_guia, cabecera.fec_despacho, 'EMPAQUETADO', cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.id_guia_origen, cabecera.nro_guia_origen, cabecera.id_pedido_origen, cabecera.nro_pedido_origen, cabecera.observaciones, cabecera.nro_guia, cabecera.nro_factura, cabecera.imp_factura,cabecera.facturado,cabecera.fase])
+
+        console.log("Inicia insertado detalle despacho")
+        for(let detalle of [...articulos]){
+          const [results] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,precio,despacho,caidos,incompletos,id_combo) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, 1, detalle.precio, parseFloat(detalle.despacho ?? 0), parseFloat(detalle.caidos ?? 0), parseFloat(detalle.incompletos ?? 0),detalle.id_combo]);
+
+          if(detalle.fracciones_despacho.length > 0){
+            console.log("Informacion de la fraccion :",detalle.fracciones_despacho)
+            let fracciones_despacho = detalle.fracciones_despacho.reduce((c,v)=>{
+              c.push([results.insertId,v.talla,v.cantidad,v.caidos,v.incompletos])
+              return c
+            },[])
+            console.log("La informacion a insertar es:",fracciones_despacho)
+            await conn.query(`INSERT INTO tbl2_despachos_det_fracciones(id_despacho_DET,talla,despachos,caidos,incompletos) values ?`,[fracciones_despacho])
+          }
+        }
+
+        // let [result] = await conn.query(`
+        //   SELECT idx,orden_ref,producto,responsable,modelo,marca,estado,tipo,servicio,id_proveedor_CAB,proveedor,fec_emision,DATE_FORMAT(fec_emision,'%d/%m/%Y') as fec_emision_guia,fec_retorno,DATE_FORMAT(fec_retorno,'%d/%m/%Y') as fec_retorno_guia,fec_recepcion,costo,COALESCE(DATEDIFF(fec_retorno,fec_emision),'') as tiempo_produccion,COALESCE(DATEDIFF(STR_TO_DATE(fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
+        //   (
+        //     select sum(cantidad) from tbl2_guias_traslado_det tgtd where tgtd.id_guia_CAB = tbl2_guias_traslado_cab.idx
+        //   ) as cantidad_servicio,
+        //   (
+        //     select COALESCE(sum(COALESCE(tdd.despacho,0) + COALESCE(tdd.caidos,0) + COALESCE(tdd.incompletos,0)),0) as total from tbl2_despachos_cab tdc 
+        //     join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
+        //     where tdc.id_guia_origen = tbl2_guias_traslado_cab.idx
+        //   ) as ingresos
+        //   FROM tbl2_guias_traslado_cab where idx = ?
+        //   `,[parseInt(cabecera.id_guia_origen)])
+
+        // console.log("Info de la validacoines :",result)
+    
+        // let valida = result[0].ingresos >= result[0].cantidad_servicio ? 1 : 0
+        // if(valida){
+        //   await conn.query("UPDATE tbl2_guias_traslado_cab SET estado = 'FINALIZADO' WHERE idx = ?",[parseInt(cabecera.id_guia_origen)])
+        // }
+      } catch (err) {
+        console.log("error en la consulta", err)
+        throw new Error("error en la consulta");
+      }
+
+      ///////////////////////////////////////////
+      ///// UPDATE MASTES DE PRODUCCION /////////
+      if(parseInt(cabecera.fase)){
+        console.log("Comenzando actulizacion master de produccion")
+        console.log("Data backup :",data_backup)
+        let param1 = data_backup.reduce((c,v)=>{
+          let pp = v.fracciones.reduce((cc,vv)=>{
+            cc = {...cc,[vv.talla]:[ parseInt(vv.despachos),parseInt(vv.caidos),parseInt(vv.incompletos) ]}
+            return cc
+          },{idcombo:v.id_combo})
+          c.push(pp)
+          return c
+        },[])
+        console.log("El valor del primer dato es:",param1)
+        console.log("La informacion de los articulo es :",articulos)
+
+        let param2 = articulos.filter(item=>item.id_combo).reduce((c,v)=>{
+          let pp = v.fracciones_despacho.reduce((cc,vv)=>{
+            return {...cc,[vv.talla]:[vv.cantidad,vv.caidos,vv.incompletos]}
+          },{idcombo:v.id_combo})
+          c.push(pp)
+          return c
+        },[])
+        console.log("El valor del segundo dato es:",param2)
+  
+        let respuesta = await this.UpdateMasterProduccion(param1,param2,parseInt(cabecera.id_orden_origen),conn,0,1) // tipo = 1 => RESTA, tipo = 0 => SUMA
+        console.log("Imprimiendo respuestad del master:",respuesta)
+        if(!respuesta.ok) throw respuesta.message
+      }
+
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
+      return {ok:true,message:'Proceso ejecutado con éxito'}
+    } catch (err) {
+      console.log("asdlkfaslfjlaskdfjlf:",err)
+      if (conn) conn.rollback()
+      // return {ok:false,message:err}
+      return {ok:false,message:'error'}
+    } finally {
+      if (conn) await conn.end();
+    }
+  }
+  static async getAcabadosPendientes(id, tipo = null) {
+    let conn
+    let new_articulos = null
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+  
+      const [data] = await conn.query(`
+        select 
+          t1.orden_ref,
+          SUM(t2.cantidad) as cantidad,
+          t2.articulo,
+          t2.id_combo,
+          (
+            select JSON_ARRAYAGG(cc.pp) from
+            (
+              select a.id_orden_CAB,b.id_combo,JSON_OBJECT('talla',c.talla,'cantidad',sum(c.cantidad)) as pp
+              from tbl2_guias_traslado_cab a
+              join tbl2_guias_traslado_det b on a.idx = b.id_guia_CAB
+              join tbl2_guias_traslado_det_fracciones c on b.idx = c.id_guia_DET
+              where a.servicio = 'ACABADOS' and a.estado = 'PENDIENTE'
+              group by a.id_orden_CAB,b.id_combo,c.talla
+            ) as cc where cc.id_orden_CAB = t1.id_orden_CAB and cc.id_combo = t2.id_combo
+          ) as fracciones,JSON_ARRAY() as fracciones_despacho
+        from tbl2_guias_traslado_cab t1
+        join tbl2_guias_traslado_det t2 on t1.idx = t2.id_guia_CAB 
+        where t1.id_orden_CAB = ? and t1.servicio  = 'ACABADOS' and t1.estado = 'PENDIENTE'
+        group by t1.orden_ref,t2.articulo,t2.id_combo
+      `, [id]);
+
+      const [despachos] = await conn.query(`select 
+        tdc.idx as id_despacho,
+        DATE_FORMAT(tdc.fec_despacho,'%d/%m') as fec_despacho,
+        tdd.id_item as idx,
+        COALESCE(tdd.despacho,0) as despacho,
+        COALESCE(tdd.caidos,0) as caidos,
+        COALESCE(tdd.incompletos,0) as incompletos,
+        COALESCE(
+          (select JSON_ARRAYAGG(JSON_OBJECT('talla',tddf.talla,'despachos',tddf.despachos,'caidos',tddf.caidos,'incompletos',tddf.incompletos)) 
+          from tbl2_despachos_det_fracciones tddf WHERE tddf.id_despacho_DET = tdd.idx),JSON_ARRAY()
+        ) as fracciones 
+      from tbl2_guias_traslado_cab tgtc
+      join tbl2_despachos_cab tdc on tgtc.idx = tdc.id_guia_origen 
+      join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB 
+      where tdc.tipo = 'SERVICIOS' and tgtc.id_orden_CAB = ? and tgtc.servicio = 'ACABADOS' and tgtc.estado <> 'FINALIZADO'`,[id]);
+
+      let lista_despachos = despachos.reduce((carry,value)=>{
+        if(!Object.keys(carry).includes(value.id_despacho)){
+          carry[value.id_despacho] = value.fec_despacho
+        }
+        return carry 
+      },{})
+
+      const data_formateado = data.map(row=>{
+        const adicional = row.fracciones.reduce((c,v)=>{
+          c[v.talla] = v.cantidad
+          return c
+        },{})
+        return {...row,...adicional}
+      })
+
+      let consolidado = data_formateado.reduce((carry,value)=>{
+
+        value['despachos'] = Object.keys(lista_despachos).reduce((carry,valor)=>{
+          let info = despachos.filter(item=>item.id_despacho == valor && item.idx == value.id_combo)
+          console.log("Fresas con sal:",info)
+          carry.push({
+            'id_despacho':info.length > 0 ? info[0].id_despacho : parseInt(valor),
+            'fec_despacho':info.length > 0 ? info[0].fec_despacho : lista_despachos[valor], 
+            'cantidad_despacho':info.length > 0 ? info[0].despacho : 0,
+            'cantidad_caidos':info.length > 0 ? info[0].caidos : 0,
+            'cantidad_incompletos':info.length > 0 ? info[0].incompletos : 0,
+            'fracciones': info.length > 0 ? info[0].fracciones : []
+          })
+          return carry
+        },[])
+
+        carry.push(value)
+        return carry
+      },[])
+
+      // const formateado = data.map(row=>{
+      //   const adicional = row.fracciones.reduce((c,v)=>{
+      //     c[v.talla] = v.cantidad
+      //     return c
+      //   },{})
+      //   return {...row,...adicional}
+      // })
+
+      await conn.end();
+      return consolidado
+    } catch (err) {
+      console.log(err)
+      return err
+    } finally {
+      if (conn) await conn.end();
     }
   }
 }

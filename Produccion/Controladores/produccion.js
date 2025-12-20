@@ -2841,4 +2841,13 @@ export class ProduccionController {
     const data = await ProduccionModel.saveInfoRetiro(req.body)
     res.json(data)
   }
+  static async saveRecepcionAcabados(req, res) {
+    const data = await ProduccionModel.saveRecepcionAcabados(req.body)
+    res.json(data)
+  }
+  static async getAcabadosPendientes(req, res) {
+    const id = req.params.id
+    const data = await ProduccionModel.getAcabadosPendientes(id)
+    res.json(data)
+  }
 }

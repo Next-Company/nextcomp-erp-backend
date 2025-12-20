@@ -421,7 +421,8 @@ export class OrdenesModel {
       console.log("Id orden:",idorden,"Id hoja:",idhoja)
       let [results] = await conn.query(`SELECT 
         tfphc.idx as id_combo,
-        CONCAT(tfpo.producto,' ',tfpo.marca,' ',tfpo.modelos,' ',tfphc.color_combo) as articulo,
+        -- CONCAT(tfpo.producto,' ',tfpo.marca,' ',tfpo.modelos,' ',tfphc.color_combo) as articulo,
+        CONCAT(tfpo.producto,' ',tfphc.color_combo) as articulo,
         COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',tfphcf.talla,'cantidad',COALESCE(tfphcf.produccion_total,0),'produccion_total',COALESCE(tfphcf.produccion_total,0),'caidos_total',COALESCE(tfphcf.caidos_total,0),'incompletos_total',COALESCE(tfphcf.incompletos_total,0))) 
         FROM tbl2_fases_prod_hojacorte_combos_fracciones tfphcf where tfphcf.id_combo_CAB = tfphc.idx),JSON_ARRAY()) as fracciones,
         (select sum(COALESCE(tfphcf.produccion_total,0)) FROM tbl2_fases_prod_hojacorte_combos_fracciones tfphcf where tfphcf.id_combo_CAB = tfphc.idx) as cantidad_fracciones,

@@ -113,6 +113,7 @@ produccionRouter.post('/vistapreviapedido/:tipo', ProduccionController.VistaPrev
 produccionRouter.post('/vistapreviapedidoavios/:tipo', ProduccionController.VistaPreviaPedidoAvios)
 // produccionRouter.post('/vistapreviapedidoavios/:tipo',ProduccionController.VistaPreviaPedidoAvios)
 
-
+produccionRouter.post('/saveRecepcionAcabados',ProduccionController.saveRecepcionAcabados)
+produccionRouter.get('/getAcabadosPendientes/:id',ProduccionController.getAcabadosPendientes)
 
 
