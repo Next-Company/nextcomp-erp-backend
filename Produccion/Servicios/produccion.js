@@ -1614,14 +1614,14 @@ export class ProduccionModel {
       // const [validacion] = await conn.query(`SELECT *FROM tbl2_fases_prod_hojacorte_combos_fracciones tfphcf WHERE tfphcf.id_combo_CAB IN (SELECT t1.idx FROM tbl2_fases_prod_hojacorte_combos t1 JOIN tbl2_fases_prod_hojacorte t2 ON t1.id_hojacorte_CAB = t2.idx WHERE t2.id_cab_orden = ?) AND ((tfphcf.produccion_total + tfphcf.caidos_total + tfphcf.incompletos_total) > tfphcf.cantidad OR (tfphcf.produccion_total + tfphcf.caidos_total + tfphcf.incompletos_total) < 0)`,[parseInt(orden)])
       // console.log("Imprimiendo validacion:",validacion)
       // if(validacion.length > 0) throw "La informacion ingresada supera el limite permitido"
-      const [validacion] = await conn.query(`SELECT sum(cantidad) as cantidad,${!acabados ? 'sum(produccion_total)' : 'sum(despacho_total)'} as p_tot,sum(caidos_total) as c_tot,sum(incompletos_total) as i_tot
-        FROM tbl2_fases_prod_hojacorte_combos_fracciones tfphcf 
-        WHERE tfphcf.id_combo_CAB IN (
-          SELECT t1.idx 
-          FROM tbl2_fases_prod_hojacorte_combos t1 
-          JOIN tbl2_fases_prod_hojacorte t2 ON t1.id_hojacorte_CAB = t2.idx 
-          WHERE t2.id_cab_orden = ?
-      )`,[parseInt(orden)])
+        const [validacion] = await conn.query(`SELECT sum(cantidad) as cantidad,${!acabados ? 'sum(produccion_total)' : 'sum(despacho_total)'} as p_tot,sum(caidos_total) as c_tot,sum(incompletos_total) as i_tot
+          FROM tbl2_fases_prod_hojacorte_combos_fracciones tfphcf 
+          WHERE tfphcf.id_combo_CAB IN (
+            SELECT t1.idx 
+            FROM tbl2_fases_prod_hojacorte_combos t1 
+            JOIN tbl2_fases_prod_hojacorte t2 ON t1.id_hojacorte_CAB = t2.idx 
+            WHERE t2.id_cab_orden = ?
+        )`,[parseInt(orden)])
       console.log("Imprimiendo validacion:",validacion)
       if((parseInt(validacion[0].p_tot) + parseInt(validacion[0].c_tot) + parseInt(validacion[0].i_tot)) > validacion[0].cantidad) throw "La informacion ingresada supera el limite permitido"
 
@@ -3092,6 +3092,7 @@ export class ProduccionModel {
           console.log("Inicia insertado detalle despacho")
           for(let detalle of [...articulos]){
             const [results] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,precio,despacho,caidos,incompletos,id_combo) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, detalle.id_item, detalle.precio, parseFloat(detalle.despacho ?? 0), parseFloat(detalle.caidos ?? 0), parseFloat(detalle.incompletos ?? 0),detalle.id_combo]);
+            if(results.insertId <= 0) throw new Error("No se pudo obtener el ID del detalle de despacho insertado")
 
             if(cabecera.tipo !== 'PEDIDOS' && detalle.fracciones_despacho.length > 0){
               console.log("Informacion de la fraccion :",detalle.fracciones_despacho)
@@ -3100,7 +3101,8 @@ export class ProduccionModel {
                 return c
               },[])
               console.log("La informacion a insertar es:",fracciones_despacho)
-              await conn.query(`INSERT INTO tbl2_despachos_det_fracciones(id_despacho_DET,talla,despachos,caidos,incompletos) values ?`,[fracciones_despacho])
+              const [resultsFracciones] = await conn.query(`INSERT INTO tbl2_despachos_det_fracciones(id_despacho_DET,talla,despachos,caidos,incompletos) values ?`,[fracciones_despacho])
+              if(resultsFracciones.affectedRows <= 0) throw new Error("No se pudo insertar la informacion de las fracciones de despacho")
             }
           }
 
@@ -3130,6 +3132,7 @@ export class ProduccionModel {
           }
         } catch (err) {
           console.log("error en la consulta", err)
+          throw new Error("Se produjo un error en el guardado de la guia de despacho: " + err)
         }
       }
 
@@ -4256,18 +4259,28 @@ export class ProduccionModel {
 
         const UpdateEstadoGuiaEspecial = async (nro_orden, conexion) => {
           try {
+
+            const [baseguias] = await conn.query('select *from tbl2_guias_traslado_cab where id_orden_CAB = ? and servicio = "ACABADOS" and estado = "PENDIENTE"', [nro_orden])
+            const [baseingresos] = await conn.query('select *from tbl2_despachos_cab where id_guia_origen in (select idx from tbl2_guias_traslado_cab where id_orden_CAB = ? and servicio = "ACABADOS" and estado = "PENDIENTE")', [nro_orden])
+            for (let guia of baseguias) {
+
+            }
+
             const base_guia = await conexion.query(`
-              SELECT *FROM 
-              tbl2_guias_traslado_cab t1 
+            select cc.id_combo,JSON_ARRAYAGG(JSON_OBJECT('talla',cc.talla,'cantidad',cc.cantidad)) as info from 
+            (
+            select t2.id_combo,t3.talla,sum(t3.cantidad) as cantidad
+              from tbl2_guias_traslado_cab t1 
               join tbl2_guias_traslado_det t2 on t1.idx = t2.id_guia_CAB 
               join tbl2_guias_traslado_det_fracciones t3 on t2.idx = t3.id_guia_DET
-              WHERE t1.id_orden_CAB = ?
-            `, [nro_orden])
-
-
+              where t1.id_orden_CAB = 378
+              group by t2.id_combo,t3.talla
+            ) as cc
+            group by cc.id_combo`, [nro_orden])
 
             await conexion.query('UPDATE tbl2_guias_traslado_cab SET estado = ? WHERE idx = ?', [nuevo_estado, parseInt(idguia)])
             return { ok: true, message: 'Estado de guia actualizado' }
+
           } catch (err) {
             console.log("Error al actualizar estado de guia:", err)
             return { ok: false, message: 'Error al actualizar estado de guia' }
