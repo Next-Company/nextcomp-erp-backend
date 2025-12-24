@@ -4239,78 +4239,26 @@ export class ProduccionModel {
       [data_backup] = await conn.query(`select tdd.id_combo,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',t1.talla,'despachos',t1.despachos,'caidos',t1.caidos,'incompletos',t1.incompletos)) from tbl2_despachos_det_fracciones t1 where t1.id_despacho_DET = tdd.idx),JSON_ARRAY()) as fracciones from tbl2_despachos_det tdd where tdd.id_despacho_CAB = ?`,[data.id]);
       // [info_orden] = await conn.query('select *from tbl2_guias_traslado_cab where idx = ?',[parseInt(cabecera.id_guia_origen)])
 
-      try {
-        const [res] = await conn.query('INSERT INTO tbl2_despachos_cab(fec_emision_guia,fec_despacho,tipo,id_proveedor_CAB,proveedor,responsable,id_guia_origen,nro_guia_origen,id_pedido_origen,nro_pedido_origen,observaciones,nro_guia,nro_factura,imp_factura,facturado,fase) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [cabecera.fec_emision_guia, cabecera.fec_despacho, 'EMPAQUETADO', cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.id_guia_origen, cabecera.nro_guia_origen, cabecera.id_pedido_origen, cabecera.nro_pedido_origen, cabecera.observaciones, cabecera.nro_guia, cabecera.nro_factura, cabecera.imp_factura,cabecera.facturado,cabecera.fase])
+      const [res] = await conn.query('INSERT INTO tbl2_despachos_cab(fec_emision_guia,fec_despacho,tipo,id_proveedor_CAB,proveedor,responsable,id_guia_origen,nro_guia_origen,id_pedido_origen,nro_pedido_origen,observaciones,nro_guia,nro_factura,imp_factura,facturado,fase,id_orden_origen,nro_orden_origen) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [cabecera.fec_emision_guia, cabecera.fec_despacho, 'EMPAQUETADO', cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.id_guia_origen, cabecera.nro_guia_origen, cabecera.id_pedido_origen, cabecera.nro_pedido_origen, cabecera.observaciones, cabecera.nro_guia, cabecera.nro_factura, cabecera.imp_factura,cabecera.facturado,cabecera.fase,cabecera.id_orden_origen,cabecera.nro_orden_origen])
+      console.log("El id de la cabecera insertada es:",res.insertId)
 
-        console.log("Inicia insertado detalle despacho")
-        for(let detalle of [...articulos]){
-          const [results] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,precio,despacho,caidos,incompletos,id_combo) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, 1, detalle.precio, parseFloat(detalle.despacho ?? 0), parseFloat(detalle.caidos ?? 0), parseFloat(detalle.incompletos ?? 0),detalle.id_combo]);
+      console.log("Inicia insertado detalle despacho")
+      for(let detalle of [...articulos]){
+        const [results] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,precio,despacho,caidos,incompletos,id_combo) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, 1, detalle.precio, parseFloat(detalle.despacho ?? 0), parseFloat(detalle.caidos ?? 0), parseFloat(detalle.incompletos ?? 0),detalle.id_combo]);
 
-          if(detalle.fracciones_despacho.length > 0){
-            console.log("Informacion de la fraccion :",detalle.fracciones_despacho)
-            let fracciones_despacho = detalle.fracciones_despacho.reduce((c,v)=>{
-              c.push([results.insertId,v.talla,v.cantidad,v.caidos,v.incompletos])
-              return c
-            },[])
-            console.log("La informacion a insertar es:",fracciones_despacho)
-            await conn.query(`INSERT INTO tbl2_despachos_det_fracciones(id_despacho_DET,talla,despachos,caidos,incompletos) values ?`,[fracciones_despacho])
-          }
+        if(detalle.fracciones_despacho.length > 0){
+          console.log("Informacion de la fraccion :",detalle.fracciones_despacho)
+          let fracciones_despacho = detalle.fracciones_despacho.reduce((c,v)=>{
+            c.push([results.insertId,v.talla,v.cantidad,v.caidos,v.incompletos])
+            return c
+          },[])
+          console.log("La informacion a insertar es:",fracciones_despacho)
+          const [fracciones_insertadas] = await conn.query(`INSERT INTO tbl2_despachos_det_fracciones(id_despacho_DET,talla,despachos,caidos,incompletos) values ?`,[fracciones_despacho])
+          console.log("Fracciones insertadas correctamente",fracciones_insertadas.affectedRows)
         }
-
-        const UpdateEstadoGuiaEspecial = async (nro_orden, conexion) => {
-          try {
-
-            const [baseguias] = await conn.query('select *from tbl2_guias_traslado_cab where id_orden_CAB = ? and servicio = "ACABADOS" and estado = "PENDIENTE"', [nro_orden])
-            const [baseingresos] = await conn.query('select *from tbl2_despachos_cab where id_guia_origen in (select idx from tbl2_guias_traslado_cab where id_orden_CAB = ? and servicio = "ACABADOS" and estado = "PENDIENTE")', [nro_orden])
-            for (let guia of baseguias) {
-
-            }
-
-            const base_guia = await conexion.query(`
-            select cc.id_combo,JSON_ARRAYAGG(JSON_OBJECT('talla',cc.talla,'cantidad',cc.cantidad)) as info from 
-            (
-            select t2.id_combo,t3.talla,sum(t3.cantidad) as cantidad
-              from tbl2_guias_traslado_cab t1 
-              join tbl2_guias_traslado_det t2 on t1.idx = t2.id_guia_CAB 
-              join tbl2_guias_traslado_det_fracciones t3 on t2.idx = t3.id_guia_DET
-              where t1.id_orden_CAB = 378
-              group by t2.id_combo,t3.talla
-            ) as cc
-            group by cc.id_combo`, [nro_orden])
-
-            await conexion.query('UPDATE tbl2_guias_traslado_cab SET estado = ? WHERE idx = ?', [nuevo_estado, parseInt(idguia)])
-            return { ok: true, message: 'Estado de guia actualizado' }
-
-          } catch (err) {
-            console.log("Error al actualizar estado de guia:", err)
-            return { ok: false, message: 'Error al actualizar estado de guia' }
-          }
-        }
-
-        let [result] = await conn.query(`
-          SELECT idx,orden_ref,producto,responsable,modelo,marca,estado,tipo,servicio,id_proveedor_CAB,proveedor,fec_emision,DATE_FORMAT(fec_emision,'%d/%m/%Y') as fec_emision_guia,fec_retorno,DATE_FORMAT(fec_retorno,'%d/%m/%Y') as fec_retorno_guia,fec_recepcion,costo,COALESCE(DATEDIFF(fec_retorno,fec_emision),'') as tiempo_produccion,COALESCE(DATEDIFF(STR_TO_DATE(fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
-          (
-            select sum(cantidad) from tbl2_guias_traslado_det tgtd where tgtd.id_guia_CAB = tbl2_guias_traslado_cab.idx
-          ) as cantidad_servicio,
-          (
-            select COALESCE(sum(COALESCE(tdd.despacho,0) + COALESCE(tdd.caidos,0) + COALESCE(tdd.incompletos,0)),0) as total from tbl2_despachos_cab tdc 
-            join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
-            where tdc.id_guia_origen = tbl2_guias_traslado_cab.idx
-          ) as ingresos
-          FROM tbl2_guias_traslado_cab where idx = ?
-          `,[parseInt(cabecera.id_guia_origen)])
-
-        console.log("Info de la validacoines :",result)
-    
-        let valida = result[0].ingresos >= result[0].cantidad_servicio ? 1 : 0
-        if(valida){
-          await conn.query("UPDATE tbl2_guias_traslado_cab SET estado = 'FINALIZADO' WHERE idx = ?",[parseInt(cabecera.id_guia_origen)])
-        }
-
-      } catch (err) {
-        console.log("error en la consulta", err)
-        throw new Error("error en la consulta");
       }
+      const updateguiasacabados = await this.UpdateEstadoGuiaAcabados(parseInt(cabecera.id_orden_origen),conn)
+      if(!updateguiasacabados.ok) throw new Error(updateguiasacabados.message)
 
       ///////////////////////////////////////////
       ///// UPDATE MASTES DE PRODUCCION /////////
@@ -4342,8 +4290,8 @@ export class ProduccionModel {
         if(!respuesta.ok) throw respuesta.message
       }
 
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return {ok:true,message:'Proceso ejecutado con éxito'}
     } catch (err) {
       console.log("asdlkfaslfjlaskdfjlf:",err)
@@ -4451,5 +4399,129 @@ export class ProduccionModel {
     } finally {
       if (conn) await conn.end();
     }
+  }
+  static async UpdateEstadoGuiaAcabados(idorden = 378,conn){
+    let result = {ok:true,message:'Estado de guia actualizado'}
+    // let conn = await mysql.createConnection(configs[1])
+    // await conn.connect()
+    // const id_orden = 378
+    // const result = {ok:true,message:'Estado de guia actualizados'}
+    try {
+      const [baseguias] = await conn.query(`
+        select cc.id_guia,cc.id_combo,JSON_ARRAYAGG(JSON_OBJECT('talla',cc.talla,'cantidad',cc.cantidad)) as info from 
+        (
+          select t1.idx as id_guia,t2.id_combo,t3.talla,sum(t3.cantidad) as cantidad
+          from tbl2_guias_traslado_cab t1 
+          join tbl2_guias_traslado_det t2 on t1.idx = t2.id_guia_CAB 
+          join tbl2_guias_traslado_det_fracciones t3 on t2.idx = t3.id_guia_DET
+          where t1.id_orden_CAB = ? and t1.servicio = 'ACABADOS' and t1.estado = 'PENDIENTE'
+          group by t1.idx,t2.id_combo,t3.talla
+        ) as cc
+        group by cc.id_guia,cc.id_combo
+      `, [idorden])
+      console.log("Base guias:",baseguias,baseguias[0].info)
+      
+      const [baseingresos] = await conn.query(`
+        SELECT cc.id_combo,JSON_OBJECTAGG(cc.talla,cc.cantidad) as info
+        from (
+          select t2.id_combo,t3.talla,sum(t3.despachos+t3.caidos+t3.incompletos) as cantidad
+          from tbl2_despachos_cab t1
+          join tbl2_despachos_det t2 on t1.idx = t2.id_despacho_CAB 
+          join tbl2_despachos_det_fracciones t3 on t2.idx = t3.id_despacho_DET 
+          where t1.id_orden_origen = ?
+          group by t2.id_combo,t3.talla
+        ) as cc
+        group by cc.id_combo
+      `, [idorden])
+      console.log("Base ingresos:",baseingresos)
+
+      // const baseguias = [
+      //   {
+      //     id_guia: 1471,
+      //     id_combo: 2000,
+      //     info: [{ talla: 'l', cantidad: 30 },{ talla: 'm', cantidad: 40 },{ talla: 's', cantidad: 40 },{ talla: 'xl', cantidad: 0 },{ talla: 'xs', cantidad: 20 },{ talla: 'xxl', cantidad: 0 }]
+      //   },
+      //   {
+      //     id_guia: 1471,
+      //     id_combo: 2001,
+      //     info: [{ talla: 'l', cantidad: 25 },{ talla: 'm', cantidad: 100 },{ talla: 's', cantidad: 100 },{ talla: 'xl', cantidad: 0 },{ talla: 'xs', cantidad: 50 },{ talla: 'xxl', cantidad: 0 }]
+      //   }
+      // ]
+      // let baseingresos = [
+      //   {
+      //     id_combo: 2000,info: {'l':30,'m':40,'s':40,'xl':0,'xs':20,'xxl':0}
+      //   },
+      //   {
+      //     id_combo: 2001,info: {'l':50,'m':100,'s':100,'xl':0,'xs':50,'xxl':0}
+      //   }
+      // ]
+      // console.log("Base ingresos:",baseingresos,baseingresos[0].info)
+
+      for (let guia of baseguias.map(row=>row.id_guia)) {
+        console.log("Procesando guia:",guia)
+        const combosGuia = baseguias.filter(row=>row.id_guia == guia)
+        console.log("Info de la guia:",combosGuia)
+
+        let guia_finalizado = true
+        combosGuia.forEach(g=>{
+          if(guia_finalizado){
+            let combo_finalizado = true
+            let combo = g.id_combo
+            let info = g.info.reduce((cc,vv)=>{
+              cc = {...cc,[vv.talla]:vv.cantidad}
+              return cc
+            },{})
+            Object.keys(info).forEach(talla=>{
+              if(combo_finalizado){  
+                console.log("Validando talla:",talla,info[talla])
+                const filtro = baseingresos.filter(row=>row.id_combo == combo)
+                if(filtro.length && Object.keys(filtro[0].info).includes(talla)){
+                  if(parseInt(baseingresos.filter(row=>row.id_combo == combo)[0].info[talla]) < parseInt(info[talla])){
+                    combo_finalizado = false
+                  }
+                }else{
+                  combo_finalizado = false
+                }
+              }
+            })
+            if(!combo_finalizado){
+              guia_finalizado = false
+            }
+          }
+        })
+        if(guia_finalizado){
+          try {
+            console.log("Dentro de la finalizacion de la guia:",guia)
+            baseingresos = baseingresos.reduce((c,v)=>{
+              if(combosGuia.map(row=>row.id_combo).includes(v.id_combo)){ 
+                let info_combo = combosGuia.filter(item=>item.id_combo == v.id_combo)[0].info.reduce((cc,vv)=>{
+                  return {...cc,[vv.talla]: vv.cantidad}
+                },{})
+  
+                Object.keys(info_combo).forEach(talla=>{
+                  if(Object.keys(v.info).includes(talla)){
+                    v.info = {...v.info,[talla]: (parseInt(v.info[talla] ?? 0) - parseInt(info_combo[talla])) }
+                  }
+                })
+              }
+              c.push(v)
+              return c
+            },[])
+            
+          } catch (error) {
+            // console.log("Error en la actualizacion de la base de ingresos:",error)
+            throw new Error("Error en la actualizacion de la base de ingresos");
+          }
+          await conn.query('UPDATE tbl2_guias_traslado_cab SET estado = ? WHERE idx = ?', ['FINALIZADO', parseInt(guia)])
+        }else{
+          await conn.query('UPDATE tbl2_guias_traslado_cab SET estado = ? WHERE idx = ?', ['PENDIENTE', parseInt(guia)])
+        }
+      }
+      console.log("Base ingresos final:",baseingresos)
+      
+    } catch (error) {
+      result = {ok:false,message:error}
+    }
+    return result
   }
 }

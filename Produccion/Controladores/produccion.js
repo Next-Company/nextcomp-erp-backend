@@ -2850,4 +2850,8 @@ export class ProduccionController {
     const data = await ProduccionModel.getAcabadosPendientes(id)
     res.json(data)
   }
+  static async UpdateEstadoGuiaAcabados(req, res){
+    const data = await ProduccionModel.UpdateEstadoGuiaAcabados()
+    res.json({ok:true, message:'No implementado aun'})
+  }
 }
