@@ -115,6 +115,7 @@ produccionRouter.post('/vistapreviapedidoavios/:tipo', ProduccionController.Vist
 
 produccionRouter.post('/saveRecepcionAcabados',ProduccionController.saveRecepcionAcabados)
 // produccionRouter.post('/saveRecepcionAcabados',ProduccionController.UpdateEstadoGuiaAcabados)
+produccionRouter.get('/getInfoEmpaquetado/:id',ProduccionController.getInfoEmpaquetado)
 produccionRouter.get('/getAcabadosPendientes/:id',ProduccionController.getAcabadosPendientes)
 
 
