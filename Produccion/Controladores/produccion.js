@@ -2845,6 +2845,10 @@ export class ProduccionController {
     const data = await ProduccionModel.saveRecepcionAcabados(req.body)
     res.json(data)
   }
+  static async updateRecepcionAcabados(req, res) {
+    const data = await ProduccionModel.updateRecepcionAcabados(req.body)
+    res.json(data)
+  }
   static async getAcabadosPendientes(req, res) {
     const id = req.params.id
     const data = await ProduccionModel.getAcabadosPendientes(id)
@@ -2859,7 +2863,7 @@ export class ProduccionController {
     const data = await ProduccionModel.getInfoDespachoEmpaquetadoCab(id)
     const data2 = await ProduccionModel.getInfoDespachoEmpaquetadoDet(id,data[0].id_orden_origen)
     // const data2 = await ProduccionModel.getAcabadosPendientes(data[0].id_orden_origen)
-    console.log("Mostrando data de empaquetado:", data2)
+    console.log("Mostrando data de empaquetado:",data, data2)
 
     res.json([data[0], data2])
   }

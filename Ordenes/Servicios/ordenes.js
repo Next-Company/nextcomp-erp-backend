@@ -1567,8 +1567,16 @@ export class OrdenesModel {
       },{})
 
 	    console.log("La informafion organizada por servicio es:",formateado,estadofase)
+      const [infodespachoacabados] = await conn.query(`
+        select JSON_ARRAYAGG(JSON_OBJECT('id',tdc.idx,'fase',tdc.fase,'idguia',tdc.id_guia_origen,'nro_guia',tdc.nro_guia,'fecha_ingreso',tdc.fec_despacho,'despacho',
+        (select sum(tdd.despacho) from tbl2_despachos_det tdd where tdc.idx = tdd.id_despacho_CAB))) as despachos
+        from tbl2_despachos_cab tdc
+        where tdc.id_orden_origen = ?
+      `,[id])
 
-      return [ordenes,moldes,cortes,infoguias,formateado,estadofase]
+      console.log("Info de despacho y acabados :",infodespachoacabados)
+
+      return [ordenes,moldes,cortes,infoguias,formateado,estadofase,infodespachoacabados]
     } catch (err) {
       console.log(err)
       return [err]
