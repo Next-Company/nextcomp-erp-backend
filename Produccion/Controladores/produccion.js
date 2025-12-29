@@ -2857,10 +2857,8 @@ export class ProduccionController {
   static async getInfoEmpaquetado(req, res) {
     const id = req.params.id
     const data = await ProduccionModel.getInfoDespachoEmpaquetadoCab(id)
-    const data2 = await ProduccionModel.getInfoDespachoEmpaquetadoDet(id)
+    const data2 = await ProduccionModel.getInfoDespachoEmpaquetadoDet(id,data[0].id_orden_origen)
     // const data2 = await ProduccionModel.getAcabadosPendientes(data[0].id_orden_origen)
-    
-
     console.log("Mostrando data de empaquetado:", data2)
 
     res.json([data[0], data2])

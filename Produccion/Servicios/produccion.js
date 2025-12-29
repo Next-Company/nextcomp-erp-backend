@@ -4550,7 +4550,7 @@ export class ProduccionModel {
       }
     }
   }
-  static async getInfoDespachoEmpaquetadoDet(id, tipo = null) {
+  static async getInfoDespachoEmpaquetadoDet__(id, idorden) {
     let conn
     try {
       conn = await mysql.createConnection(configs[1])
@@ -4558,6 +4558,7 @@ export class ProduccionModel {
       let new_articulos = null
 
       console.log("El id del despacho es: ", id)
+
       const [data] = await conn.query(`
         select 
           t1.orden_ref,
@@ -4579,7 +4580,86 @@ export class ProduccionModel {
         join tbl2_guias_traslado_det t2 on t1.idx = t2.id_guia_CAB 
         where t1.id_orden_CAB = ? and t1.servicio  = 'ACABADOS' and t1.estado = 'PENDIENTE'
         group by t1.orden_ref,t2.articulo,t2.id_combo
-      `, [id]);
+      `, [idorden]);
+
+      const [despachos] = await conn.query(`
+        select cc.id_combo,sum(cc.despachos) as despacho,sum(cc.caidos) as caidos,sum(cc.incompletos) as incompletos,
+        JSON_ARRAYAGG(JSON_OBJECT('talla',cc.talla,'despachos',cc.despachos,'caidos',cc.caidos,'incompletos',cc.incompletos)) as fracciones_despacho from
+        (
+        select t2.id_combo,t3.talla,sum(t3.despachos) as despachos,sum(t3.caidos) as caidos,sum(t3.incompletos) as incompletos from tbl2_despachos_cab t1
+        join tbl2_despachos_det t2 on t1.idx = t2.id_despacho_cab
+        join tbl2_despachos_det_fracciones t3 on t2.idx = t3.id_despacho_DET
+        where t1.idx = ? -- t1.id_guia_origen = 1360
+        group by t2.id_combo,t3.talla
+        ) as cc
+        group by cc.id_combo
+      `,[id]);
+
+      // let lista_despachos = despachos.reduce((carry,value)=>{
+      //   if(!Object.keys(carry).includes(value.id_despacho)){
+      //     carry[value.id_despacho] = value.fec_despacho
+      //   }
+      //   return carry 
+      // },{})
+
+      const data_formateado = data.map(row=>{
+        const adicional = row.fracciones.reduce((c,v)=>{
+          c[v.talla] = v.cantidad
+          return c
+        },{})
+        return {...row,...adicional}
+      })
+
+      const consolidado = data_formateado.reduce((c,v)=>{
+        if(despachos.map(row=>row.id_combo).includes(v.id_combo)){
+          const filtro = despachos.filter(row=>row.id_combo == v.id_combo)[0]
+          c.push({...v,despacho:filtro.despacho,caidos:filtro.caidos,incompletos:filtro.incompletos,fracciones_despacho:filtro.fracciones_despacho})
+        }
+        return c
+      },[]) 
+
+      console.log("El resultado es:",consolidado,consolidado[0].fracciones_despacho)
+
+      await conn.end();
+      return consolidado
+    } catch (err) {
+      console.log(err)
+      return [err]
+    } finally {
+      if (conn) {
+        await conn.end();
+      }
+    }
+  }
+  static async getInfoDespachoEmpaquetadoDet(id,idorden) {
+    let conn
+    let new_articulos = null
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+  
+      const [data] = await conn.query(`
+        select 
+          t1.orden_ref,
+          SUM(t2.cantidad) as cantidad,
+          t2.articulo,
+          t2.id_combo,
+          (
+            select JSON_ARRAYAGG(cc.pp) from
+            (
+              select a.id_orden_CAB,b.id_combo,JSON_OBJECT('talla',c.talla,'cantidad',sum(c.cantidad)) as pp
+              from tbl2_guias_traslado_cab a
+              join tbl2_guias_traslado_det b on a.idx = b.id_guia_CAB
+              join tbl2_guias_traslado_det_fracciones c on b.idx = c.id_guia_DET
+              where a.servicio = 'ACABADOS' and a.estado = 'PENDIENTE'
+              group by a.id_orden_CAB,b.id_combo,c.talla
+            ) as cc where cc.id_orden_CAB = t1.id_orden_CAB and cc.id_combo = t2.id_combo
+          ) as fracciones,JSON_ARRAY() as fracciones_despacho
+        from tbl2_guias_traslado_cab t1
+        join tbl2_guias_traslado_det t2 on t1.idx = t2.id_guia_CAB 
+        where t1.id_orden_CAB = ? and t1.servicio  = 'ACABADOS' and t1.estado = 'PENDIENTE'
+        group by t1.orden_ref,t2.articulo,t2.id_combo
+      `, [idorden]);
 
       const [despachos] = await conn.query(`
         select 
@@ -4595,7 +4675,20 @@ export class ProduccionModel {
           ) as fracciones 
         from tbl2_despachos_cab tdc 
         join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB 
-        where tdc.id_orden_origen = ? and tdc.tipo = 'EMPAQUETADO'
+        where tdc.idx <> ? and tdc.tipo = 'EMPAQUETADO'
+      `,[id]);
+
+      const [despachos2] = await conn.query(`
+        select cc.id_combo,sum(cc.despachos) as despacho,sum(cc.caidos) as caidos,sum(cc.incompletos) as incompletos,
+        JSON_ARRAYAGG(JSON_OBJECT('talla',cc.talla,'cantidad',cc.despachos,'caidos',cc.caidos,'incompletos',cc.incompletos)) as fracciones_despacho from
+        (
+        select t2.id_combo,t3.talla,sum(t3.despachos) as despachos,sum(t3.caidos) as caidos,sum(t3.incompletos) as incompletos from tbl2_despachos_cab t1
+        join tbl2_despachos_det t2 on t1.idx = t2.id_despacho_cab
+        join tbl2_despachos_det_fracciones t3 on t2.idx = t3.id_despacho_DET
+        where t1.idx = ? -- t1.id_guia_origen = 1360
+        group by t2.id_combo,t3.talla
+        ) as cc
+        group by cc.id_combo
       `,[id]);
 
       let lista_despachos = despachos.reduce((carry,value)=>{
@@ -4628,100 +4721,20 @@ export class ProduccionModel {
           return carry
         },[])
 
-        // carry.push(value)
-        carry = carry.map(row=>({
-          ...row,
-          despachos:value.despachos,
-          caidos:value.caidos,
-          incompletos:value.incompletos
-        }))
-        return carry
-      },[])
-      
-
-      await conn.end();
-      return new_articulos
-    } catch (err) {
-      console.log(err)
-      return [err]
-    } finally {
-      if (conn) {
-        await conn.end();
-      }
-    }
-  }
-  static async getInfoDespachoEmpaquetadoDet_(id, tipo = null) {
-    let conn
-    try {
-      conn = await mysql.createConnection(configs[1])
-      await conn.connect();
-      let new_articulos = null
-
-      console.log("El id del despacho es: ", id)
-      const [results, fields] = await conn.query(`
-        SELECT tdd.idx,tdd.id_item,tgtc.servicio,tgtc.modelo,tgtd.id_guia_CAB,tgtd.articulo,tgtd.cantidad,tgtd.isprototipo,
-        COALESCE(tdd.despacho,0) as despacho,COALESCE(tdd.caidos,0) as caidos,COALESCE(tdd.incompletos,0) as incompletos,tdd.id_combo,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',t1.talla,'cantidad',t1.despachos,'caidos',t1.caidos,'incompletos',t1.incompletos)) 
-        from tbl2_despachos_det_fracciones t1 where t1.id_despacho_DET = tdd.idx ),JSON_ARRAY()) as fracciones_despacho,
-        COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('idcombo',tgtd.id_combo,'talla',tf.talla,'cantidad',tf.cantidad)) from tbl2_guias_traslado_det_fracciones tf where tf.id_guia_DET = tgtd.idx),JSON_ARRAY()) as fracciones
-        FROM tbl2_guias_traslado_det tgtd 
-        JOIN tbl2_despachos_det tdd on tdd.id_item = tgtd.idx 
-        JOIN tbl2_guias_traslado_cab tgtc on tgtc.idx = tgtd.id_guia_CAB
-        WHERE tdd.id_despacho_CAB = ?
-      `, [id]);
-      console.log("Informacion del despacho :",results)
-      const ids = results.map(row => row.id_item)
-
-      const [cruce] = await conn.query(`
-        select tdc.idx as id_despacho,DATE_FORMAT(tdc.fec_despacho,'%d/%m') as fec_despacho,tdd.id_item as idx,COALESCE(tdd.despacho,0) as despacho,COALESCE(tdd.caidos,0) as caidos,COALESCE(tdd.incompletos,0) as incompletos,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',tddf.talla,'despachos',tddf.despachos,'caidos',tddf.caidos,'incompletos',tddf.incompletos)) from tbl2_despachos_det_fracciones tddf WHERE tddf.id_despacho_DET = tdd.idx),JSON_ARRAY()) as fracciones 
-        from tbl2_despachos_cab tdc 
-        join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB 
-        where tdc.tipo = 'SERVICIOS' and tdc.id_guia_origen = ? and tdc.idx <> ?
-      `,[results[0].id_guia_CAB,id])
-
-      let lista_despachos = cruce.reduce((carry,value)=>{
-        if(!Object.keys(carry).includes(value.id_despacho)){
-          carry[value.id_despacho] = value.fec_despacho
+        if(despachos2.map(row=>row.id_combo).includes(value.id_combo)){
+          const filtro = despachos2.filter(row=>row.id_combo == value.id_combo)[0]
+          carry.push({...value,despacho:filtro.despacho,caidos:filtro.caidos,incompletos:filtro.incompletos,fracciones_despacho:filtro.fracciones_despacho})
         }
-        return carry 
-      },{})
-
-      let pp = results.reduce((carry,value)=>{
-        value['despachos'] = Object.keys(lista_despachos).reduce((carry,valor)=>{
-          let info = cruce.filter(item=>item.id_despacho == valor && item.idx == value.id_item)
-
-          carry.push({
-            'id_despacho':info.length > 0 ? info[0].id_despacho : parseInt(valor),
-            'fec_despacho':info.length > 0 ? info[0].fec_despacho : lista_despachos[valor], 
-            'cantidad_despacho':info.length > 0 ? info[0].despacho : 0,
-            'cantidad_caidos':info.length > 0 ? info[0].caidos : 0,
-            'cantidad_incompletos':info.length > 0 ? info[0].incompletos : 0,
-            'fracciones': info.length > 0 ? info[0].fracciones : []
-          })
-          return carry
-        },[])
-        carry.push(value)
         return carry
       },[])
 
-      const [results2] = await conn.query("select id_guia_DET,concat('({',GROUP_CONCAT(concat(talla,':',CAST(cantidad as unsigned))),'})') as fracciones from tbl2_guias_traslado_det_fracciones where id_guia_DET in (?) group by id_guia_DET", [ids])
-
-      console.log(results2)
-      new_articulos = pp.map(row => {
-        let add = eval(results2.filter(row2 => row2.id_guia_DET == row.id_item)[0].fracciones)
-        return { ...row, ...add }
-      })
-
-      console.log("detalle desoachoss:", new_articulos)
-
       await conn.end();
-      return new_articulos
+      return consolidado
     } catch (err) {
       console.log(err)
-      return [err]
+      return err
     } finally {
-      if (conn) {
-        await conn.end();
-      }
+      if (conn) await conn.end();
     }
   }
 }
