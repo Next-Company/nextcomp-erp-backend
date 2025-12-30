@@ -1387,7 +1387,8 @@ export default class AlmacenController{
                   <div class='etiqueta'>
                     <div>
                       <div style="font-size:.5rem;">OP:2500712</div>
-                      <h2>${info.articulo + ' ' + info.modelo}</h2>
+                      <h2>${info.articulo}</h2>
+                      <h2>${info.modelo}</h2>
                     </div>
                     <div>
                       <h3>${info.estilo}</h3>
