@@ -2812,7 +2812,7 @@ export class ProduccionModel {
       await conn.connect();
       let extra = search.split(" ").length > 0 ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(TRIM(COALESCE(tdc.tipo,'')),' ',TRIM(COALESCE(tdc.proveedor,'')),' ',TRIM(COALESCE(tdc.nro_guia,'')),' ',TRIM(COALESCE(COALESCE(tgtc.servicio,''),'')),' ',TRIM(COALESCE(tgtc.producto,'')),' ',TRIM(COALESCE(tgtc.marca,'')),' ',TRIM(COALESCE(tgtc.modelo,'')))) > 0").join(" ") : ""
 
-      const consulta = `SELECT tdc.idx,DATE_FORMAT(tdc.fec_emision_guia,'%d/%m/%Y') as fec_emision_guia,DATE_FORMAT(tdc.fec_despacho,'%d/%m/%Y') as fec_despacho,tdc.id_proveedor_CAB,tdc.proveedor,tdc.tipo,tdc.nro_guia,tdc.id_guia_origen,tdc.nro_guia_origen,tdc.id_pedido_origen,tdc.nro_pedido_origen,tdc.responsable,tdc.observaciones,tdc.created_at,tgtc.servicio,tgtc.producto,tgtc.marca,tgtc.modelo,COALESCE(tgtc.distribucion,'') as distribucion,if(tdc.tipo = 'PEDIDOS',tpic.idx,tgtc.idx) as idguia_ref,tpic.tipo as subtipo,(select sum(COALESCE(tdd.despacho,0)) from tbl2_despachos_det tdd where tdd.id_despacho_CAB = tdc.idx) as total_despacho
+      const consulta = `SELECT tdc.idx,DATE_FORMAT(tdc.fec_emision_guia,'%d/%m/%Y') as fec_emision_guia,DATE_FORMAT(tdc.fec_despacho,'%d/%m/%Y') as fec_despacho,tdc.id_proveedor_CAB,tdc.proveedor,tdc.tipo,tdc.nro_guia,tdc.id_guia_origen,tdc.nro_guia_origen,tdc.id_pedido_origen,tdc.nro_pedido_origen,tdc.id_orden_origen,tdc.nro_orden_origen,tdc.responsable,tdc.observaciones,tdc.created_at,tgtc.servicio,tgtc.producto,tgtc.marca,tgtc.modelo,COALESCE(tgtc.distribucion,'') as distribucion,if(tdc.tipo = 'PEDIDOS',tpic.idx,tgtc.idx) as idguia_ref,tpic.tipo as subtipo,(select sum(COALESCE(tdd.despacho,0)) from tbl2_despachos_det tdd where tdd.id_despacho_CAB = tdc.idx) as total_despacho
       FROM tbl2_despachos_cab tdc 
       left join tbl2_guias_traslado_cab tgtc on tdc.id_guia_origen = tgtc.idx
       left join tbl2_pedidos_insumos_cab tpic on tdc.id_pedido_origen = tpic.idx
@@ -4290,8 +4290,8 @@ export class ProduccionModel {
         if(!respuesta.ok) throw respuesta.message
       }
 
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return {ok:true,message:'Proceso ejecutado con éxito'}
     } catch (err) {
       console.log("asdlkfaslfjlaskdfjlf:",err)
@@ -4506,6 +4506,7 @@ export class ProduccionModel {
     // await conn.connect()
     // const id_orden = 378
     // const result = {ok:true,message:'Estado de guia actualizados'}
+    console.log("Iniciando actualizacion de estado de guias de acabados para la orden:",idorden)
     try {
       const [baseguias] = await conn.query(`
         select cc.id_guia,cc.id_combo,JSON_ARRAYAGG(JSON_OBJECT('talla',cc.talla,'cantidad',cc.cantidad)) as info from 
@@ -4834,6 +4835,107 @@ export class ProduccionModel {
       return err
     } finally {
       if (conn) await conn.end();
+    }
+  }
+  static async eliminarRecepcionAcabados(id) {
+    let conn
+    console.log("El id de eliminado es el siguientes:",id)
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      conn.beginTransaction()
+
+      let [cabecera] = await conn.query('select *from tbl2_despachos_cab where idx = ?',[id])      
+      let [data_backup] = await conn.query(`select tdd.id_combo,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',t1.talla,'despachos',t1.despachos,'caidos',t1.caidos,'incompletos',t1.incompletos)) from tbl2_despachos_det_fracciones t1 where t1.id_despacho_DET = tdd.idx),JSON_ARRAY()) as fracciones from tbl2_despachos_det tdd where tdd.id_despacho_CAB = ?`,[id])
+      console.log("Informacion de la cabecera:",cabecera)
+
+      // recupera info de la orden de produccion
+      // let [info_orden] = await conn.query('select *from tbl2_guias_traslado_cab where idx = ?',[parseInt(cabecera[0].id_orden_origen)])
+
+      let param1 = data_backup.filter(row=>row.id_combo).reduce((c,v)=>{
+        let pp = v.fracciones.reduce((cc,vv)=>{
+          cc = {...cc,[vv.talla]:[ parseInt(vv.despachos),parseInt(vv.caidos),parseInt(vv.incompletos) ]}
+          return cc
+        },{idcombo:v.id_combo})
+        c.push(pp)
+        return c
+      },[])
+      console.log("Info del parametro 1:",param1)
+
+      await conn.query('DELETE FROM `tbl2_despachos_cab` WHERE `idx` = "' + id + '"');
+      await conn.query('DELETE t1,t2 FROM tbl2_despachos_det t1 JOIN tbl2_despachos_det_fracciones t2 ON t1.idx = t2.id_despacho_DET WHERE t1.id_despacho_CAB = ' + parseInt(id));
+
+      const updateguiasacabados = await this.UpdateEstadoGuiaAcabados(parseInt(cabecera[0].id_orden_origen),conn)
+      if(!updateguiasacabados.ok) throw new Error(updateguiasacabados.message)
+      
+      if(cabecera[0].fase){
+        let resultado = await this.UpdateMasterProduccion(param1,[],parseInt(cabecera[0].id_orden_origen),conn,0,1)
+        if(!resultado.ok) throw resultado.message
+      }
+
+      // if (conn) await conn.rollback();
+      if (conn) await conn.commit();
+      return {ok:true,message:'Ingreso eliminado con éxtio!'}
+    } catch (err) {
+      console.log("Error en la eliminacion de despacho:",err)
+      if (conn) await conn.rollback();
+      return {ok:false,message:err.message ?? err}
+    } finally {
+      if (conn) await conn.end();
+    }
+  }
+  static async getListaDespachosAcabados(tipo, search) {
+    console.log("El filtro de busqueda es :", search)
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      let extra = search.split(" ").length > 0 ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(TRIM(COALESCE(tdc.tipo,'')),' ',TRIM(COALESCE(tdc.proveedor,'')),' ',TRIM(COALESCE(tfo.producto,'')),' ',TRIM(COALESCE(tfo.oc,'')),' ',TRIM(COALESCE(tfo.cliente,'')),' ',TRIM(COALESCE(tfo.modelos,'')))) > 0").join(" ") : ""
+
+      const consulta = `
+      SELECT 
+        tdc.idx,
+        DATE_FORMAT(tdc.fec_emision_guia,'%d/%m/%Y') as fec_emision_guia,
+        DATE_FORMAT(tdc.fec_despacho,'%d/%m/%Y') as fec_despacho,
+        tdc.id_proveedor_CAB,
+        tdc.proveedor,
+        tdc.tipo,
+        tdc.nro_guia,
+        tdc.id_orden_origen,
+        tdc.nro_orden_origen,
+        tdc.responsable,
+        tdc.created_at,
+        (
+          select sum(COALESCE(tdd.despacho,0)) from tbl2_despachos_det tdd where tdd.id_despacho_CAB = tdc.idx
+        ) as total_despacho,
+        (
+          select sum(COALESCE(tdd.caidos,0)) from tbl2_despachos_det tdd where tdd.id_despacho_CAB = tdc.idx
+        ) as total_caidos,
+        (
+          select sum(COALESCE(tdd.incompletos,0)) from tbl2_despachos_det tdd where tdd.id_despacho_CAB = tdc.idx
+        ) as total_incompletos,
+        tfo.oc,
+        tfo.cliente,
+        tfo.producto,
+        tfo.modelos
+        FROM tbl2_despachos_cab tdc 
+        join tbl2_fases_prod_ordenes tfo on tdc.id_orden_origen = tfo.idx
+        WHERE tdc.tipo = ? and tdc.estado <> 'ANULADO' ${extra}
+        ORDER BY created_at desc limit 100
+      `     
+      const [results, fields] = await conn.query(consulta,[tipo]);
+      // console.log("Mostrado query de lista despachos:", results)
+      await conn.end();
+      return results
+    } catch (err) {
+      console.log(err)
+      return [err]
+    } finally {
+      if (conn) {
+        // console.log("Cerrando session")
+        // await conn.end();
+        await conn.end();
+      }
     }
   }
 }

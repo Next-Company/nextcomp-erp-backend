@@ -113,9 +113,12 @@ produccionRouter.post('/vistapreviapedido/:tipo', ProduccionController.VistaPrev
 produccionRouter.post('/vistapreviapedidoavios/:tipo', ProduccionController.VistaPreviaPedidoAvios)
 // produccionRouter.post('/vistapreviapedidoavios/:tipo',ProduccionController.VistaPreviaPedidoAvios)
 
+produccionRouter.get('/getListaDespachosAcabados/:tipo', ProduccionController.getListaDespachosAcabados)
+produccionRouter.get('/getListaDespachosAcabados/:tipo/:search', ProduccionController.getListaDespachosAcabados)
 produccionRouter.post('/saveRecepcionAcabados',ProduccionController.saveRecepcionAcabados)
 produccionRouter.put('/updateRecepcionAcabados',ProduccionController.updateRecepcionAcabados)
+produccionRouter.delete('/borrardespachoempaquetado/:id',ProduccionController.eliminarRecepcionAcabados)
 produccionRouter.get('/getInfoEmpaquetado/:id',ProduccionController.getInfoEmpaquetado)
 produccionRouter.get('/getAcabadosPendientes/:id',ProduccionController.getAcabadosPendientes)
-
+produccionRouter.get('/verdespachoacabados/:id/:idorden/:condicion', ProduccionController.verInfoDespachoAcabados)
 
