@@ -122,3 +122,5 @@ produccionRouter.get('/getInfoEmpaquetado/:id',ProduccionController.getInfoEmpaq
 produccionRouter.get('/getAcabadosPendientes/:id',ProduccionController.getAcabadosPendientes)
 produccionRouter.get('/verdespachoacabados/:id/:idorden/:condicion', ProduccionController.verInfoDespachoAcabados)
 
+produccionRouter.get('/getAcabadosDisponible/:id',ProduccionController.getAcabadosDisponible)
+

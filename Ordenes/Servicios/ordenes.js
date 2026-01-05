@@ -334,6 +334,8 @@ export class OrdenesModel {
             tfpo.marca AS marca,
             tfpo.producto AS producto,
             tfpo.base AS base,
+            tfpo.estilo,
+            tfpo.presentacion,
             tfpo.precio AS precio,
             tfpo.modelos AS modelos,
             tfpo.estado_orden AS estado_orden,

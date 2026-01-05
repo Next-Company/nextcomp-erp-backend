@@ -4500,6 +4500,98 @@ export class ProduccionModel {
       if (conn) await conn.end();
     }
   }
+  static async getAcabadosDisponible(id, tipo = null) {
+    let conn
+    let new_articulos = null
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+
+      console.log("Obteniendo acabados disponibles para la orden:",id)
+  
+      const [data] = await conn.query(`
+        SELECT 
+          t0.producto as articulo,
+          t1.id_cab_orden as orden_ref,
+          sum(t3.despacho_total) as cantidad,
+          t2.color_combo,
+          t3.id_combo_CAB,
+          JSON_ARRAYAGG(JSON_OBJECT('talla',t3.talla,'cantidad',t3.despacho_total)) as fracciones
+        FROM tbl2_fases_prod_ordenes t0
+        JOIN tbl2_fases_prod_hojacorte t1 on t0.idx = t1.id_cab_orden
+        JOIN tbl2_fases_prod_hojacorte_combos t2 on t1.idx = t2.id_hojacorte_CAB
+        JOIN tbl2_fases_prod_hojacorte_combos_fracciones t3 on t2.idx = t3.id_combo_CAB
+        WHERE t0.idx = ?
+        GROUP BY t0.producto,t1.id_cab_orden,t2.color_combo,t3.id_combo_CAB
+      `, [id]);
+
+      // const [despachos] = await conn.query(`
+      //   select 
+      //     tdc.idx as id_despacho,
+      //     DATE_FORMAT(tdc.fec_despacho,'%d/%m') as fec_despacho,
+      //     tdd.id_combo as idx,
+      //     COALESCE(tdd.despacho,0) as despacho,
+      //     COALESCE(tdd.caidos,0) as caidos,
+      //     COALESCE(tdd.incompletos,0) as incompletos,
+      //     COALESCE(
+      //     (select JSON_ARRAYAGG(JSON_OBJECT('talla',tddf.talla,'despachos',tddf.despachos,'caidos',tddf.caidos,'incompletos',tddf.incompletos)) 
+      //       from tbl2_despachos_det_fracciones tddf WHERE tddf.id_despacho_DET = tdd.idx),JSON_ARRAY()
+      //     ) as fracciones 
+      //   from tbl2_despachos_cab tdc 
+      //   join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB 
+      //   where tdc.id_orden_origen = ? and tdc.tipo = 'EMPAQUETADO'
+      // `,[id]);
+
+      // let lista_despachos = despachos.reduce((carry,value)=>{
+      //   if(!Object.keys(carry).includes(value.id_despacho)){
+      //     carry[value.id_despacho] = value.fec_despacho
+      //   }
+      //   return carry 
+      // },{})
+
+      const data_formateado = data.map(row=>{
+        const adicional = row.fracciones.reduce((c,v)=>{
+          c[v.talla] = v.cantidad
+          return c
+        },{})
+        return {...row,...adicional}
+      })
+
+      // let consolidado = data_formateado.reduce((carry,value)=>{
+      //   value['despachos'] = Object.keys(lista_despachos).reduce((carry,valor)=>{
+      //     let info = despachos.filter(item=>item.id_despacho == valor && item.idx == value.id_combo)
+      //     console.log("Fresas con sal:",info)
+      //     carry.push({
+      //       'id_despacho':info.length > 0 ? info[0].id_despacho : parseInt(valor),
+      //       'fec_despacho':info.length > 0 ? info[0].fec_despacho : lista_despachos[valor], 
+      //       'cantidad_despacho':info.length > 0 ? info[0].despacho : 0,
+      //       'cantidad_caidos':info.length > 0 ? info[0].caidos : 0,
+      //       'cantidad_incompletos':info.length > 0 ? info[0].incompletos : 0,
+      //       'fracciones': info.length > 0 ? info[0].fracciones : []
+      //     })
+      //     return carry
+      //   },[])
+
+      //   carry.push(value)
+      //   return carry
+      // },[])
+
+      let consolidado = data_formateado.reduce((carry,value)=>{
+        parseInt(value.cantidad) > 0 && carry.push(value)
+        return carry
+      },[])
+
+      console.log("Acabados disponibles:",consolidado)
+
+      await conn.end();
+      return consolidado
+    } catch (err) {
+      console.log(err)
+      return err
+    } finally {
+      if (conn) await conn.end();
+    }
+  }
   static async UpdateEstadoGuiaAcabados(idorden = 378,conn){
     let result = {ok:true,message:'Estado de guia actualizado'}
     // let conn = await mysql.createConnection(configs[1])
