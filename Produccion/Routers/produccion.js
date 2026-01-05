@@ -46,6 +46,7 @@ produccionRouter.get('/getListaPedidos/:search', ProduccionController.getListaPe
 produccionRouter.get('/pedido/:id', ProduccionController.getInfoPedidos)
 produccionRouter.get('/nuevopedido', ProduccionController.getNuevoPedido)
 produccionRouter.put('/guardarpedidoavios', ProduccionController.saveInfoPedidosAvios)
+produccionRouter.put('/guardarpedidoadicionales', ProduccionController.saveInfoPedidosAdicionales)
 produccionRouter.put('/guardarpedidotelas', ProduccionController.saveInfoPedidosTelas)
 produccionRouter.delete('/borrarpedido/:id', ProduccionController.eliminarInfoPedidos)
 produccionRouter.get('/showinformepedido/:id', ProduccionController.ShowInformePedido)
