@@ -1700,6 +1700,29 @@ export class OrdenesModel {
     } catch (error) {
       console.log(error)
       return {ok:false,resp:0}
+    } finally {
+      if (conn) await conn.end();
+    }
+  }
+  static async getPlantillasTallas(){
+    let conn = undefined
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect()
+      let [result] = await conn.execute("select *from tbl2_tallas_template")
+      result = result.reduce((c,v)=>{
+        v.tallasformateado = v.tallas.map(row=>row.desc).join("-")
+        v.selected = false
+        c.push(v)
+        return c
+      },[])
+      console.log("La info de plantillas de tallas es :",result)
+      return result
+    } catch (error) {
+      console.log(error)
+      return {ok:false,resp:0}
+    } finally {
+      if (conn) await conn.end();
     }
   }
   static async getInsumosOrden(idorden,idalmacen) {

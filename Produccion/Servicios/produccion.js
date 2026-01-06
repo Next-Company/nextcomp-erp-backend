@@ -4516,7 +4516,9 @@ export class ProduccionModel {
           sum(t3.despacho_total) as cantidad,
           t2.color_combo,
           t3.id_combo_CAB,
-          JSON_ARRAYAGG(JSON_OBJECT('talla',t3.talla,'cantidad',t3.despacho_total)) as fracciones
+          JSON_ARRAYAGG(JSON_OBJECT('talla',t3.talla,'cantidad',t3.despacho_total)) as fracciones,
+          JSON_ARRAY() as fracciones_despacho,
+          JSON_ARRAY() as despachos
         FROM tbl2_fases_prod_ordenes t0
         JOIN tbl2_fases_prod_hojacorte t1 on t0.idx = t1.id_cab_orden
         JOIN tbl2_fases_prod_hojacorte_combos t2 on t1.idx = t2.id_hojacorte_CAB

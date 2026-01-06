@@ -1612,6 +1612,10 @@ export class OrdenesController {
     let resp = await OrdenesModel.getCorrelativoProduccionPreview(tipo)
     res.json(resp)
   }
+  static async getPlantillasTallas(req,res){
+    let resp = await OrdenesModel.getPlantillasTallas()
+    res.json(resp)
+  }
   static async getInsumosOrden(req, reply) {
     let idorden = req.params.idorden ?? 0
     let idalmacen = req.params.idalmacen ?? 0
