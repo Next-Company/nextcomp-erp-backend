@@ -27,6 +27,7 @@ import ALMACEN_ROUTER from "./Almacen/Routers/almacenRouter.js";
 import PROVEEDOR_ROUTER from "./Proveedores/Routers/proveedorRouter.js";
 import MANTENIMIENTO_ROUTER from "./Mantenimiento/Routers/mantenimientoRouter.js";
 import GPS_ROUTER from "./GpsTracker/Routers/gpstrackerRouter.js";
+import LOCAL_ROUTER from "./Locales/Routers/localesRouter.js";
 const app = express()
 
 
@@ -114,6 +115,7 @@ app.use('/almacen', ALMACEN_ROUTER)
 app.use('/proveedores', PROVEEDOR_ROUTER )
 app.use('/mantenimiento', MANTENIMIENTO_ROUTER )
 app.use('/gpstracker',GPS_ROUTER)
+app.use('/locales',LOCAL_ROUTER)
 
 // app.use((err,req,res,next)=>{
 //   console.log("Hola hay un error")
