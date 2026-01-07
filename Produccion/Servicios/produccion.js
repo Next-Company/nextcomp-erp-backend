@@ -204,8 +204,16 @@ export class ProduccionModel {
 
       let [fasesprod] = await conn.query("SELECT *FROM tbl2_fases_produccion")
       let [materialesref] = await conn.query("SELECT *FROM tbl2_materiales_sugerido WHERE ruc_ = '20522094120'")
+      let [tallasbase] = await conn.query("SELECT *FROM tbl2_tallas_template")
+
+      tallasbase = tallasbase.reduce((c,v)=>{
+        v.tallasformateado = v.tallas.map(row=>row.desc).join("-")
+        v.selected = v.idx == parseInt(ordenes[0].tallasbase) ? true : false
+        c.push(v)
+        return c
+      },[])
   
-      return [ordenes,moldes,cortes,materiales,fasesprod,materialesref,insumos,requerimientos]
+      return [ordenes,moldes,cortes,materiales,fasesprod,materialesref,insumos,requerimientos,tallasbase]
     } catch (err) {
       console.log("Estamos en error:", err);
       return err
