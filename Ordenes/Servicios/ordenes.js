@@ -949,13 +949,9 @@ export class OrdenesModel {
         await conn.query("INSERT INTO tbl2_fases_prod_ordenes_requerimientos(id_orden_CAB,id_pedido_CAB) VALUES (?,?)",[idinsert,requerimiento.id_pedido_CAB])
       }
       nameimg = `op_${idinsert}.jpg`
-      // try {
-      // } catch (error) {
-      //   console.log(error)
-      // }
 
-      // if (conn) conn.rollback()
-      if (conn) conn.commit()
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito',filename: nameimg }
     } catch (err) {
       console.log(err)
@@ -1712,7 +1708,7 @@ export class OrdenesModel {
       let [result] = await conn.execute("select *from tbl2_tallas_template")
       result = result.reduce((c,v)=>{
         v.tallasformateado = v.tallas.map(row=>row.desc).join("-")
-        v.selected = false
+        v.selected = c.length > 0 ? false : true
         c.push(v)
         return c
       },[])
