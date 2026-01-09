@@ -2,8 +2,6 @@ import { ProduccionModel } from "../Servicios/produccion.js";
 import PDFDocument from "pdfkit"
 import fs from "node:fs/promises"
 import puppeteer from 'puppeteer';
-import { OtherTarget } from "puppeteer-core";
-import { concat } from "puppeteer-core/lib/esm/third_party/rxjs/rxjs.js";
 import { OrdenesModel } from "../../Ordenes/Servicios/ordenes.js";
 // import { width } from "pdfkit/js/page";
 // import { height } from "pdfkit/js/page";
@@ -61,18 +59,10 @@ export class ProduccionController {
     console.log("La informacion de la guia es:",data)
     const data2 = await ProduccionModel.getInfoGuiaDet(params.id)
     const data3 = data[0].id_proveedor_CAB ? await ProduccionModel.searchProveedorById(data[0].id_proveedor_CAB) : [{ nom: data[0].responsable, ruc: '', direccion: data[0].destino }]
-    // let relleno = []
-    // const cantidad_relleno = 25 - data2.length
-    // for (let index = 0; index < cantidad_relleno; index++) {
-    //   relleno.push({    })
-
-    // }
-    // console.log("Fecha creacion :",(new Date(data[0].created_at)).toLocaleString('en-GB'))
-    // console.log("Fecha creacion :",(new Date(data[0].created_at)).toLocaleDateString('en-GB'))
-    // console.log("Fecha creacion :",(new Date(data[0].created_at)).toLocaleTimeString('en-GB'))
-    // console.log("Info cabecera:",data)
-    // console.log("Info detalle:",data2)
-    // console.log("Fecha:",new Date(Date.parse(data2[0].created_at)).toLocaleDateString())
+    const data4 = await ProduccionModel.getPlantillasTallasByOrden(data[0].id_orden_CAB)
+    
+    console.log("La info detalle de la guia es:",data2)
+    console.log("La info de las tallas:",data4)
     resp.render(
       data[0].tipo == 'SERVICIOS' ? 'guia_back' : 'guia_muestras_v2',
       {
@@ -81,6 +71,7 @@ export class ProduccionController {
         info: params,
         cabecera: data[0],
         detalle: data2.filter(row => !row.isprototipo),
+        tallas: data4[0].tallas.map(row=>row.desc),
         // relleno:data2.filter(),
         prototipos: data2.filter(row => row.isprototipo),
         numproto: data2.filter(row => row.isprototipo).length,
@@ -95,10 +86,30 @@ export class ProduccionController {
         helpers: {
           plusindex(index) {
             return index + 1
+          },
+          header(tallas) {
+            const tallasfilas = tallas.map(talla=>`<th style="text-align: center;">${talla.toUpperCase()}</th>`)
+            return tallasfilas.join("")
+          },
+          cuerpo(detalle,tallas) {
+            let cuerpo = []
+            detalle.forEach((row,key)=>{
+              // cuerpo.push(`<tr><td style="text-align: center;width:.5cm;">{{plusindex @index}}</td></tr>`)
+              const infotallas = tallas.map(talla=>`<td style="text-align: center;">${row[talla] ?? 0}</td>`)
+              cuerpo.push(`
+                <tr>
+                  <td style="text-align: center;width:.5cm;">${key + 1}</td>
+                  <td>${row.articulo}</td>
+                  ${infotallas.join("")}
+                  <td style="width:1.5px;text-align: center;">NIU</td>
+                  <td style="width:1.5px;text-align: center;">${row.cantidad}</td>
+                </tr>
+              `)
+            })
+            return cuerpo.join("")
+            // return '<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>'
           }
         }
-        // diasprod:7
-        // fecha:new Date(Date.parse(data2[0].created_at)).toLocaleDateString()
       },
       async (err, html) => {
         try {
@@ -1224,8 +1235,8 @@ export class ProduccionController {
     const data4 = await ProduccionModel.getListaPenalidades()
     const data5 = await OrdenesModel.getFasesProduccion('')
     const data6 = await ProduccionModel.getListaReprogramacionGuias(id)
-    // const data4 = await ProduccionModel.()
-    res.json([data[0], data2, data3, data4, data5, data6])
+    const data7 = await ProduccionModel.getPlantillasTallasByOrden(data[0].id_orden_CAB)
+    res.json([data[0], data2, data3, data4, data5, data6, data7[0]])
   }
   static async getInfoMuestras(req, res) {
     const id = req.params.id

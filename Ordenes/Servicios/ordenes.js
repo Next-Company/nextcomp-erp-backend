@@ -296,19 +296,13 @@ export class OrdenesModel {
         FROM viewProduccionOrdenes t1
         WHERE 1=1 ${extra} ORDER BY idx desc
       `
-      console.log('Consulta de listado de ordenes:',query)
-      console.log('Otra lista de impresion de observaciones')
       let [results] = await conn.query(query);
-      await conn.end();
-
       return results
     } catch (err) {
       console.log(err);
       return { 'msg': err }
     } finally {
-      if (conn) {
-        await conn.end();
-      }
+      if (conn) await conn.end()
     }
   }
   static async getOrdenesFull(search) {
@@ -439,25 +433,16 @@ export class OrdenesModel {
       join tbl2_fases_prod_ordenes tfpo on tfph.id_cab_orden = tfpo.idx
       where tfpo.idx = ? and tfph.idx = ?
       having cantidad_fracciones > 0`,[idorden,idhoja])
-
       console.log("Resultados de extraer items de caja:",results)
-
-      // let [results] = await conn.query(`SELECT 
-      //   tfphc.idx as id_combo,
-      //   CONCAT(tfpo.producto,' ',tfpo.marca,' ',tfpo.modelos,' ',tfphc.color_combo) as articulo,
-      //   COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',tfphcf.talla,'cantidad',tfphcf.cantidad,'produccion_total',tfphcf.produccion_total,'caidos_total',tfphcf.caidos_total)) FROM tbl2_fases_prod_hojacorte_combos_fracciones tfphcf
-      //   where tfphcf.id_combo_CAB = tfphc.idx),JSON_ARRAY()) as fracciones,tfphc.cantidad_combo
-      // from tbl2_fases_prod_hojacorte_combos tfphc 
-      // join tbl2_fases_prod_hojacorte tfph on tfphc.id_hojacorte_CAB = tfph.idx
-      // join tbl2_fases_prod_ordenes tfpo on tfph.id_cab_orden = tfpo.idx
-      // where tfpo.idx = ?`,[idorden])
 
       results = results.reduce((c,v)=>{
         let total = 0
         let pp = undefined
+        v.tallasbase = tallasbase
         if(v.fracciones.length > 0){
           pp = v.fracciones.reduce((cc,vv)=>{
             total += parseInt(vv.produccion_total)
+            // v.tallasbase.push(vv.talla)
             return {...cc,[vv.talla]:parseInt(vv.cantidad),cantidad:parseInt(total)}
           },v)
         }else{
@@ -466,6 +451,7 @@ export class OrdenesModel {
             return c
           },{})
           // pp = {...v,'xs':0,'s':0,'m':0,'l':0,'xl':0,'xxl':0,cantidad:parseInt(v.cantidad_combo)}
+          // v.tallasbase = tallasbase
           pp = {...v,...initaltallas,cantidad:parseInt(v.cantidad_combo)}
         }
         c.push(pp)
@@ -1147,30 +1133,30 @@ export class OrdenesModel {
                   // Itera sobre los 'combos' de este corte
                   // También creamos una copia de los combos para el bucle
                   for (const combo of [...corte.combos]) {
-                      console.log(`  Procesando combo: ${combo.color_combo}, Cantidad: ${combo.cantidad_combo}`);
+                    console.log(`  Procesando combo: ${combo.color_combo}, Cantidad: ${combo.cantidad_combo}`);
 
-                      // Insertar combo de hoja de corte
-                      const [comboInsertResult] = await conn.query(
-                          "INSERT INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB, idx_color, color_combo, cantidad_combo, disponible_total, insumos) VALUES (?,?,?,?,?,?)",
-                          [idHojaCorte, combo.idx_color, combo.color_combo, combo.cantidad_combo, combo.cantidad_combo, JSON.stringify(combo.insumos ?? [])]
-                      );
-                      const idComboCorte = comboInsertResult.insertId;
+                    // Insertar combo de hoja de corte
+                    const [comboInsertResult] = await conn.query(
+                        "INSERT INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB, idx_color, color_combo, cantidad_combo, disponible_total, insumos) VALUES (?,?,?,?,?,?)",
+                        [idHojaCorte, combo.idx_color, combo.color_combo, combo.cantidad_combo, combo.cantidad_combo, JSON.stringify(combo.insumos ?? [])]
+                    );
+                    const idComboCorte = comboInsertResult.insertId;
+                    
+                    // Preparar los datos de fraccionado
+                    const fraccionado = [];
+                    // ['xs', 's', 'm', 'l', 'xl', 'xxl'].forEach(talla => {
+                    tallasbase.forEach(talla => {
+                        const cantidad = parseInt(combo[talla]);
+                        fraccionado.push([idComboCorte, talla, isNaN(cantidad) ? 0 : cantidad > 0 ? cantidad : 0, isNaN(cantidad) ? 0 : cantidad > 0 ? cantidad : 0]);
+                    });
 
-                      // Preparar los datos de fraccionado
-                      const fraccionado = [];
-                      // ['xs', 's', 'm', 'l', 'xl', 'xxl'].forEach(talla => {
-                      tallasbase.forEach(talla => {
-                          const cantidad = parseInt(combo[talla]);
-                          fraccionado.push([idComboCorte, talla, isNaN(cantidad) ? 0 : cantidad > 0 ? cantidad : 0, isNaN(cantidad) ? 0 : cantidad > 0 ? cantidad : 0]);
-                      });
+                    console.log("  La info del fraccionado es:", fraccionado);
 
-                      console.log("  La info del fraccionado es:", fraccionado);
-
-                      // Insertar fracciones
-                      await conn.query(
-                          "INSERT INTO tbl2_fases_prod_hojacorte_combos_fracciones(id_combo_CAB, talla, cantidad, produccion_total) VALUES ?",
-                          [fraccionado]
-                      );
+                    // Insertar fracciones
+                    await conn.query(
+                      "INSERT INTO tbl2_fases_prod_hojacorte_combos_fracciones(id_combo_CAB, talla, cantidad, produccion_total) VALUES ?",
+                      [fraccionado]
+                    );
                   }
                   console.log("Corte procesado completamente:", corte.numero_corte);
               }
@@ -1243,7 +1229,7 @@ export class OrdenesModel {
                     fraccionado = tallasbase.map(talla=>([info_insert.insertId,talla,combo[talla] ?? 0, combo[talla] ?? 0]))
                   }
                   console.log("Info del fraccionado:",fraccionado)
-                  await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos_fracciones(id_combo_CAB,talla,cantidad,produccion_total) values ? ",[fraccionado])
+                  await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos_fracciones(id_combo_CAB,talla,cantidad,produccion_total) values ? ",[fraccionado.filter(row=>row.cantidad > 0)])
                 } else {
                   console.log("Dentro del update de combos simple")
                   await conn.query("UPDATE tbl2_fases_prod_hojacorte_combos SET idx_color = ?,color_combo = ?, insumos = ? WHERE idx = ? and id_hojacorte_CAB = ?",[combo.idx_color,combo.color_combo,JSON.stringify(combo).insumos,combo.idx,parseInt(corte['idx'])])
