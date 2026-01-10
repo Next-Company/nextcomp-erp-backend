@@ -59,7 +59,7 @@ export class ProduccionController {
     console.log("La informacion de la guia es:",data)
     const data2 = await ProduccionModel.getInfoGuiaDet(params.id)
     const data3 = data[0].id_proveedor_CAB ? await ProduccionModel.searchProveedorById(data[0].id_proveedor_CAB) : [{ nom: data[0].responsable, ruc: '', direccion: data[0].destino }]
-    const data4 = await ProduccionModel.getPlantillasTallasByOrden(data[0].id_orden_CAB)
+    const data4 = await ProduccionModel.getPlantillasTallasByOrden(data[0].id_orden_CAB ?? '0')
     
     console.log("La info detalle de la guia es:",data2)
     console.log("La info de las tallas:",data4)
@@ -71,7 +71,7 @@ export class ProduccionController {
         info: params,
         cabecera: data[0],
         detalle: data2.filter(row => !row.isprototipo),
-        tallas: data4[0].tallas.map(row=>row.desc),
+        tallas: data4[0]?.tallas.map(row=>row.desc) ?? ['st','xs','s','m','l','xl','xxl',],
         // relleno:data2.filter(),
         prototipos: data2.filter(row => row.isprototipo),
         numproto: data2.filter(row => row.isprototipo).length,
@@ -1242,7 +1242,8 @@ export class ProduccionController {
     const id = req.params.id
     const data = await ProduccionModel.getInfoMuestraCab(id)
     const data2 = await ProduccionModel.getInfoMuestraDet(id)
-    res.json([data[0], data2])
+    const data3 = await ProduccionModel.getPlantillasTallasByOrden(data[0].id_orden_CAB)
+    res.json([data[0], data2, data3[0]])
   }
   static async searchGuia(req, res) {
     const { info } = req.params
