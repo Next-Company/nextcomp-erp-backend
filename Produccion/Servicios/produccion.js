@@ -1590,7 +1590,7 @@ export class ProduccionModel {
             c += " WHEN id_combo_CAB = " + combo.idcombo +" and talla = '" + v + "' THEN " + (tipo ? parseInt(combo[v][0]) : -1*parseInt(combo[v][0]))
             return c
           },p1);
-          p2 = ['xs','s','m','l','xl','xxl'].reduce((c,v)=>{
+          p2 = infotallas[0].tallas.map(row=>row.desc).reduce((c,v)=>{
             c += " WHEN id_combo_CAB = " + combo.idcombo + " and talla = '" + v + "' THEN " + (tipo ? parseInt(combo[v][1]) : -1*parseInt(combo[v][1]))
             return c
           },p2);
@@ -2261,8 +2261,8 @@ export class ProduccionModel {
         // return results
       }
 
-      // if(conn) conn.rollback()
-      if(conn) conn.commit()
+      if(conn) conn.rollback()
+      // if(conn) conn.commit()
       return {ok:true,message:'Registro completo'}
     } catch (err) {
       if (conn) conn.rollback()
@@ -3190,8 +3190,8 @@ export class ProduccionModel {
         if(!respuesta.ok) throw respuesta.message
         // console.log("Resultado del update master :",resp_update)
       }
-      // if (conn) conn.rollback()
-      if (conn) conn.commit()
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return {ok:true,message:'Proceso ejecutado con éxito'}
     } catch (err) {
       console.log("asdlkfaslfjlaskdfjlf:",err)
@@ -5067,6 +5067,7 @@ export class ProduccionModel {
         JOIN tbl2_tallas_template t2 ON t1.tallasbase = t2.idx 
         WHERE t1.idx = ?
       `,[idorden])
+
       // result = result[0].tallas.map(row=>row.desc)
 
       // let [result] = await conn.execute("select *from tbl2_tallas_template")
