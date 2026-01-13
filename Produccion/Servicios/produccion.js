@@ -3186,7 +3186,7 @@ export class ProduccionModel {
         console.log("El valor del segundo dato es:",param2)
   
         let respuesta = await this.UpdateMasterProduccion(param1,param2,info_orden[0].id_orden_CAB,conn,0) // tipo = 1 => RESTA, tipo = 0 => SUMA
-        console.log("Imprimiendo respuestad del master:",respuesta)
+        console.log("Imprimiendo respuesta del master de produccion:",respuesta)
         if(!respuesta.ok) throw respuesta.message
         // console.log("Resultado del update master :",resp_update)
       }
