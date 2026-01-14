@@ -2986,7 +2986,7 @@ export class ProduccionController {
   }
   static async getAcabadosPendientes(req, res) {
     const id = req.params.id
-    const data = await ProduccionModel.getAcabadosDisponible(id)
+    const data = await ProduccionModel.getAcabadosPendientes(id)
     res.json(data)
   }
   static async getAcabadosDisponible(req, res) {

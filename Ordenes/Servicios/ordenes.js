@@ -1579,6 +1579,7 @@ export class OrdenesModel {
         (select sum(tdd.despacho) from tbl2_despachos_det tdd where tdc.idx = tdd.id_despacho_CAB))) as despachos
         from tbl2_despachos_cab tdc
         where tdc.id_orden_origen = ?
+        HAVING COUNT(tdc.idx) > 0
       `,[id])
 
       console.log("Info de despacho y acabados :",infodespachoacabados)

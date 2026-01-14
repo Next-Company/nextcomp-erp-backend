@@ -2134,13 +2134,19 @@ export class ProduccionModel {
   }
   static async getNuevoPedido(tipo,origen = 'NEXT',conn = null) {
     // let conn
+    let correlativo = null
     try {
-      // conn = await mysql.createConnection(configs[1])
-      // await conn.connect();
+      const [result] = await conn.query("SELECT codigo_num as correlativo FROM tbl2_pedidos_insumos_correlativo WHERE ruc_ = ? AND anio = YEAR(NOW()) AND tipo = ? AND origen = ? FOR UPDATE",['20522094120',tipo,origen])
+      if(result.length == 0){
+        await conn.execute("UPDATE tbl2_pedidos_insumos_correlativo SET anio = YEAR(NOW()), codigo_num = 1 WHERE ruc_ = ? AND tipo = ? AND origen = ?",['20522094120',tipo,origen])
+        correlativo = (new Date()).toLocaleDateString("es-MX",{year:"numeric"}) + '00001'
+      } else{
+        correlativo = result[0].codigo_num
+      }
+      // return {ok:true,resp:correlativo}
+      // return results[0].correlativo
+      return correlativo
 
-      const [results] = await conn.query("SELECT (codigo_num + 1) as correlativo FROM tbl2_pedidos_insumos_correlativo WHERE ruc_ = ? AND anio = YEAR(NOW()) AND tipo = ? AND origen = ?",['20522094120',tipo,origen])
-
-      return results[0].correlativo
     } catch (err) {
       return [err]
     }
@@ -2231,7 +2237,7 @@ export class ProduccionModel {
           for(let fila of articulos){
             console.log("Dentro del insertado detalle de avios")
             try {
-              const [results, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_det(id_pedido_CAB,id_subprod_CAB,id_producto_CAB,producto,modelo,corte,color,rollos,cantidad,unidad,precio,conversion) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.id_subprod_CAB ?? null,fila.idx_producto, fila.producto, fila.modelo, fila.corte, fila.color, fila.rollos, fila.cantidad, fila.unidad, fila.precio, fila.conversion ?? 1]);
+              const [results, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_det(id_pedido_CAB,id_subprod_CAB,id_producto_CAB,producto,modelo,corte,color,rollos,cantidad,unidad,precio,conversion) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.id_subprod_CAB ?? null,fila.idx_producto, fila.producto, fila.modelo ?? cabecera.produccion, fila.corte, fila.color, fila.rollos, fila.cantidad, fila.unidad, fila.precio, fila.conversion ?? 1]);
             } catch (error) {
               console.log("Error:",error)
             }
@@ -4439,7 +4445,7 @@ export class ProduccionModel {
           SUM(t2.cantidad) as cantidad,
           t2.articulo,
           t2.id_combo,
-          (
+          COALESCE((
             select JSON_ARRAYAGG(cc.pp) from
             (
               select a.id_orden_CAB,b.id_combo,JSON_OBJECT('talla',c.talla,'cantidad',sum(c.cantidad)) as pp
@@ -4449,10 +4455,11 @@ export class ProduccionModel {
               where a.servicio = 'ACABADOS' and a.estado = 'PENDIENTE'
               group by a.id_orden_CAB,b.id_combo,c.talla
             ) as cc where cc.id_orden_CAB = t1.id_orden_CAB and cc.id_combo = t2.id_combo
-          ) as fracciones,JSON_ARRAY() as fracciones_despacho
+          ),JSON_ARRAY()) as fracciones,
+          JSON_ARRAY() as fracciones_despacho
         from tbl2_guias_traslado_cab t1
         join tbl2_guias_traslado_det t2 on t1.idx = t2.id_guia_CAB 
-        where t1.id_orden_CAB = ? and t1.servicio  = 'ACABADOS' and t1.estado = 'PENDIENTE'
+        where t1.id_orden_CAB = ? and t1.servicio  = 'ACABADOS' and t1.estado = 'PENDIENTE' and t2.id_combo is not null
         group by t1.orden_ref,t2.articulo,t2.id_combo
       `, [id]);
 
@@ -4487,6 +4494,8 @@ export class ProduccionModel {
         },{})
         return {...row,...adicional}
       })
+
+      console.log("Info data formateadoS:",data_formateado)
 
       let consolidado = data_formateado.reduce((carry,value)=>{
         value['despachos'] = Object.keys(lista_despachos).reduce((carry,valor)=>{
