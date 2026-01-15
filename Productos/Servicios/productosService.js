@@ -111,7 +111,7 @@ export class ProductosService{
 
       let extra = busqueda.split(" ").length > 0 ? busqueda.split(" ").map(word=>"AND LOCATE('"+word+"',CONCAT(TRIM(producto),' ',TRIM(color),' ',TRIM(talla))) > 0").join(" ") : ""
 
-      console.log("Extra consultas :",extra)
+      console.log("Extra consultass :",extra)
 
       // const [rows,fields] = await conn.execute(`SELECT * FROM  tbl2_prod_color_talla_det where producto like '%${busqueda}%' and tipo in ('I','A') LIMIT 50`);
       // const [rows,fields] = await conn.execute(`SELECT * FROM  tbl2_prod_color_talla_det where tipo in ('I','A') ${extra} LIMIT 50`);
@@ -668,33 +668,16 @@ export class ProductosService{
       console.log("Los filtro de busqueda son :",filters,newfilters)
       let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(COALESCE(TRIM(producto),''),' ',COALESCE(TRIM(color),''),' ',COALESCE(TRIM(modelo),''),' ',COALESCE(TRIM(marca),''),' ',COALESCE(TRIM(presentacion),''))) > 0").join(" ") : ""
 
-      // tp.idx AS id_producto_CAB,
-      // tp.codigo AS cod_producto,
-      // tp.tipo AS tipo,
-      // tp.det AS det,
-      // tp.nom AS producto,
-      // tr.nom AS rubro,
-      // tp.temporada AS temporada,
-      // tp.estilo AS estilo,
-      // round((tp.costo + ((tp.utilidad1 * tp.costo) / 100)), 1) AS precio,
-      // tp.presentacion AS presentacion,
-      // tp.marca AS marca,
-      // tp.modelo AS modelo,
-      // tc.idx AS idx_color,
-      // upper(tc.nom) AS color,
-      // tt.idx AS idx_talla,
-      // upper(tt.detalle) AS talla,
-      // tcn.condicion AS condicion,
-      // ts.idx AS idxsub,
-      // ts.sku AS sku2
-
-      const [rows] = await conn.execute(`
+      const query = `
         SELECT *
         FROM
         (
           SELECT
               tad.id_CAB_DET,
               tp.idx as idx_prod,
+              tp.modelo,
+              tp.marca,
+              tp.presentacion,
               ts.idx as idx_subprod,
               tp.codigo,
               tp.tipo,
@@ -713,7 +696,9 @@ export class ProductosService{
         ) AS cc
         WHERE 1=1 ${extra}
         LIMIT 100
-      `);
+      `
+      console.log("La consulta generada es:",query)
+      const [rows] = await conn.execute(query);
       console.log(rows);
       return rows;
     }
@@ -763,7 +748,7 @@ export class ProductosService{
             tp.genero,
             tp.tipoPlan
         FROM tbl2_productos tp
-        WHERE 1=1 ${extra} and tp.ruc_ = '20522094120' and tp.activo = 1 and tp.tipoFabricacion is not null
+        WHERE 1=1 ${extra} and tp.ruc_ = '20522094120' and tp.activo = 1 and ( tp.tipo <> 'P' or ( tp.tipo = 'P' and tp.tipoFabricacion is not null))
         LIMIT 150
       `
       console.log("La consulta de producto es la siguiente:",query)

@@ -73,7 +73,7 @@ export class ProductosController{
     res.send(info);
   }
   static async getProductosConStock(req,res){
-    console.log("Buscando producos")
+    console.log("Buscando producoss")
     const search = req.params.search ?? ''
     let filters = req.body.filters ?? {} 
     console.log("Doña tomaza :",filters)
