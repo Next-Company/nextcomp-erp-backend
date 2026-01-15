@@ -2110,13 +2110,19 @@ export class ProduccionModel {
   }
   static async getNuevoPedido(tipo,origen = 'NEXT',conn = null) {
     // let conn
+    let correlativo = null
     try {
-      // conn = await mysql.createConnection(configs[1])
-      // await conn.connect();
+      const [result] = await conn.query("SELECT (codigo_num + 1) as correlativo FROM tbl2_pedidos_insumos_correlativo WHERE ruc_ = ? AND anio = YEAR(NOW()) AND tipo = ? AND origen = ? FOR UPDATE",['20522094120',tipo,origen])
+      if(result.length == 0){
+        await conn.execute("UPDATE tbl2_pedidos_insumos_correlativo SET anio = YEAR(NOW()), codigo_num = codigo_num + 1 WHERE ruc_ = ? AND tipo = ? AND origen = ?",['20522094120',tipo,origen])
+        correlativo = (new Date()).toLocaleDateString("es-MX",{year:"numeric"}) + '00001'
+      } else{
+        correlativo = result[0].numero
+      }
+      // return {ok:true,resp:correlativo}
+      // return results[0].correlativo
+      return correlativo
 
-      const [results] = await conn.query("SELECT (codigo_num + 1) as correlativo FROM tbl2_pedidos_insumos_correlativo WHERE ruc_ = ? AND anio = YEAR(NOW()) AND tipo = ? AND origen = ?",['20522094120',tipo,origen])
-
-      return results[0].correlativo
     } catch (err) {
       return [err]
     }
