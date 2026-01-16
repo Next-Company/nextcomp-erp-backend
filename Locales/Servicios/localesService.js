@@ -32,6 +32,7 @@ export default class LocalesService{
       await conn.connect()
 
       const [infolocal] = await conn.execute('select *from tbl2_proveedor_local where idx = ?',[idlocal])
+      console.log("Info del locals:",infolocal)
 
       const [servicios] = await conn.execute(`
         SELECT *FROM tbl2_guias_traslado_cab 
@@ -41,7 +42,9 @@ export default class LocalesService{
         SELECT *FROM tbl2_pedidos_insumos_cab 
         WHERE id_proveedor_CAB = ? AND estado = 'PENDIENTE'
       `,[infolocal[0].id_proveedor_CAB])
-      const [auditorias] = []
+      const auditorias = []
+
+      console.log("Procesos en curso:",servicios,compras,auditorias)
 
       return [servicios,compras,auditorias]
     } catch (error) {
