@@ -1,10 +1,11 @@
-import ServiciosServiceModel from "../Servicios/serviciosServiceModel";
+import ServiciosServiceModel from "../Servicios/serviciosServiceModel.js";
 
 export default class ServiciosController{
   static async getServicios(req,res){
-    const filtro = req.search ?? ''
+    const filtro = req.params.search ?? ''
     try {
       const info = await ServiciosServiceModel.getServicios(filtro)
+      console.log("Respuesta del servidor:",info)
       res.status(200).json(info)
     } catch (error) {
       res.status(400).json(error)
@@ -20,7 +21,7 @@ export default class ServiciosController{
     }
   }
   static async updateServicio(req,res){
-    const id = req.id ?? ''
+    const id = req.params.id ?? ''
     const data = req.body.info
     try {
       const info = await ServiciosServiceModel.updateServicio(id,data)
@@ -30,7 +31,7 @@ export default class ServiciosController{
     }
   }
   static async deleteServicio(req,res){
-    const id = req.id ?? ''
+    const id = req.params.id ?? ''
     try {
       const info = await ServiciosServiceModel.deleteServicio(id)
       res.status(200).json(info)
