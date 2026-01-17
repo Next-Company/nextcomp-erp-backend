@@ -12,7 +12,7 @@ export default class ServiciosController{
     }
   }
   static async saveServicio(req,res){
-    const data = req.body.info
+    const data = req.body
     try {
       const info = await ServiciosServiceModel.saveServicio(data)
       res.status(200).json(info)
