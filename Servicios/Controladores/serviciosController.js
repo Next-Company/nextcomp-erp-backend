@@ -11,6 +11,15 @@ export default class ServiciosController{
       res.status(400).json(error)
     }
   }
+  static async getServicioById(req,res){
+    const id = req.params.id ?? ''
+    try {
+      const info = await ServiciosServiceModel.getServicioById(id)
+      res.status(200).json(info)
+    } catch (error) {
+      res.status(400).json(error)
+    }
+  }
   static async saveServicio(req,res){
     const data = req.body
     try {
@@ -22,7 +31,7 @@ export default class ServiciosController{
   }
   static async updateServicio(req,res){
     const id = req.params.id ?? ''
-    const data = req.body.info
+    const data = req.body
     try {
       const info = await ServiciosServiceModel.updateServicio(id,data)
       res.status(200).json(info)

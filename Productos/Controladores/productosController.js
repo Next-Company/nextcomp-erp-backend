@@ -36,13 +36,16 @@ export class ProductosController{
     res.send(info);
   }
   static async updateProducto(req,res){
+    let imagenes = req.files
     let data = req.body
-    const info = await ProductosService.updateProducto(data);
+    console.log("awdfasd",imagenes)
+    // const info = await ProductosService.updateProducto(data,imagenes);
+    const info = {ok:true,message:'todo ok!'}
     res.send(info);
   }
   static async createNewProduct(req,res){
     let data = []
-    const info = await ProductosService.createNewProduct(data);
+    // const info = await ProductosService.createNewProduct(data);
     // res.send({data:info});
     res.send(info);
   }

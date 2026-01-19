@@ -1,5 +1,8 @@
 import mysql from "mysql2/promise";
 import { configs } from "../../Main/utils.js";
+import fs from "node:fs/promises"
+import path from 'node:path';
+import { Client } from "basic-ftp"
 
 export class ProductosService{
   static async getProductosList(search){
@@ -285,7 +288,7 @@ export class ProductosService{
       if(conn) await conn.end()
     }
   }
-  static async updateProducto(info){
+  static async updateProducto(info,imagenes){
     console.log("Dentro de la actualizacion de productos",info)
     let conn = undefined
     try {
@@ -293,73 +296,110 @@ export class ProductosService{
       await conn.connect()
       conn.beginTransaction()
 
-      const [validacion,fields] = await conn.execute("select *from tbl2_productos where ruc_ = '20522094120' and idx = ?",[info.idx])
-      let newinfo = Object.keys(info).reduce((c,v)=>{
-        if (fields.map(row=>row.name).includes(v) && v !== 'idx') c[v] = info[v]
-        return c
-      },{})
-      console.log("La nueva info esS:",newinfo)
+      // const [validacion,fields] = await conn.execute("select *from tbl2_productos where ruc_ = '20522094120' and idx = ?",[info.idx])
+      // let newinfo = Object.keys(info).reduce((c,v)=>{
+      //   if (fields.map(row=>row.name).includes(v) && v !== 'idx') c[v] = info[v]
+      //   return c
+      // },{})
+      // console.log("La nueva info esS:",newinfo)
 
-      let cake = Object.keys(newinfo).map(field=>`${field}='${newinfo[field]}'`)
-      console.log("El query resultado es:",cake,`UPDATE tbl2_productos SET ${cake.toString(',')} WHERE idx = ?`)
+      // let cake = Object.keys(newinfo).map(field=>`${field}='${newinfo[field]}'`)
+      // console.log("El query resultado es:",cake,`UPDATE tbl2_productos SET ${cake.toString(',')} WHERE idx = ?`)
 
-      let [result] = await conn.execute(`UPDATE tbl2_productos SET ${cake.toString(',')} WHERE ruc_ = '20522094120' and idx = ?`,[info.idx])
-      console.log("Row Afectada:",result.affectedRows)
+      // let [result] = await conn.execute(`UPDATE tbl2_productos SET ${cake.toString(',')} WHERE ruc_ = '20522094120' and idx = ?`,[info.idx])
+      // console.log("Row Afectada:",result.affectedRows)
 
-      let [valida] = await conn.execute("select *from tbl2_productos where ruc_ = '20522094120' and idx = ?",[info.idx])
-      console.log("La validacion despues de update es:",valida)
+      // let [valida] = await conn.execute("select *from tbl2_productos where ruc_ = '20522094120' and idx = ?",[info.idx])
+      // console.log("La validacion despues de update es:",valida)
 
-      let c_delete = [], c_add = []
-      let [backcombos] = await conn.query("select *from tbl2_subproductos where idx_CAB_PROD = ?",[info.idx])
-      c_delete = JSON.parse(JSON.stringify(backcombos))
+      // let c_delete = [], c_add = []
+      // let [backcombos] = await conn.query("select *from tbl2_subproductos where idx_CAB_PROD = ?",[info.idx])
+      // c_delete = JSON.parse(JSON.stringify(backcombos))
 
-      console.log("El arrau delete es :",c_delete)
-      if(info.combos){
-        for(let combo of [...JSON.parse(info.combos)]){
-          for(let talla of [...JSON.parse(combo.talla)]){
-            const busqueda = c_delete.filter(row=>row.idx_CAB_COLOR == parseInt(combo.idcolor) && row.talla == talla)
-            console.log("El resultado de la busqueda es:",busqueda)
-            if(busqueda.length > 0){
-              c_delete = c_delete.filter(row=>row.idx !== busqueda[0].idx)
-              console.log("Tomate:",c_delete)
-            }else{
-              c_add.push({idcolor:combo.idcolor,talla:talla})
-              console.log("Mango:",c_add)
-            }
-          }
-        }
-        console.log("Los arrays son",c_delete,c_add)
-        for(let c of [...c_add]){
-          const [info_talla] = await conn.execute("select *from tbl2_tallas where detalle = ?",[c.talla])
-          let result = await ProductosService.createNewSubProduct(
-            {
-              idx_CAB_PROD: info.idx,
-              codigo: validacion[0].codigo,
-              isbn: validacion[0].isbn,
-              nom: info.nom,
-              idx_CAB_COLOR: c.idcolor,
-              idx_talla: info_talla[0].idx,
-              talla: info_talla[0].detalle,
-              estado: 'primera',
-              nro_lote: 0
-            },
-            conn
-          )
-          if(!result.ok) throw new Error(result.message)
-        }
-        for(let c of [...c_delete]){
-          await conn.execute("delete from tbl2_subproductos where idx_CAB_PROD = ? and idx = ?",[c.idx_CAB_PROD,c.idx])
-        }
-      }
+      // console.log("El arrau delete es :",c_delete)
+      // if(info.combos){
+      //   for(let combo of [...JSON.parse(info.combos)]){
+      //     for(let talla of [...JSON.parse(combo.talla)]){
+      //       const busqueda = c_delete.filter(row=>row.idx_CAB_COLOR == parseInt(combo.idcolor) && row.talla == talla)
+      //       console.log("El resultado de la busqueda es:",busqueda)
+      //       if(busqueda.length > 0){
+      //         c_delete = c_delete.filter(row=>row.idx !== busqueda[0].idx)
+      //         console.log("Tomate:",c_delete)
+      //       }else{
+      //         c_add.push({idcolor:combo.idcolor,talla:talla})
+      //         console.log("Mango:",c_add)
+      //       }
+      //     }
+      //   }
+      //   console.log("Los arrays son",c_delete,c_add)
+      //   for(let c of [...c_add]){
+      //     const [info_talla] = await conn.execute("select *from tbl2_tallas where detalle = ?",[c.talla])
+      //     let result = await ProductosService.createNewSubProduct(
+      //       {
+      //         idx_CAB_PROD: info.idx,
+      //         codigo: validacion[0].codigo,
+      //         isbn: validacion[0].isbn,
+      //         nom: info.nom,
+      //         idx_CAB_COLOR: c.idcolor,
+      //         idx_talla: info_talla[0].idx,
+      //         talla: info_talla[0].detalle,
+      //         estado: 'primera',
+      //         nro_lote: 0
+      //       },
+      //       conn
+      //     )
+      //     if(!result.ok) throw new Error(result.message)
+      //   }
+      //   for(let c of [...c_delete]){
+      //     await conn.execute("delete from tbl2_subproductos where idx_CAB_PROD = ? and idx = ?",[c.idx_CAB_PROD,c.idx])
+      //   }
+      // }
 
-      // if(conn) conn.rollback()
-      if(conn) conn.commit()
+      // CARGANDO IMAGENES
+      const resultado = await ProductosService.uploadImagesProduct(imagenes,info)
+      if(!resultado.ok) throw resultado.message
+
+      if(conn) conn.rollback()
+      // if(conn) conn.commit()
       return {ok:true,message:'',info:''}
     } catch(error){
       if(conn) conn.rollback()
       return {ok:false,message:error.message ?? error}
     } finally {
       if(conn) await conn.end()
+    }
+  }
+  static async uploadImagesProduct(images,info){
+    // let str = 'public/images';
+    // let count = 1
+    const client = new Client()
+    client.ftp.verbose = false
+    try {
+      await client.access({
+        host: "jsjfact.com",
+        user: "ftpnuevo",
+        password: "JSJPeru2024++",
+      })
+      for(let image of [...images]){
+        const newname = null
+        // const newname = id + '_' + image.filename + '.jpg'
+        if (!info.listimages.includes(image.originalname)) {
+          newname = info.idx + `_${image.filename}.jpg`
+
+        } else {
+
+        }
+        const oldPath = image.path;
+        const newPath = path.join('public/images', newname);
+        await fs.rename(oldPath, newPath)
+        await client.uploadFrom(newPath, "/facturador/imagenez/" + newname)
+        // count++
+      }
+      return {ok:true,message:'Imagen cargada con exito'} 
+    } catch (error) {
+      return {ok:false,message:error}
+    } finally {
+      client.close()
     }
   }
   static async createNewProduct(info,conn){
