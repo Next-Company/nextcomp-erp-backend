@@ -1,5 +1,8 @@
 import mysql from "mysql2/promise";
 import { configs } from "../../Main/utils.js";
+import fs from "node:fs/promises"
+import path from 'node:path';
+import { Client } from "basic-ftp"
 
 export class ProductosService{
   static async getProductosList(search){
@@ -228,9 +231,10 @@ export class ProductosService{
       await conn.end();
     }
   }
-  static async generateProducto(info){
+  static async generateProducto(info,imagenes){
     console.log("Dentro de la generacion de avios e insumoss")
     let conn = undefined
+    let imageslist = null
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect()
@@ -275,6 +279,16 @@ export class ProductosService{
           }
         }
       }
+      // CARGANDO IMAGENES
+      if (imagenes.length > 0){
+        const resultado = await ProductosService.uploadImagesProduct(imagenes,info.imageslist ? JSON.parse(info.imageslist) : [],result.info)
+        if(!resultado.ok) throw new Error("Error subiendo las imagenes")
+        imageslist = JSON.stringify(resultado.newimageslist)
+      } else {
+        imageslist = info.imageslist ?? null
+      }
+      imageslist && await conn.execute("UPDATE tbl2_productos SET imageslist = ? WHERE idx = ? and ruc_ = ?",[imageslist,info.idx,'20522094120'])
+
       // if(conn) conn.rollback()
       if(conn) conn.commit()
       return {ok:true,message:'',info:''}
@@ -285,19 +299,22 @@ export class ProductosService{
       if(conn) await conn.end()
     }
   }
-  static async updateProducto(info){
+  static async updateProducto(info,imagenes){
     console.log("Dentro de la actualizacion de productos",info)
     let conn = undefined
+    let imageslist = null
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect()
       conn.beginTransaction()
+
 
       const [validacion,fields] = await conn.execute("select *from tbl2_productos where ruc_ = '20522094120' and idx = ?",[info.idx])
       let newinfo = Object.keys(info).reduce((c,v)=>{
         if (fields.map(row=>row.name).includes(v) && v !== 'idx') c[v] = info[v]
         return c
       },{})
+      Reflect.deleteProperty(newinfo,'imageslist')
       console.log("La nueva info esS:",newinfo)
 
       let cake = Object.keys(newinfo).map(field=>`${field}='${newinfo[field]}'`)
@@ -352,14 +369,51 @@ export class ProductosService{
         }
       }
 
+      // CARGANDO IMAGENES
+      if (imagenes.length > 0){
+        const resultado = await ProductosService.uploadImagesProduct(imagenes,info.imageslist ? JSON.parse(info.imageslist) : [],result.info)
+        if(!resultado.ok) throw new Error("Error subiendo las imagenes")
+        imageslist = JSON.stringify(resultado.newimageslist)
+      } else {
+        imageslist = info.imageslist ?? null
+      }
+      imageslist && await conn.execute("UPDATE tbl2_productos SET imageslist = ? WHERE idx = ? and ruc_ = ?",[imageslist,info.idx,'20522094120'])
+
       // if(conn) conn.rollback()
       if(conn) conn.commit()
       return {ok:true,message:'',info:''}
     } catch(error){
+      console.log("Error detectado:",error)
       if(conn) conn.rollback()
       return {ok:false,message:error.message ?? error}
     } finally {
       if(conn) await conn.end()
+    }
+  }
+  static async uploadImagesProduct(images,imageslist,idx){
+    const client = new Client()
+    client.ftp.verbose = false
+    try {
+      await client.access({
+        host: "jsjfact.com",
+        user: "ftpnuevo",
+        password: "JSJPeru2024++",
+      })
+      for(let image of [...images]){
+        let newname = null
+        newname = `20522094120_${idx}_${Date.now()}.jpg`
+        const oldPath = image.path;
+        const newPath = path.join('public/images', newname);
+        await fs.rename(oldPath, newPath)
+        await client.uploadFrom(newPath, "/facturador/imagenez/" + newname)
+        await fs.unlink(newPath)
+        imageslist.push(newname)
+      }
+      return {ok:true,newimageslist:imageslist} 
+    } catch (error) {
+      return {ok:false,message:error}
+    } finally {
+      client.close()
     }
   }
   static async createNewProduct(info,conn){
