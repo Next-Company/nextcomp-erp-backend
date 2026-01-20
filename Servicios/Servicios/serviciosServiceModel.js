@@ -9,7 +9,7 @@ export default class ServiciosServiceModel{
       await conn.connect()
       const extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(COALESCE(TRIM(tipo),''),' ',COALESCE(TRIM(orden_ref),''),' ',COALESCE(TRIM(proveedor),''),' ',COALESCE(TRIM(responsable),''),' ',COALESCE(TRIM(estado),''))) > 0").join(" ") : ""
 
-      const query = `SELECT *FROM tbl2_ordenes_servicio_cab WHERE 1=1 ${extra} AND ruc_ = '20522094120' LIMIT 100`
+      const query = `SELECT *,DATEDIFF(fec_retorno,fec_emision) as tiempo_produccion, DATEDIFF(fec_retorno,NOW()) as dias_pendientes FROM tbl2_ordenes_servicio_cab WHERE 1=1 ${extra} AND ruc_ = '20522094120' LIMIT 100`
       console.log("La consulta de busqueda es la siguiente:",query)
       const [busqueda] = await conn.execute(query)
 

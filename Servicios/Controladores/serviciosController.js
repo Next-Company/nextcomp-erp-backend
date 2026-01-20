@@ -90,6 +90,15 @@ export default class ServiciosController{
         datos: cabecera,
         detalle: detalle,
         helpers: {
+          correlativoOrden() {
+            let correlativo = ''
+            if (cabecera && cabecera['idx']) {
+              const anio = new Date().getFullYear().toString().slice(-2)
+              const numero = cabecera['idx'].toString().padStart(6, '0')
+              correlativo = `${anio + numero}`
+            }
+            return correlativo
+          },
           condicionPago(valor) {
             let forma = ''
             switch (valor) {

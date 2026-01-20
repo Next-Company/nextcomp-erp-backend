@@ -401,7 +401,7 @@ export class ProductosService{
       })
       for(let image of [...images]){
         let newname = null
-        newname = `20522094120_${idx}_${Date.now()}.jpg`
+        newname = `20522094120_${idx}_${Date.now()}.` + image.name.split('.').pop().toLowerCase()
         const oldPath = image.path;
         const newPath = path.join('public/images', newname);
         await fs.rename(oldPath, newPath)
