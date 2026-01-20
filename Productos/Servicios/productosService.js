@@ -231,9 +231,10 @@ export class ProductosService{
       await conn.end();
     }
   }
-  static async generateProducto(info){
+  static async generateProducto(info,imagenes){
     console.log("Dentro de la generacion de avios e insumoss")
     let conn = undefined
+    let imageslist = null
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect()
@@ -278,6 +279,16 @@ export class ProductosService{
           }
         }
       }
+      // CARGANDO IMAGENES
+      if (imagenes.length > 0){
+        const resultado = await ProductosService.uploadImagesProduct(imagenes,info.imageslist ? JSON.parse(info.imageslist) : [],result.info)
+        if(!resultado.ok) throw new Error("Error subiendo las imagenes")
+        imageslist = JSON.stringify(resultado.newimageslist)
+      } else {
+        imageslist = info.imageslist ?? null
+      }
+      imageslist && await conn.execute("UPDATE tbl2_productos SET imageslist = ? WHERE idx = ? and ruc_ = ?",[imageslist,info.idx,'20522094120'])
+
       // if(conn) conn.rollback()
       if(conn) conn.commit()
       return {ok:true,message:'',info:''}
@@ -291,87 +302,95 @@ export class ProductosService{
   static async updateProducto(info,imagenes){
     console.log("Dentro de la actualizacion de productos",info)
     let conn = undefined
+    let imageslist = null
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect()
       conn.beginTransaction()
 
-      // const [validacion,fields] = await conn.execute("select *from tbl2_productos where ruc_ = '20522094120' and idx = ?",[info.idx])
-      // let newinfo = Object.keys(info).reduce((c,v)=>{
-      //   if (fields.map(row=>row.name).includes(v) && v !== 'idx') c[v] = info[v]
-      //   return c
-      // },{})
-      // console.log("La nueva info esS:",newinfo)
 
-      // let cake = Object.keys(newinfo).map(field=>`${field}='${newinfo[field]}'`)
-      // console.log("El query resultado es:",cake,`UPDATE tbl2_productos SET ${cake.toString(',')} WHERE idx = ?`)
+      const [validacion,fields] = await conn.execute("select *from tbl2_productos where ruc_ = '20522094120' and idx = ?",[info.idx])
+      let newinfo = Object.keys(info).reduce((c,v)=>{
+        if (fields.map(row=>row.name).includes(v) && v !== 'idx') c[v] = info[v]
+        return c
+      },{})
+      Reflect.deleteProperty(newinfo,'imageslist')
+      console.log("La nueva info esS:",newinfo)
 
-      // let [result] = await conn.execute(`UPDATE tbl2_productos SET ${cake.toString(',')} WHERE ruc_ = '20522094120' and idx = ?`,[info.idx])
-      // console.log("Row Afectada:",result.affectedRows)
+      let cake = Object.keys(newinfo).map(field=>`${field}='${newinfo[field]}'`)
+      console.log("El query resultado es:",cake,`UPDATE tbl2_productos SET ${cake.toString(',')} WHERE idx = ?`)
 
-      // let [valida] = await conn.execute("select *from tbl2_productos where ruc_ = '20522094120' and idx = ?",[info.idx])
-      // console.log("La validacion despues de update es:",valida)
+      let [result] = await conn.execute(`UPDATE tbl2_productos SET ${cake.toString(',')} WHERE ruc_ = '20522094120' and idx = ?`,[info.idx])
+      console.log("Row Afectada:",result.affectedRows)
 
-      // let c_delete = [], c_add = []
-      // let [backcombos] = await conn.query("select *from tbl2_subproductos where idx_CAB_PROD = ?",[info.idx])
-      // c_delete = JSON.parse(JSON.stringify(backcombos))
+      let [valida] = await conn.execute("select *from tbl2_productos where ruc_ = '20522094120' and idx = ?",[info.idx])
+      console.log("La validacion despues de update es:",valida)
 
-      // console.log("El arrau delete es :",c_delete)
-      // if(info.combos){
-      //   for(let combo of [...JSON.parse(info.combos)]){
-      //     for(let talla of [...JSON.parse(combo.talla)]){
-      //       const busqueda = c_delete.filter(row=>row.idx_CAB_COLOR == parseInt(combo.idcolor) && row.talla == talla)
-      //       console.log("El resultado de la busqueda es:",busqueda)
-      //       if(busqueda.length > 0){
-      //         c_delete = c_delete.filter(row=>row.idx !== busqueda[0].idx)
-      //         console.log("Tomate:",c_delete)
-      //       }else{
-      //         c_add.push({idcolor:combo.idcolor,talla:talla})
-      //         console.log("Mango:",c_add)
-      //       }
-      //     }
-      //   }
-      //   console.log("Los arrays son",c_delete,c_add)
-      //   for(let c of [...c_add]){
-      //     const [info_talla] = await conn.execute("select *from tbl2_tallas where detalle = ?",[c.talla])
-      //     let result = await ProductosService.createNewSubProduct(
-      //       {
-      //         idx_CAB_PROD: info.idx,
-      //         codigo: validacion[0].codigo,
-      //         isbn: validacion[0].isbn,
-      //         nom: info.nom,
-      //         idx_CAB_COLOR: c.idcolor,
-      //         idx_talla: info_talla[0].idx,
-      //         talla: info_talla[0].detalle,
-      //         estado: 'primera',
-      //         nro_lote: 0
-      //       },
-      //       conn
-      //     )
-      //     if(!result.ok) throw new Error(result.message)
-      //   }
-      //   for(let c of [...c_delete]){
-      //     await conn.execute("delete from tbl2_subproductos where idx_CAB_PROD = ? and idx = ?",[c.idx_CAB_PROD,c.idx])
-      //   }
-      // }
+      let c_delete = [], c_add = []
+      let [backcombos] = await conn.query("select *from tbl2_subproductos where idx_CAB_PROD = ?",[info.idx])
+      c_delete = JSON.parse(JSON.stringify(backcombos))
+
+      console.log("El arrau delete es :",c_delete)
+      if(info.combos){
+        for(let combo of [...JSON.parse(info.combos)]){
+          for(let talla of [...JSON.parse(combo.talla)]){
+            const busqueda = c_delete.filter(row=>row.idx_CAB_COLOR == parseInt(combo.idcolor) && row.talla == talla)
+            console.log("El resultado de la busqueda es:",busqueda)
+            if(busqueda.length > 0){
+              c_delete = c_delete.filter(row=>row.idx !== busqueda[0].idx)
+              console.log("Tomate:",c_delete)
+            }else{
+              c_add.push({idcolor:combo.idcolor,talla:talla})
+              console.log("Mango:",c_add)
+            }
+          }
+        }
+        console.log("Los arrays son",c_delete,c_add)
+        for(let c of [...c_add]){
+          const [info_talla] = await conn.execute("select *from tbl2_tallas where detalle = ?",[c.talla])
+          let result = await ProductosService.createNewSubProduct(
+            {
+              idx_CAB_PROD: info.idx,
+              codigo: validacion[0].codigo,
+              isbn: validacion[0].isbn,
+              nom: info.nom,
+              idx_CAB_COLOR: c.idcolor,
+              idx_talla: info_talla[0].idx,
+              talla: info_talla[0].detalle,
+              estado: 'primera',
+              nro_lote: 0
+            },
+            conn
+          )
+          if(!result.ok) throw new Error(result.message)
+        }
+        for(let c of [...c_delete]){
+          await conn.execute("delete from tbl2_subproductos where idx_CAB_PROD = ? and idx = ?",[c.idx_CAB_PROD,c.idx])
+        }
+      }
 
       // CARGANDO IMAGENES
-      const resultado = await ProductosService.uploadImagesProduct(imagenes,info)
-      if(!resultado.ok) throw resultado.message
+      if (imagenes.length > 0){
+        const resultado = await ProductosService.uploadImagesProduct(imagenes,info.imageslist ? JSON.parse(info.imageslist) : [],result.info)
+        if(!resultado.ok) throw new Error("Error subiendo las imagenes")
+        imageslist = JSON.stringify(resultado.newimageslist)
+      } else {
+        imageslist = info.imageslist ?? null
+      }
+      imageslist && await conn.execute("UPDATE tbl2_productos SET imageslist = ? WHERE idx = ? and ruc_ = ?",[imageslist,info.idx,'20522094120'])
 
-      if(conn) conn.rollback()
-      // if(conn) conn.commit()
+      // if(conn) conn.rollback()
+      if(conn) conn.commit()
       return {ok:true,message:'',info:''}
     } catch(error){
+      console.log("Error detectado:",error)
       if(conn) conn.rollback()
       return {ok:false,message:error.message ?? error}
     } finally {
       if(conn) await conn.end()
     }
   }
-  static async uploadImagesProduct(images,info){
-    // let str = 'public/images';
-    // let count = 1
+  static async uploadImagesProduct(images,imageslist,idx){
     const client = new Client()
     client.ftp.verbose = false
     try {
@@ -381,21 +400,16 @@ export class ProductosService{
         password: "JSJPeru2024++",
       })
       for(let image of [...images]){
-        const newname = null
-        // const newname = id + '_' + image.filename + '.jpg'
-        if (!info.listimages.includes(image.originalname)) {
-          newname = info.idx + `_${image.filename}.jpg`
-
-        } else {
-
-        }
+        let newname = null
+        newname = `20522094120_${idx}_${Date.now()}.jpg`
         const oldPath = image.path;
         const newPath = path.join('public/images', newname);
         await fs.rename(oldPath, newPath)
         await client.uploadFrom(newPath, "/facturador/imagenez/" + newname)
-        // count++
+        await fs.unlink(newPath)
+        imageslist.push(newname)
       }
-      return {ok:true,message:'Imagen cargada con exito'} 
+      return {ok:true,newimageslist:imageslist} 
     } catch (error) {
       return {ok:false,message:error}
     } finally {

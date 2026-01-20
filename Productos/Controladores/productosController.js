@@ -31,16 +31,15 @@ export class ProductosController{
     res.send(info);
   }
   static async generateProducto(req,res){
+    let imagenes = req.files
     let data = req.body
-    const info = await ProductosService.generateProducto(data);
+    const info = await ProductosService.generateProducto(data,imagenes);
     res.send(info);
   }
   static async updateProducto(req,res){
     let imagenes = req.files
     let data = req.body
-    console.log("awdfasd",imagenes)
-    // const info = await ProductosService.updateProducto(data,imagenes);
-    const info = {ok:true,message:'todo ok!'}
+    const info = await ProductosService.updateProducto(data,imagenes);
     res.send(info);
   }
   static async createNewProduct(req,res){
