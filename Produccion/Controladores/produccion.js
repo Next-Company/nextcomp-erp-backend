@@ -1450,8 +1450,8 @@ export class ProduccionController {
               <td style="width:60px;text-align:left;background-color:#ddebf7;text-align:center;">` + (item['color'] ?? '') + `</td>
               <td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['cantidad'] + `</td>
               <td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['unidad'] + `</td>
-              <td style="width: 60px;text-align: center;background-color:#ddebf7;">` + item['precio'] + `</td>
-              <td style="width: 60px;text-align: center;background-color:#ddebf7;">` + (parseFloat(item['cantidad']) * parseFloat(item['precio'])).toFixed(2) + `</td>
+              <td style="width: 60px;text-align: center;background-color:#ddebf7;">` + (item['precio'] ?? 0) + `</td>
+              <td style="width: 60px;text-align: center;background-color:#ddebf7;">` + (parseFloat(item['cantidad']) * parseFloat(item['precio'] ?? 0)).toFixed(2) + `</td>
             </tr>
             `)
 
@@ -1469,13 +1469,13 @@ export class ProduccionController {
                   <td style="width: 60px;text-align: center;background-color:#ddebf7;"></td>
                 </tr>`)
             }
-            const total = items.reduce((carry, valor) => { carry += parseFloat(valor['cantidad']) * parseFloat(valor['precio']); return carry }, 0).toFixed(2)
+            const total = items.reduce((carry, valor) => { carry += parseFloat(valor['cantidad']) * parseFloat(valor['precio'] ?? 0); return carry }, 0).toFixed(2)
             return itemsAsHtml.join("\n")
           },
           consolidado(items) {
             let itemsAsHtml = ''
             let extra = 12 - items.length
-            const total = items.reduce((carry, valor) => { carry += parseFloat(valor['cantidad']) * parseFloat(valor['precio']); return carry }, 0).toFixed(2)
+            const total = items.reduce((carry, valor) => { carry += parseFloat(valor['cantidad']) * parseFloat(valor['precio'] ?? 0); return carry }, 0).toFixed(2)
 
             itemsAsHtml = `
               <div style="height:14px;padding-top:5px;border-top:1px solid black;">
