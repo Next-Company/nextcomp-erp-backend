@@ -29,8 +29,6 @@ import MANTENIMIENTO_ROUTER from "./Mantenimiento/Routers/mantenimientoRouter.js
 import SERVICIOS_ROUTER from "./Servicios/Routers/serviciosRouter.js";
 const app = express()
 
-
-
 const hbs = create({
     helpers: {
         foo() { return 'FOO!'; },

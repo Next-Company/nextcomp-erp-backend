@@ -125,39 +125,23 @@
             <tr style="border-bottom:.2px solid gray;">
               <th>#</th>
               <th style="text-align:left;">Artículos de producción</th>
-              <th style="text-align:center;">XS/26</th>
-              <th style="text-align:center;">S/28</th>
-              <th style="text-align:center;">M/30</th>
-              <th style="text-align:center;">L/32</th>
-              <th style="text-align:center;">XL/34</th>
-              <th style="text-align:center;">XXL/36</th>
+              {{#header tallas}}
+              {{/header}}
               <th style="text-align:center;">UM</th>
               <th style="text-align:center;">Cantidad</th>
             </tr>
           </thead>
           <tbody>
-            {{#each detalle}}
-              <tr style="">
-                <td style="text-align: center;width:.5cm;">{{plusindex @index}}</td>
-                <td>{{articulo}}</td>
-                <td style="text-align: center;">{{xs}}</td>
-                <td style="text-align: center;">{{s}}</td>
-                <td style="text-align: center;">{{m}}</td>
-                <td style="text-align: center;">{{l}}</td>
-                <td style="text-align: center;">{{xl}}</td>
-                <td style="text-align: center;">{{xxl}}</td>
-                <td style="width:1.5px;text-align: center;">NIU</td>
-                <td style="width:1.5px;text-align: center;">{{cantidad}}</td>
-              </tr>
-            {{/each}}
-            <tfoot>
-              <tr>
-                <td colspan="8"></td>
-                <td style="text-align: center;font-size:.9rem;"><strong>Total</strong></td>
-                <td style="text-align: center;font-size:.9rem;"><strong>{{totalunid}}</strong></td>
-              </tr>
-            </tfoot>
+            {{#cuerpo detalle tallas}}
+            {{/cuerpo}}
           </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="9"></td>
+              <td style="text-align: center;font-size:.9rem;"><strong>Total</strong></td>
+              <td style="text-align: center;font-size:.9rem;"><strong>{{totalunid}}</strong></td>
+            </tr>
+          </tfoot>
         </table>
       </section>
       {{!-- </br> --}}
@@ -301,39 +285,23 @@
             <tr style="border-bottom:.2px solid gray;">
               <th>#</th>
               <th style="text-align:left;">Artículos de producción</th>
-              <th style="text-align:center;">XS/26</th>
-              <th style="text-align:center;">S/28</th>
-              <th style="text-align:center;">M/30</th>
-              <th style="text-align:center;">L/32</th>
-              <th style="text-align:center;">XL/34</th>
-              <th style="text-align:center;">XXL/36</th>
+              {{#header tallas}}
+              {{/header}}
               <th style="text-align:center;">UM</th>
               <th style="text-align:center;">Cantidad</th>
             </tr>
           </thead>
           <tbody>
-            {{#each detalle}}
-              <tr style="">
-                <td style="text-align: center;width:.5cm;">{{plusindex @index}}</td>
-                <td>{{articulo}}</td>
-                <td style="text-align: center;">{{xs}}</td>
-                <td style="text-align: center;">{{s}}</td>
-                <td style="text-align: center;">{{m}}</td>
-                <td style="text-align: center;">{{l}}</td>
-                <td style="text-align: center;">{{xl}}</td>
-                <td style="text-align: center;">{{xxl}}</td>
-                <td style="width:1.5px;text-align: center;">NIU</td>
-                <td style="width:1.5px;text-align: center;">{{cantidad}}</td>
-              </tr>
-            {{/each}}
-            <tfoot>
-              <tr>
-                <td colspan="8"></td>
-                <td style="text-align: center;font-size:.9rem;"><strong>Total</strong></td>
-                <td style="text-align: center;font-size:.9rem;"><strong>{{totalunid}}</strong></td>
-              </tr>
-            </tfoot>
+            {{#cuerpo detalle tallas}}
+            {{/cuerpo}}
           </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="9"></td>
+              <td style="text-align: center;font-size:.9rem;"><strong>Total</strong></td>
+              <td style="text-align: center;font-size:.9rem;"><strong>{{totalunid}}</strong></td>
+            </tr>
+          </tfoot>
         </table>
       </section>
       {{!-- </br> --}}

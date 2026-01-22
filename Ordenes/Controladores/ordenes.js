@@ -8,6 +8,7 @@ import { Client } from "basic-ftp"
 // import { concat } from "puppeteer-core/lib/esm/third_party/rxjs/rxjs.js";
 import { OrdenesModel } from "../Servicios/ordenes.js";
 import { Console } from "node:console";
+import { CLIENT_RENEG_WINDOW } from "node:tls";
 
 export class OrdenesController {
   static async getOrdenes(req, reply) {
@@ -1066,6 +1067,11 @@ export class OrdenesController {
     const requerimientos = await OrdenesModel.getRequerimientosByOrden(params.idorden)
     console.log("Info cabecera:",data)
     console.log("Info requerimientos:",requerimientos)
+
+    const infotallas = await OrdenesModel.getPlantillasTallas()
+    console.log("Data tallas:",infotallas)
+    const tallasbase = infotallas.filter(row=>row.idx == parseInt(data[0].tallasbase))[0].tallasformateado.split('-')
+
     try {
       
     
@@ -1137,7 +1143,13 @@ export class OrdenesController {
           },
           relleno3: function(info){
             console.log("La infomarca de la cabecera es:",info)
-            const tallas = {'st':'S/T','10':'10','12':'12','14':'14','16':'16','xs':'XS/26','s':'S/28','m':'M/30','l':'L/32','xl':'XL/34','xxl':'XXL/36'}
+            // const tallas = {'st':'S/T','10':'10','12':'12','14':'14','16':'16','xs':'XS/26','s':'S/28','m':'M/30','l':'L/32','xl':'XL/34','xxl':'XXL/36'}
+
+            const tallas = tallasbase.reduce((c,v)=>{
+              c[v] = v.toUpperCase()
+              return c
+            },{})
+
             const materiales = eval(info.materiales_produccion) ?? ['','','']
             const combos = JSON.parse(JSON.stringify(info.ordenes_combos))
             const relleno = {
@@ -1610,6 +1622,10 @@ export class OrdenesController {
   static async getCorrelativoProduccionPreview(req,res){
     const tipo = req.params.tipo
     let resp = await OrdenesModel.getCorrelativoProduccionPreview(tipo)
+    res.json(resp)
+  }
+  static async getPlantillasTallas(req,res){
+    let resp = await OrdenesModel.getPlantillasTallas()
     res.json(resp)
   }
   static async getInsumosOrden(req, reply) {

@@ -3,6 +3,7 @@ import { configs } from "../../Main/utils.js";
 import mysql from "mysql2/promise";
 import { ConsoleMessage } from "puppeteer-core";
 import { CdpKeyboard } from "puppeteer-core";
+import { ifError } from "node:assert";
 // import { inventario } from "../../Main/config.js";
 
 export class OrdenesModel {
@@ -295,19 +296,13 @@ export class OrdenesModel {
         FROM viewProduccionOrdenes t1
         WHERE 1=1 ${extra} ORDER BY idx desc
       `
-      console.log('Consulta de listado de ordenes:',query)
-      console.log('Otra lista de impresion de observaciones')
       let [results] = await conn.query(query);
-      await conn.end();
-
       return results
     } catch (err) {
       console.log(err);
       return { 'msg': err }
     } finally {
-      if (conn) {
-        await conn.end();
-      }
+      if (conn) await conn.end()
     }
   }
   static async getOrdenesFull(search) {
@@ -334,6 +329,8 @@ export class OrdenesModel {
             tfpo.marca AS marca,
             tfpo.producto AS producto,
             tfpo.base AS base,
+            tfpo.estilo,
+            tfpo.presentacion,
             tfpo.precio AS precio,
             tfpo.modelos AS modelos,
             tfpo.estado_orden AS estado_orden,
@@ -419,6 +416,10 @@ export class OrdenesModel {
       await conn.connect();
 
       console.log("Id orden:",idorden,"Id hoja:",idhoja)
+
+      let [infotallas] = await conn.execute("select *from tbl2_fases_prod_ordenes t1 join tbl2_tallas_template t2 on t1.tallasbase = t2.idx where t1.idx = ?",[idorden])
+      const tallasbase = infotallas[0].tallas.map(row=>row.desc)
+
       let [results] = await conn.query(`SELECT 
         tfphc.idx as id_combo,
         -- CONCAT(tfpo.producto,' ',tfpo.marca,' ',tfpo.modelos,' ',tfphc.color_combo) as articulo,
@@ -432,29 +433,26 @@ export class OrdenesModel {
       join tbl2_fases_prod_ordenes tfpo on tfph.id_cab_orden = tfpo.idx
       where tfpo.idx = ? and tfph.idx = ?
       having cantidad_fracciones > 0`,[idorden,idhoja])
-
       console.log("Resultados de extraer items de caja:",results)
-
-      // let [results] = await conn.query(`SELECT 
-      //   tfphc.idx as id_combo,
-      //   CONCAT(tfpo.producto,' ',tfpo.marca,' ',tfpo.modelos,' ',tfphc.color_combo) as articulo,
-      //   COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',tfphcf.talla,'cantidad',tfphcf.cantidad,'produccion_total',tfphcf.produccion_total,'caidos_total',tfphcf.caidos_total)) FROM tbl2_fases_prod_hojacorte_combos_fracciones tfphcf
-      //   where tfphcf.id_combo_CAB = tfphc.idx),JSON_ARRAY()) as fracciones,tfphc.cantidad_combo
-      // from tbl2_fases_prod_hojacorte_combos tfphc 
-      // join tbl2_fases_prod_hojacorte tfph on tfphc.id_hojacorte_CAB = tfph.idx
-      // join tbl2_fases_prod_ordenes tfpo on tfph.id_cab_orden = tfpo.idx
-      // where tfpo.idx = ?`,[idorden])
 
       results = results.reduce((c,v)=>{
         let total = 0
         let pp = undefined
+        v.tallasbase = tallasbase
         if(v.fracciones.length > 0){
           pp = v.fracciones.reduce((cc,vv)=>{
             total += parseInt(vv.produccion_total)
+            // v.tallasbase.push(vv.talla)
             return {...cc,[vv.talla]:parseInt(vv.cantidad),cantidad:parseInt(total)}
           },v)
         }else{
-          pp = {...v,'xs':0,'s':0,'m':0,'l':0,'xl':0,'xxl':0,cantidad:parseInt(v.cantidad_combo)}
+          const initaltallas = tallasbase.reduce((c,v)=>{
+            c[v] = 0
+            return c
+          },{})
+          // pp = {...v,'xs':0,'s':0,'m':0,'l':0,'xl':0,'xxl':0,cantidad:parseInt(v.cantidad_combo)}
+          // v.tallasbase = tallasbase
+          pp = {...v,...initaltallas,cantidad:parseInt(v.cantidad_combo)}
         }
         c.push(pp)
         return c
@@ -908,7 +906,11 @@ export class OrdenesModel {
 
       console.log("La info de los combos es:",combos)
 
-      const [consulta,fields] = await conn.execute("SELECT *FROM tbl2_fases_prod_ordenes WHERE idx = ?",[id])
+      const [infotallas] = await conn.execute("select *from tbl2_tallas_template where idx = ?",[info.tallasbase])
+      const tallasbase = infotallas[0].tallas.map(row=>row.desc)
+      console.log("Info tallas:",tallasbase)
+
+      const [consulta,fields] = await conn.execute("SELECT *FROM tbl2_fases_prod_ordenes WHERE idx = ?",[id]) 
       let [validacion] = await conn.query(`SELECT *FROM tbl2_fases_prod_ordenes tfpo WHERE tfpo.oc = ?`,[info.oc])
       if(validacion.length > 0) throw new Error("La oc ingresada ya se encuentra registrada. Por favor verifique.")
 
@@ -932,7 +934,8 @@ export class OrdenesModel {
         let [insert_combo] = await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos(id_orden_CAB,color_combo,cantidad_combo,insumos) VALUES (?,?,?,?)",[idinsert,combo.color_combo,combo.cantidad_combo,JSON.stringify(combo.insumos ?? [])])
 
         let fraccionado = [];
-        ['st','xs','s','m','l','xl','xxl'].reduce((c,v)=>{
+        // ['st','xs','s','m','l','xl','xxl'].reduce((c,v)=>{
+        tallasbase.reduce((c,v)=>{
           c.push([insert_combo.insertId,v,parseInt(combo[v]) > 0 ? parseInt(combo[v]) : 0])
           return c
         },fraccionado)
@@ -947,10 +950,6 @@ export class OrdenesModel {
         await conn.query("INSERT INTO tbl2_fases_prod_ordenes_requerimientos(id_orden_CAB,id_pedido_CAB) VALUES (?,?)",[idinsert,requerimiento.id_pedido_CAB])
       }
       nameimg = `op_${idinsert}.jpg`
-      // try {
-      // } catch (error) {
-      //   console.log(error)
-      // }
 
       // if (conn) conn.rollback()
       if (conn) conn.commit()
@@ -982,6 +981,9 @@ export class OrdenesModel {
       console.log("El listado de los insumos es :",insumos)
       console.log("El listado de los requerimientos es :",requerimientos)
 
+      const [infotallas] = await conn.execute("select *from tbl2_tallas_template where idx = ?",[info.tallasbase])
+      const tallasbase = infotallas[0].tallas.map(row=>row.desc)
+
       const [consulta,fields] = await conn.execute("SELECT *FROM tbl2_fases_prod_ordenes WHERE idx = ?",[id])
 
       let newid = null
@@ -1002,7 +1004,8 @@ export class OrdenesModel {
         // console.log("Validacion insumos:",rdata.insumos,JSON.stringify(rdata.insumos ?? []))
         let [insert_info] = await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos(id_orden_CAB,color_combo,cantidad_combo,insumos) VALUES (?,?,?,?)",[id,rdata.color_combo,rdata.cantidad_combo,JSON.stringify(rdata.insumos ?? [])])
 
-          let fracciones = ['st','xs','s','m','l','xl','xxl'].reduce((c,v)=>{
+          // let fracciones = ['st','xs','s','m','l','xl','xxl'].reduce((c,v)=>{
+          let fracciones = tallasbase.reduce((c,v)=>{
             c.push([insert_info.insertId,v,parseInt(rdata[v]) > 0 ? parseInt(rdata[v]) : 0])
             return c
           },[])
@@ -1100,6 +1103,8 @@ export class OrdenesModel {
       let base_delete = base_cortes.filter(row=>!data.map(item=>item.idx).includes(row.idx))
 
       console.log("Info formateada :",base_add,base_update,base_delete)
+      const tallasbase = JSON.parse(info.tallasbase)
+      console.log("Las tallas base son:",tallasbase)
 
       // ///////////////////////////////////////
       // INFORMARCCION DE NUEVAS HOJAS DE CORTE
@@ -1128,29 +1133,30 @@ export class OrdenesModel {
                   // Itera sobre los 'combos' de este corte
                   // También creamos una copia de los combos para el bucle
                   for (const combo of [...corte.combos]) {
-                      console.log(`  Procesando combo: ${combo.color_combo}, Cantidad: ${combo.cantidad_combo}`);
+                    console.log(`  Procesando combo: ${combo.color_combo}, Cantidad: ${combo.cantidad_combo}`);
 
-                      // Insertar combo de hoja de corte
-                      const [comboInsertResult] = await conn.query(
-                          "INSERT INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB, idx_color, color_combo, cantidad_combo, disponible_total, insumos) VALUES (?,?,?,?,?,?)",
-                          [idHojaCorte, combo.idx_color, combo.color_combo, combo.cantidad_combo, combo.cantidad_combo, JSON.stringify(combo.insumos ?? [])]
-                      );
-                      const idComboCorte = comboInsertResult.insertId;
+                    // Insertar combo de hoja de corte
+                    const [comboInsertResult] = await conn.query(
+                        "INSERT INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB, idx_color, color_combo, cantidad_combo, disponible_total, insumos) VALUES (?,?,?,?,?,?)",
+                        [idHojaCorte, combo.idx_color, combo.color_combo, combo.cantidad_combo, combo.cantidad_combo, JSON.stringify(combo.insumos ?? [])]
+                    );
+                    const idComboCorte = comboInsertResult.insertId;
+                    
+                    // Preparar los datos de fraccionado
+                    const fraccionado = [];
+                    // ['xs', 's', 'm', 'l', 'xl', 'xxl'].forEach(talla => {
+                    tallasbase.forEach(talla => {
+                        const cantidad = parseInt(combo[talla]);
+                        fraccionado.push([idComboCorte, talla, isNaN(cantidad) ? 0 : cantidad > 0 ? cantidad : 0, isNaN(cantidad) ? 0 : cantidad > 0 ? cantidad : 0]);
+                    });
 
-                      // Preparar los datos de fraccionado
-                      const fraccionado = [];
-                      ['xs', 's', 'm', 'l', 'xl', 'xxl'].forEach(talla => {
-                          const cantidad = parseInt(combo[talla]);
-                          fraccionado.push([idComboCorte, talla, isNaN(cantidad) ? 0 : cantidad > 0 ? cantidad : 0, isNaN(cantidad) ? 0 : cantidad > 0 ? cantidad : 0]);
-                      });
+                    console.log("  La info del fraccionado es:", fraccionado);
 
-                      console.log("  La info del fraccionado es:", fraccionado);
-
-                      // Insertar fracciones
-                      await conn.query(
-                          "INSERT INTO tbl2_fases_prod_hojacorte_combos_fracciones(id_combo_CAB, talla, cantidad, produccion_total) VALUES ?",
-                          [fraccionado]
-                      );
+                    // Insertar fracciones
+                    await conn.query(
+                      "INSERT INTO tbl2_fases_prod_hojacorte_combos_fracciones(id_combo_CAB, talla, cantidad, produccion_total) VALUES ?",
+                      [fraccionado]
+                    );
                   }
                   console.log("Corte procesado completamente:", corte.numero_corte);
               }
@@ -1219,10 +1225,11 @@ export class OrdenesModel {
                       return c
                     },[])
                   }else{
-                    fraccionado = ['xs','s','m','l','xl','xxl'].map(talla=>([info_insert.insertId,talla,combo[talla] ?? 0, combo[talla] ?? 0]))
+                    // fraccionado = ['xs','s','m','l','xl','xxl'].map(talla=>([info_insert.insertId,talla,combo[talla] ?? 0, combo[talla] ?? 0]))
+                    fraccionado = tallasbase.map(talla=>([info_insert.insertId,talla,combo[talla] ?? 0, combo[talla] ?? 0]))
                   }
                   console.log("Info del fraccionado:",fraccionado)
-                  await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos_fracciones(id_combo_CAB,talla,cantidad,produccion_total) values ? ",[fraccionado])
+                  await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos_fracciones(id_combo_CAB,talla,cantidad,produccion_total) values ? ",[fraccionado.filter(row=>row.cantidad > 0)])
                 } else {
                   console.log("Dentro del update de combos simple")
                   await conn.query("UPDATE tbl2_fases_prod_hojacorte_combos SET idx_color = ?,color_combo = ?, insumos = ? WHERE idx = ? and id_hojacorte_CAB = ?",[combo.idx_color,combo.color_combo,JSON.stringify(combo).insumos,combo.idx,parseInt(corte['idx'])])
@@ -1535,8 +1542,7 @@ export class OrdenesModel {
         return c
       },{})
 
-      console.log("La ruta de la orden es:",ruta)
-      
+      console.log("La ruta de la orden es:",ruta)      
       let [info_guias] = await conn.query(`
       select 
       t1.*,
@@ -1551,7 +1557,7 @@ export class OrdenesModel {
       where tdc.id_guia_origen = t1.idx
       ) as despachos	
       from tbl2_guias_traslado_cab t1
-      where t1.estado <> 'ANULADO' and t1.id_orden_CAB = ?
+      where t1.estado <> 'ANULADO' and t1.id_orden_CAB = ? and t1.tipo = 'SERVICIOS'
       `,[id])
 
       let final = Object.groupBy(info_guias,(row)=>row.servicio)
@@ -1572,6 +1578,7 @@ export class OrdenesModel {
         (select sum(tdd.despacho) from tbl2_despachos_det tdd where tdc.idx = tdd.id_despacho_CAB))) as despachos
         from tbl2_despachos_cab tdc
         where tdc.id_orden_origen = ?
+        HAVING COUNT(tdc.idx) > 0
       `,[id])
 
       console.log("Info de despacho y acabados :",infodespachoacabados)
@@ -1698,6 +1705,29 @@ export class OrdenesModel {
     } catch (error) {
       console.log(error)
       return {ok:false,resp:0}
+    } finally {
+      if (conn) await conn.end();
+    }
+  }
+  static async getPlantillasTallas(){
+    let conn = undefined
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect()
+      let [result] = await conn.execute("select *from tbl2_tallas_template")
+      result = result.reduce((c,v)=>{
+        v.tallasformateado = v.tallas.map(row=>row.desc).join("-")
+        v.selected = c.length > 0 ? false : true
+        c.push(v)
+        return c
+      },[])
+      console.log("La info de plantillas de tallas es :",result)
+      return result
+    } catch (error) {
+      console.log(error)
+      return {ok:false,resp:0}
+    } finally {
+      if (conn) await conn.end();
     }
   }
   static async getInsumosOrden(idorden,idalmacen) {

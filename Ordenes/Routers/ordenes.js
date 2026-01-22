@@ -3,6 +3,7 @@ import { OrdenesController } from "../Controladores/ordenes.js";
 
 export const ordenesRouter = Router()
 
+ordenesRouter.get("/getPlantillasTallas",OrdenesController.getPlantillasTallas)
 ordenesRouter.get('/getmaterialesproduccion',OrdenesController.getMaterialesProduccion)
 ordenesRouter.get('/getfasesproduccion',OrdenesController.getFasesProduccion)
 ordenesRouter.get('/getfasesproduccion/:categoria',OrdenesController.getFasesProduccion)

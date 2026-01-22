@@ -435,8 +435,8 @@ export default class AlmacenModel{
       let res_mov = await AlmacenModel.saveMovimiento(data_comprobante,conn)
       if(!res_mov.ok) throw new Error(res_mov.message)
 
-      // if(conn) conn.rollback()
-      if(conn) conn.commit()
+      if(conn) conn.rollback()
+      // if(conn) conn.commit()
       return {ok:true,message:'Ingreso de despacho registrado con éxito.'}
     } catch (error) {
       console.log(error)
@@ -1193,6 +1193,7 @@ export default class AlmacenModel{
     }
   }
   static async updateInfoCuadreTelas(info,id){
+    // MOSTRADNO DADOTSA DEL LA FINALIZ
     let conn = undefined
     let cab = info.info
     let det = JSON.parse(info.detalle)
@@ -1212,6 +1213,37 @@ export default class AlmacenModel{
       return { ok:true, message:'El cuadre de telas fue ejecutado con éxito.' }
     } catch (error) {
       if(conn) conn.rollback()
+      return { ok:false, message:error.message ?? error }
+    } finally {
+      if(conn) await conn.end()
+    }
+  }
+  static async getInfoEtiqueta(idprod){
+    let conn = undefined
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect()
+      
+      let [result] = await conn.execute(`select 
+        '0000000' as oc,
+        tp.idx as idprod,
+        tp.nom as producto,
+        (select tr.nom from tbl2_rubros tr where tr.idx = tp.RUBROS) as articulo,
+	      COALESCE(tp.modelo,'--') as modelo,
+        COALESCE(tp.estilo,'--') as estilo,
+        COALESCE(tp.base,'--') as base,
+        COALESCE(tp.presentacion,'--') as tela,
+        ROUND(tp.costo*(1+tp.utilidad1/100),2) as precio_oferta,
+        ROUND(tp.costo*(1+tp.utilidad2/100),2) as precio_original,
+        ts.idx as id,ts.idx_talla,ts.talla,ts.idx_CAB_COLOR as idcolor,
+        COALESCE((select tc.nom from tbl2_colores tc where tc.idx = ts.idx_CAB_COLOR),'') as color 
+        from tbl2_productos tp
+        left join tbl2_subproductos ts on tp.idx = ts.idx_CAB_PROD
+        where tp.idx = ?`
+      ,[idprod])
+
+      return result
+    } catch (error) {
       return { ok:false, message:error.message ?? error }
     } finally {
       if(conn) await conn.end()

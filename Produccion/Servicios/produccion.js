@@ -204,8 +204,16 @@ export class ProduccionModel {
 
       let [fasesprod] = await conn.query("SELECT *FROM tbl2_fases_produccion")
       let [materialesref] = await conn.query("SELECT *FROM tbl2_materiales_sugerido WHERE ruc_ = '20522094120'")
+      let [tallasbase] = await conn.query("SELECT *FROM tbl2_tallas_template")
+
+      tallasbase = tallasbase.reduce((c,v)=>{
+        v.tallasformateado = v.tallas.map(row=>row.desc).join("-")
+        v.selected = v.idx == parseInt(ordenes[0].tallasbase) ? true : false
+        c.push(v)
+        return c
+      },[])
   
-      return [ordenes,moldes,cortes,materiales,fasesprod,materialesref,insumos,requerimientos]
+      return [ordenes,moldes,cortes,materiales,fasesprod,materialesref,insumos,requerimientos,tallasbase]
     } catch (err) {
       console.log("Estamos en error:", err);
       return err
@@ -760,7 +768,11 @@ export class ProduccionModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      const [results, fields] = await conn.query('SELECT idx,id_orden_CAB,orden_ref,destino,tipo,motivo_traslado,id_proveedor_CAB,proveedor,servicio,responsable,modelo,marca,producto,DATE_FORMAT(fec_emision,"%d/%m/%Y") as fec_emision_guia,fec_emision,fec_recepcion,fec_retorno,DATE_FORMAT(fec_retorno,"%d/%m/%Y") as fec_retorno_guia, date_format(fec_recepcion,"%d/%m/%Y") as fec_recepcion_guia,costo,observaciones,estado,created_at, DATEDIFF(STR_TO_DATE(fec_retorno,"%Y-%m-%d"), STR_TO_DATE(fec_emision,"%Y-%m-%d")) as duracion,distribucion FROM tbl2_guias_traslado_cab where idx = ?', [id]);
+      const [results, fields] = await conn.query(`
+        SELECT tgtc.idx,tgtc.id_orden_CAB,tgtc.orden_ref,tgtc.destino,tgtc.tipo,tgtc.motivo_traslado,tgtc.id_proveedor_CAB,tgtc.proveedor,tgtc.servicio,tgtc.responsable,tgtc.modelo,tgtc.marca,tgtc.producto,DATE_FORMAT(tgtc.fec_emision,"%d/%m/%Y") as fec_emision_guia,tgtc.fec_emision,tgtc.fec_recepcion,tgtc.fec_retorno,DATE_FORMAT(tgtc.fec_retorno,"%d/%m/%Y") as fec_retorno_guia, date_format(tgtc.fec_recepcion,"%d/%m/%Y") as fec_recepcion_guia,tgtc.costo,tgtc.observaciones,tgtc.estado,tgtc.created_at, DATEDIFF(STR_TO_DATE(tgtc.fec_retorno,"%Y-%m-%d"), STR_TO_DATE(tgtc.fec_emision,"%Y-%m-%d")) as duracion,tgtc.distribucion
+        FROM tbl2_guias_traslado_cab tgtc 
+        WHERE tgtc.idx = ?
+      `, [id]);
       await conn.end();
 
       return results
@@ -1012,6 +1024,9 @@ export class ProduccionModel {
         FROM tbl2_guias_traslado_det_fracciones tgtdf WHERE tgtdf.id_guia_DET = tgtd.idx),JSON_ARRAY()) AS fracciones
       FROM tbl2_guias_traslado_det tgtd WHERE COALESCE(tgtd.isprototipo,0) <> 1 and tgtd.id_guia_CAB = ?`,[data.id])
 
+      const [infotallas] = await conn.execute('select t2.* from tbl2_fases_prod_ordenes t1 join tbl2_tallas_template t2 on t1.tallasbase = t2.idx where t1.idx = ?',[cabecera.id_orden_CAB])
+      const tallasbase = infotallas[0].tallas.map(row=>row.desc)
+
       //////////////////////////////////////
       //////////////////////////////////////
 
@@ -1049,7 +1064,7 @@ export class ProduccionModel {
               console.log("Dentro de 1 actualizacion")
               const [results, fields] = await conn.query('UPDATE tbl2_guias_traslado_det SET articulo=NULLIF(?, ""),cantidad=NULLIF(?, ""),isprototipo=NULLIF(?, "") WHERE idx = ? and id_guia_CAB = ?', [fila.articulo, fila.cantidad, fila.isprototipo, fila.idx, parseInt(data.id)]);
               // insert()
-              fracciones = Object.keys(fila).filter(valor => ['xs', 's', 'm', 'l', 'xl', 'xxl'].includes(valor)).reduce((carry, value) => {
+              fracciones = Object.keys(fila).filter(valor => tallasbase.includes(valor)).reduce((carry, value) => {
                 carry.push([fila.idx, value, parseInt(fila[value])])
                 return carry
               }, [])
@@ -1058,7 +1073,7 @@ export class ProduccionModel {
               console.log("Dentro de 2 insertado")
               const [results, fields] = await conn.query('INSERT INTO tbl2_guias_traslado_det(id_guia_CAB,articulo,cantidad,isprototipo) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [parseInt(data.id), fila.articulo, fila.cantidad, fila.isprototipo]);
               // insert()
-              fracciones = Object.keys(fila).filter(valor => ['xs', 's', 'm', 'l', 'xl', 'xxl'].includes(valor)).reduce((carry, value) => {
+              fracciones = Object.keys(fila).filter(valor => tallasbase.includes(valor)).reduce((carry, value) => {
                 carry.push([results.insertId, value, parseInt(fila[value])])
                 return carry
               }, [])
@@ -1106,7 +1121,7 @@ export class ProduccionModel {
             if (fila) {
               const [results, fields] = await conn.query('INSERT INTO tbl2_guias_traslado_det(id_guia_CAB,articulo,cantidad,isprototipo,id_combo) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.articulo, fila.cantidad, fila.isprototipo, fila.id_combo]);
 
-              const fracciones = Object.keys(fila).filter(valor => ['xs', 's', 'm', 'l', 'xl', 'xxl'].includes(valor)).reduce((carry, value) => {
+              const fracciones = Object.keys(fila).filter(valor => tallasbase.includes(valor)).reduce((carry, value) => {
                 carry.push([results.insertId, value, parseInt(fila[value])])
                 return carry
               }, [])
@@ -1139,7 +1154,7 @@ export class ProduccionModel {
         console.log("IUnfo del detalle",JSON.parse(data.detalle))
         let param2 = JSON.parse(data.detalle).filter(row=>!row.isprototipo && row.id_combo).reduce((c,v)=>{
           let info = {idcombo:v.id_combo}
-          info = ['xs','s','m','l','xl','xxl'].reduce((cc,vv)=>{
+          info = tallasbase.reduce((cc,vv)=>{
             return {...cc,[vv]:[parseInt(v[vv]),0,0]}
           },info)
           c.push(info)
@@ -1339,6 +1354,9 @@ export class ProduccionModel {
       await conn.connect();
       conn.beginTransaction()
 
+      const [infotallas] = await conn.execute("select *from tbl2_fases_prod_ordenes t1 join tbl2_tallas_template t2 on t1.tallasbase = t2.idx where t1.idx = ?",[cabecera.id_orden_CAB])
+      const tallasbase = infotallas[0].tallas.map(row=>row.desc)
+
       if (data.id) {
         await conn.query('UPDATE tbl2_guias_traslado_cab SET orden_ref=NULLIF(?, ""),tipo=NULLIF(?, ""),id_proveedor_CAB=NULLIF(?, ""),proveedor=NULLIF(?, ""),servicio=NULLIF(?, ""),fec_emision=NULLIF(?, ""),fec_retorno=NULLIF(?, ""),fec_recepcion=NULLIF(?, ""),costo=NULLIF(?, ""),observaciones=NULLIF(?, ""),estado=NULLIF(?, ""),motivo_traslado=NULLIF(?, ""),responsable=NULLIF(?, ""),modelo=NULLIF(?, ""),marca=NULLIF(?, ""),producto=NULLIF(?, ""),destino=NULLIF(?, ""),id_orden_CAB=NULLIF(?, "") WHERE idx = ?', [cabecera.orden_ref, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.servicio, cabecera.fec_emision, cabecera.fec_retorno, cabecera.fec_recepcion, cabecera.costo, cabecera.observaciones, cabecera.estado, cabecera.motivo_traslado, cabecera.responsable, cabecera.modelo, cabecera.marca, cabecera.producto, cabecera.destino, cabecera.id_orden_CAB ?? 1 , parseInt(data.id)])
         const [res, fld] = await conn.query("SELECT *FROM tbl2_guias_traslado_det WHERE id_guia_CAB = " + parseInt(data.id))
@@ -1352,7 +1370,8 @@ export class ProduccionModel {
               console.log("Dentro de 1 actualizacion")
               const [results, fields] = await conn.query('UPDATE tbl2_guias_traslado_det SET articulo=NULLIF(?, ""),cantidad=NULLIF(?, ""),isprototipo=NULLIF(?, "") WHERE idx = ? and id_guia_CAB = ?', [fila.articulo, fila.cantidad, fila.isprototipo, fila.idx, parseInt(data.id)]);
               // insert()
-              fracciones = Object.keys(fila).filter(valor => ['xs', 's', 'm', 'l', 'xl', 'xxl'].includes(valor)).reduce((carry, value) => {
+              // fracciones = Object.keys(fila).filter(valor => ['xs', 's', 'm', 'l', 'xl', 'xxl'].includes(valor)).reduce((carry, value) => {
+              fracciones = Object.keys(fila).filter(valor => tallasbase.includes(valor)).reduce((carry, value) => {
                 carry.push([fila.idx, value, parseInt(fila[value])])
                 return carry
               }, [])
@@ -1361,7 +1380,8 @@ export class ProduccionModel {
               console.log("Dentro de 2 insertado")
               const [results, fields] = await conn.query('INSERT INTO tbl2_guias_traslado_det(id_guia_CAB,articulo,cantidad,isprototipo) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [parseInt(data.id), fila.articulo, fila.cantidad, fila.isprototipo]);
               // insert()
-              fracciones = Object.keys(fila).filter(valor => ['xs', 's', 'm', 'l', 'xl', 'xxl'].includes(valor)).reduce((carry, value) => {
+              // fracciones = Object.keys(fila).filter(valor => ['xs', 's', 'm', 'l', 'xl', 'xxl'].includes(valor)).reduce((carry, value) => {
+              fracciones = Object.keys(fila).filter(valor => tallasbase.includes(valor)).reduce((carry, value) => {
                 carry.push([results.insertId, value, parseInt(fila[value])])
                 return carry
               }, [])
@@ -1398,7 +1418,8 @@ export class ProduccionModel {
             if (fila) {
               const [results, fields] = await conn.query('INSERT INTO tbl2_guias_traslado_det(id_guia_CAB,articulo,cantidad,isprototipo,id_combo) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.articulo, fila.cantidad, fila.isprototipo, fila.id_combo]);
 
-              const fracciones = Object.keys(fila).filter(valor => ['xs', 's', 'm', 'l', 'xl', 'xxl'].includes(valor)).reduce((carry, value) => {
+              // const fracciones = Object.keys(fila).filter(valor => ['xs', 's', 'm', 'l', 'xl', 'xxl'].includes(valor)).reduce((carry, value) => {
+              const fracciones = Object.keys(fila).filter(valor => tallasbase.includes(valor)).reduce((carry, value) => {
                 carry.push([results.insertId, value, parseInt(fila[value])])
                 return carry
               }, [])
@@ -1555,6 +1576,9 @@ export class ProduccionModel {
     ////////////////////////////////////
     // formato de data : [ {idcombo:22,xs:[13,1],s:[13,1],m:[13,1],l:[13,1],xl:[13,1],xxl:[13,1]},{},{},... ]
     ////////////////////////////////////
+
+    const [infotallas] = await conn.execute('select t2.* from tbl2_fases_prod_ordenes t1 join tbl2_tallas_template t2 on t1.tallasbase = t2.idx where t1.idx = ?',[parseInt(orden)])
+
     try {
 
       if(backup_articulos.length > 0){
@@ -1562,15 +1586,15 @@ export class ProduccionModel {
         p2 = ''
         p3 = ''
         for(let combo of [...backup_articulos]){
-          p1 = ['xs','s','m','l','xl','xxl'].reduce((c,v)=>{
+          p1 = infotallas[0].tallas.map(row=>row.desc).reduce((c,v)=>{
             c += " WHEN id_combo_CAB = " + combo.idcombo +" and talla = '" + v + "' THEN " + (tipo ? parseInt(combo[v][0]) : -1*parseInt(combo[v][0]))
             return c
           },p1);
-          p2 = ['xs','s','m','l','xl','xxl'].reduce((c,v)=>{
+          p2 = infotallas[0].tallas.map(row=>row.desc).reduce((c,v)=>{
             c += " WHEN id_combo_CAB = " + combo.idcombo + " and talla = '" + v + "' THEN " + (tipo ? parseInt(combo[v][1]) : -1*parseInt(combo[v][1]))
             return c
           },p2);
-          p3 = ['xs','s','m','l','xl','xxl'].reduce((c,v)=>{
+          p3 = infotallas[0].tallas.map(row=>row.desc).reduce((c,v)=>{
             c += " WHEN id_combo_CAB = " + combo.idcombo + " and talla = '" + v + "' THEN " + (tipo ? parseInt(combo[v][2]) : -1*parseInt(combo[v][2]))
             return c
           },p3);
@@ -1589,15 +1613,15 @@ export class ProduccionModel {
         p2 = ''
         p3 = ''
         for(let combo of [...articulos]){
-          p1 = ['xs','s','m','l','xl','xxl'].reduce((c,v)=>{
+          p1 = infotallas[0].tallas.map(row=>row.desc).reduce((c,v)=>{
             c += " WHEN id_combo_CAB = " + combo.idcombo +" and talla = '" + v + "' THEN " + (tipo ? -1*parseInt(combo[v][0]) : parseInt(combo[v][0]))
             return c
           },p1);
-          p2 = ['xs','s','m','l','xl','xxl'].reduce((c,v)=>{
+          p2 = infotallas[0].tallas.map(row=>row.desc).reduce((c,v)=>{
             c += " WHEN id_combo_CAB = " + combo.idcombo + " and talla = '" + v + "' THEN " + (tipo ? -1*parseInt(combo[v][1]) : parseInt(combo[v][1]))
             return c
           },p2)
-          p3 = ['xs','s','m','l','xl','xxl'].reduce((c,v)=>{
+          p3 = infotallas[0].tallas.map(row=>row.desc).reduce((c,v)=>{
             c += " WHEN id_combo_CAB = " + combo.idcombo + " and talla = '" + v + "' THEN " + (tipo ? -1*parseInt(combo[v][2]) : parseInt(combo[v][2]))
             return c
           },p3)
@@ -1848,8 +1872,8 @@ export class ProduccionModel {
       let resultado = await this.UpdateMasterProduccion(param1,[],info_orden[0].id_orden_CAB,conn,1)
       if(!resultado.ok) throw resultado.message
 
-      // if (conn) conn.rollback()
-      if (conn) conn.commit()
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return {ok:true,message:"El servicio fue anulado con éxito."}
     } catch (err) {
       console.log(err)
@@ -2213,7 +2237,7 @@ export class ProduccionModel {
           for(let fila of articulos){
             console.log("Dentro del insertado detalle de avios")
             try {
-              const [results, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_det(id_pedido_CAB,id_subprod_CAB,id_producto_CAB,producto,modelo,corte,color,rollos,cantidad,unidad,precio,conversion) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.id_subprod_CAB ?? null,fila.idx_producto, fila.producto, fila.modelo, fila.corte, fila.color, fila.rollos, fila.cantidad, fila.unidad, fila.precio, fila.conversion ?? 1]);
+              const [results, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_det(id_pedido_CAB,id_subprod_CAB,id_producto_CAB,producto,modelo,corte,color,rollos,cantidad,unidad,precio,conversion) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.id_subprod_CAB ?? null,fila.idx_producto, fila.producto, fila.modelo ?? cabecera.produccion, fila.corte, fila.color, fila.rollos, fila.cantidad, fila.unidad, fila.precio, fila.conversion ?? 1]);
             } catch (error) {
               console.log("Error:",error)
             }
@@ -2243,8 +2267,8 @@ export class ProduccionModel {
         // return results
       }
 
-      // if(conn) conn.rollback()
-      if(conn) conn.commit()
+      if(conn) conn.rollback()
+      // if(conn) conn.commit()
       return {ok:true,message:'Registro completo'}
     } catch (err) {
       if (conn) conn.rollback()
@@ -3168,12 +3192,12 @@ export class ProduccionModel {
         console.log("El valor del segundo dato es:",param2)
   
         let respuesta = await this.UpdateMasterProduccion(param1,param2,info_orden[0].id_orden_CAB,conn,0) // tipo = 1 => RESTA, tipo = 0 => SUMA
-        console.log("Imprimiendo respuestad del master:",respuesta)
+        console.log("Imprimiendo respuesta del master de produccion:",respuesta)
         if(!respuesta.ok) throw respuesta.message
         // console.log("Resultado del update master :",resp_update)
-      }
-      // if (conn) conn.rollback()
-      if (conn) conn.commit()
+      }                                                                                                                                                                                                  
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return {ok:true,message:'Proceso ejecutado con éxito'}
     } catch (err) {
       console.log("asdlkfaslfjlaskdfjlf:",err)
@@ -3812,7 +3836,7 @@ export class ProduccionModel {
 
       // if (conn) await conn.rollback();
       if (conn) await conn.commit();
-      return {ok:true,message:'Ingreso eliminado con éxtio!'}
+      return {ok:true,message:'Ingreso eliminado con éxtio!.'}
     } catch (err) {
       console.log("Error en la eliminacion de despacho:",err)
       if (conn) await conn.rollback();
@@ -4421,7 +4445,7 @@ export class ProduccionModel {
           SUM(t2.cantidad) as cantidad,
           t2.articulo,
           t2.id_combo,
-          (
+          COALESCE((
             select JSON_ARRAYAGG(cc.pp) from
             (
               select a.id_orden_CAB,b.id_combo,JSON_OBJECT('talla',c.talla,'cantidad',sum(c.cantidad)) as pp
@@ -4431,10 +4455,11 @@ export class ProduccionModel {
               where a.servicio = 'ACABADOS' and a.estado = 'PENDIENTE'
               group by a.id_orden_CAB,b.id_combo,c.talla
             ) as cc where cc.id_orden_CAB = t1.id_orden_CAB and cc.id_combo = t2.id_combo
-          ) as fracciones,JSON_ARRAY() as fracciones_despacho
+          ),JSON_ARRAY()) as fracciones,
+          JSON_ARRAY() as fracciones_despacho
         from tbl2_guias_traslado_cab t1
         join tbl2_guias_traslado_det t2 on t1.idx = t2.id_guia_CAB 
-        where t1.id_orden_CAB = ? and t1.servicio  = 'ACABADOS' and t1.estado = 'PENDIENTE'
+        where t1.id_orden_CAB = ? and t1.servicio  = 'ACABADOS' and t1.estado = 'PENDIENTE' and t2.id_combo is not null
         group by t1.orden_ref,t2.articulo,t2.id_combo
       `, [id]);
 
@@ -4470,6 +4495,8 @@ export class ProduccionModel {
         return {...row,...adicional}
       })
 
+      console.log("Info data formateadoS:",data_formateado)
+
       let consolidado = data_formateado.reduce((carry,value)=>{
         value['despachos'] = Object.keys(lista_despachos).reduce((carry,valor)=>{
           let info = despachos.filter(item=>item.id_despacho == valor && item.idx == value.id_combo)
@@ -4496,6 +4523,100 @@ export class ProduccionModel {
       //   },{})
       //   return {...row,...adicional}
       // })
+
+      await conn.end();
+      return consolidado
+    } catch (err) {
+      console.log(err)
+      return err
+    } finally {
+      if (conn) await conn.end();
+    }
+  }
+  static async getAcabadosDisponible(id, tipo = null) {
+    let conn
+    let new_articulos = null
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+
+      console.log("Obteniendo acabados disponibles para la orden:",id)
+  
+      const [data] = await conn.query(`
+        SELECT 
+          t0.producto as articulo,
+          t1.id_cab_orden as orden_ref,
+          sum(t3.despacho_total) as cantidad,
+          t2.color_combo,
+          t3.id_combo_CAB,
+          JSON_ARRAYAGG(JSON_OBJECT('talla',t3.talla,'cantidad',t3.despacho_total)) as fracciones,
+          JSON_ARRAY() as fracciones_despacho,
+          JSON_ARRAY() as despachos
+        FROM tbl2_fases_prod_ordenes t0
+        JOIN tbl2_fases_prod_hojacorte t1 on t0.idx = t1.id_cab_orden
+        JOIN tbl2_fases_prod_hojacorte_combos t2 on t1.idx = t2.id_hojacorte_CAB
+        JOIN tbl2_fases_prod_hojacorte_combos_fracciones t3 on t2.idx = t3.id_combo_CAB
+        WHERE t0.idx = ?
+        GROUP BY t0.producto,t1.id_cab_orden,t2.color_combo,t3.id_combo_CAB
+      `, [id]);
+
+      // const [despachos] = await conn.query(`
+      //   select 
+      //     tdc.idx as id_despacho,
+      //     DATE_FORMAT(tdc.fec_despacho,'%d/%m') as fec_despacho,
+      //     tdd.id_combo as idx,
+      //     COALESCE(tdd.despacho,0) as despacho,
+      //     COALESCE(tdd.caidos,0) as caidos,
+      //     COALESCE(tdd.incompletos,0) as incompletos,
+      //     COALESCE(
+      //     (select JSON_ARRAYAGG(JSON_OBJECT('talla',tddf.talla,'despachos',tddf.despachos,'caidos',tddf.caidos,'incompletos',tddf.incompletos)) 
+      //       from tbl2_despachos_det_fracciones tddf WHERE tddf.id_despacho_DET = tdd.idx),JSON_ARRAY()
+      //     ) as fracciones 
+      //   from tbl2_despachos_cab tdc 
+      //   join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB 
+      //   where tdc.id_orden_origen = ? and tdc.tipo = 'EMPAQUETADO'
+      // `,[id]);
+
+      // let lista_despachos = despachos.reduce((carry,value)=>{
+      //   if(!Object.keys(carry).includes(value.id_despacho)){
+      //     carry[value.id_despacho] = value.fec_despacho
+      //   }
+      //   return carry 
+      // },{})
+
+      const data_formateado = data.map(row=>{
+        const adicional = row.fracciones.reduce((c,v)=>{
+          c[v.talla] = v.cantidad
+          return c
+        },{})
+        return {...row,...adicional}
+      })
+
+      // let consolidado = data_formateado.reduce((carry,value)=>{
+      //   value['despachos'] = Object.keys(lista_despachos).reduce((carry,valor)=>{
+      //     let info = despachos.filter(item=>item.id_despacho == valor && item.idx == value.id_combo)
+      //     console.log("Fresas con sal:",info)
+      //     carry.push({
+      //       'id_despacho':info.length > 0 ? info[0].id_despacho : parseInt(valor),
+      //       'fec_despacho':info.length > 0 ? info[0].fec_despacho : lista_despachos[valor], 
+      //       'cantidad_despacho':info.length > 0 ? info[0].despacho : 0,
+      //       'cantidad_caidos':info.length > 0 ? info[0].caidos : 0,
+      //       'cantidad_incompletos':info.length > 0 ? info[0].incompletos : 0,
+      //       'fracciones': info.length > 0 ? info[0].fracciones : []
+      //     })
+      //     return carry
+      //   },[])
+
+      //   carry.push(value)
+      //   return carry
+      // },[])
+
+      let consolidado = data_formateado.reduce((carry,value)=>{
+        parseInt(value.cantidad) > 0 && carry.push(value)
+        return carry
+      },[])
+
+      console.log("Acabados disponibles:",consolidado)
 
       await conn.end();
       return consolidado
@@ -4942,6 +5063,37 @@ export class ProduccionModel {
         // await conn.end();
         await conn.end();
       }
+    }
+  }
+  static async getPlantillasTallasByOrden(idorden){
+    let conn = undefined
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect()
+
+      let [result] = await conn.execute(`
+        SELECT t2.tallas FROM tbl2_fases_prod_ordenes t1 
+        JOIN tbl2_tallas_template t2 ON t1.tallasbase = t2.idx 
+        WHERE t1.idx = ?
+      `,[idorden])
+
+      // result = result[0].tallas.map(row=>row.desc)
+
+      // let [result] = await conn.execute("select *from tbl2_tallas_template")
+      // result = result.reduce((c,v)=>{
+      //   v.tallasformateado = v.tallas.map(row=>row.desc).join("-")
+      //   v.selected = c.length > 0 ? false : true
+      //   c.push(v)
+      //   return c
+      // },[])
+
+      console.log("La info de plantillas de tallas es :",result)
+      return result
+    } catch (error) {
+      console.log(error)
+      return {ok:false,resp:0}
+    } finally {
+      if (conn) await conn.end();
     }
   }
 }
