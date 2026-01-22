@@ -3195,7 +3195,7 @@ export class ProduccionModel {
         console.log("Imprimiendo respuesta del master de produccion:",respuesta)
         if(!respuesta.ok) throw respuesta.message
         // console.log("Resultado del update master :",resp_update)
-      }
+      }                                                                                                                                                                                                  
       if (conn) conn.rollback()
       // if (conn) conn.commit()
       return {ok:true,message:'Proceso ejecutado con éxito'}
@@ -3836,7 +3836,7 @@ export class ProduccionModel {
 
       // if (conn) await conn.rollback();
       if (conn) await conn.commit();
-      return {ok:true,message:'Ingreso eliminado con éxtio!'}
+      return {ok:true,message:'Ingreso eliminado con éxtio!.'}
     } catch (err) {
       console.log("Error en la eliminacion de despacho:",err)
       if (conn) await conn.rollback();

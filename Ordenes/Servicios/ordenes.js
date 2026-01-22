@@ -1542,8 +1542,7 @@ export class OrdenesModel {
         return c
       },{})
 
-      console.log("La ruta de la orden es:",ruta)
-      
+      console.log("La ruta de la orden es:",ruta)      
       let [info_guias] = await conn.query(`
       select 
       t1.*,
@@ -1558,7 +1557,7 @@ export class OrdenesModel {
       where tdc.id_guia_origen = t1.idx
       ) as despachos	
       from tbl2_guias_traslado_cab t1
-      where t1.estado <> 'ANULADO' and t1.id_orden_CAB = ?
+      where t1.estado <> 'ANULADO' and t1.id_orden_CAB = ? and t1.tipo = 'SERVICIOS'
       `,[id])
 
       let final = Object.groupBy(info_guias,(row)=>row.servicio)
