@@ -470,6 +470,68 @@ export class OrdenesModel {
       }
     }
   }
+  static async ExtraerDisponible(idorden,idhoja) {
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+
+      console.log("Id orden:",idorden,"Id hoja:",idhoja)
+
+      let [infotallas] = await conn.execute("select *from tbl2_fases_prod_ordenes t1 join tbl2_tallas_template t2 on t1.tallasbase = t2.idx where t1.idx = ?",[idorden])
+      const tallasbase = infotallas[0].tallas.map(row=>row.desc)
+
+      let [results] = await conn.query(`
+        SELECT 
+          tfphc.idx as id_combo,
+          CONCAT(tfpo.producto,' ',tfphc.color_combo) as articulo,
+          COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',tfphcf.talla,'cantidad',COALESCE(tfphcf.produccion_total,0),'produccion_total',COALESCE(tfphcf.produccion_total,0),'caidos_total',COALESCE(tfphcf.caidos_total,0),'incompletos_total',COALESCE(tfphcf.incompletos_total,0))) 
+          FROM tbl2_fases_prod_hojacorte_combos_fracciones tfphcf where tfphcf.id_combo_CAB = tfphc.idx),JSON_ARRAY()) as fracciones,
+          (select sum(COALESCE(tfphcf.produccion_total,0)) FROM tbl2_fases_prod_hojacorte_combos_fracciones tfphcf where tfphcf.id_combo_CAB = tfphc.idx) as cantidad_fracciones,
+          tfphc.cantidad_combo
+        from tbl2_fases_prod_hojacorte_combos tfphc 
+        join tbl2_fases_prod_hojacorte tfph on tfphc.id_hojacorte_CAB = tfph.idx
+        join tbl2_fases_prod_ordenes tfpo on tfph.id_cab_orden = tfpo.idx
+        where tfpo.idx = ? and tfph.idx = ?
+        having cantidad_fracciones > 0
+      `,[idorden,idhoja])
+      console.log("Resultados de extraer items de caja:",results)
+
+      results = results.reduce((c,v)=>{
+        let total = 0
+        let pp = undefined
+        v.tallasbase = tallasbase
+        if(v.fracciones.length > 0){
+          pp = v.fracciones.reduce((cc,vv)=>{
+            total += parseInt(vv.produccion_total)
+            // v.tallasbase.push(vv.talla)
+            return {...cc,[vv.talla]:parseInt(vv.cantidad),cantidad:parseInt(total)}
+          },v)
+        }else{
+          const initaltallas = tallasbase.reduce((c,v)=>{
+            c[v] = 0
+            return c
+          },{})
+          // pp = {...v,'xs':0,'s':0,'m':0,'l':0,'xl':0,'xxl':0,cantidad:parseInt(v.cantidad_combo)}
+          // v.tallasbase = tallasbase
+          pp = {...v,...initaltallas,cantidad:parseInt(v.cantidad_combo)}
+        }
+        c.push(pp)
+        return c
+      },[])
+
+      console.log("Nuevo result:",results)
+
+      return results
+    } catch (err) {
+      console.log(err);
+      return { 'msg': err }
+    } finally {
+      if (conn) {
+        await conn.end();
+      }
+    }
+  }
   static async ExtraerItemsCaja_(idorden,idhoja) {
     let conn
     try {

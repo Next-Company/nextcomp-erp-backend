@@ -184,9 +184,9 @@ export default class AlmacenModel{
           join tbl2_subproductos t2 on t2.idx = t1.idx_subproducto
           join tbl2_colores t3 on t3.idx = t2.idx_CAB_COLOR 
           WHERE t1.id_CAB_DET in (509,508) 
-          limit 100
         ) AS cc
         WHERE 1=1 ${extra}
+        LIMIT 100
       `;
       console.log("El query de busque de producto es:",query)
   
