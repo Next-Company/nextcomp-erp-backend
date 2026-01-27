@@ -283,7 +283,7 @@ export class OrdenesController {
   static async ExtraerDisponible(req, reply) {
     let idorden = req.params.id
     let idhoja = req.params.id_corte
-    const data = await OrdenesModel.ExtraerDisponible(idorden,idhoja)
+    const data = await OrdenesModel.ExtraerDisponible(idorden)
     reply.json(data)
   }
   static async getFasesProduccion(req, reply) {

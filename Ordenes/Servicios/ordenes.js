@@ -476,8 +476,6 @@ export class OrdenesModel {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
 
-      console.log("Id orden:",idorden,"Id hoja:",idhoja)
-
       let [infotallas] = await conn.execute("select *from tbl2_fases_prod_ordenes t1 join tbl2_tallas_template t2 on t1.tallasbase = t2.idx where t1.idx = ?",[idorden])
       const tallasbase = infotallas[0].tallas.map(row=>row.desc)
 
@@ -492,7 +490,7 @@ export class OrdenesModel {
         from tbl2_fases_prod_hojacorte_combos tfphc 
         join tbl2_fases_prod_hojacorte tfph on tfphc.id_hojacorte_CAB = tfph.idx
         join tbl2_fases_prod_ordenes tfpo on tfph.id_cab_orden = tfpo.idx
-        where tfpo.idx = ? and tfph.idx = ?
+        where tfpo.idx = ?
         having cantidad_fracciones > 0
       `,[idorden,idhoja])
       console.log("Resultados de extraer items de caja:",results)
@@ -512,14 +510,11 @@ export class OrdenesModel {
             c[v] = 0
             return c
           },{})
-          // pp = {...v,'xs':0,'s':0,'m':0,'l':0,'xl':0,'xxl':0,cantidad:parseInt(v.cantidad_combo)}
-          // v.tallasbase = tallasbase
           pp = {...v,...initaltallas,cantidad:parseInt(v.cantidad_combo)}
         }
         c.push(pp)
         return c
       },[])
-
       console.log("Nuevo result:",results)
 
       return results
