@@ -34,19 +34,10 @@ export default class AlmacenModel{
 
       let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(COALESCE(TRIM(estado),''),' ',COALESCE(TRIM(Raz_social_DOC),''),' ',COALESCE(TRIM(Nro_Doc_Prov),''))) > 0").join(" ") : ""
   
-      const query_ = `
-        SELECT tkc.*, tp.idx as id_proveedor_CAB, tp.nom as proveedor, tmc.cod_comprobante, tmc.anulado
-        FROM tbl_kard_compras_CAB tkc
-        JOIN tbl2_almacen_mov_cab tmc ON tkc.id_CAB = tmc.idx_documento_asoc
-        JOIN tbl2_proveedor tp ON tkc.Nro_Doc_Prov = tp.ruc
-        WHERE Suc_Tienda in (509,508) ${extra}
-        ORDER BY tkc.fecha_sys DESC
-        LIMIT 50
-      `;
       const query = `
         SELECT tkc.*, tp.idx as id_proveedor_CAB, tp.nom as proveedor, if(COALESCE(tkc.tipomov,0) = 0,'OTRO',if(COALESCE(tkc.tipomov,0) = 9,'INGR','RETR'))  as cod_comprobante
         FROM tbl_kard_compras_CAB tkc
-        JOIN tbl2_proveedor tp ON tkc.Nro_Doc_Prov = tp.ruc
+        JOIN tbl2_proveedor tp ON tkc.Nro_Doc_Prov = tp.ruc and tp.ruc_ = '20522094120'
         WHERE Suc_Tienda in (509,508) ${extra}
         ORDER BY tkc.fecha_sys DESC
         LIMIT 50

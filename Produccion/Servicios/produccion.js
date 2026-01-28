@@ -2136,10 +2136,12 @@ export class ProduccionModel {
     // let conn
     let correlativo = null
     try {
-      const [result] = await conn.query("SELECT CONCAT(DATE_FORMAT(NOW(),'%y'),SUBSTRING(LPAD(codigo_num,6,0),-5,5)) as correlativo FROM tbl2_pedidos_insumos_correlativo WHERE ruc_ = ? AND anio = YEAR(NOW()) AND tipo = ? AND origen = ? FOR UPDATE",['20522094120',tipo,origen])
+      // const [result] = await conn.query("SELECT CONCAT(DATE_FORMAT(NOW(),'%y'),SUBSTRING(LPAD(codigo_num,6,0),-5,5)) as correlativo FROM tbl2_pedidos_insumos_correlativo WHERE ruc_ = ? AND anio = YEAR(NOW()) AND tipo = ? AND origen = ? FOR UPDATE",['20522094120',tipo,origen])
+      const [result] = await conn.query("SELECT CONCAT('C',DATE_FORMAT(NOW(),'%y'),'-',SUBSTRING(LPAD(codigo_num,6,0),-5,5)) as correlativo FROM tbl2_pedidos_insumos_correlativo WHERE ruc_ = ? AND anio = YEAR(NOW()) AND tipo = 'AVIOS' AND origen = 'NEXT' FOR UPDATE",['20522094120',tipo,origen])
       if(result.length == 0){
-        await conn.execute("UPDATE tbl2_pedidos_insumos_correlativo SET anio = YEAR(NOW()), codigo_num = codigo_num + 1 WHERE ruc_ = ? AND tipo = ? AND origen = ?",['20522094120',tipo,origen])
-        correlativo = (new Date()).toLocaleDateString("es-MX",{year:"numeric"}) + '00001'
+        // await conn.execute("UPDATE tbl2_pedidos_insumos_correlativo SET anio = YEAR(NOW()), codigo_num = codigo_num + 1 WHERE ruc_ = ? AND tipo = ? AND origen = ?",['20522094120',tipo,origen])
+        await conn.execute("UPDATE tbl2_pedidos_insumos_correlativo SET anio = YEAR(NOW()), codigo_num = codigo_num + 1 WHERE ruc_ = ? AND tipo = ? AND origen = ?",['20522094120','AVIOS','NEXT'])
+        correlativo = 'C' + (new Date()).toLocaleDateString("es-MX",{year:"numeric"}) + '-00001'
       } else{
         correlativo = result[0].correlativo
       }
@@ -2625,6 +2627,7 @@ export class ProduccionModel {
         try {
 
           const correlativo = await this.getNuevoPedido('TELAS',cabecera.emisor,conn)
+          console.log("Correlativo obtenido:",correlativo)
 
           const [res, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_cab(orden_ref,fec_emision,fec_retorno,tipo,id_proveedor_CAB,proveedor,responsable,forma_pago,nro_contacto,observaciones,estado,moneda,igv,produccion,afec_retencion,emisor) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [correlativo, cabecera.fec_emision, cabecera.fec_retorno, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.forma_pago, cabecera.nro_contacto, cabecera.observaciones, cabecera.estado, cabecera.moneda, cabecera.igv, cabecera.produccion, cabecera.afec_retencion, cabecera.emisor]);
 

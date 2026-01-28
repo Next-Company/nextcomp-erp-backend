@@ -217,6 +217,12 @@ export class OrdenesController {
     const data = await OrdenesModel.saveFaseMateriales(info, user_data)
     resp.json(data)
   }
+  static async saveFaseConfiguracion(req, resp) {
+    const info = req.body
+    const user_data = req.session
+    const data = await OrdenesModel.saveFaseConfiguracion(info, user_data)
+    resp.json(data)
+  }
   static async testMultiSelect(req, resp) {
     const info = req.body
     const data = await OrdenesModel.testMultiSelect(info)
@@ -278,6 +284,11 @@ export class OrdenesController {
     let idorden = req.params.id
     let idhoja = req.params.id_corte
     const data = await OrdenesModel.ExtraerItemsCaja(idorden,idhoja)
+    reply.json(data)
+  }
+  static async ExtraerModelosDisponible(req, reply) {
+    let idorden = req.params.id
+    const data = await OrdenesModel.ExtraerModelosDisponible(idorden)
     reply.json(data)
   }
   static async ExtraerDisponible(req, reply) {

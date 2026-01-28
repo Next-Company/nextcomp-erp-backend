@@ -9,7 +9,7 @@ export class ProductosService{
     const conn = await mysql.createConnection(configs[1]);
     await conn.connect();
     try {
-      let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(COALESCE(TRIM(producto),''),' ',COALESCE(TRIM(color),''),' ',COALESCE(TRIM(modelo),''),' ',COALESCE(TRIM(marca),''),' ',COALESCE(TRIM(presentacion),''))) > 0").join(" ") : ""
+      let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(COALESCE(idxsub,''),' ',COALESCE(TRIM(producto),''),' ',COALESCE(TRIM(color),''),' ',COALESCE(TRIM(modelo),''),' ',COALESCE(TRIM(marca),''),' ',COALESCE(TRIM(presentacion),''))) > 0").join(" ") : ""
 
       const [rows,fields] = await conn.execute(`
         select *
@@ -112,7 +112,7 @@ export class ProductosService{
       // WHERE LOCATE('pedro', CONCAT(TRIM(nombre_campo), ' ', TRIM(color_campo))) > 0
       //   AND LOCATE('rojo', CONCAT(TRIM(nombre_campo), ' ', TRIM(color_campo))) > 0;
 
-      let extra = busqueda.split(" ").length > 0 ? busqueda.split(" ").map(word=>"AND LOCATE('"+word+"',CONCAT(TRIM(producto),' ',TRIM(color),' ',TRIM(talla))) > 0").join(" ") : ""
+      let extra = busqueda.split(" ").length > 0 ? busqueda.split(" ").map(word=>"AND LOCATE('"+word+"',CONCAT(COALESCE(idxsub,''),' ',TRIM(producto),' ',TRIM(color),' ',TRIM(talla))) > 0").join(" ") : ""
 
       console.log("Extra consultass :",extra)
 

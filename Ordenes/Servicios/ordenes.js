@@ -470,6 +470,73 @@ export class OrdenesModel {
       }
     }
   }
+  static async ExtraerModelosDisponible(idorden) {
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+
+      let [infotallas] = await conn.execute("select *from tbl2_fases_prod_ordenes t1 join tbl2_tallas_template t2 on t1.tallasbase = t2.idx where t1.idx = ?",[idorden])
+      const tallasbase = infotallas[0].tallas.map(row=>row.desc)
+
+      let [results] = await conn.query(`
+        SELECT 
+          tfphc.idx as id_combo,
+          (select tp.nom from tbl2_productos tp where tp.ruc_ = '20522094120' and tp.idx = tfphc.id_receta_CAB) as articulo,
+          COALESCE((
+            select JSON_ARRAYAGG(JSON_OBJECT('talla',tfphcf.talla,'cantidad',COALESCE(tfphcf.produccion_total,0),'produccion_total',COALESCE(tfphcf.produccion_total,0),
+            'caidos_total',COALESCE(tfphcf.caidos_total,0),'incompletos_total',COALESCE(tfphcf.incompletos_total,0))) 
+            FROM tbl2_fases_prod_modelos_fracciones tfphcf 
+            where tfphcf.id_modelo_CAB = tfphc.idx
+          ),JSON_ARRAY()) as fracciones,
+          (
+            select sum(COALESCE(tfphcf.produccion_total,0)) 
+            FROM tbl2_fases_prod_modelos_fracciones tfphcf 
+            WHERE tfphcf.id_modelo_CAB = tfphc.idx
+          ) as cantidad_fracciones,
+          0 as cantidad_combo
+        from tbl2_fases_prod_modelos tfphc 
+        join tbl2_fases_prod_ordenes tfpo on tfphc.id_orden_CAB = tfpo.idx
+        where tfpo.idx = ?
+        having cantidad_fracciones > 0
+      `,[idorden])
+      console.log("Resultados de extraer items de caja:",results)
+
+      results = results.reduce((c,v)=>{
+        let total = 0
+        let pp = undefined
+        v.tallasbase = tallasbase
+        if(v.fracciones.length > 0){
+          pp = v.fracciones.reduce((cc,vv)=>{
+            total += parseInt(vv.produccion_total)
+            // v.tallasbase.push(vv.talla)
+            return {...cc,[vv.talla]:parseInt(vv.cantidad),cantidad:parseInt(total)}
+          },v)
+        }else{
+          const initaltallas = tallasbase.reduce((c,v)=>{
+            c[v] = 0
+            return c
+          },{})
+          // pp = {...v,'xs':0,'s':0,'m':0,'l':0,'xl':0,'xxl':0,cantidad:parseInt(v.cantidad_combo)}
+          // v.tallasbase = tallasbase
+          pp = {...v,...initaltallas,cantidad:parseInt(v.cantidad_combo)}
+        }
+        c.push(pp)
+        return c
+      },[])
+
+      console.log("Nuevo result:",results)
+
+      return results
+    } catch (err) {
+      console.log(err);
+      return { 'msg': err }
+    } finally {
+      if (conn) {
+        await conn.end();
+      }
+    }
+  }
   static async ExtraerDisponible(idorden,idhoja) {
     let conn
     try {
@@ -1366,6 +1433,82 @@ export class OrdenesModel {
       }
       // if (conn) conn.rollback()
       if (conn) conn.commit()
+      return { ok: true, mensaje: 'Guardado con exito' }
+    } catch (err) {
+      console.log(err)
+      if (conn) conn.rollback()
+      return { ok: false, mensaje: err.message }
+    } finally {
+      if (conn) await conn.end();
+    }
+  }
+  static async saveFaseConfiguracion(data, user_data) {
+    // dentro de la fases de matirales de contruccion de la produccion
+    // console.log("Dentro de la fase de configuracion :",data)
+    const modelos = JSON.parse(data.info)
+    const idorden = parseInt(data.id)
+    const tallasbase = JSON.parse(data.tallasbase)
+
+    console.log("Dentro de la fase de configuracion :",modelos,tallasbase)
+
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      conn.beginTransaction()
+
+      let [base_modelos] = await conn.query("SELECT *FROM tbl2_fases_prod_modelos WHERE id_orden_CAB = ?",[idorden])
+      let base_ids = base_modelos.map(row=>row.idx)
+
+      let base_add = modelos.filter(row=>row.idx == '' || !row.idx)
+      let base_update = modelos.filter(row=>base_ids.includes(row.idx))
+      let base_delete = base_modelos.filter(row=>!modelos.map(item=>item.idx).includes(row.idx))
+
+      // ///////////////////////////////////////
+      // INFORMARCCION DE NUEVAS HOJAS DE CORTE
+      // ///////////////////////////////////////
+
+      if(base_add.length > 0){
+        
+        for(let modelo of [...base_add]){
+
+          const cantidad = tallasbase.reduce((sum,talla)=>{
+            return sum + (isNaN(parseInt(modelo[talla])) ? 0 : parseInt(modelo[talla]) > 0 ? parseInt(modelo[talla]) : 0)
+          },0)
+
+          const [resultinsert] = await conn.execute("INSERT INTO tbl2_fases_prod_modelos(id_orden_CAB,id_receta_CAB,idx_color,color_modelo,cantidad_modelo) VALUES(?,?,?,?,?)",[idorden,modelo.idprod,modelo.idcolor,modelo.color,cantidad])
+
+          // console.log("Resultado del insert de modelo :",resultinsert)
+
+          const modelo_fracciones = tallasbase.reduce((carry,current)=>{
+            const row = {}
+            const cantidad = !isNaN(parseInt(modelo[current])) ? parseInt(modelo[current]) > 0 ? parseInt(modelo[current]) : 0 : 0
+            row['id_modelo_CAB'] = resultinsert.insertId
+            row['id_talla_CAB'] = null
+            row['talla'] = current
+            row['cantidad'] = cantidad
+            row['produccion_total'] = cantidad
+            carry.push(Object.values(row))
+            return carry
+          },[])
+
+          const [resultinsert_fracciones] = await conn.query("INSERT INTO tbl2_fases_prod_modelos_fracciones(id_modelo_CAB,id_talla_CAB,talla,cantidad,produccion_total) values ?",[modelo_fracciones])
+          if(resultinsert_fracciones.affectedRows !== modelo_fracciones.length){
+            throw new Error("Error al insertar las fracciones del modelo "+ modelo.color)
+          }
+
+        }
+        
+      }
+      if(base_update.length > 0){
+        
+      }
+      if(base_delete.length > 0){
+        
+      }
+
+      if (conn) conn.commit()
+      // if (conn) conn.rollback()
       return { ok: true, mensaje: 'Guardado con exito' }
     } catch (err) {
       console.log(err)
