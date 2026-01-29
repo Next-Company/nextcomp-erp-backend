@@ -4,6 +4,7 @@ import mysql from "mysql2/promise";
 import { ConsoleMessage } from "puppeteer-core";
 import { CdpKeyboard } from "puppeteer-core";
 import { ifError } from "node:assert";
+import { ProductosService } from "../../Productos/Servicios/productosService.js";
 // import { inventario } from "../../Main/config.js";
 
 export class OrdenesModel {
@@ -408,14 +409,11 @@ export class OrdenesModel {
       }
     }
   }
-  // static async ExtraerItemsCaja_backup(idorden,idhoja) {
-  static async ExtraerItemsCaja(idorden,idhoja) {
-    let conn
+  static async ExtraerItemsCaja(idorden,idhoja,conn = null) {
+    // let conn
     try {
-      conn = await mysql.createConnection(configs[1])
-      await conn.connect();
-
-      console.log("Id orden:",idorden,"Id hoja:",idhoja)
+      // conn = await mysql.createConnection(configs[1])
+      // await conn.connect();
 
       let [infotallas] = await conn.execute("select *from tbl2_fases_prod_ordenes t1 join tbl2_tallas_template t2 on t1.tallasbase = t2.idx where t1.idx = ?",[idorden])
       const tallasbase = infotallas[0].tallas.map(row=>row.desc)
@@ -463,18 +461,14 @@ export class OrdenesModel {
       return results
     } catch (err) {
       console.log(err);
-      return { 'msg': err }
-    } finally {
-      if (conn) {
-        await conn.end();
-      }
+      return { ok:false, 'message': err }
     }
   }
-  static async ExtraerModelosDisponible(idorden) {
-    let conn
+  static async ExtraerModelosDisponible(idorden,conn = null) {
+    // let conn
     try {
-      conn = await mysql.createConnection(configs[1])
-      await conn.connect();
+      // conn = await mysql.createConnection(configs[1])
+      // await conn.connect();
 
       let [infotallas] = await conn.execute("select *from tbl2_fases_prod_ordenes t1 join tbl2_tallas_template t2 on t1.tallasbase = t2.idx where t1.idx = ?",[idorden])
       const tallasbase = infotallas[0].tallas.map(row=>row.desc)
@@ -482,7 +476,8 @@ export class OrdenesModel {
       let [results] = await conn.query(`
         SELECT 
           tfphc.idx as id_combo,
-          (select tp.nom from tbl2_productos tp where tp.ruc_ = '20522094120' and tp.idx = tfphc.id_receta_CAB) as articulo,
+          -- (select tp.nom from tbl2_productos tp where tp.ruc_ = '20522094120' and tp.idx = tfphc.id_receta_CAB) as articulo,
+          CONCAT((select tp.nom from tbl2_productos tp where tp.ruc_ = '20522094120' and tp.idx = tfphc.id_receta_CAB),' ',tfphc.color_modelo) as articulo,
           COALESCE((
             select JSON_ARRAYAGG(JSON_OBJECT('talla',tfphcf.talla,'cantidad',COALESCE(tfphcf.produccion_total,0),'produccion_total',COALESCE(tfphcf.produccion_total,0),
             'caidos_total',COALESCE(tfphcf.caidos_total,0),'incompletos_total',COALESCE(tfphcf.incompletos_total,0))) 
@@ -529,69 +524,33 @@ export class OrdenesModel {
 
       return results
     } catch (err) {
-      console.log(err);
-      return { 'msg': err }
-    } finally {
-      if (conn) {
-        await conn.end();
-      }
+      return { ok:false, 'message': err }
     }
   }
-  static async ExtraerDisponible(idorden,idhoja) {
+  static async ExtraerDisponible(idorden,idhojacorte = null) {
     let conn
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
 
-      let [infotallas] = await conn.execute("select *from tbl2_fases_prod_ordenes t1 join tbl2_tallas_template t2 on t1.tallasbase = t2.idx where t1.idx = ?",[idorden])
-      const tallasbase = infotallas[0].tallas.map(row=>row.desc)
+      let [info_orden] = await conn.execute("select *from tbl2_fases_prod_ordenes t1 join tbl2_tallas_template t2 on t1.tallasbase = t2.idx where t1.idx = ?",[idorden])
+      const fraccionado = info_orden[0].fraccionado
 
-      let [results] = await conn.query(`
-        SELECT 
-          tfphc.idx as id_combo,
-          CONCAT(tfpo.producto,' ',tfphc.color_combo) as articulo,
-          COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',tfphcf.talla,'cantidad',COALESCE(tfphcf.produccion_total,0),'produccion_total',COALESCE(tfphcf.produccion_total,0),'caidos_total',COALESCE(tfphcf.caidos_total,0),'incompletos_total',COALESCE(tfphcf.incompletos_total,0))) 
-          FROM tbl2_fases_prod_hojacorte_combos_fracciones tfphcf where tfphcf.id_combo_CAB = tfphc.idx),JSON_ARRAY()) as fracciones,
-          (select sum(COALESCE(tfphcf.produccion_total,0)) FROM tbl2_fases_prod_hojacorte_combos_fracciones tfphcf where tfphcf.id_combo_CAB = tfphc.idx) as cantidad_fracciones,
-          tfphc.cantidad_combo
-        from tbl2_fases_prod_hojacorte_combos tfphc 
-        join tbl2_fases_prod_hojacorte tfph on tfphc.id_hojacorte_CAB = tfph.idx
-        join tbl2_fases_prod_ordenes tfpo on tfph.id_cab_orden = tfpo.idx
-        where tfpo.idx = ?
-        having cantidad_fracciones > 0
-      `,[idorden,idhoja])
-      console.log("Resultados de extraer items de caja:",results)
-
-      results = results.reduce((c,v)=>{
-        let total = 0
-        let pp = undefined
-        v.tallasbase = tallasbase
-        if(v.fracciones.length > 0){
-          pp = v.fracciones.reduce((cc,vv)=>{
-            total += parseInt(vv.produccion_total)
-            // v.tallasbase.push(vv.talla)
-            return {...cc,[vv.talla]:parseInt(vv.cantidad),cantidad:parseInt(total)}
-          },v)
-        }else{
-          const initaltallas = tallasbase.reduce((c,v)=>{
-            c[v] = 0
-            return c
-          },{})
-          pp = {...v,...initaltallas,cantidad:parseInt(v.cantidad_combo)}
-        }
-        c.push(pp)
-        return c
-      },[])
-      console.log("Nuevo result:",results)
+      console.log("El fraacoinado es:",fraccionado)
+      let results = null
+      if (fraccionado) {
+        console.log("Dentro de extraccion disponible por modelo")
+        results = await OrdenesModel.ExtraerModelosDisponible(idorden,conn)
+      } else {
+        results = await OrdenesModel.ExtraerItemsCaja(idorden,idhojacorte,conn)
+      }
 
       return results
     } catch (err) {
       console.log(err);
-      return { 'msg': err }
+      return { ok:false, 'message': err }
     } finally {
-      if (conn) {
-        await conn.end();
-      }
+      if (conn) await conn.end();
     }
   }
   static async ExtraerItemsCaja_(idorden,idhoja) {
@@ -1443,16 +1402,15 @@ export class OrdenesModel {
     }
   }
   static async saveFaseConfiguracion(data, user_data) {
-    // dentro de la fases de matirales de contruccion de la produccion
-    // console.log("Dentro de la fase de configuracion :",data)
     const modelos = JSON.parse(data.info)
     const idorden = parseInt(data.id)
     const tallasbase = JSON.parse(data.tallasbase)
-
-    console.log("Dentro de la fase de configuracion :",modelos,tallasbase)
-
+    const idreceta = data.idreceta
     let conn
+    // console.log("Dentro de la fase de configuracion :",modelos,tallasbase,idreceta)
+    
     try {
+      // throw new Error("Termino de forma inesperada")
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
       conn.beginTransaction()
@@ -1464,28 +1422,87 @@ export class OrdenesModel {
       let base_update = modelos.filter(row=>base_ids.includes(row.idx))
       let base_delete = base_modelos.filter(row=>!modelos.map(item=>item.idx).includes(row.idx))
 
-      // ///////////////////////////////////////
-      // INFORMARCCION DE NUEVAS HOJAS DE CORTE
-      // ///////////////////////////////////////
+      const INFO_RECETA_ORIGIN = await ProductosService.searchProductoById(idreceta,conn)
+      console.log("Info de la receta :",INFO_RECETA_ORIGIN)
+
+      // /////////////////////////////////////////////////////
+      // VALIDAR QUE EL TOTAL DE ITEMS POR MODELO SEA IGUAL AL DISPONIBLE ACTUAL
+      // /////////////////////////////////////////////////////
+      const [consulta_disponible] = await conn.query(`
+        SELECT JSON_OBJECTAGG(cc.talla,cc.cantidad) as distribucion
+        FROM
+        (
+          SELECT t3.talla,sum(COALESCE(t3.produccion_total,0)) as cantidad 
+          FROM tbl2_fases_prod_hojacorte t1
+          JOIN tbl2_fases_prod_hojacorte_combos t2 on t1.idx = t2.id_hojacorte_CAB 
+          JOIN tbl2_fases_prod_hojacorte_combos_fracciones t3 on t2.idx = t3.id_combo_CAB 
+          WHERE t1.id_cab_orden = ?
+          GROUP BY t3.talla
+        ) as cc
+      `,[idorden])
+      const DISPONIBLE_ACTUAL = consulta_disponible[0].distribucion
+
+      const DISPONIBLE_NUEVO = base_add.reduce((carry,current)=>{
+        tallasbase.tallas.forEach(talla=>{
+          if(!carry[talla.desc]){
+            carry[talla.desc] = 0
+          }
+          carry[talla.desc] += !isNaN(parseInt(current[talla.desc])) ? parseInt(current[talla.desc]) > 0 ? parseInt(current[talla.desc]) : 0 : 0
+        })
+        return carry
+      },{})
+
+      for(let talla of tallasbase.tallas){
+        if((DISPONIBLE_ACTUAL[talla.desc] ?? 0) !== (DISPONIBLE_NUEVO[talla.desc] ?? 0)) {
+          // console.log("Disponibles:",DISPONIBLE_ACTUAL,DISPONIBLE_NUEVO)
+          // console.log("Comparacion:",talla.desc,DISPONIBLE_ACTUAL[talla.desc],DISPONIBLE_NUEVO[talla.desc])
+          throw new Error("El disponible actual coincide con el nuevo disponible. Verifique.")
+        }
+      }
+      // /////////////////////////////////////////////
+      // /////////////////////////////////////////////
 
       if(base_add.length > 0){
-        
         for(let modelo of [...base_add]){
-
-          const cantidad = tallasbase.reduce((sum,talla)=>{
+          const cantidad = tallasbase.tallasformateado.split('-').reduce((sum,talla)=>{
             return sum + (isNaN(parseInt(modelo[talla])) ? 0 : parseInt(modelo[talla]) > 0 ? parseInt(modelo[talla]) : 0)
           },0)
 
-          const [resultinsert] = await conn.execute("INSERT INTO tbl2_fases_prod_modelos(id_orden_CAB,id_receta_CAB,idx_color,color_modelo,cantidad_modelo) VALUES(?,?,?,?,?)",[idorden,modelo.idprod,modelo.idcolor,modelo.color,cantidad])
+          const newinfo = {...INFO_RECETA_ORIGIN[0],modelo:modelo.articulo,nom:INFO_RECETA_ORIGIN[0].rubro.trim() + ' ' + INFO_RECETA_ORIGIN[0].base + ' ' + modelo.articulo}
+          Reflect.deleteProperty(newinfo,'idx')
+          const INFO_NEWPROD = await ProductosService.createNewProduct(newinfo,conn)
+          if(!INFO_NEWPROD.ok) throw new Error(INFO_NEWPROD.message)
 
-          // console.log("Resultado del insert de modelo :",resultinsert)
+          console.log("La nueva receta creada es :",INFO_NEWPROD)
 
-          const modelo_fracciones = tallasbase.reduce((carry,current)=>{
+          const info_subprod = tallasbase.tallas.reduce((carry,current)=>{
+            const registro = {
+              idx_CAB_PROD: INFO_NEWPROD.info,
+              codigo: '0900019107050',
+              isbn: '0900019107050',
+              nom: newinfo.nom,
+              idx_CAB_COLOR: modelo['idcolor'],
+              idx_talla: current.id,
+              talla: current.desc.toUpperCase(),
+              estado: 'primera',
+              nro_lote: 0
+            }
+            carry.push(registro)
+            return carry
+          },[])
+          for(let subprod of info_subprod){
+            const INFOT_SUBPROD = await ProductosService.createNewSubProduct(subprod,conn)
+            if(!INFOT_SUBPROD.ok) throw new Error(INFOT_SUBPROD.message)
+          }
+
+          const [resultinsert] = await conn.execute("INSERT INTO tbl2_fases_prod_modelos(id_orden_CAB,id_receta_CAB,idx_color,color_modelo,cantidad_modelo) VALUES(?,?,?,?,?)",[idorden,INFO_NEWPROD.info,modelo.idcolor,modelo.color,cantidad])
+
+          const modelo_fracciones = tallasbase.tallas.reduce((carry,current)=>{
             const row = {}
-            const cantidad = !isNaN(parseInt(modelo[current])) ? parseInt(modelo[current]) > 0 ? parseInt(modelo[current]) : 0 : 0
+            const cantidad = !isNaN(parseInt(modelo[current.desc])) ? parseInt(modelo[current.desc]) > 0 ? parseInt(modelo[current.desc]) : 0 : 0
             row['id_modelo_CAB'] = resultinsert.insertId
-            row['id_talla_CAB'] = null
-            row['talla'] = current
+            row['id_talla_CAB'] = current.id
+            row['talla'] = current.desc
             row['cantidad'] = cantidad
             row['produccion_total'] = cantidad
             carry.push(Object.values(row))
@@ -1496,9 +1513,7 @@ export class OrdenesModel {
           if(resultinsert_fracciones.affectedRows !== modelo_fracciones.length){
             throw new Error("Error al insertar las fracciones del modelo "+ modelo.color)
           }
-
         }
-        
       }
       if(base_update.length > 0){
         

@@ -70,10 +70,6 @@ export class ProduccionModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      // sddssss
-      // let [ordenes] = await conn.query("SELECT tb1.*,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('id_orden_CAB',tb2.id_orden_CAB,'color_combo',tb2.color_combo,'cantidad_combo',tb2.cantidad_combo)) from tbl2_fases_prod_ordenes_combos tb2 where tb2.id_orden_CAB = tb1.idx),JSON_ARRAY()) as combos FROM tbl2_fases_prod_ordenes tb1 WHERE tb1.idx = ? ORDER BY tb1.idx desc",[info.id]);
-
-      // let [ordenes] = await conn.query("SELECT tb1.*,COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('id_orden_CAB',cc.id_orden_CAB,'color_combo',cc.color_combo,'cantidad_combo',cc.cantidad_combo,'fracciones',cc.fracciones)) from (select tb2.idx,tb2.id_orden_CAB,tb2.color_combo,tb2.cantidad_combo,(select JSON_ARRAYAGG(JSON_OBJECT('talla',talla,'cantidad',cantidad)) from tbl2_fases_prod_ordenes_combos_fracciones tfr where tfr.id_combo_CAB = tb2.idx) as fracciones from tbl2_fases_prod_ordenes_combos tb2 where tb2.id_orden_CAB = tb1.idx) as cc),JSON_ARRAY()) as combos FROM tbl2_fases_prod_ordenes tb1 WHERE tb1.idx = ? ORDER BY tb1.idx desc", [info.id]);
 
       let [ordenes] = await conn.query(`SELECT
           tb1.*,
@@ -212,8 +208,27 @@ export class ProduccionModel {
         c.push(v)
         return c
       },[])
+
+      let [modelos] = await conn.execute(`
+        SELECT
+          t1.idx,
+          t1.id_orden_CAB,
+          t1.id_receta_CAB,
+          (select tp.modelo from tbl2_productos tp where tp.idx = t1.id_receta_CAB) as articulo,
+          t1.idx_color,
+          (select tc.nom from tbl2_colores tc where tc.idx = t1.idx_color) as color,
+          t1.color_modelo,
+          t1.cantidad_modelo,
+          JSON_OBJECTAGG(t2.talla,t2.produccion_total) as fracciones
+        FROM tbl2_fases_prod_modelos t1
+        JOIN tbl2_fases_prod_modelos_fracciones t2 on t1.idx = t2.id_modelo_CAB 
+        WHERE t1.id_orden_CAB = ?
+        GROUP BY t1.idx,t1.id_orden_CAB,t1.id_receta_CAB,t1.idx_color,t1.color_modelo,t1.cantidad_modelo
+      `,[info.id])
+      modelos = modelos.map(row=>({...row,...row.fracciones}))
+      console.log("Los modelos consultados son:",modelos)
   
-      return [ordenes,moldes,cortes,materiales,fasesprod,materialesref,insumos,requerimientos,tallasbase]
+      return [ordenes,moldes,cortes,materiales,fasesprod,materialesref,insumos,requerimientos,tallasbase,modelos]
     } catch (err) {
       console.log("Estamos en error:", err);
       return err
@@ -1165,8 +1180,8 @@ export class ProduccionModel {
         if(!respuesta.ok) throw respuesta.message
       }
 
-      // if (conn) conn.rollback()
-      if (conn) conn.commit()
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return {ok:true,message:'Registro completo'}
     } catch (err) {
       console.log(err)

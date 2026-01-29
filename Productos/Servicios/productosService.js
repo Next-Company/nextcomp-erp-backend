@@ -200,9 +200,9 @@ export class ProductosService{
     }
     return info;
   }
-  static async searchProductoById(id){
-    const conn = await mysql.createConnection(configs[1]);
-    await conn.connect();
+  static async searchProductoById(id,connect = null){
+    const conn = connect ?? await mysql.createConnection(configs[1]);
+    connect || await conn.connect();
     try {
       // const [rows,fields] = await conn.execute("SELECT * FROM tbl2_prod_color_talla_det where tipo in ('I','A') LIMIT 50");
       const [result] = await conn.execute(`
@@ -228,7 +228,7 @@ export class ProductosService{
       console.log(e);
     }
     finally{
-      await conn.end();
+      connect ?? await conn.end();
     }
   }
   static async generateProducto(info,imagenes){
@@ -417,6 +417,47 @@ export class ProductosService{
     }
   }
   static async createNewProduct(info,conn){
+    try {
+      const [prod,fieldsprod] = await conn.execute("SELECT *FROM tbl2_productos WHERE ruc_ = '20522094120' LIMIT 1")
+      const [correlativo] = await conn.execute("SELECT codigo_num FROM tbl2_rubro_correlativo WHERE ruc_ = ?",['20522094120']);
+      let indice_prod = correlativo[0].codigo_num + 1;
+      let sucursal = 509;
+      let insert = {}
+
+      insert['codigo'] = '09000' + indice_prod + '0';
+      insert['isbn'] = '09000' + indice_prod + '0';
+      insert['nom'] = info.producto;
+      insert['ruc_']= '20522094120';
+      insert['costo']= 0;
+      insert['utilidad1']= 0;
+      insert['moneda']= '';
+      insert['codUnidadMedida']= 'NIU';
+      insert['tipAfeIGV']= '10';
+      insert['igv']= 18;
+      insert['serie'] = 'N';
+      insert['isc'] = 0;
+      insert['vencimiento'] = 'N';
+      insert['cant_inicial'] = 100;
+      insert['sucursal_tienda'] = sucursal;
+
+      insert = {...insert,...info}
+
+      // let campos = Object.keys(insert)
+      let campos = Object.keys(insert).reduce((carry, current) => {
+        fieldsprod.filter(row => row.name !== 'idx').map(row => row.name).includes(current) && carry.push(current)
+        return carry
+      }, [])
+      let values = campos.map(row => insert[row])
+      console.log("Los valores a insertar son los siguientes:",values)
+      let [result] = await conn.execute("insert into tbl2_productos(" + campos.join(',') + ") values("+ campos.map(row=>'?').join(',') +")",values)
+
+      return {ok:true,message:'',info:result.insertId}
+    }
+    catch(error){
+      return {ok:false,message:error.message ?? error}
+    }
+  }
+  static async createCloneProduct(info,conn){
     try {
       const [correlativo] = await conn.execute("select codigo_num from tbl2_rubro_correlativo where ruc_ = ?",['20522094120']);
       let indice_prod = correlativo[0].codigo_num + 1;
