@@ -1458,23 +1458,13 @@ export class OrdenesModel {
     const tallasbase = JSON.parse(data.tallasbase)
     const idreceta = data.idreceta
     let conn
-    // console.log("Dentro de la fase de configuracion :",modelos,tallasbase,idreceta)
+    console.log("Dentro de la fase de configuracion :",modelos,tallasbase,idreceta)
     
     try {
       // throw new Error("Termino de forma inesperada")
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
       conn.beginTransaction()
-
-      let [base_modelos] = await conn.query("SELECT *FROM tbl2_fases_prod_modelos WHERE id_orden_CAB = ?",[idorden])
-      let base_ids = base_modelos.map(row=>row.idx)
-
-      let base_add = modelos.filter(row=>row.idx == '' || !row.idx)
-      let base_update = modelos.filter(row=>base_ids.includes(row.idx))
-      let base_delete = base_modelos.filter(row=>!modelos.map(item=>item.idx).includes(row.idx))
-
-      const INFO_RECETA_ORIGIN = await ProductosService.searchProductoById(idreceta,conn)
-      console.log("Info de la receta :",INFO_RECETA_ORIGIN)
 
       // /////////////////////////////////////////////////////
       // VALIDAR QUE EL TOTAL DE ITEMS POR MODELO SEA IGUAL AL DISPONIBLE ACTUAL
@@ -1493,7 +1483,7 @@ export class OrdenesModel {
       `,[idorden])
       const DISPONIBLE_ACTUAL = consulta_disponible[0].distribucion
 
-      const DISPONIBLE_NUEVO = base_add.reduce((carry,current)=>{
+      const DISPONIBLE_NUEVO = modelos.reduce((carry,current)=>{
         tallasbase.tallas.forEach(talla=>{
           if(!carry[talla.desc]){
             carry[talla.desc] = 0
@@ -1502,6 +1492,8 @@ export class OrdenesModel {
         })
         return carry
       },{})
+
+      console.log('Informacion de la validacion:',DISPONIBLE_ACTUAL,DISPONIBLE_NUEVO)
 
       for(let talla of tallasbase.tallas){
         if((DISPONIBLE_ACTUAL[talla.desc] ?? 0) !== (DISPONIBLE_NUEVO[talla.desc] ?? 0)) {
@@ -1512,6 +1504,15 @@ export class OrdenesModel {
       }
       // /////////////////////////////////////////////
       // /////////////////////////////////////////////
+
+      let [base_modelos] = await conn.query("SELECT *FROM tbl2_fases_prod_modelos WHERE id_orden_CAB = ?",[idorden])
+      let base_ids = base_modelos.map(row=>row.idx)
+
+      let base_add = modelos.filter(row=>row.idx == '' || !row.idx)
+      let base_update = modelos.filter(row=>base_ids.includes(row.idx))
+      let base_delete = base_modelos.filter(row=>!modelos.map(item=>item.idx).includes(row.idx))
+
+      const INFO_RECETA_ORIGIN = await ProductosService.searchProductoById(idreceta,conn)
 
       if(base_add.length > 0){
         for(let modelo of [...base_add]){
@@ -1567,6 +1568,7 @@ export class OrdenesModel {
         }
       }
       if(base_update.length > 0){
+        console.log("La info de la base update es:",base_update)
         
       }
       if(base_delete.length > 0){

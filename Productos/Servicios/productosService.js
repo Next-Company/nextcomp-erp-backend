@@ -90,7 +90,7 @@ export class ProductosService{
             tp.tipoFabricacion,
             tp.tipoProduccion
         from tbl2_productos tp
-        where 1=1 ${extra} and tp.ruc_ = '20522094120'
+        where 1=1 ${extra} and tp.ruc_ = '20522094120' and tp.tipoFabricacion is not null
         limit 150
       `);
       // console.log(rows);
