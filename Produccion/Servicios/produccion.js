@@ -4,6 +4,7 @@ import { ProductosService } from "../../Productos/Servicios/productosService.js"
 import AlmacenModel from "../../Almacen/Servicios/almacenService.js";
 import { isUtf8 } from "node:buffer";
 import { info } from "node:console";
+import { OrdenesModel } from "../../Ordenes/Servicios/ordenes.js";
 // import { inventario } from "../../Main/config.js";
 export class ProduccionModel {
   static async getOrdenes(search) {
@@ -219,7 +220,7 @@ export class ProduccionModel {
           (select tc.nom from tbl2_colores tc where tc.idx = t1.idx_color) as color,
           t1.color_modelo,
           t1.cantidad_modelo,
-          JSON_OBJECTAGG(t2.talla,t2.produccion_total) as fracciones
+          JSON_OBJECTAGG(t2.talla,t2.cantidad) as fracciones
         FROM tbl2_fases_prod_modelos t1
         JOIN tbl2_fases_prod_modelos_fracciones t2 on t1.idx = t2.id_modelo_CAB 
         WHERE t1.id_orden_CAB = ?
@@ -227,8 +228,21 @@ export class ProduccionModel {
       `,[info.id])
       modelos = modelos.map(row=>({...row,...row.fracciones}))
       console.log("Los modelos consultados son:",modelos)
+
+      let disponible = await OrdenesModel.ExtraerOrdenDisponible(info.id,conn)
+      disponible = disponible.reduce((c,v)=> {
+        tallasbase.filter(row=>row.idx == ordenes[0].tallasbase)[0].tallas.forEach(talla=>{
+          if(Object.keys(c).includes(talla.desc)) {
+            c[talla.desc] += v[talla.desc] ?? 0
+          } else {
+            c[talla.desc] = v[talla.desc] ?? 0
+          }
+        })
+        return c
+      },{})
+      // console.log("El disponible formateado es:",disponible)
   
-      return [ordenes,moldes,cortes,materiales,fasesprod,materialesref,insumos,requerimientos,tallasbase,modelos]
+      return [ordenes,moldes,cortes,materiales,fasesprod,materialesref,insumos,requerimientos,tallasbase,modelos,disponible]
     } catch (err) {
       console.log("Estamos en error:", err);
       return err
@@ -1180,8 +1194,8 @@ export class ProduccionModel {
         if(!respuesta.ok) throw respuesta.message
       }
 
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return {ok:true,message:'Registro completo'}
     } catch (err) {
       console.log(err)
@@ -1584,16 +1598,96 @@ export class ProduccionModel {
       return {ok:false,message:error}
     }
   }
-  static async UpdateMasterProduccion(backup_articulos,articulos,orden,conn,tipo,acabados = 0){
-    console.log("Info data backup_articulos:",backup_articulos)
-    let p1 = '', p2 = '', p3 = ''
-    console.log("La informacion a trabajar es:",backup_articulos,articulos,orden,tipo == 0 ? 'SUMA' : 'RESTA')
+  static async UpdateDisponibleFraccionado(backup_articulos,articulos,orden,tipo,acabados,conn){
     ////////////////////////////////////
     // formato de data : [ {idcombo:22,xs:[13,1],s:[13,1],m:[13,1],l:[13,1],xl:[13,1],xxl:[13,1]},{},{},... ]
+    // tipo == 0 ? 'SUMA' : 'RESTA'
     ////////////////////////////////////
+    let p1 = '', p2 = '', p3 = ''
 
     const [infotallas] = await conn.execute('select t2.* from tbl2_fases_prod_ordenes t1 join tbl2_tallas_template t2 on t1.tallasbase = t2.idx where t1.idx = ?',[parseInt(orden)])
+    try {
 
+      if(backup_articulos.length > 0){
+        p1 = ''
+        p2 = ''
+        p3 = ''
+        for(let combo of [...backup_articulos]){
+          p1 = infotallas[0].tallas.map(row=>row.desc).reduce((c,v)=>{
+            c += " WHEN id_modelo_CAB = " + combo.idcombo +" and talla = '" + v + "' THEN " + (tipo ? parseInt(combo[v][0]) : -1*parseInt(combo[v][0]))
+            return c
+          },p1);
+          p2 = infotallas[0].tallas.map(row=>row.desc).reduce((c,v)=>{
+            c += " WHEN id_modelo_CAB = " + combo.idcombo + " and talla = '" + v + "' THEN " + (tipo ? parseInt(combo[v][1]) : -1*parseInt(combo[v][1]))
+            return c
+          },p2);
+          p3 = infotallas[0].tallas.map(row=>row.desc).reduce((c,v)=>{
+            c += " WHEN id_modelo_CAB = " + combo.idcombo + " and talla = '" + v + "' THEN " + (tipo ? parseInt(combo[v][2]) : -1*parseInt(combo[v][2]))
+            return c
+          },p3);
+        }
+        p1 = `CASE ${p1} ELSE 0 END`
+        p2 = `CASE ${p2} ELSE 0 END`
+        p3 = `CASE ${p3} ELSE 0 END`
+        if(!acabados){
+          await conn.query(`UPDATE tbl2_fases_prod_modelos_fracciones SET produccion_total = COALESCE(produccion_total,0) + ` + p1 + `, caidos_total = COALESCE(caidos_total,0) + ` + p2 + `, incompletos_total = COALESCE(incompletos_total,0) + ` + p3)
+        }else{
+          await conn.query(`UPDATE tbl2_fases_prod_modelos_fracciones SET despacho_total = COALESCE(despacho_total,0) + ` + p1 + `, caidos_total = COALESCE(caidos_total,0) + ` + p2 + `, incompletos_total = COALESCE(incompletos_total,0) + ` + p3)
+        }
+      }
+      if(articulos.length > 0){
+        p1 = ''
+        p2 = ''
+        p3 = ''
+        for(let combo of [...articulos]){
+          p1 = infotallas[0].tallas.map(row=>row.desc).reduce((c,v)=>{
+            c += " WHEN id_modelo_CAB = " + combo.idcombo +" and talla = '" + v + "' THEN " + (tipo ? -1*parseInt(combo[v][0]) : parseInt(combo[v][0]))
+            return c
+          },p1);
+          p2 = infotallas[0].tallas.map(row=>row.desc).reduce((c,v)=>{
+            c += " WHEN id_modelo_CAB = " + combo.idcombo + " and talla = '" + v + "' THEN " + (tipo ? -1*parseInt(combo[v][1]) : parseInt(combo[v][1]))
+            return c
+          },p2)
+          p3 = infotallas[0].tallas.map(row=>row.desc).reduce((c,v)=>{
+            c += " WHEN id_modelo_CAB = " + combo.idcombo + " and talla = '" + v + "' THEN " + (tipo ? -1*parseInt(combo[v][2]) : parseInt(combo[v][2]))
+            return c
+          },p3)
+        }
+        p1 = `CASE ${p1} ELSE 0 END`
+        p2 = `CASE ${p2} ELSE 0 END`
+        p3 = `CASE ${p3} ELSE 0 END`
+        if(!acabados){
+          await conn.query(`UPDATE tbl2_fases_prod_modelos_fracciones SET produccion_total = COALESCE(produccion_total,0) + ` + p1 + `, caidos_total = COALESCE(caidos_total,0) + ` + p2 + `, incompletos_total = COALESCE(incompletos_total,0) + ` + p3)
+        }else{
+          await conn.query(`UPDATE tbl2_fases_prod_modelos_fracciones SET despacho_total = COALESCE(despacho_total,0) + ` + p1 + `, caidos_total = COALESCE(caidos_total,0) + ` + p2 + `, incompletos_total = COALESCE(incompletos_total,0) + ` + p3)
+        }
+      }
+      const [validacion] = await conn.query(`
+        SELECT sum(cantidad) as cantidad,${!acabados ? 'sum(produccion_total)' : 'sum(despacho_total)'} as p_tot,sum(caidos_total) as c_tot,sum(incompletos_total) as i_tot
+        FROM tbl2_fases_prod_modelos_fracciones tfphcf 
+        WHERE tfphcf.id_modelo_CAB IN (
+          SELECT t1.idx 
+          FROM tbl2_fases_prod_modelos t1 
+          WHERE t1.id_orden_CAB = ?
+        )
+      `,[parseInt(orden)])
+      console.log("Imprimiendo validacion:",validacion)
+      if((parseInt(validacion[0].p_tot) + parseInt(validacion[0].c_tot) + parseInt(validacion[0].i_tot)) > validacion[0].cantidad) throw "La informacion ingresada supera el limite permitido"
+
+      return {ok:true,message:''}
+    } catch (error) {
+      console.log("dentro de rroe")
+      return {ok:false,message:error}
+    }
+  }
+  static async UpdateDisponibleSinFraccionado(backup_articulos,articulos,orden,tipo,acabados,conn){
+    ////////////////////////////////////
+    // formato de data : [ {idcombo:22,xs:[13,1],s:[13,1],m:[13,1],l:[13,1],xl:[13,1],xxl:[13,1]},{},{},... ]
+    // tipo == 0 ? 'SUMA' : 'RESTA'
+    ////////////////////////////////////
+    let p1 = '', p2 = '', p3 = ''
+
+    const [infotallas] = await conn.execute('select t2.* from tbl2_fases_prod_ordenes t1 join tbl2_tallas_template t2 on t1.tallasbase = t2.idx where t1.idx = ?',[parseInt(orden)])
     try {
 
       if(backup_articulos.length > 0){
@@ -1669,6 +1763,20 @@ export class ProduccionModel {
       console.log("dentro de rroe")
       return {ok:false,message:error}
     }
+  }
+  static async UpdateMasterProduccion(backup_articulos,articulos,orden,conn,tipo,acabados = 0){
+    ////////////////////////////////////
+    // formato de data : [ {idcombo:22,xs:[13,1],s:[13,1],m:[13,1],l:[13,1],xl:[13,1],xxl:[13,1]},{},{},... ]
+    // tipo == 0 ? 'SUMA' : 'RESTA'
+    ///////////////////////////////////////
+    let result = null
+    const [data_orden] = await conn.execute("select *from tbl2_fases_prod_ordenes where idx = ?",[orden])
+    if(data_orden[0].fraccionado) {
+      result = await ProduccionModel.UpdateDisponibleFraccionado(backup_articulos,articulos,orden,tipo,acabados,conn)
+    } else {
+      result = await ProduccionModel.UpdateDisponibleSinFraccionado(backup_articulos,articulos,orden,tipo,acabados,conn)
+    }
+    return result
   }
   static async UpdateMasterProduccionGLB(backup_articulos,articulos,orden,conn,tipo,acabados = 0){
     console.log("Info data backup_articulos:",backup_articulos)
@@ -1887,8 +1995,8 @@ export class ProduccionModel {
       let resultado = await this.UpdateMasterProduccion(param1,[],info_orden[0].id_orden_CAB,conn,1)
       if(!resultado.ok) throw resultado.message
 
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return {ok:true,message:"El servicio fue anulado con éxito."}
     } catch (err) {
       console.log(err)
@@ -3214,8 +3322,8 @@ export class ProduccionModel {
         if(!respuesta.ok) throw respuesta.message
         // console.log("Resultado del update master :",resp_update)
       }                                                                                                                                                                                                  
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return {ok:true,message:'Proceso ejecutado con éxito'}
     } catch (err) {
       console.log("asdlkfaslfjlaskdfjlf:",err)

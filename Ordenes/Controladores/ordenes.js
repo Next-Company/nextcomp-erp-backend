@@ -217,10 +217,10 @@ export class OrdenesController {
     const data = await OrdenesModel.saveFaseMateriales(info, user_data)
     resp.json(data)
   }
-  static async saveFaseConfiguracion(req, resp) {
+  static async saveFaseFraccionamiento(req, resp) {
     const info = req.body
     const user_data = req.session
-    const data = await OrdenesModel.saveFaseConfiguracion(info, user_data)
+    const data = await OrdenesModel.saveFaseFraccionamiento(info, user_data)
     resp.json(data)
   }
   static async testMultiSelect(req, resp) {

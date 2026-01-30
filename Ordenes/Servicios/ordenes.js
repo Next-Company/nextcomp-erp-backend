@@ -464,6 +464,57 @@ export class OrdenesModel {
       return { ok:false, 'message': err }
     }
   }
+  static async ExtraerOrdenDisponible(idorden,conn = null) {
+    try {
+      let [infotallas] = await conn.execute("select *from tbl2_fases_prod_ordenes t1 join tbl2_tallas_template t2 on t1.tallasbase = t2.idx where t1.idx = ?",[idorden])
+      const tallasbase = infotallas[0].tallas.map(row=>row.desc)
+
+      let [results] = await conn.query(`SELECT 
+        tfphc.idx as id_combo,
+        -- CONCAT(tfpo.producto,' ',tfpo.marca,' ',tfpo.modelos,' ',tfphc.color_combo) as articulo,
+        CONCAT(tfpo.producto,' ',tfphc.color_combo) as articulo,
+        COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',tfphcf.talla,'cantidad',COALESCE(tfphcf.produccion_total,0),'produccion_total',COALESCE(tfphcf.produccion_total,0),'caidos_total',COALESCE(tfphcf.caidos_total,0),'incompletos_total',COALESCE(tfphcf.incompletos_total,0))) 
+        FROM tbl2_fases_prod_hojacorte_combos_fracciones tfphcf where tfphcf.id_combo_CAB = tfphc.idx),JSON_ARRAY()) as fracciones,
+        (select sum(COALESCE(tfphcf.produccion_total,0)) FROM tbl2_fases_prod_hojacorte_combos_fracciones tfphcf where tfphcf.id_combo_CAB = tfphc.idx) as cantidad_fracciones,
+        tfphc.cantidad_combo
+      from tbl2_fases_prod_hojacorte_combos tfphc 
+      join tbl2_fases_prod_hojacorte tfph on tfphc.id_hojacorte_CAB = tfph.idx
+      join tbl2_fases_prod_ordenes tfpo on tfph.id_cab_orden = tfpo.idx
+      where tfpo.idx = ?
+      having cantidad_fracciones > 0`,[idorden])
+      console.log("Resultados de extraer items de caja:",results)
+
+      results = results.reduce((c,v)=>{
+        let total = 0
+        let pp = undefined
+        v.tallasbase = tallasbase
+        if(v.fracciones.length > 0){
+          pp = v.fracciones.reduce((cc,vv)=>{
+            total += parseInt(vv.produccion_total)
+            // v.tallasbase.push(vv.talla)
+            return {...cc,[vv.talla]:parseInt(vv.cantidad),cantidad:parseInt(total)}
+          },v)
+        }else{
+          const initaltallas = tallasbase.reduce((c,v)=>{
+            c[v] = 0
+            return c
+          },{})
+          // pp = {...v,'xs':0,'s':0,'m':0,'l':0,'xl':0,'xxl':0,cantidad:parseInt(v.cantidad_combo)}
+          // v.tallasbase = tallasbase
+          pp = {...v,...initaltallas,cantidad:parseInt(v.cantidad_combo)}
+        }
+        c.push(pp)
+        return c
+      },[])
+
+      console.log("Nuevo result:",results)
+
+      return results
+    } catch (err) {
+      console.log(err);
+      return { ok:false, 'message': err }
+    }
+  }
   static async ExtraerModelosDisponible(idorden,conn = null) {
     // let conn
     try {
@@ -1315,7 +1366,7 @@ export class OrdenesModel {
                   await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos_fracciones(id_combo_CAB,talla,cantidad,produccion_total) values ? ",[fraccionado.filter(row=>row.cantidad > 0)])
                 } else {
                   console.log("Dentro del update de combos simple")
-                  await conn.query("UPDATE tbl2_fases_prod_hojacorte_combos SET idx_color = ?,color_combo = ?, insumos = ? WHERE idx = ? and id_hojacorte_CAB = ?",[combo.idx_color,combo.color_combo,JSON.stringify(combo).insumos,combo.idx,parseInt(corte['idx'])])
+                  await conn.query("UPDATE tbl2_fases_prod_hojacorte_combos SET idx_color = ?,color_combo = ?, insumos = ? WHERE idx = ? and id_hojacorte_CAB = ?",[combo.idx_color,combo.color_combo,JSON.stringify(combo.insumos ?? []),combo.idx,parseInt(corte['idx'])])
                 }
               }
             }
@@ -1401,7 +1452,7 @@ export class OrdenesModel {
       if (conn) await conn.end();
     }
   }
-  static async saveFaseConfiguracion(data, user_data) {
+  static async saveFaseFraccionamiento(data, user_data) {
     const modelos = JSON.parse(data.info)
     const idorden = parseInt(data.id)
     const tallasbase = JSON.parse(data.tallasbase)
@@ -1519,11 +1570,12 @@ export class OrdenesModel {
         
       }
       if(base_delete.length > 0){
+        console.log("La informacin base a eliminar es:",base_delete)
         
       }
 
-      if (conn) conn.commit()
-      // if (conn) conn.rollback()
+      // if (conn) conn.commit()
+      if (conn) conn.rollback()
       return { ok: true, mensaje: 'Guardado con exito' }
     } catch (err) {
       console.log(err)

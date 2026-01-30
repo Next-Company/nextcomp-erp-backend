@@ -30,7 +30,7 @@ ordenesRouter.put("/updateFaseOrden",OrdenesController.updateFaseOrden)
 ordenesRouter.put("/saveFaseMolde",OrdenesController.saveFaseMolde)
 ordenesRouter.put("/saveFaseCorte",OrdenesController.saveFaseCorte)
 ordenesRouter.put("/saveFaseMateriales",OrdenesController.saveFaseMateriales)
-ordenesRouter.put("/saveFaseConfiguracion",OrdenesController.saveFaseConfiguracion)
+ordenesRouter.put("/saveFaseFraccionamiento",OrdenesController.saveFaseFraccionamiento)
 
 ordenesRouter.get("/lizzet/:id",OrdenesController.regulaLizzet)
 ordenesRouter.get("/printhojacorte/:idorden",OrdenesController.printHojaCorte)
