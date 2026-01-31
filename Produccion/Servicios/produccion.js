@@ -1135,6 +1135,7 @@ export class ProduccionModel {
           await conn.query("INSERT INTO tbl2_guias_traslado_adi(id_guia_CAB,id_penalidad_CAB,observaciones,importe) VALUES ?",[penalidadesinsert])
         }
         if(reprogramacion.length > 0){
+          console.log("Dento del la reprogramacion de las guias",reprogramacion)
           let reprogramacioninsert = reprogramacion.map(row=>[row.idguia,row.fecha_entrega,row.observacion])
           await conn.query("DELETE FROM tbl2_guias_traslado_reprogramacion WHERE id_guia_CAB = ?",[parseInt(data.id)])
           await conn.query("INSERT INTO tbl2_guias_traslado_reprogramacion(id_guia_CAB,fecha_entrega,observacion) VALUES ?",[reprogramacioninsert])
@@ -1173,7 +1174,7 @@ export class ProduccionModel {
         let param1 = backup_articulos.reduce((c,v)=>{
           let info = {idcombo:v.id_combo}
           info = v.fracciones.reduce((cc,vv)=>{
-            return {...cc,[vv.talla]:[parseInt(vv.cantidad),0,0]}
+            return {...cc,[vv.talla]:[parseInt(vv.cantidad ?? 0),0,0]}
           },info)
           c.push(info)
           return c
@@ -1184,7 +1185,7 @@ export class ProduccionModel {
         let param2 = JSON.parse(data.detalle).filter(row=>!row.isprototipo && row.id_combo).reduce((c,v)=>{
           let info = {idcombo:v.id_combo}
           info = tallasbase.reduce((cc,vv)=>{
-            return {...cc,[vv]:[parseInt(v[vv]),0,0]}
+            return {...cc,[vv]:[parseInt(v[vv] ?? 0),0,0]}
           },info)
           c.push(info)
           return c
@@ -1194,8 +1195,8 @@ export class ProduccionModel {
         if(!respuesta.ok) throw respuesta.message
       }
 
-      // if (conn) conn.rollback()
-      if (conn) conn.commit()
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return {ok:true,message:'Registro completo'}
     } catch (err) {
       console.log(err)
@@ -1688,6 +1689,7 @@ export class ProduccionModel {
     let p1 = '', p2 = '', p3 = ''
 
     const [infotallas] = await conn.execute('select t2.* from tbl2_fases_prod_ordenes t1 join tbl2_tallas_template t2 on t1.tallasbase = t2.idx where t1.idx = ?',[parseInt(orden)])
+    console.log("INform tallas:",infotallas,infotallas[0].tallas,backup_articulos)
     try {
 
       if(backup_articulos.length > 0){
@@ -1696,15 +1698,15 @@ export class ProduccionModel {
         p3 = ''
         for(let combo of [...backup_articulos]){
           p1 = infotallas[0].tallas.map(row=>row.desc).reduce((c,v)=>{
-            c += " WHEN id_combo_CAB = " + combo.idcombo +" and talla = '" + v + "' THEN " + (tipo ? parseInt(combo[v][0]) : -1*parseInt(combo[v][0]))
+            c += " WHEN id_combo_CAB = " + combo.idcombo +" and talla = '" + v + "' THEN " + (tipo ? parseInt(combo[v]?.[0] ?? 0) : -1*parseInt(combo[v]?.[0] ?? 0))
             return c
           },p1);
           p2 = infotallas[0].tallas.map(row=>row.desc).reduce((c,v)=>{
-            c += " WHEN id_combo_CAB = " + combo.idcombo + " and talla = '" + v + "' THEN " + (tipo ? parseInt(combo[v][1]) : -1*parseInt(combo[v][1]))
+            c += " WHEN id_combo_CAB = " + combo.idcombo + " and talla = '" + v + "' THEN " + (tipo ? parseInt(combo[v]?.[1] ?? 0) : -1*parseInt(combo[v]?.[1] ?? 0))
             return c
           },p2);
           p3 = infotallas[0].tallas.map(row=>row.desc).reduce((c,v)=>{
-            c += " WHEN id_combo_CAB = " + combo.idcombo + " and talla = '" + v + "' THEN " + (tipo ? parseInt(combo[v][2]) : -1*parseInt(combo[v][2]))
+            c += " WHEN id_combo_CAB = " + combo.idcombo + " and talla = '" + v + "' THEN " + (tipo ? parseInt(combo[v]?.[2] ?? 0) : -1*parseInt(combo[v]?.[2] ?? 0))
             return c
           },p3);
         }
@@ -1723,15 +1725,16 @@ export class ProduccionModel {
         p3 = ''
         for(let combo of [...articulos]){
           p1 = infotallas[0].tallas.map(row=>row.desc).reduce((c,v)=>{
-            c += " WHEN id_combo_CAB = " + combo.idcombo +" and talla = '" + v + "' THEN " + (tipo ? -1*parseInt(combo[v][0]) : parseInt(combo[v][0]))
+            console.log("Tomates con piedas:",v,combo,parseInt(combo[v]?.[0] ?? 0))
+            c += " WHEN id_combo_CAB = " + combo.idcombo +" and talla = '" + v + "' THEN " + (tipo ? -1*parseInt(combo[v]?.[0] ?? 0) : parseInt(combo[v]?.[0] ?? 0))
             return c
           },p1);
           p2 = infotallas[0].tallas.map(row=>row.desc).reduce((c,v)=>{
-            c += " WHEN id_combo_CAB = " + combo.idcombo + " and talla = '" + v + "' THEN " + (tipo ? -1*parseInt(combo[v][1]) : parseInt(combo[v][1]))
+            c += " WHEN id_combo_CAB = " + combo.idcombo + " and talla = '" + v + "' THEN " + (tipo ? -1*parseInt(combo[v]?.[1] ?? 0) : parseInt(combo[v]?.[1] ?? 0))
             return c
           },p2)
           p3 = infotallas[0].tallas.map(row=>row.desc).reduce((c,v)=>{
-            c += " WHEN id_combo_CAB = " + combo.idcombo + " and talla = '" + v + "' THEN " + (tipo ? -1*parseInt(combo[v][2]) : parseInt(combo[v][2]))
+            c += " WHEN id_combo_CAB = " + combo.idcombo + " and talla = '" + v + "' THEN " + (tipo ? -1*parseInt(combo[v]?.[2] ?? 0) : parseInt(combo[v]?.[2] ?? 0))
             return c
           },p3)
         }

@@ -1363,7 +1363,8 @@ export class OrdenesModel {
                     fraccionado = tallasbase.map(talla=>([info_insert.insertId,talla,combo[talla] ?? 0, combo[talla] ?? 0]))
                   }
                   console.log("Info del fraccionado:",fraccionado)
-                  await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos_fracciones(id_combo_CAB,talla,cantidad,produccion_total) values ? ",[fraccionado.filter(row=>row.cantidad > 0)])
+                  // await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos_fracciones(id_combo_CAB,talla,cantidad,produccion_total) values ? ",[fraccionado.filter(row=>row.cantidad > 0)])
+                  await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos_fracciones(id_combo_CAB,talla,cantidad,produccion_total) values ? ",[fraccionado])
                 } else {
                   console.log("Dentro del update de combos simple")
                   await conn.query("UPDATE tbl2_fases_prod_hojacorte_combos SET idx_color = ?,color_combo = ?, insumos = ? WHERE idx = ? and id_hojacorte_CAB = ?",[combo.idx_color,combo.color_combo,JSON.stringify(combo.insumos ?? []),combo.idx,parseInt(corte['idx'])])
