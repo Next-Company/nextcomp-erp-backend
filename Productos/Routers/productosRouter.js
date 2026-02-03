@@ -5,6 +5,8 @@ export const ProductosRouter = new Router();
 
 ProductosRouter.get("/productoslist/:search",ProductosController.getProductosList)
 ProductosRouter.get("/productoslist",ProductosController.getProductosList)
+ProductosRouter.get("/insumoslist/:search",ProductosController.getInsumosList)
+ProductosRouter.get("/insumoslist",ProductosController.getInsumosList)
 ProductosRouter.get("/recetaslist",ProductosController.getRecetasList)
 ProductosRouter.get("/recetaslist/:search",ProductosController.getRecetasList)
 

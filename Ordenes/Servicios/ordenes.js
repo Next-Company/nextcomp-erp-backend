@@ -2018,6 +2018,10 @@ export class OrdenesModel {
           (select tp.codUnidadMedida from tbl2_productos tp where tp.idx = t1.id_producto_CAB) as unidad,
           (select tp.tipo from tbl2_productos tp where tp.idx = t1.id_producto_CAB) as tipo,
           COALESCE(pc.lote,0) AS lote,
+          COALESCE((
+            select sum(tboc.cantidad_combo) from tbl2_fases_prod_ordenes_combos tboc 
+            where tboc.id_orden_CAB = t1.id_orden_CAB and JSON_CONTAINS(tboc.insumos,CAST(ifnull(t1.id_subprod_CAB,-1) as CHAR))
+          ),0) as comprometido_telas,
           if(ISNULL(tc.idx),
             COALESCE((
               select sum(tboc.cantidad_combo) from tbl2_fases_prod_ordenes_combos tboc 
@@ -2027,8 +2031,7 @@ export class OrdenesModel {
               select sum(tbcc.cantidad_combo) from tbl2_fases_prod_hojacorte_combos tbcc 
               where tbcc.id_hojacorte_CAB = tc.idx and JSON_CONTAINS(tbcc.insumos,CAST(ifnull(t1.id_subprod_CAB,-1) as CHAR))
             ),0)
-          )*t1.cantidad as comprometido,
-          -- COALESCE(t1.cantidad,0) as comprometido,
+          )*t1.cantidad as comprometido_avios,
           COALESCE((
             select SUM(COALESCE(tkcd.Cant_despacho_DET,0)) from tbl_kard_compras_CAB tkcc 
             join tbl_kard_compras_DET tkcd on tkcc.id_CAB = tkcd.id_CAB_DET 
@@ -2049,7 +2052,15 @@ export class OrdenesModel {
         WHERE t0.idx = ?
       `,[idalmacen,idorden])
 
-      return results
+      let newinfo = null
+      if(idalmacen == 509) {
+        newinfo = results.filter(row=>row.tipo !== 'A').map(row=>({...row,comprometido:row.comprometido_telas}))
+      } else {
+        newinfo = results.filter(row=>row.tipo == 'A').map(row=>({...row,comprometido:row.comprometido_avios}))
+      }
+
+      // return results
+      return newinfo
     } catch (err) {
       console.log(err);
       return { 'msg': err }

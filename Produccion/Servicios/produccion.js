@@ -1195,8 +1195,8 @@ export class ProduccionModel {
         if(!respuesta.ok) throw respuesta.message
       }
 
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return {ok:true,message:'Registro completo'}
     } catch (err) {
       console.log(err)
@@ -2769,7 +2769,7 @@ export class ProduccionModel {
                 fila.idx_producto = resultprod.info
               }
               if(fila.idx_color == ''){
-                let [busqueda] = await conn.query("SELECT *FROM tbl2_colores WHERE nom LIKE ? AND ruc = ?",[`%${fila.color}%`,'20522094120'])
+                let [busqueda] = await conn.query("SELECT *FROM tbl2_colores WHERE nom = ? AND ruc = ?",[fila.color,'20522094120'])
                 if(busqueda.length > 0){
                   fila.idx_color = busqueda[0].idx
                 }else{

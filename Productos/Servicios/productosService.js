@@ -65,6 +65,69 @@ export class ProductosService{
     }
     // return info;
   }
+  static async getInsumosList(search){
+    const conn = await mysql.createConnection(configs[1]);
+    await conn.connect();
+    try {
+      let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(COALESCE(idxsub,''),' ',COALESCE(TRIM(producto),''),' ',COALESCE(TRIM(color),''),' ',COALESCE(TRIM(modelo),''),' ',COALESCE(TRIM(marca),''),' ',COALESCE(TRIM(presentacion),''))) > 0").join(" ") : ""
+
+      const [rows,fields] = await conn.execute(`
+        select *
+        from
+        (
+          select
+            tp.idx AS id_producto_CAB,
+            tp.codigo AS cod_producto,
+            tp.tipo AS tipo,
+            tp.det AS det,
+            tp.nom AS producto,
+            tr.nom AS rubro,
+            tp.temporada AS temporada,
+            tp.estilo AS estilo,
+            round((tp.costo + ((tp.utilidad1 * tp.costo) / 100)), 1) AS precio,
+            tp.presentacion AS presentacion,
+            tp.marca AS marca,
+            tp.modelo AS modelo,
+            tc.idx AS idx_color,
+            upper(tc.nom) AS color,
+            tt.idx AS idx_talla,
+            upper(tt.detalle) AS talla,
+            tcn.condicion AS condicion,
+            ts.idx AS idxsub,
+            ts.sku AS sku2,
+            tad.lote,
+            tad.cantidad as stock
+          from
+              BD_FACTURADOR.tbl2_productos tp
+          left join BD_FACTURADOR.tbl2_subproductos ts on
+              tp.idx = ts.idx_CAB_PROD
+          left join tbl2_almacen_det tad on ts.idx = tad.idx_subproducto
+          join BD_FACTURADOR.tbl2_colores tc on
+              tc.idx = ts.idx_CAB_COLOR
+          join BD_FACTURADOR.tbl2_rubros tr on
+              tp.RUBROS = tr.idx
+          join BD_FACTURADOR.tbl2_tallas tt on
+              tt.idx = ts.idx_talla
+          join BD_FACTURADOR.tbl2_condicion tcn on
+              tcn.condicion = ts.estado
+          where
+              tp.ruc_ = '20522094120' and tp.tipo in ('I','A','T')
+          -- having tad.cantidad > 0
+        ) as cc
+        where 1=1 ${extra} 
+        limit 100
+      `);
+      console.log(rows);
+      return rows;
+    }
+    catch(e){
+      console.log(e);
+    }
+    finally{
+      await conn.end();
+    }
+    // return info;
+  }
   static async getRecetasList(busqueda){
     const conn = await mysql.createConnection(configs[1]);
     await conn.connect();

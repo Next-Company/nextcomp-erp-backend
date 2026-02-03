@@ -46,10 +46,23 @@ export default class ProveedorService{
       await conn.connect();
       conn.beginTransaction()
 
-      const [validacion] = await conn.query("select *from tbl2_proveedor where ruc_ = ? and (ruc = ? or nom = ?)",['20522094120',data.ruc.trim(),data.nom.trim()])
+      const [validacion,fields] = await conn.query("select *from tbl2_proveedor where ruc_ = ? and (ruc = ? or nom = ?)",['20522094120',data.ruc.trim(),data.nom.trim()])
       if(validacion.length > 0) throw new Error('Proveedor duplicado. Por favor verifique los datos ingresados.')
 
-      await conn.query('INSERT INTO tbl2_proveedor(ruc_,ruc,nom,direccion,telefono,correo,web,giro,det,cat) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', ['20522094120',data.ruc,data.nom,data.direccion,data.telefono,data.correo,data.web,data.giro,data.det,data.cat])
+      const campos = Object.keys(datos).reduce((carry, current) => {
+        fields.filter(row => row.name !== 'idx').map(row => row.name).includes(current) && carry.push(datos[current])
+        return carry
+      }, [])
+      const newinfo = campos.map(row => data[row])
+
+      // data = Object.keys(data).reduce((c,v)=>{
+      //   if(fields.)
+      //   return c
+      // },[])
+
+      const [result] = await conn.execute('INSERT INTO tbl2_proveedor(' + campos.toString() + ') VALUES (' + campos.map(row => "NULLIF(?, '')").toString() + ')', newinfo)
+
+      // await conn.query('INSERT INTO tbl2_proveedor(ruc_,ruc,nom,direccion,telefono,correo,web,giro,det,cat) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', ['20522094120',data.ruc,data.nom,data.direccion,data.telefono,data.correo,data.web,data.giro,data.det,data.cat])
 
       if (conn) conn.rollback()
       // if (conn) conn.commit()

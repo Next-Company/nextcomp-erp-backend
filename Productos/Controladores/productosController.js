@@ -7,6 +7,13 @@ export class ProductosController{
     // res.send({data:info});
     res.send(info);
   }
+  static async getInsumosList(req,res){
+    console.log("Buscando producos")
+    const search = req.params.search ?? ''
+    const info = await ProductosService.getInsumosList(search);
+    // res.send({data:info});
+    res.send(info);
+  }
   static async getRecetasList(req,res){
     console.log("Buscando producos")
     let search = req.params.search ?? ''
