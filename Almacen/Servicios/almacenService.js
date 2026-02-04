@@ -426,8 +426,8 @@ export default class AlmacenModel{
       let res_mov = await AlmacenModel.saveMovimiento(data_comprobante,conn)
       if(!res_mov.ok) throw new Error(res_mov.message)
 
-      if(conn) conn.rollback()
-      // if(conn) conn.commit()
+      // if(conn) conn.rollback()
+      if(conn) conn.commit()
       return {ok:true,message:'Ingreso de despacho registrado con éxito.'}
     } catch (error) {
       console.log(error)

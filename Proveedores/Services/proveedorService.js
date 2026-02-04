@@ -49,23 +49,20 @@ export default class ProveedorService{
       const [validacion,fields] = await conn.query("select *from tbl2_proveedor where ruc_ = ? and (ruc = ? or nom = ?)",['20522094120',data.ruc.trim(),data.nom.trim()])
       if(validacion.length > 0) throw new Error('Proveedor duplicado. Por favor verifique los datos ingresados.')
 
-      const campos = Object.keys(datos).reduce((carry, current) => {
-        fields.filter(row => row.name !== 'idx').map(row => row.name).includes(current) && carry.push(datos[current])
+      console.log("La columnas de tabla son:",fields.map(row=>row.name))
+
+      data['ruc_'] = '20522094120'
+      const campos = Object.keys(data).reduce((carry, current) => {
+        fields.filter(row => row.name !== 'idx').map(row => row.name).includes(current) && carry.push(current)
         return carry
       }, [])
       const newinfo = campos.map(row => data[row])
 
-      // data = Object.keys(data).reduce((c,v)=>{
-      //   if(fields.)
-      //   return c
-      // },[])
+      console.log("La info formateada es:",campos,newinfo)
+      await conn.execute('INSERT INTO tbl2_proveedor(' + campos.toString() + ') VALUES (' + campos.map(row => "NULLIF(?, '')").toString() + ')', newinfo)
 
-      const [result] = await conn.execute('INSERT INTO tbl2_proveedor(' + campos.toString() + ') VALUES (' + campos.map(row => "NULLIF(?, '')").toString() + ')', newinfo)
-
-      // await conn.query('INSERT INTO tbl2_proveedor(ruc_,ruc,nom,direccion,telefono,correo,web,giro,det,cat) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', ['20522094120',data.ruc,data.nom,data.direccion,data.telefono,data.correo,data.web,data.giro,data.det,data.cat])
-
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return {ok:true,message:'Los datos ingresados fueron registrados con éxito!!'}
     } catch (err) {
       console.log(err)
@@ -84,7 +81,20 @@ export default class ProveedorService{
       await conn.connect();
       conn.beginTransaction()
 
-      const [result] = await conn.query('UPDATE tbl2_proveedor SET ruc=NULLIF(?, ""),nom=NULLIF(?, ""),direccion=NULLIF(?, ""),telefono=NULLIF(?, ""),correo=NULLIF(?, ""),web=NULLIF(?, ""),giro=NULLIF(?, ""),det=NULLIF(?, ""),cat=NULLIF(?, "") WHERE ruc_ = ? and idx = ?', [data.ruc,data.nom,data.direccion,data.telefono,data.correo,data.web,data.giro,data.det,data.cat,'20522094120',parseInt(id)])
+      const [valor,fields] = await conn.query("select *from tbl2_proveedor limit 1")
+
+      data['ruc_'] = '20522094120'
+      const campos = Object.keys(data).reduce((carry, current) => {
+        fields.filter(row => row.name !== 'idx').map(row => row.name).includes(current) && carry.push(current)
+        return carry
+      }, [])
+      const newinfo = campos.map(row => data[row])
+      newinfo.push('20522094120')
+      newinfo.push(parseInt(id))
+
+      const query = `UPDATE tbl2_proveedor SET ${campos.map(row => row + "=NULLIF(?, '')").toString()} WHERE ruc_ = ? and idx = ?`
+      const [result] = await conn.query(query,newinfo)
+
       console.log("Los registro alterados fueron:",result.affectedRows)
 
       // if (conn) conn.rollback()

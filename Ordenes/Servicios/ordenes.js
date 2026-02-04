@@ -2021,7 +2021,7 @@ export class OrdenesModel {
           COALESCE((
             select sum(tboc.cantidad_combo) from tbl2_fases_prod_ordenes_combos tboc 
             where tboc.id_orden_CAB = t1.id_orden_CAB and JSON_CONTAINS(tboc.insumos,CAST(ifnull(t1.id_subprod_CAB,-1) as CHAR))
-          ),0) as comprometido_telas,
+          ),0)*t1.cantidad as comprometido_telas,
           if(ISNULL(tc.idx),
             COALESCE((
               select sum(tboc.cantidad_combo) from tbl2_fases_prod_ordenes_combos tboc 

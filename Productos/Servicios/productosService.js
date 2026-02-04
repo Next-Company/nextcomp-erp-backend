@@ -504,6 +504,7 @@ export class ProductosService{
       insert['sucursal_tienda'] = sucursal;
 
       insert = {...insert,...info}
+      console.log("La info a insertar es la siguiente:",insert)
 
       // let campos = Object.keys(insert)
       let campos = Object.keys(insert).reduce((carry, current) => {
