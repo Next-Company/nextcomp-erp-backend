@@ -3708,11 +3708,32 @@ export class ProduccionModel {
 
       let new_articulos = null
       if (tipo == 'PEDIDOS') {
-        const [data] = await conn.query(`select tdd.idx,tgtd.id_pedido_CAB,tgtd.id_producto_CAB,tgtd.producto,tgtd.color,tgtd.rollos,tgtd.cantidad,tgtd.unidad,tgtd.anulado,IF(tdd.precio IS NULL,tgtd.precio,tdd.precio) as precio,tdd.despacho 
-        FROM tbl2_pedidos_insumos_det tgtd 
-        JOIN tbl2_despachos_det tdd on tdd.id_item = tgtd.idx 
-        WHERE tdd.id_despacho_CAB = ?`, [id]);
+        // const [data] = await conn.query(`select tdd.idx,tgtd.id_pedido_CAB,tgtd.id_producto_CAB,tgtd.producto,tgtd.color,tgtd.rollos,tgtd.cantidad,tgtd.unidad,tgtd.anulado,IF(tdd.precio IS NULL,tgtd.precio,tdd.precio) as precio,tdd.despacho 
+        // FROM tbl2_pedidos_insumos_det tgtd 
+        // JOIN tbl2_despachos_det tdd on tdd.id_item = tgtd.idx 
+        // WHERE tdd.id_despacho_CAB = ?`, [id]);
 
+        const [data] = await conn.query(`
+          SELECT
+            tdd.idx,
+            tgtd.id_pedido_CAB,
+            tgtd.id_producto_CAB,
+            tgtd.producto,
+            COALESCE(tgtd.color,'-') as color,
+            tgtd.rollos,
+            tgtd.cantidad,
+            tgtd.unidad,
+            tgtd.anulado,
+            IF(tdd.precio IS NULL,tgtd.precio,tdd.precio) as precio,
+            tdd.despacho,
+            IFNULL(tgtd.conversion,1) as conversion,
+            ROUND(IF(tdd.precio IS NULL,tgtd.precio,tdd.precio)/(IFNULL(tgtd.conversion,1)*tgtd.cantidad),2) as costo_unit,
+            IFNULL(tgtd.conversion,1)*IFNULL(tgtd.cantidad,0) as requerido,
+            COALESCE((select codUnidadMedida from tbl2_productos tp where tp.idx = tgtd.id_producto_CAB),'-') as unidad
+          FROM tbl2_pedidos_insumos_det tgtd 
+          JOIN tbl2_despachos_det tdd on tdd.id_item = tgtd.idx 
+          WHERE tdd.id_despacho_CAB = ?
+        `, [id])
         // const [data2] = await conn.query('SELECT tda.* FROM tbl2_despachos_adi tda WHERE tda.id_despacho_CAB = ?',[id]);
 
         new_articulos = data
@@ -3778,7 +3799,7 @@ export class ProduccionModel {
         })
 
       }
-      console.log("detalle desoachoss:", new_articulos)
+      console.log("Detalle desachos:", new_articulos)
 
       await conn.end();
       return new_articulos

@@ -982,6 +982,7 @@ export default class AlmacenController{
         datos: requerimiento,
         detalle: detalle,
         cuadre: cuadre,
+        motivo: cabecera.motivo == 'prd' ? 'PRODUCCION' : 'AJUSTE',
         emisor: cabecera.emisor == 'NEXT' ? 1 : 0,
         helpers: {
           fechaCorta(fechaStr) {
@@ -1052,8 +1053,7 @@ export default class AlmacenController{
               itemsAsHtml = items.map((item, key) => `
               <tr style="height:22px;">
                 <td style="width:35px;text-align: center;background-color:#ddebf7;">${key + 1}</td>
-                <td style="width:160px;text-align: center;">` + item['nom'] + `</td>
-                <td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['comprometido'] + `</td>
+                <td style="width:160px;text-align: left;">` + item['nom'] + `</td>
                 <td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['unidad'] + `</td>
                 <td style="width: 60px;text-align: center;background-color:#ddebf7;">` + item['Cant_despacho_DET'] + `</td>
               </tr>`)
@@ -1093,7 +1093,6 @@ export default class AlmacenController{
                   <tr style="height:22px;">
                     <td style="width:35px;text-align: center;background-color:#ddebf7;"></td>
                     <td style="width:60px;text-align: center;"></td>
-                    <td style="width:60px;text-align:left;background-color:#ddebf7;"></td>
                     <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
                     <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
                   </tr>`)
@@ -1114,7 +1113,6 @@ export default class AlmacenController{
             itemsAsHtml.push(`
               <tr style="height:22px;">
                 <td style="width:35px;text-align: center;background-color:#ddebf7;"></td>
-                <td style="width:60px;text-align: center;"></td>
                 <td style="width:60px;text-align: center;"></td>
                 <td style="text-align: center;background-color:#ddebf7;"><strong>TOTAL</strong></td>
                 <td style="text-align: center;background-color:#ddebf7;">${total}</td>
@@ -1215,7 +1213,8 @@ export default class AlmacenController{
 
             itemsAsHtml = `
               <div style="height:14px;padding-top:5px;border-top:1px solid black;">
-                <div style="text-align: center;display:flex;flex-direction: row;">
+                <div style="text-align:left;display:flex;flex-direction: row;">
+                  <div style='font-size:8px;'><strong>OBS:</strong> Una vez recibidos los avíos, cuenta con 48 horas hábiles para reportar cualquier incidencia. Pasado este plazo, el envío se considerará <br/> conforme y cualquier solicitud adicional será facturada como un pedido nuevo.</div>
                   <div style="flex:1;text-align:right;font-weight:bold;">TOTAL</div>
                   <div style="width:60px;text-align:left;padding-left:10px;">${total}</div>
                 </div>

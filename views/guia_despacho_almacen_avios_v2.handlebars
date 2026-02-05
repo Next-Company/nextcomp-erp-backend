@@ -150,7 +150,7 @@
                 <tr style="height:14px;">
                     <td style="font-weight:100;font-size:10px"><strong style="font-size:10px;font-weight:100;">RUC: </strong>{{cabecera.Nro_Doc_Prov}}</td>
                     <td style="font-weight:100;font-size:10px"><strong style="font-size:10px;font-weight:100;">ARTÍCULO :</strong>{{cabecera.articulo}}</td>
-                    <td style="font-weight:100;font-size:10px"><strong style="font-size:10px;font-weight:100;"></td>
+                    <td style="font-weight:100;font-size:10px"><strong style="font-size:10px;font-weight:100;">MOTIVO: </strong>{{motivo}}</td>
                 </tr>
                 </tbody>
               </table>
@@ -168,7 +168,7 @@
             <tr nobr="true" style="height:20px;">
                 <th style="width:35px;font-size:8px;">ITEM</th>
                 <th style="width:500px;font-size:8px;">DESCRIPCI&Oacute;N</th>
-                <th style="font-size:8px;">CANT.SOLC.</th>
+                {{!-- <th style="font-size:8px;">CANT.SOLC.</th> --}}
                 <th style="font-size:8px;">UND</th>
                 <th style="font-size:8px;">SALIDA</th>
             </tr>
@@ -187,11 +187,14 @@
     </section>
     <div style="display:flex;width:100%;height:70px;align-items:end;height:70px;align-items:end;">
       <div style="display:flex;width:100%;gap:15px;border:0px solid rgb(149, 246, 130);align-items:top;">
-        <div style="background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">JULY APELLIDO</br> ENCARGADO(A) DE AVIOS</div>
-        {{!-- <div style="background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">JEFFERSON TAPIA MONTOYA</br> JEFE DE PRODUCCION</div> --}}
+        {{!-- <div style="background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">AUXILIAR DE DESPACHO</div> --}}
         <div style="background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;flex-direction:column;baclground-color:red;">
-          <div style="">RESPONSABLE RECEPCIÓN</div>
-          <div style="height:20px;display:flex;align-items:end;">NOMBRE: ........................................................</div> 
+          <div style="">AUXILIAR DE DESPACHO</div>
+          <div style="height:20px;display:flex;align-items:end;">NOMBRE: ....................................................................................................</div> 
+        </div>
+        <div style="background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;flex-direction:column;baclground-color:red;">
+          <div style="">RECIBÍ CONFORME</div>
+          <div style="height:20px;display:flex;align-items:end;">NOMBRE: ....................................................................................................</div> 
         </div>
       </div>
     </div>
@@ -294,25 +297,21 @@
                 <tr style="height:14px;">
                     <td style="font-weight:100;font-size:10px"><strong style="font-size:10px;font-weight:100;">RUC: </strong>{{cabecera.Nro_Doc_Prov}}</td>
                     <td style="font-weight:100;font-size:10px"><strong style="font-size:10px;font-weight:100;">ARTÍCULO :</strong>{{cabecera.articulo}}</td>
-                    <td style="font-weight:100;font-size:10px"><strong style="font-size:10px;font-weight:100;"></td>
+                    <td style="font-weight:100;font-size:10px"><strong style="font-size:10px;font-weight:100;">MOTIVO: </strong>{{motivo}}</td>
                 </tr>
                 </tbody>
               </table>
-
             </td>
           </tr>
         </table>
-
-
       </section>
-      
       <section style="font-size:.9rem; padding-bottom: 10px;height:250px;background-color:transparent;overflow: hidden;">
         <table style="border-collapse: collapse;width:100%;" border="1">
           <thead>
             <tr nobr="true" style="height:20px;">
                 <th style="width:35px;font-size:8px;">ITEM</th>
                 <th style="width:500px;font-size:8px;">DESCRIPCI&Oacute;N</th>
-                <th style="font-size:8px;">CANT.SOLC.</th>
+                {{!-- <th style="font-size:8px;">CANT.SOLC.</th> --}}
                 <th style="font-size:8px;">UND</th>
                 <th style="font-size:8px;">SALIDA</th>
             </tr>
@@ -331,11 +330,15 @@
     </section>
     <div style="display:flex;width:100%;height:70px;align-items:end;height:70px;align-items:end;">
       <div style="display:flex;width:100%;gap:15px;border:0px solid rgb(149, 246, 130);align-items:top;">
-        <div style="background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">JULY APELLIDO</br> ENCARGADO(A) DE AVIOS</div>
+        {{!-- <div style="background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">JULY APELLIDO</br> ENCARGADO(A) DE AVIOS</div> --}}
         {{!-- <div style="background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">JEFFERSON TAPIA MONTOYA</br> JEFE DE PRODUCCION</div> --}}
         <div style="background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;flex-direction:column;baclground-color:red;">
-          <div style="">RESPONSABLE RECEPCIÓN</div>
-          <div style="height:20px;display:flex;align-items:end;">NOMBRE: ........................................................</div> 
+          <div style="">AUXILIAR DE DESPACHO</div>
+          <div style="height:20px;display:flex;align-items:end;">NOMBRE: ....................................................................................................</div> 
+        </div>
+        <div style="background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;flex-direction:column;baclground-color:red;">
+          <div style="">RECIBÍ CONFORME</div>
+          <div style="height:20px;display:flex;align-items:end;">NOMBRE: ....................................................................................................</div> 
         </div>
       </div>
     </div>

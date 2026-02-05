@@ -637,7 +637,7 @@ export class ProduccionController {
 
       const data3 = data[0].id_proveedor_CAB ? await ProduccionModel.searchProveedorById(data[0].id_proveedor_CAB) : [{ nom: data[0].responsable, ruc: '', direccion: data[0].destino }]
       resp.render(
-        'guia_despacho_pedido',
+        data[0].tipo == 'TELAS' ? 'guia_despacho_pedido_telas' : 'guia_despacho_pedido_avios',
         {
           color: 'black',
           info: params,
@@ -646,11 +646,12 @@ export class ProduccionController {
           date: (new Date(data[0].created_at)).toLocaleDateString('en-GB'),
           time: (new Date(data[0].created_at)).toLocaleTimeString('en-GB'),
           idguia: `${params.id}`.padStart(10, 0),
-          idref: `${data[0].idx}`.padStart(10, 0),
+          // idref: `${data[0].idx}`.padStart(10, 0),
+          idref: `${parseInt(data[0].idx)}`,
           totalunid: data2.reduce((carry, valor) => {
             carry += parseFloat(valor.cantidad)
             return carry;
-          }, 0),
+          }, 0).toFixed(2),
           // totalunid: data2.reduce((carry, valor) => {
           //   carry += valor.isprototipo ? 0 : parseFloat(valor.cantidad)
           //   return carry;
@@ -678,10 +679,19 @@ export class ProduccionController {
               console.log(`Versión de Chrome: ${version}`);
               const page = await browser.newPage();
               await page.setContent(html);
-              const pdfOptions = {
+              const pdfOptions = data[0].tipo == 'TELAS' ? {
                 width: '20cm',
                 height: '27.94cm',
                 landscape: true,
+                printBackground: true,
+                margin: {
+                  left: 0,
+                  right: 0
+                }
+              } : {
+                width: '20cm',
+                height: '27.94cm',
+                landscape: false,
                 printBackground: true,
                 margin: {
                   left: 0,
