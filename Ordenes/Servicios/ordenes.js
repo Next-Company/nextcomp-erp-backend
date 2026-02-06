@@ -1577,8 +1577,8 @@ export class OrdenesModel {
         
       }
 
-      // if (conn) conn.commit()
       if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito' }
     } catch (err) {
       console.log(err)
