@@ -109,6 +109,8 @@ produccionRouter.get('/vistarapidapedidoavios/:id/:mode', ProduccionController.V
 produccionRouter.post('/vistarapidapedidotelas/:mode', ProduccionController.VistaRapidaPedidoTelas)
 produccionRouter.get('/vistarapidapedidotelas/:id/:mode', ProduccionController.VistaRapidaPedidoTelas)
 
+produccionRouter.get('/vistarapidacuadretelas/:id/:mode', ProduccionController.VistaRapidaCuadreTelas)
+
 produccionRouter.post('/vistapreviapedido/:tipo', ProduccionController.VistaPreviaPedido)
 produccionRouter.post('/vistapreviapedidoavios/:tipo', ProduccionController.VistaPreviaPedidoAvios)
 // produccionRouter.post('/vistapreviapedidoavios/:tipo',ProduccionController.VistaPreviaPedidoAvios)

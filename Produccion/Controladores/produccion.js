@@ -1777,7 +1777,6 @@ export class ProduccionController {
         detalle = JSON.parse(data.detalle)
       }
     }
-
     // if (data.id) {
     //   cabecera = (await ProduccionModel.getInfoPedidoCab(data.id))[0]
     //   detalle = await ProduccionModel.getInfoPedidoDet(data.id)
@@ -1788,7 +1787,6 @@ export class ProduccionController {
     //   detalle = JSON.parse(data.detalle)
     // }
     ProduccionController.GenerarPedidoTelas(cabecera,detalle,res,mode,tipo)
-    
   }
   static async GenerarPedidoTelas(cabecera,detalle,res,mode){
     const tipo = 'telas'
@@ -1948,6 +1946,89 @@ export class ProduccionController {
           }
         },
 
+      },
+      async (err, html) => {
+        try {
+          if(mode === 'download') {
+            const browser = await puppeteer.launch();
+            const version = await browser.version();
+            console.log(`Versión de Chrome: ${version}`);
+            const page = await browser.newPage();
+            await page.setContent(html);
+
+            const pdfOptions = {
+              // format: 'A4',
+              width: '20cm',
+              height: '27.94cm',
+              landscape: false,
+              printBackground: true,
+              margin: {
+                left: 0,
+                right: 0
+              }
+              , scale: 1
+            };
+
+            const pdfBuffer = await page.pdf(pdfOptions);
+            await browser.close();
+            res.send({ data: pdfBuffer.toString('base64') })
+          } else {
+            res.send(html)
+          }
+        } catch (error) {
+          res.status(500).send('Error al generar el PDF');
+          // await browser.close();
+        } finally {
+          // await browser.close();
+        }
+      }
+    )
+  }
+  static async VistaRapidaCuadreTelas(req, res) {
+    const id = req.params.id || ''
+    const mode = req.params.mode || 'download'
+    const data = req.body
+    // let cabecera = []
+    let info = []
+
+    // cabecera = (await ProduccionModel.getInfoPedidoCab(id))[0]
+    info = await ProduccionModel.getInfoCuadreTelas(id)
+
+    ProduccionController.GenerarCuadreTelas(info,res,mode)
+  }
+  static async GenerarCuadreTelas(detalle,res,mode = 'download'){   
+    res.render(
+      // `${tipo == 'avios' ? 'avios_v3' : 'telas_v2'}`,
+      'cuadretelas',
+      {
+        info: detalle,
+        helpers: {
+          cuerpo(info){
+            console.log("La info general es la siguiente:",info)
+            // const final = info.map(row=>`<tr>
+            //   <td>${row.producto}</td>
+            //   <td>${row.color}</td>
+            //   <td>${}</td>
+            // </tr>`)
+            const final = info.reduce((c,v)=>{
+              const head = `<tr>
+                <td>${v.producto}</td>
+                <td>${v.color}</td>
+              </tr>`
+              const body = v.ingresos.map(dat=>`<tr>
+                <td>${dat.nroguia}</td>
+                <td>${dat.fec_despacho}</td>
+                <td>${dat.despacho}</td>
+                <td>${dat.costo}</td>
+              </tr>`)
+              // return head + body.join('')
+              c.push(head.concat(body.join('')))
+              // c.push(head)
+              return c
+            },[])
+            return final.join("\n")
+          }
+        },
       },
       async (err, html) => {
         try {
