@@ -223,6 +223,11 @@ export class OrdenesController {
     const data = await OrdenesModel.saveFaseFraccionamiento(info, user_data)
     resp.json(data)
   }
+  static async saveFasePrecios(req, resp) {
+    const info = req.body
+    const data = await OrdenesModel.saveFasePrecios(info)
+    resp.json(data)
+  }
   static async testMultiSelect(req, resp) {
     const info = req.body
     const data = await OrdenesModel.testMultiSelect(info)

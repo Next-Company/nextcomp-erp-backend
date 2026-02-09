@@ -1497,7 +1497,7 @@ export class OrdenesModel {
       console.log('Informacion de la validacion:',DISPONIBLE_ACTUAL,DISPONIBLE_NUEVO)
 
       for(let talla of tallasbase.tallas){
-        if((DISPONIBLE_ACTUAL[talla.desc] ?? 0) !== (DISPONIBLE_NUEVO[talla.desc] ?? 0)) {
+        if((DISPONIBLE_ACTUAL[talla.desc] ?? 0) < (DISPONIBLE_NUEVO[talla.desc] ?? 0)) {
           // console.log("Disponibles:",DISPONIBLE_ACTUAL,DISPONIBLE_NUEVO)
           // console.log("Comparacion:",talla.desc,DISPONIBLE_ACTUAL[talla.desc],DISPONIBLE_NUEVO[talla.desc])
           throw new Error("El disponible actual coincide con el nuevo disponible. Verifique.")
@@ -1516,6 +1516,7 @@ export class OrdenesModel {
       const INFO_RECETA_ORIGIN = await ProductosService.searchProductoById(idreceta,conn)
 
       if(base_add.length > 0){
+        console.log("Dentro de la secciones")
         for(let modelo of [...base_add]){
           const cantidad = tallasbase.tallasformateado.split('-').reduce((sum,talla)=>{
             return sum + (isNaN(parseInt(modelo[talla])) ? 0 : parseInt(modelo[talla]) > 0 ? parseInt(modelo[talla]) : 0)
@@ -1570,11 +1571,119 @@ export class OrdenesModel {
       }
       if(base_update.length > 0){
         console.log("La info de la base update es:",base_update)
+        for(let modelo of [...base_update]){
+
+          const [validacion] = await conn.execute(`
+            select *from tbl2_fases_prod_modelos t1
+            join tbl2_guias_traslado_det t2 on t1.idx = t2.id_combo
+            join tbl2_guias_traslado_cab t3 on t2.id_guia_CAB = t3.idx
+            where t1.id_orden_CAB = ? and t1.id_receta_CAB = ? and t3.estado <> 'ANULADO'
+          `,[modelo.id_orden_CAB, modelo.id_receta_CAB])
+          const [validacion2] = await conn.execute(`select *from tbl2_almacen_det where id_cabprod = ? and estado = 1`,[modelo.id_receta_CAB])
+
+          if(validacion.length == 0 && validacion2.length == 0){
+
+            if(modelo.idcolor && modelo.idcolor !== modelo.idx_color){
+              for(let talla of [...tallasbase.tallas]){
+                const info = {
+                  idx_CAB_PROD: modelo.id_receta_CAB,
+                  codigo: '0900019107050',
+                  isbn: '0900019107050',
+                  nom: INFO_RECETA_ORIGIN[0].rubro.trim() + ' ' + INFO_RECETA_ORIGIN[0].base + ' ' + modelo.articulo,
+                  idx_CAB_COLOR: modelo['idcolor'],
+                  idx_talla: talla.id,
+                  talla: talla.desc.toUpperCase(),
+                  estado: 'primera',
+                  nro_lote: 0
+                }
+                await ProductosService.createNewSubProduct(info,conn)
+              }
+            }
+            await conn.execute(`update tbl2_fases_prod_modelos set idx_color = ?, color_modelo = ?, cantidad_modelo = ? where id_orden_CAB = ? and idx = ?`,[modelo.idcolor,modelo.color,Object.values(modelo.fracciones).reduce((c,v)=>c+v,0),modelo.id_orden_CAB,modelo.idx])
+            
+            const info_fracciones = Object.keys(modelo.fracciones).reduce((c,v)=>{
+              c.push([modelo.idx,tallasbase.tallas.find(row=>row.desc == v).id,v,modelo.fracciones[v],modelo.fracciones[v]])
+              return c
+            },[])
+            console.log("La info de nuevas fracciones es:",info_fracciones)
+            const [result0] = await conn.execute(`delete from tbl2_fases_prod_modelos_fracciones where id_modelo_CAB = ?`,[modelo.idx])
+            console.log("Los registros afectados fueron:",result0.affectedRows)
+            const [result1] = await conn.query(`insert into tbl2_fases_prod_modelos_fracciones(id_modelo_CAB,id_talla_CAB,talla,cantidad,produccion_total) values ?`,[info_fracciones])
+            console.log("Los registros afectados fueron:",result1.affectedRows)
+          }
+        }
         
       }
       if(base_delete.length > 0){
-        console.log("La informacin base a eliminar es:",base_delete)
-        
+        console.log("Dentro de la seccion de eliminacion")
+        for(let modelo of [...base_delete]){
+          const [validacion] = await conn.execute(`
+            select *from tbl2_fases_prod_modelos t1
+            join tbl2_guias_traslado_det t2 on t1.idx = t2.id_combo
+            join tbl2_guias_traslado_cab t3 on t2.id_guia_CAB = t3.idx
+            where t1.id_orden_CAB = ? and t1.id_receta_CAB = ? and t3.estado <> 'ANULADO'
+          `,[modelo.id_orden_CAB, modelo.id_receta_CAB])
+
+          const [validacion2] = await conn.execute(`select *from tbl2_almacen_det where id_cabprod = ? and estado = 1`,[modelo.id_receta_CAB])
+
+          if(validacion.length == 0 && validacion2.length == 0){
+            const [result1] = await conn.execute(`delete t1,t2 from tbl2_productos t1 join tbl2_subproductos t2 on t1.idx = t2.idx_CAB_PROD where t1.ruc_ = '20522094120' and t1.idx = ?`,[modelo.id_receta_CAB])
+            console.log('Items elimindaso:',result1.affectedRows)
+            const [result2] = await conn.execute(`delete t1,t2 from tbl2_fases_prod_modelos t1 join tbl2_fases_prod_modelos_fracciones t2 on t1.idx = t2.id_modelo_CAB where t1.id_orden_CAB = ? and t1.idx = ?`,[modelo.id_orden_CAB, modelo.idx])
+            console.log('Items elimindaso:',result2.affectedRows)
+          } 
+        }
+      }
+
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
+      return { ok: true, mensaje: 'Guardado con exito' }
+    } catch (err) {
+      console.log(err)
+      if (conn) conn.rollback()
+      return { ok: false, mensaje: err.message }
+    } finally {
+      if (conn) await conn.end();
+    }
+  }
+  static async saveFasePrecios(info) {
+    console.log("Dentro de la fase de configuracion de precios")
+    let conn
+    let nameimg = null
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      conn.beginTransaction()
+
+      let sql = ''
+      const data = JSON.parse(info.info)
+      const id = info.idx
+      console.log("La info recibida es:",data)
+      // console.log("Empezando guardado de molde",info,user_data)
+
+      // const [consulta,fields] = await conn.execute("SELECT *FROM tbl2_fases_prod_molde WHERE idx = ?",[id])
+      if (id == '') {
+        // try {
+        //   const campos = Object.keys(info).reduce((carry, current) => {
+        //     fields.filter(row => row.name !== 'idx').map(row => row.name).includes(current) && carry.push(current)
+        //     return carry
+        //   }, [])
+        //   const values = campos.map(row => info[row])
+        //   const [result] = await conn.execute('INSERT INTO tbl2_fases_prod_molde(' + campos.toString() + ') VALUES (' + campos.map(row => "NULLIF(?, '')").toString() + ')', values)
+        //   const idinsert = result.insertId
+        // } catch (error) {
+        //   console.log(error)
+        // }
+  
+      } else {
+        let newid = null
+        // const campos = Object.keys(info).reduce((carry, current) => {
+        //   fields.filter(row => row.name !== 'idx').map(row => row.name).includes(current) && carry.push(current)
+        //   return carry
+        // }, [])
+        // const values = campos.map(row => info[row])
+        // console.log("Informacion de campos :",campos)
+        // await conn.query('UPDATE tbl2_fases_prod_molde SET ' + campos.map(row => row + " = NULLIF(?,'')").toString() + ' WHERE idx = ' + id,values)
       }
 
       if (conn) conn.rollback()
@@ -1624,7 +1733,6 @@ export class OrdenesModel {
       // console.log(results);
       // console.log(fields);
       // const [{ok:true,mensaje:'Guardado con exito'}]
-      await conn.end();
       return [{ ok: true, mensaje: 'Guardado con exito' }]
     } catch (err) {
       // return [{ok:false,mensaje:'Guardado con exito'}]
