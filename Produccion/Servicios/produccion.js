@@ -3067,7 +3067,7 @@ export class ProduccionModel {
             id_det = fila.idx
 
           } else {
-            const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,despacho,caidos,incompletos) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [parseInt(data.id), fila.id_item, fila.despacho, fila.caidos, fila.incompletos]);
+            const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,despacho,caidos,incompletos,info_rollos) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [parseInt(data.id), fila.id_item, fila.despacho, fila.caidos, fila.incompletos, (fila.info_rollos ?? [])]);
             id_det = insertdet.insertId
           }
         }
@@ -3099,6 +3099,7 @@ export class ProduccionModel {
         // 9	INGR	Ingreso de productos
         // 10	RETR	Retiro de productos
         if(cabecera.tipo === 'PEDIDOS' && subtipo !== 'ADICIONALES'){
+          let [infopedido] = await conn.execute("SELECT *FROM tbl2_pedidos_insumos_cab WHERE idx = ?",[cabecera.id_pedido_origen])
           let [busqueda1] = await conn.execute("SELECT *FROM tbl2_cptes_ordenes_tipo WHERE idx = 10")
           const data_comprobante_salida = {
             id_comprobante_CAB: busqueda1[0].idx,
@@ -3107,7 +3108,8 @@ export class ProduccionModel {
             observaciones: 'ANULACION DE GUIA DE TRASLADO',
             idx_documento_asoc: res.insertId,
             origen: 'KARD',
-            almacen_destino: 509,
+            // almacen_destino: 509,
+            almacen_destino: infopedido[0].tipo == 'AVIOS' ? 508 : 509,
             articulos: JSON.stringify(
               articulos.map(fila => ({...fila,lote:cabecera.id_pedido_origen}))
             ),
@@ -3124,7 +3126,8 @@ export class ProduccionModel {
             observaciones: 'ACTUALIZACION DE GUIA DE TRASLADO',
             idx_documento_asoc: res.insertId,
             origen: 'KARD',
-            almacen_destino: 509,
+            // almacen_destino: 509,
+            almacen_destino: infopedido[0].tipo == 'AVIOS' ? 508 : 509,
             articulos: JSON.stringify(
               articulos.map(fila => ({...fila,lote:cabecera.id_pedido_origen}))
             ),
@@ -3142,7 +3145,7 @@ export class ProduccionModel {
 
           console.log("Inicia insertado detalle despacho")
           for(let detalle of [...articulos]){
-            const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,precio,despacho,caidos,incompletos,id_producto,id_subprod) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, detalle.id_item, detalle.precio, parseFloat(detalle.despacho ?? 0), parseFloat(detalle.caidos ?? 0), parseFloat(detalle.incompletos ?? 0),(detalle.id_producto_CAB ?? 0), (detalle.id_subprod_CAB ?? 0)]);
+            const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,precio,despacho,caidos,incompletos,id_producto,id_subprod,info_rollos) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, detalle.id_item, detalle.precio, parseFloat(detalle.despacho ?? 0), parseFloat(detalle.caidos ?? 0), parseFloat(detalle.incompletos ?? 0),(detalle.id_producto_CAB ?? 0), (detalle.id_subprod_CAB ?? 0), (detalle.info_rollos ?? [])]);
           }
 
           for(let fila of [...facturas]){
@@ -3199,8 +3202,8 @@ export class ProduccionModel {
         await conn.query("UPDATE tbl2_guias_traslado_cab SET estado = 'FINALIZADO' WHERE idx = ?",[parseInt(cabecera.id_guia_origen)])
       }
 
-      // if (conn) conn.rollback()
-      if (conn) conn.commit()
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return {ok:true,message:'Proceso ejecutado con éxito'}
     } catch (err) {
       console.log("asdlkfaslfjlaskdfjlf:",err)

@@ -1655,36 +1655,26 @@ export class OrdenesModel {
       await conn.connect();
       conn.beginTransaction()
 
-      let sql = ''
       const data = JSON.parse(info.info)
       const id = info.idx
-      console.log("La info recibida es:",data)
-      // console.log("Empezando guardado de molde",info,user_data)
+      console.log("La info recibida es:",data,data[0].precios,id)
 
-      // const [consulta,fields] = await conn.execute("SELECT *FROM tbl2_fases_prod_molde WHERE idx = ?",[id])
-      if (id == '') {
-        // try {
-        //   const campos = Object.keys(info).reduce((carry, current) => {
-        //     fields.filter(row => row.name !== 'idx').map(row => row.name).includes(current) && carry.push(current)
-        //     return carry
-        //   }, [])
-        //   const values = campos.map(row => info[row])
-        //   const [result] = await conn.execute('INSERT INTO tbl2_fases_prod_molde(' + campos.toString() + ') VALUES (' + campos.map(row => "NULLIF(?, '')").toString() + ')', values)
-        //   const idinsert = result.insertId
-        // } catch (error) {
-        //   console.log(error)
-        // }
-  
-      } else {
-        let newid = null
-        // const campos = Object.keys(info).reduce((carry, current) => {
-        //   fields.filter(row => row.name !== 'idx').map(row => row.name).includes(current) && carry.push(current)
-        //   return carry
-        // }, [])
-        // const values = campos.map(row => info[row])
-        // console.log("Informacion de campos :",campos)
-        // await conn.query('UPDATE tbl2_fases_prod_molde SET ' + campos.map(row => row + " = NULLIF(?,'')").toString() + ' WHERE idx = ' + id,values)
+      const [result] = await conn.execute(`UPDATE tbl2_fases_prod_ordenes SET precios = ? WHERE idx = ?`,[data[0].precios,data[0].idx])
+      console.log("La cantidad de items observados fueron:",result.affectedRows)
+
+      const [modelos] = await conn.execute(`select *from tbl2_fases_prod_modelos where id_orden_CAB = ?`,[data[0].idx])
+
+      for(let modelo of [...modelos]){
+        const lista_precios = data[0].precios
+        const consulta = lista_precios
+        // await conn.query(`update tbl2_productos set utilidad1 = (precio/costo-1)*100`)
       }
+
+      // if (id == '') {
+  
+      // } else {
+        
+      // }
 
       if (conn) conn.rollback()
       // if (conn) conn.commit()

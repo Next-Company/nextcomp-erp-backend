@@ -899,7 +899,7 @@ export default class AlmacenModel{
               console.log("El articulo a ingresar es:",value)
               let stock = 0;
               let num_rows = 0;
-              let almacen_destino = value.almacen_destino ?? 509;
+              let almacen_destino = value.almacen_destino ?? data.almacen_destino;
 
               console.log("El dato a insertar es:", value)
               // Consultar stock actual en almacen
@@ -975,7 +975,7 @@ export default class AlmacenModel{
 
             for (const value of articulos) {
               console.log("El articulo a retirar es:",value)
-              let almacen_destino = value.almacen_destino ?? 509;
+              let almacen_destino = value.almacen_destino ?? data.almacen_destino;
 
               // Consultar stock actual en almaceN
               const [consulta_deposito] = await conn.execute(
