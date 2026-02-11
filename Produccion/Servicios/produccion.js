@@ -3063,11 +3063,11 @@ export class ProduccionModel {
           let id_det = null
           if (fila.idx && fila.idx !== '') {
             console.log("Detro de la actualizacion")
-            const [results, fields] = await conn.query('UPDATE tbl2_despachos_det SET precio=NULLIF(?, ""),despacho=NULLIF(?, ""),caidos=NULLIF(?, ""),incompletos=NULLIF(?, "") WHERE idx = ? and id_despacho_CAB = ?', [fila.precio, fila.despacho, fila.caidos, fila.incompletos, fila.idx, parseInt(data.id)]);
+            const [results, fields] = await conn.query('UPDATE tbl2_despachos_det SET precio=NULLIF(?, ""),despacho=NULLIF(?, ""),caidos=NULLIF(?, ""),incompletos=NULLIF(?, ""),info_rollos=NULLIF(?, "") WHERE idx = ? and id_despacho_CAB = ?', [fila.precio, fila.despacho, fila.caidos, fila.incompletos,(JSON.stringify(fila.info_rollos ?? [])), fila.idx, parseInt(data.id)]);
             id_det = fila.idx
 
           } else {
-            const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,despacho,caidos,incompletos,info_rollos) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [parseInt(data.id), fila.id_item, fila.despacho, fila.caidos, fila.incompletos, (fila.info_rollos ?? [])]);
+            const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,despacho,caidos,incompletos,info_rollos) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [parseInt(data.id), fila.id_item, fila.despacho, fila.caidos, fila.incompletos, (JSON.stringify(fila.info_rollos ?? []))]);
             id_det = insertdet.insertId
           }
         }
@@ -3136,6 +3136,13 @@ export class ProduccionModel {
           let res_mov_2 = await AlmacenModel.saveMovimiento(data_comprobante_ingreso,conn)
           if(!res_mov_2.ok) throw new Error(res_mov_2.message)
         }
+      
+        const [revision] = await conn.query(`select *
+          from tbl2_despachos_cab t1 
+          join tbl2_despachos_det t2 on t1.idx = t2.id_despacho_CAB 
+          where t1.idx = ?`
+        ,[data.id])
+        console.log("La info coinsulta ses:",revision.map(row=>row.info_rollos))
         //////////////////////////////////////////////
         //////////////////////////////////////////////
 
@@ -3145,7 +3152,7 @@ export class ProduccionModel {
 
           console.log("Inicia insertado detalle despacho")
           for(let detalle of [...articulos]){
-            const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,precio,despacho,caidos,incompletos,id_producto,id_subprod,info_rollos) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, detalle.id_item, detalle.precio, parseFloat(detalle.despacho ?? 0), parseFloat(detalle.caidos ?? 0), parseFloat(detalle.incompletos ?? 0),(detalle.id_producto_CAB ?? 0), (detalle.id_subprod_CAB ?? 0), (detalle.info_rollos ?? [])]);
+            const [results, fields] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,precio,despacho,caidos,incompletos,id_producto,id_subprod,info_rollos) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, detalle.id_item, detalle.precio, parseFloat(detalle.despacho ?? 0), parseFloat(detalle.caidos ?? 0), parseFloat(detalle.incompletos ?? 0),(detalle.id_producto_CAB ?? 0), (detalle.id_subprod_CAB ?? 0), (JSON.stringify(detalle.info_rollos ?? []))]);
           }
 
           for(let fila of [...facturas]){
@@ -3177,6 +3184,13 @@ export class ProduccionModel {
             let res_mov = await AlmacenModel.saveMovimiento(data_comprobante,conn)
             if(!res_mov.ok) throw new Error(res_mov.message)
           }
+
+          // const [revision] = await conn.query(`select *
+          //   from tbl2_despachos_cab t1 
+          //   join tbl2_despachos_det t2 on t1.idx = t2.id_despacho_CAB 
+          //   where t1.idx = ?`
+          // ,[res.insertId])
+          // console.log("La info coinsulta ses:",revision.map(row=>row.info_rollos))
           //////////////////////////////////////////////
           //////////////////////////////////////////////
         } catch (err) {
@@ -3185,22 +3199,22 @@ export class ProduccionModel {
         }
       }
 
-      let [result,fields] = await conn.query(`
-        SELECT idx,orden_ref,producto,responsable,modelo,marca,estado,tipo,servicio,id_proveedor_CAB,proveedor,fec_emision,DATE_FORMAT(fec_emision,'%d/%m/%Y') as fec_emision_guia,fec_retorno,DATE_FORMAT(fec_retorno,'%d/%m/%Y') as fec_retorno_guia,fec_recepcion,costo,COALESCE(DATEDIFF(fec_retorno,fec_emision),'') as tiempo_produccion,COALESCE(DATEDIFF(STR_TO_DATE(fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
-        (
-          select sum(cantidad) from tbl2_guias_traslado_det tgtd where tgtd.id_guia_CAB = tbl2_guias_traslado_cab.idx
-        ) as cantidad_servicio,
-        (
-          select COALESCE(sum(COALESCE(tdd.despacho,0) + COALESCE(tdd.caidos,0) + COALESCE(tdd.incompletos,0)),0) as total from tbl2_despachos_cab tdc 
-          join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
-          where tdc.id_guia_origen = tbl2_guias_traslado_cab.idx
-        ) as ingresos
-        FROM tbl2_guias_traslado_cab where idx = ?
-        `,[parseInt(cabecera.id_guia_origen)])
-      let valida = result[0].ingresos >= result[0].cantidad_servicio ? 1 : 0
-      if(valida){
-        await conn.query("UPDATE tbl2_guias_traslado_cab SET estado = 'FINALIZADO' WHERE idx = ?",[parseInt(cabecera.id_guia_origen)])
-      }
+      // let [result,fields] = await conn.query(`
+      //   SELECT idx,orden_ref,producto,responsable,modelo,marca,estado,tipo,servicio,id_proveedor_CAB,proveedor,fec_emision,DATE_FORMAT(fec_emision,'%d/%m/%Y') as fec_emision_guia,fec_retorno,DATE_FORMAT(fec_retorno,'%d/%m/%Y') as fec_retorno_guia,fec_recepcion,costo,COALESCE(DATEDIFF(fec_retorno,fec_emision),'') as tiempo_produccion,COALESCE(DATEDIFF(STR_TO_DATE(fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
+      //   (
+      //     select sum(cantidad) from tbl2_guias_traslado_det tgtd where tgtd.id_guia_CAB = tbl2_guias_traslado_cab.idx
+      //   ) as cantidad_servicio,
+      //   (
+      //     select COALESCE(sum(COALESCE(tdd.despacho,0) + COALESCE(tdd.caidos,0) + COALESCE(tdd.incompletos,0)),0) as total from tbl2_despachos_cab tdc 
+      //     join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
+      //     where tdc.id_guia_origen = tbl2_guias_traslado_cab.idx
+      //   ) as ingresos
+      //   FROM tbl2_guias_traslado_cab where idx = ?
+      //   `,[parseInt(cabecera.id_guia_origen)])
+      // let valida = result[0].ingresos >= result[0].cantidad_servicio ? 1 : 0
+      // if(valida){
+      //   await conn.query("UPDATE tbl2_guias_traslado_cab SET estado = 'FINALIZADO' WHERE idx = ?",[parseInt(cabecera.id_guia_origen)])
+      // }
 
       if (conn) conn.rollback()
       // if (conn) conn.commit()
@@ -3781,6 +3795,7 @@ export class ProduccionModel {
             tdd.idx,
             tgtd.id_pedido_CAB,
             tgtd.id_producto_CAB,
+            tdd.id_subprod as id_subprod_CAB,
             tgtd.producto,
             COALESCE(tgtd.color,'-') as color,
             tgtd.rollos,
@@ -3789,12 +3804,20 @@ export class ProduccionModel {
             tgtd.anulado,
             IF(tdd.precio IS NULL,tgtd.precio,tdd.precio) as costo_unit,
             tdd.despacho,
+            tdd.info_rollos,
             IFNULL(tgtd.conversion,1) as conversion,
             ROUND(IF(tdd.precio IS NULL,tgtd.precio,tdd.precio)*(IFNULL(tgtd.conversion,1)*tgtd.cantidad),2) as precio,
             IFNULL(tgtd.conversion,1)*IFNULL(tgtd.cantidad,0) as requerido,
-            COALESCE((select codUnidadMedida from tbl2_productos tp where tp.idx = tgtd.id_producto_CAB),tgtd.unidad) as unidad
+            COALESCE((select codUnidadMedida from tbl2_productos tp where tp.idx = tgtd.id_producto_CAB),tgtd.unidad) as unidad,
+            COALESCE((
+              select SUM(IFNULL(t2.despacho,0)) as ingresos 
+              from tbl2_despachos_cab t1
+              join tbl2_despachos_det t2 on t1.idx = t2.id_despacho_CAB
+              where t1.id_pedido_origen = tdc.id_pedido_origen and t2.id_subprod = tdd.id_subprod and DATE(t1.created_at) > DATE(tdc.created_at)
+            ),0) as pendiente
           FROM tbl2_pedidos_insumos_det tgtd 
           JOIN tbl2_despachos_det tdd on tdd.id_item = tgtd.idx 
+          JOIN tbl2_despachos_cab tdc on tdc.idx = tdd.id_despacho_CAB
           WHERE tdd.id_despacho_CAB = ?
         `, [id])
         // const [data2] = await conn.query('SELECT tda.* FROM tbl2_despachos_adi tda WHERE tda.id_despacho_CAB = ?',[id]);

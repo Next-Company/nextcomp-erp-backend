@@ -1,160 +1,235 @@
-{{#if condicion}}
-  <style>
-    .main_informe *{
-      font-size: 14px
-    }
-  </style>
-  {{else}}
-  <style>
-    .main_informe *{
-      font-size: 14px
-    }
-  </style>
-{{/if}}
-
-<style>
-  :root{
-    font-size: 14px;
-    font-family: Arial, Helvetica, sans-serif;
-    color:green;
+{{!-- <style>
+  *{
+    font-size: 10px;
+    color:red;
   }
-  body{
-    padding: 0px;
-    margin: 0px;
-  }
-  .cuerpo_estampado{
-    width: 100%;
-    /*height: 200px;*/
-    border:1px solid gray;
-    border-radius: 10px;
-    background-color: rgba(241, 241, 241, 0.5);
-    margin-bottom: 10px;
-    position: relative;
-  }
-  .main_informe{
-    /*padding:0.2cm;*/
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    border:0px solid red;
-    /*height: 27cm;*/
-  }
-  .main_informe h2{
-    font-size: 1.2rem;
-  }
-  .indice_estampado{
-    position: absolute;
+  #main{
     display: flex;
     justify-content: center;
     align-items: center;
-    border-radius: 50%;
-    width: 25px;
-    height: 25px;
-    left: -15px;
-    top: -10px;
-    background-color: white;
-    border: 0.2px solid black;
-  }
-  .cuerpo_estampado .indicador span{
-    font-size: .8rem;
-  }
-  .cuerpo_estampado .indicador div{
-    padding: 5px;
-  }
-  .indicador{
-    flex:1;
-  }
-  .nowrap_space{
-    white-space: nowrap;
+    width: 100vw;
+    height: 100vh;
+    transform: rotateZ(45deg);
   }
 </style>
-<div class="main_informe">
-  <div style="flex:1;display:flex;flex-direction:column;">
-    <section style="flex:1;">
-      <br/>
-      <div style="font-weight:bolder;text-align:center;border-bottom:1.5px solid black;border-top:1.5px solid black;padding:8px 0px;position:relative;display:flex;flex-direction:row;justify-content:space-between;align-items:center;">
-        <div style="font-size:1.8rem;display:flex;gap:10px;align-items:center;">
-          GUIA DE INGRESO
-        </div>
-        <div style="font-size:1.5rem;">#{{idguia}}</div>
-      </div>
-      <p style="font-size: .9rem;font-weight:bolder;margin:10px 0px;">
-        DATOS DEL INGRESO:<br/>
-      </p>
-      <section style="border-bottom:.5px dashed black;font-size:.9rem;padding-bottom: 10px;">
-        <table>
-          <tbody>
-            <tr>
-              <td>Proveedor:</td>
-              <td style="width: 400px;">{{proveedor.nom}}</td>
-              <td>Ruc:</td>
-              <td style="width: 200px;">{{proveedor.ruc}}</td>
-              <td>#GuiaRef:</td>
-              <td style="width: 100px;">{{idref}}</td>
-              <td>Responsable:</td>
-              <td>{{cabecera.responsable}}</td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
-      <p style="font-size: .9rem;font-weight:bold;">
-        RESUMEN DETALLE:<br/>
-      </p>
-      <section style="font-size:.9rem; padding-bottom: 10px;">
-        <table style="border-collapse: collapse;width:100%;">
-          <thead>
-            <tr style="border-bottom:.2px solid gray;height:20px;">
-              <th>#</th>
-              <th style="text-align:left;">Artículos de producción</th>
-              <th style="text-align:center;">Costo</th>
-              <th style="text-align:center;width:150px;">Color</th>
-              <th style="text-align:center;">UM</th>
-              <th style="text-align:center;">Qty.Prog.</th>
-              <th style="text-align:center;">Ingreso</th>
-            </tr>
-          </thead>
-          <tbody>
-            {{#each detalle}}
-              <tr style="">
-                <td style="text-align: center;width:.5cm;">{{plusindex @index}}</td>
-                <td>{{producto}}</td>
-                <td style="width:1.5px;text-align: center;">{{precio}}</td>
-                <td style="width:1.5px;text-align: center;">{{color}}</td>
-                <td style="width:1.5px;text-align: center;">{{unidad}}</td>
-                <td style="text-align: center;">{{cantidad}}</td>
-                <td style="text-align: center;">{{despacho}}</td>
-              </tr>
-            {{/each}}
-          </tbody>
-          <tfoot>
-            <tr>
-              <td colspan="4  "></td>
-              <td style="text-align: center;font-size:.9rem;"><strong>Total</strong></td>
-              <td style="text-align: center;font-size:.9rem;"><strong>{{totalunid}}</strong></td>
-              <td style="text-align: center;font-size:.9rem;"><strong>{{totaldespacho}}</strong></td>
-            </tr>
-          </tfoot>
-        </table>
-      </section>
-    </section>
-    <footer>
-      <section style="display:flex;justify-content:space-around;gap:15px;">
-        <div style="border-top:.5px dashed black;padding:5px;text-align:center;flex:1;font-size:.9rem;">
-          Auxiliar de almacén
-          <div style="text-align:left;height:30px;border-bottom:.5px dotted gray;display:flex;align-items:center;">Nom:</div>
-        </div>
-        <div style="border-top:.5px dashed black;padding:5px;text-align:center;flex:1;font-size:.9rem;">
-          Control de ingreso
-          <div style="text-align:left;height:30px;border-bottom:.5px dotted gray;display:flex;align-items:center;">Nom:</div>
-        </div>
-      </section>
-      <section style="padding-top:10px;font-size:.9rem;display:flex;justify-content:between;">
-        <div style="flex:1;">
-        </div>
-        <div>
-          <strong>Fecha/hora emisión: {{date}} {{time}}</strong><br/>
-        </div>
-      </section>
-    </footer>
-  </div>
+<div id="main">
+  Example App: HomeHandlebarsaasdasd en la misma cnas
 </div>
+ --}}
+<style>
+  /*html{
+    overflow: hidden;
+  }*/
+  html::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+    /* background: #efefef; */
+    background: transparent;
+  }
+  html::-webkit-scrollbar-thumb {
+    background: #c2c2c2;
+    border-radius: 6px;
+  }
+  html::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+
+  * {
+      font-family: calibri;
+      font-size: 12px;
+      color: #000000;
+  }
+
+  body {
+      background-color: white;
+      padding: 0px 20px 0px;
+      margin: 0px;
+      height: 28cm;
+      position: relative;
+      box-sizing: border-box;
+      /*border-right: 1px dashed gray;*/
+  }
+
+  table {
+      padding: 2px
+  }
+  table#principal {
+      /* border-spacing: 2px 5px; */
+  }
+  table#principal td {
+      /* padding:0xpx */
+  }
+
+  table.contenido td {
+      text-transform: uppercase;
+  }
+
+  table.contenido{
+      /* width: 100%; */
+      border-collapse: collapse;
+      border-left: 0.5px solid #004080;
+  }
+
+
+  table.contenido tr th {
+      background-color: #a8ac5c;
+      border-right: 0.5px solid #004080;
+      border-bottom: 0.5px solid #004080;
+      border-top: 0.5px solid #004080;
+      text-align: center;
+      font-weight: bolder;
+      height: 16px;
+      line-height: 11px;
+      color:white;
+  }
+
+
+  table.contenido tr td {
+
+      border-right: 0.5px solid #a8ac5c;
+      border-bottom: 0px solid #a8ac5c;
+
+      padding: 5px 5px;
+      line-height: 8px;
+  }
+  table.contenido2 {
+    border-collapse: collapse; 
+  }
+  table.contenido2 tr td {
+    border-left: 0.5px solid black;
+    border-top: 0.5px solid black;
+    border-right: 0.5px solid black;
+    border-bottom: 0.5px solid black;
+    padding: 5px 5px;
+    line-height: 8px;
+  }
+
+  table.tabla_datos {
+    border: 0.5px solid #004080;
+    border-collapse: separate;
+    border-spacing: 3px;
+    padding: 0.0px;
+    line-height: 7px;
+  }
+  .saltopagina {
+      display: block;
+      border: none;
+      page-break-after: always;
+  }
+  .tipo_orden td{
+      border:0.5px solid black;
+  }
+</style>
+<body>
+  <div style="break-after: page">
+    <table id="principal" style="width: 100%;">
+        <tr>
+            <td>
+                <table style="border: 1px solid red;border-collapse:collapse;width:100%;">
+                  <tr>
+                    
+                    <td style="text-align: center;border: 0.5px solid blue;border:1px solid;">
+                      <table style="border-collapse: collapse; padding: 6px 1px;margin: 0px; width:100%;">
+                        <tr>
+                          <td>
+                            <table class="tipo_orden" style="width: 100%;">
+                              <tr>
+                                <td style="border:none;">
+                                  <table style="border-collapse: collapse; padding: 6px 1px;margin: 0px; width:100%;">
+                                    <tr>
+                                      <td style="border:0px solid black;font-weight:bold;font-size:16px;text-align:center;padding:5px;">
+                                        <div style="display:flex;flew-direction:row;justify-content:between;align-items:center; width:100%;">
+                                          <div style="">
+                                            <img src="data:image/jpg;base64,{{this.BINARY_CHUNKS3}}" class="logo" style="width:280px;">
+                                          </div>
+                                          <div style="flex:1;text-align:right;font-size:20px;">
+                                            #{{idguia}}
+                                          </div>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  </table>
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+            </td>
+        </tr>
+        <!-- fin de cabecera -->
+        <tr>
+          <td>
+
+            <table class="tabla_datos" style="width: 100%;height:62px;">
+              <tbody >
+                {{#encabezado cabecera}}
+                {{/encabezado}}
+              </tbody>
+            </table>
+
+          </td>
+        </tr>
+    </table>
+    <br />
+    <table class="contenido" style="width:100%;">
+        <thead>
+            <tr nobr="true" style="height:40px;">
+                <th style="width:35px;font-size:9px;">Item</th>
+                <th style="width:750px;font-size:9px;">Descripci&oacute;n</th>
+                <th style="font-size:9px;">COLOR</th>
+                <th style="font-size:9px;">U.M.</th>
+                <th style="font-size:9px;">Peso(Kg)</th>
+                <th style="font-size:9px;">Prog.</th>
+                <th style="font-size:9px;">Pendiente</th>
+                <th style="font-size:9px;">Ingreso</th>
+                <th style="font-size:9px;">Costo</th>
+                <th style="font-size:9px;">Importe</th>
+            </tr>
+        </thead>
+        <tbody>
+          {{#cuerpo detalle}}
+          {{/cuerpo}}
+      </tbody>
+      <tfoot>
+      </tfoot>
+    </table>
+    <div style="position:absolute;bottom:0px;display:flex;width:100%;gap:15px;flex-direction:column;">
+      <div style="display:flex;width:95%;gap:15px;">
+        <div style="height:20px;background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">AUXILIAR DE ALMACEN</div>
+        <div style="height:20px;background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">JEFE DE CORTE</div>
+        {{!-- <div style="height:20px;background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">NOMBRE RESPONSABLE</br> RESONSABLE DE COMPRA</div> --}}
+      </div>
+      <div style="font-weight: bold;font-size:12px;text-align:right;padding:10px;border:0px solid red;margin-right: 20px;">
+        Fecha/hora emisión: {{cabecera.fecha_sistema}}
+      </div>
+    </div>
+    <style>
+        table#totales {
+            border: 0.5px solid #004080;
+        }
+
+        table#totales .texto {
+            border-right: 0.5 solid #004080;
+            width: 72px;
+        }
+
+        table#totales .numero {
+            text-align: right;
+            width: 69px;
+        }
+
+        table#totales .borde_alto {
+            border-top: 0.5px solid #004080;
+        }
+
+        table#totales .sombra {
+            background-color: #a2d8f4;
+            border: 0.5px solid #004080;
+        }
+    </style>
+  </div>
+</body>

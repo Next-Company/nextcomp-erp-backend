@@ -1602,7 +1602,8 @@ export class OrdenesModel {
             await conn.execute(`update tbl2_fases_prod_modelos set idx_color = ?, color_modelo = ?, cantidad_modelo = ? where id_orden_CAB = ? and idx = ?`,[modelo.idcolor,modelo.color,Object.values(modelo.fracciones).reduce((c,v)=>c+v,0),modelo.id_orden_CAB,modelo.idx])
             
             const info_fracciones = Object.keys(modelo.fracciones).reduce((c,v)=>{
-              c.push([modelo.idx,tallasbase.tallas.find(row=>row.desc == v).id,v,modelo.fracciones[v],modelo.fracciones[v]])
+              // c.push([modelo.idx,tallasbase.tallas.find(row=>row.desc == v).id,v,modelo.fracciones[v],modelo.fracciones[v]])
+              c.push([modelo.idx,tallasbase.tallas.find(row=>row.desc == v).id,v,modelo[v],modelo[v]])
               return c
             },[])
             console.log("La info de nuevas fracciones es:",info_fracciones)

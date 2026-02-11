@@ -72,6 +72,7 @@ export class ProduccionController {
         cabecera: data[0],
         detalle: data2.filter(row => !row.isprototipo),
         tallas: data4[0]?.tallas.map(row=>row.desc) ?? ['st','xs','s','m','l','xl','xxl',],
+        colspantotales: data4[0]?.tallas.length + 2,
         // relleno:data2.filter(),
         prototipos: data2.filter(row => row.isprototipo),
         numproto: data2.filter(row => row.isprototipo).length,
@@ -608,37 +609,19 @@ export class ProduccionController {
     const data = await ProduccionModel.getInfoPedidoCab(params.idpedido)
     console.log("Mostrando informacin de la guia:",data)
 
+    const BINARY_CHUNKS3 = await fs.readFile('public/images/guia_despacho_title.png')
+
     let data2 = await ProduccionModel.getInfoDespachoDet(params.id,'PEDIDOS')
     console.log("Mostrando la informacion del detalle del despacho:",data2)
     // console.log("Reestructurando la variable data2",data2.map(row=>row.fracciones_despacho))
     // resp.status(200).send("Reporte generado con exito")
     // return 0
     try {
-      // data2 = data2.filter(row=>row.fracciones_despacho.length > 0).reduce((c,v)=>{
-
-      //   let lista = ['cantidad','caidos','incompletos']
-      //   let tallas = ['xs','s','m','l','xl','xxl']
-      //   v.fracciones_despacho = ['xs','s','m','l','xl','xxl'].reduce((c3,v3)=>{
-      //     c3.push(v.fracciones_despacho.filter(row=>row['talla'] == v3)[0])
-      //     return c3
-      //   },[])
-      //   v.fracciones_despacho_cantidad = v.fracciones_despacho.map(row=>row['cantidad'])
-      //   console.log("Fracciones despacho :",v.fracciones_despacho)
-      //   let nuevo = lista.reduce((c2,v2) => {
-      //     let newnames = {cantidad:'Despacho',caidos:'Caidos',incompletos:'Incompletos'}
-      //     c2.push([newnames[v2],...v.fracciones_despacho.map(row=>row[v2]),'-',v.fracciones_despacho.map(row=>row[v2]).reduce((c,v)=>c+v,0)])
-      //     return c2
-      //   },[]);
-      //   console.log("Nuefo formateddo:",nuevo)
-      //   // let new_fracciones = 
-      //   c.push({...v,new_fracciones:nuevo})
-      //   return c
-      // },[])
-
       const data3 = data[0].id_proveedor_CAB ? await ProduccionModel.searchProveedorById(data[0].id_proveedor_CAB) : [{ nom: data[0].responsable, ruc: '', direccion: data[0].destino }]
       resp.render(
         data[0].tipo == 'TELAS' ? 'guia_despacho_pedido_telas' : 'guia_despacho_pedido_avios',
         {
+          BINARY_CHUNKS3: BINARY_CHUNKS3.toString('base64'),
           color: 'black',
           info: params,
           cabecera: data[0],
@@ -666,6 +649,88 @@ export class ProduccionController {
           helpers: {
             plusindex(index) {
               return index + 1
+            },
+            encabezado(datos){
+              const info = `
+                <tr >
+                  <td style="font-weight:100;font-size: 12px;"><strong style="font-size: 14px;font-weight:100;">OP.: </strong>`+ datos.orden_ref +`</td>
+                  <td style="font-weight:100;font-size: 12px;"><strong style="font-size: 14px;font-weight:100;">ARTICULO: </strong>`+ datos.produccion +`</td>
+                  <td style="font-weight:100;font-size: 12px;"><strong style="font-size: 14px;font-weight:100;">MODELO: </strong>`+ datos.produccion +`</td>
+                </tr>
+                <tr >
+                <td style="font-weight:100;font-size: 12px;"><strong style="font-size: 14px;font-weight:100;">TIPO MOV.: </strong>INGRESO</td>
+                <td style="font-weight:100;font-size: 12px;"><strong style="font-size: 14px;font-weight:100;">GIRADO POR: </strong>` + datos.responsable + `</td>
+                  <td style="font-weight:100;font-size: 12px;"><strong style="font-size: 14px;font-weight:100;"></strong></td>
+                </tr>  
+              `
+              return info
+            },
+            cuerpo(items) {
+              let itemsAsHtml = null
+              let extra = 28 - items.length
+            
+              itemsAsHtml = items.map((item, key) =>{
+                return `<tr style="height:22px;font-size:10px;">
+                  <td style="width:35px;text-align: center;background-color:#ddebf7;">${key + 1}</td>
+                  <td style="width:60px;font-size:9px;">` + `${item['producto']}` + `</td>
+                  <td style="width:60px;font-size:9px;text-align: center;background-color:#ddebf7;">` + `${item['color']}` + `</td>
+                  <td style="width:60px;font-size:9px;text-align: center;background-color:#ddebf7;">` + item['unidad'] + `</td>
+                  <td style="width:60px;font-size:9px;text-align:center;background-color:#ddebf7;">` + (item['peso'] ? item['peso'] : '-') + `</td>
+                  <td style="width:60px;font-size:9px;text-align: center;background-color:#ddebf7;">` + item['requerido'] + `</td>
+                  <td style="width:60px;font-size:9px;text-align:center;background-color:#ddebf7;">` + ((item['requerido'] ?? 0) - (item['pendiente'] ?? 0)) + `</td>
+                  <td style="font-size:9px;text-align: center;background-color:#ddebf7;">` + item['despacho'] + `</td>
+                  <td style="font-size:9px;text-align: center;background-color:#ddebf7;">` + item['costo_unit'] + `</td>
+                  <td style="font-size:9px;text-align: center;background-color:#ddebf7;">` + (item['despacho'] ?? 0) * (item['costo_unit'] ?? 0) + `</td>
+                </tr>
+                ${
+                  item.info_rollos.map((row,key)=>`
+                    <tr>
+                      <td style="width:35px;text-align: center;background-color:#ddebf7;"></td>
+                      <td style="width:60px;font-size:8px;text-align:left;padding-left:20px;">${item['producto']}(${row.partida ?? '-'}) Rollo # ${key + 1}</td>
+                      <td style="width:60px;font-size:8px;text-align:center;background-color:#ddebf7;">-</td>
+                      <td style="width:60px;font-size:8px;text-align:center;background-color:#ddebf7;">-</td>
+                      <td style="width:60px;font-size:8px;text-align:center;background-color:#ddebf7;">${row.peso}</td>
+                      <td style="width:60px;font-size:8px;text-align: center;background-color:#ddebf7;">-</td>
+                      <td style="width:60px;font-size:8px;text-align: center;background-color:#ddebf7;">-</td>
+                      <td style="font-size:8px;text-align: center;background-color:#ddebf7;">${row.cantidad}</td>
+                      <td style="font-size:8px;text-align: center;background-color:#ddebf7;">-</td>
+                      <td style="font-size:8px;text-align: center;background-color:#ddebf7;">-</td>
+                    </tr>
+                  `).join("\n")
+                }
+                `
+              })
+              for (let i = 0; i < extra; i++) {
+                itemsAsHtml.push(`
+                  <tr style="height:22px;">
+                    <td style="width:35px;text-align: center;background-color:#ddebf7;"></td>
+                    <td style="width:60px;text-align: center;"></td>
+                    <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                    <td style="width:60px;text-align:center;background-color:#ddebf7;"></td>
+                    <td style="width:60px;text-align:center;background-color:#ddebf7;"></td>
+                    <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                    <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+                    <td style="text-align: center;background-color:#ddebf7;"></td>
+                    <td style="text-align: center;background-color:#ddebf7;"></td>
+                    <td style="text-align: center;background-color:#ddebf7;"></td>
+                  </tr>`
+                )    
+              }
+              // const total = items.reduce((carry, valor) => { carry += parseFloat(tipo == 'avios' ? valor['despacho'] : valor['Cant_despacho_DET']); return carry }, 0).toFixed(2)
+              // itemsAsHtml.push(`
+              //   <tr style="height:22px;">
+              //     <td style="width:35px;text-align: center;background-color:#ddebf7;"></td>
+              //     ${tipo == 'AVIOS' ? '<td style="width:60px;text-align: center;"></td>' : ''}
+              //     ${tipo == 'AVIOS' ? '<td style="width:60px;text-align: center;"></td>' : ''}
+              //     <td style="width:60px;text-align: center;"></td>
+              //     ${tipo == 'AVIOS' ? '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>' : ''}
+              //     ${tipo !== 'AVIOS' ? '<td style="width:60px;text-align: center;background-color:#ddebf7;"></td>' : ''}
+              //     <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+              //     <td style="width:60px;text-align: center;background-color:#ddebf7;"></td>
+              //     <td style="text-align: center;background-color:#ddebf7;"><strong>TOTAL</strong></td>
+              //     <td style="text-align: center;background-color:#ddebf7;">${total}</td>
+              //   </tr>`)
+              return itemsAsHtml.join("\n")
             }
           }
         }
@@ -682,7 +747,7 @@ export class ProduccionController {
               const pdfOptions = data[0].tipo == 'TELAS' ? {
                 width: '20cm',
                 height: '27.94cm',
-                landscape: true,
+                landscape: false,
                 printBackground: true,
                 margin: {
                   left: 0,
