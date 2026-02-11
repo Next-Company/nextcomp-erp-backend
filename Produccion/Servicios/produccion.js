@@ -2817,8 +2817,8 @@ export class ProduccionModel {
         // return resultS
       }
 
-      if(conn) conn.rollback()
-      // if(conn) conn.commit()
+      // if(conn) conn.rollback()
+      if(conn) conn.commit()
       return {ok:true,message:'Registro completo'}
     } catch (err) {
       console.log("Error en el proceso:", err)
@@ -3216,8 +3216,8 @@ export class ProduccionModel {
       //   await conn.query("UPDATE tbl2_guias_traslado_cab SET estado = 'FINALIZADO' WHERE idx = ?",[parseInt(cabecera.id_guia_origen)])
       // }
 
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return {ok:true,message:'Proceso ejecutado con éxito'}
     } catch (err) {
       console.log("asdlkfaslfjlaskdfjlf:",err)
