@@ -471,6 +471,8 @@ export class OrdenesModel {
 
       let [results] = await conn.query(`SELECT 
         tfphc.idx as id_combo,
+        tfpo.id_receta,
+        tfpo.modelos,
         -- CONCAT(tfpo.producto,' ',tfpo.marca,' ',tfpo.modelos,' ',tfphc.color_combo) as articulo,
         CONCAT(tfpo.producto,' ',tfphc.color_combo) as articulo,
         COALESCE((select JSON_ARRAYAGG(JSON_OBJECT('talla',tfphcf.talla,'cantidad',COALESCE(tfphcf.produccion_total,0),'produccion_total',COALESCE(tfphcf.produccion_total,0),'caidos_total',COALESCE(tfphcf.caidos_total,0),'incompletos_total',COALESCE(tfphcf.incompletos_total,0))) 
@@ -1392,8 +1394,8 @@ export class OrdenesModel {
       console.log("Verificando la informacion de corte :",verificar)
       console.log("Terminando el actulizado de corte")
 
-      // if (conn) conn.rollback()
-      if (conn) conn.commit()
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito' }
     } catch (err) {
       console.log(err)
@@ -1524,14 +1526,15 @@ export class OrdenesModel {
 
           const newinfo = {...INFO_RECETA_ORIGIN[0],modelo:modelo.articulo,nom:INFO_RECETA_ORIGIN[0].rubro.trim() + ' ' + INFO_RECETA_ORIGIN[0].base + ' ' + modelo.articulo}
           Reflect.deleteProperty(newinfo,'idx')
-          const INFO_NEWPROD = await ProductosService.createNewProduct(newinfo,conn)
-          if(!INFO_NEWPROD.ok) throw new Error(INFO_NEWPROD.message)
-
-          console.log("La nueva receta creada es :",INFO_NEWPROD)
+          if(!modelo.idreceta){
+            const INFO_NEWPROD = await ProductosService.createNewProduct(newinfo,conn)
+            if(!INFO_NEWPROD.ok) throw new Error(INFO_NEWPROD.message)
+            // console.log("La nueva receta creada es :",INFO_NEWPROD)
+          }
 
           const info_subprod = tallasbase.tallas.reduce((carry,current)=>{
             const registro = {
-              idx_CAB_PROD: INFO_NEWPROD.info,
+              idx_CAB_PROD: modelo.idreceta ?? INFO_NEWPROD.info,
               codigo: '0900019107050',
               isbn: '0900019107050',
               nom: newinfo.nom,
@@ -1549,7 +1552,7 @@ export class OrdenesModel {
             if(!INFOT_SUBPROD.ok) throw new Error(INFOT_SUBPROD.message)
           }
 
-          const [resultinsert] = await conn.execute("INSERT INTO tbl2_fases_prod_modelos(id_orden_CAB,id_receta_CAB,idx_color,color_modelo,cantidad_modelo) VALUES(?,?,?,?,?)",[idorden,INFO_NEWPROD.info,modelo.idcolor,modelo.color,cantidad])
+          const [resultinsert] = await conn.execute("INSERT INTO tbl2_fases_prod_modelos(id_orden_CAB,id_receta_CAB,idx_color,color_modelo,cantidad_modelo) VALUES(?,?,?,?,?)",[idorden,modelo.idreceta ?? INFO_NEWPROD.info,modelo.idcolor,modelo.color,cantidad])
 
           const modelo_fracciones = tallasbase.tallas.reduce((carry,current)=>{
             const row = {}

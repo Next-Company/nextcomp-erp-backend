@@ -230,7 +230,7 @@ export class ProduccionModel {
       console.log("Los modelos consultados son:",modelos)
 
       let disponible = await OrdenesModel.ExtraerOrdenDisponible(info.id,conn)
-      disponible = disponible.reduce((c,v)=> {
+      let disponible_resumen = disponible.reduce((c,v)=> {
         tallasbase.filter(row=>row.idx == ordenes[0].tallasbase)[0].tallas.forEach(talla=>{
           if(Object.keys(c).includes(talla.desc)) {
             c[talla.desc] += v[talla.desc] ?? 0
@@ -242,7 +242,7 @@ export class ProduccionModel {
       },{})
       // console.log("El disponible formateado es:",disponible)
   
-      return [ordenes,moldes,cortes,materiales,fasesprod,materialesref,insumos,requerimientos,tallasbase,modelos,disponible]
+      return [ordenes,moldes,cortes,materiales,fasesprod,materialesref,insumos,requerimientos,tallasbase,modelos,disponible_resumen,disponible]
     } catch (err) {
       console.log("Estamos en error:", err);
       return err

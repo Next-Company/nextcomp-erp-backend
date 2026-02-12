@@ -356,17 +356,19 @@ export class ProduccionController {
     try {
       data2 = data2.filter(row=>row.fracciones_despacho.length > 0).reduce((c,v)=>{
 
+        // console.log("Informacion de las fracciones es:",v.fracciones.map(row=>row.talla))
         let lista = ['cantidad','caidos','incompletos']
-        let tallas = ['xs','s','m','l','xl','xxl']
-        v.fracciones_despacho = ['xs','s','m','l','xl','xxl'].reduce((c3,v3)=>{
-          c3.push(v.fracciones_despacho.filter(row=>row['talla'] == v3)[0])
+        let tallasbase = v.fracciones.map(row=>row.talla)
+        // let tallas = ['st','xs','s','m','l','xl','xxl']
+        v.fracciones_despacho = tallasbase.reduce((c3,v3)=>{
+          v.fracciones_despacho.filter(row=>row['talla'] == v3) && c3.push(v.fracciones_despacho.filter(row=>row['talla'] == v3)[0])
           return c3
         },[])
-        v.fracciones_despacho_cantidad = v.fracciones_despacho.map(row=>row['cantidad'])
+        v.fracciones_despacho_cantidad = v.fracciones_despacho.map(row=>row?.['cantidad'] ?? 0)
         console.log("Fracciones despacho :",v.fracciones_despacho)
         let nuevo = lista.reduce((c2,v2) => {
           let newnames = {cantidad:'Despacho',caidos:'Caidos',incompletos:'Incompletos'}
-          c2.push([newnames[v2],...v.fracciones_despacho.map(row=>row[v2]),'-',v.fracciones_despacho.map(row=>row[v2]).reduce((c,v)=>c+v,0)])
+          c2.push([newnames[v2],...v.fracciones_despacho.map(row=>row[v2]),'-',v.fracciones_despacho.map(row=>row?.[v2] ?? []).reduce((c,v)=>c+v,0)])
           return c2
         },[]);
         console.log("Nuefo formateddo:",nuevo)
@@ -382,6 +384,8 @@ export class ProduccionController {
           color: 'black',
           info: params,
           cabecera: data[0],
+          tallasbase: data2[0].fracciones.map(row=>row.talla.toUpperCase()),
+          colspantallas: data2[0].fracciones.map(row=>row.talla).length + 1,
           // detalle:data2.filter(row=>!row.isprototipo),
           detalle: data2,
           // relleno:data2.filter(),
@@ -455,6 +459,7 @@ export class ProduccionController {
       );
 
     } catch (err) {
+      console.log(err)
       resp.status(500).json({ error: err.message });
     }
 
