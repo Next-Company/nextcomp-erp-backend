@@ -1080,7 +1080,7 @@ export class OrdenesModel {
         await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos_fracciones(id_combo_CAB,talla,cantidad) values ?",[fraccionado])
       }
       for(let insumo of [...insumos]){
-        await conn.query("INSERT INTO tbl2_fases_prod_ordenes_insumos(id_orden_CAB,id_producto_CAB,id_subprod_CAB,cantidad) VALUES (?,?,?,?)",[idinsert,insumo.id_producto_CAB,insumo.id_subprod_CAB,insumo.cantidad])
+        await conn.query("INSERT INTO tbl2_fases_prod_ordenes_insumos(id_orden_CAB,id_producto_CAB,id_subprod_CAB,cantidad,fases,listatallas) VALUES (?,?,?,?,?,?)",[idinsert,insumo.id_producto_CAB,insumo.id_subprod_CAB,insumo.cantidad,JSON.stringify(insumo.fases ?? []),JSON.stringify(insumo.listatallas ?? [])],)
       }
       for(let requerimiento of [...requerimientos]){
         await conn.query("INSERT INTO tbl2_fases_prod_ordenes_requerimientos(id_orden_CAB,id_pedido_CAB) VALUES (?,?)",[idinsert,requerimiento.id_pedido_CAB])
@@ -1150,7 +1150,7 @@ export class OrdenesModel {
 
       await conn.query("DELETE FROM tbl2_fases_prod_ordenes_insumos WHERE id_orden_CAB = ?",[id])
       for(let insumo of [...insumos]){
-        await conn.query("INSERT INTO tbl2_fases_prod_ordenes_insumos(id_orden_CAB,id_producto_CAB,id_subprod_CAB,cantidad,fases) VALUES (?,?,?,?,?)",[id,insumo.id_producto_CAB,insumo.id_subprod_CAB,insumo.cantidad,JSON.stringify(insumo.fases ?? [])])
+        await conn.query("INSERT INTO tbl2_fases_prod_ordenes_insumos(id_orden_CAB,id_producto_CAB,id_subprod_CAB,cantidad,fases,listatallas) VALUES (?,?,?,?,?,?)",[id,insumo.id_producto_CAB,insumo.id_subprod_CAB,insumo.cantidad,JSON.stringify(insumo.fases ?? []),JSON.stringify(insumo.listatallas ?? [])])
       }
       await conn.query("DELETE FROM tbl2_fases_prod_ordenes_requerimientos WHERE id_orden_CAB = ?",[id])
       for(let requerimiento of [...requerimientos]){
@@ -1344,8 +1344,10 @@ export class OrdenesModel {
               }
 
               for(let combo of [...corte.combos]){
+
                 let [validacion] = await conn.query(`SELECT *FROM tbl2_guias_traslado_cab t1 JOIN tbl2_guias_traslado_det t2 ON t1.idx = t2.id_guia_CAB WHERE t1.tipo = 'SERVICIOS' AND t1.estado <> 'ANULADO' AND t1.id_corte_CAB = ? AND t2.id_combo = ?`,[parseInt(corte['idx']),combo.idx ?? 0])
                 console.log("Validacion de combos:",validacion,parseInt(corte['idx']),combo.idx)
+                console.log("Info del combo",combo)
 
                 if(validacion.length == 0){
                   console.log("Dentro del update de combos complejo")
@@ -1355,15 +1357,14 @@ export class OrdenesModel {
                   let [info_insert] = await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB,idx_color,color_combo,cantidad_combo,disponible_total,insumos) VALUES (?,?,?,?,?,?)",[corte.idx,combo.idx_color,combo.color_combo,combo.cantidad_combo,combo.cantidad_combo,JSON.stringify(combo.insumos)])
   
                   let fraccionado = []
-                  if(combo.idx && combo.idx !== ''){
-                    fraccionado = combo.fracciones.reduce((c,v)=>{
-                      c.push([info_insert.insertId,v.talla,v.cantidad,v.cantidad])
-                      return c
-                    },[])
-                  }else{
-                    // fraccionado = ['xs','s','m','l','xl','xxl'].map(talla=>([info_insert.insertId,talla,combo[talla] ?? 0, combo[talla] ?? 0]))
-                    fraccionado = tallasbase.map(talla=>([info_insert.insertId,talla,combo[talla] ?? 0, combo[talla] ?? 0]))
-                  }
+                  // if(combo.idx && combo.idx !== ''){
+                  //   fraccionado = combo.fracciones.reduce((c,v)=>{
+                  //     c.push([info_insert.insertId,v.talla,v.cantidad,v.cantidad])
+                  //     return c
+                  //   },[])
+                  // }else{
+                  // }
+                  fraccionado = tallasbase.map(talla=>([info_insert.insertId,talla,combo[talla] ?? 0, combo[talla] ?? 0]))
                   console.log("Info del fraccionado:",fraccionado)
                   // await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos_fracciones(id_combo_CAB,talla,cantidad,produccion_total) values ? ",[fraccionado.filter(row=>row.cantidad > 0)])
                   await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos_fracciones(id_combo_CAB,talla,cantidad,produccion_total) values ? ",[fraccionado])
@@ -1394,8 +1395,8 @@ export class OrdenesModel {
       console.log("Verificando la informacion de corte :",verificar)
       console.log("Terminando el actulizado de corte")
 
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito' }
     } catch (err) {
       console.log(err)
@@ -2126,18 +2127,26 @@ export class OrdenesModel {
           ),0)*t1.cantidad as comprometido_telas,
           if(ISNULL(tc.idx),
             COALESCE((
-              select sum(tboc.cantidad_combo) from tbl2_fases_prod_ordenes_combos tboc 
+              -- select sum(tboc.cantidad_combo) from tbl2_fases_prod_ordenes_combos tboc 
+              -- where tboc.id_orden_CAB = t1.id_orden_CAB and JSON_CONTAINS(tboc.insumos,CAST(ifnull(t1.id_subprod_CAB,-1) as CHAR))
+              select sum(tboc_f.cantidad) from tbl2_fases_prod_ordenes_combos tboc 
+              join tbl2_fases_prod_ordenes_combos_fracciones tboc_f on tboc.idx = tboc_f.id_combo_CAB
               where tboc.id_orden_CAB = t1.id_orden_CAB and JSON_CONTAINS(tboc.insumos,CAST(ifnull(t1.id_subprod_CAB,-1) as CHAR))
+              and (ifnull(t1.listatallas,'[]') = '[]' or JSON_CONTAINS(t1.listatallas,JSON_QUOTE(tboc_f.talla)))
             ),0),
             COALESCE((
-              select sum(tbcc.cantidad_combo) from tbl2_fases_prod_hojacorte_combos tbcc 
+              -- select sum(tbcc.cantidad_combo) from tbl2_fases_prod_hojacorte_combos tbcc 
+              -- where tbcc.id_hojacorte_CAB = tc.idx and JSON_CONTAINS(tbcc.insumos,CAST(ifnull(t1.id_subprod_CAB,-1) as CHAR))
+              select sum(tbcc_f.cantidad) from tbl2_fases_prod_hojacorte_combos tbcc 
+              join tbl2_fases_prod_hojacorte_combos_fracciones tbcc_f on tbcc.idx = tbcc_f.id_combo_CAB
               where tbcc.id_hojacorte_CAB = tc.idx and JSON_CONTAINS(tbcc.insumos,CAST(ifnull(t1.id_subprod_CAB,-1) as CHAR))
+              and (ifnull(t1.listatallas,'[]') = '[]' or JSON_CONTAINS(t1.listatallas,JSON_QUOTE(tbcc_f.talla)))
             ),0)
           )*t1.cantidad as comprometido_avios,
           COALESCE((
             select SUM(COALESCE(tkcd.Cant_despacho_DET,0)) from tbl_kard_compras_CAB tkcc 
             join tbl_kard_compras_DET tkcd on tkcc.id_CAB = tkcd.id_CAB_DET 
-            where tkcc.id_orden = t1.id_orden_CAB and tkcd.id_subprod = t1.id_subprod_CAB and tkcd.num_lote = COALESCE(pc.lote,0)
+            where tkcc.id_orden = t1.id_orden_CAB and tkcd.id_subprod = t1.id_subprod_CAB and tkcd.num_lote = COALESCE(pc.lote,0)  and tkcc.estado = 'EMITIDO'
           ),0) as entregado,
           COALESCE((
             select SUM(COALESCE(tad.cantidad,0)) from tbl2_almacen_det tad where tad.id_CAB_DET = ? and tad.idx_subproducto = t1.id_subprod_CAB and tad.lote = COALESCE(pc.lote,0)
