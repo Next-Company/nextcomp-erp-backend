@@ -72,6 +72,7 @@ export class ProduccionController {
         cabecera: data[0],
         detalle: data2.filter(row => !row.isprototipo),
         tallas: data4[0]?.tallas.map(row=>row.desc) ?? ['st','xs','s','m','l','xl','xxl',],
+        colspanbody: data4[0]?.tallas?.length + 2 ?? 2,
         colspantotales: data4[0]?.tallas.length + 2,
         // relleno:data2.filter(),
         prototipos: data2.filter(row => row.isprototipo),

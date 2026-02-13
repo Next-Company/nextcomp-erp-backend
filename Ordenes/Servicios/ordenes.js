@@ -1669,10 +1669,11 @@ export class OrdenesModel {
       conn.beginTransaction()
 
       const data = JSON.parse(info.info)
-      console.log("La info recibida es:",data,data[0].precios,id)
       const id = data[0].idx
 
-      const precios_modelo = { precio2: [ 22, 0 ], precio3: [ 14, 12 ], precio1: [ 12, 0 ] }
+      console.log("La info recibida es la siguiente:",data,data[0].precios,id)
+
+      // { precio2: [ 22, 0 ], precio3: [ 14, 12 ], precio1: [ 12, 0 ] }
 
       // const [result] = await conn.execute(`UPDATE tbl2_fases_prod_ordenes SET precios = ? WHERE idx = ?`,[data[0].precios,data[0].idx])
       // console.log("La cantidad de items observados fueron:",result.affectedRows)
@@ -1681,9 +1682,26 @@ export class OrdenesModel {
 
       for(let modelo of [...modelos]){
         const lista_precios = data[0].precios
-        const consulta = lista_precios
+        // const consulta = lista_precios
         console.log("La info del modelo es el siguiente:", modelo)
-        // await conn.query(`update tbl2_productos set utilidad1 = (precio/costo-1)*100`)
+
+        await conn.query(`CALL sp_CreacionPreciosPropios(?)`,[modelo.id_receta_CAB])
+        await conn.query(`
+          UPDATE tbl2_productos SET 
+            utilidad1 = (?/10-1)*100,
+            utilidad1 = (?/costo-1)*100,
+            utilidad1 = (?/costo-1)*100,
+            utilidad1 = (?/costo-1)*100,
+            utilidad1 = (?/costo-1)*100,
+          WHERE
+
+        `)
+
+        // const [validacion] = await conn.execute(`SELECT *FROM tbl2_productos WHERE ruc_ = '20522094120' AND tipo = 'P' LIMIT 20`)
+        // for(let orden of [...validacion]){
+
+        // }
+
       }
       // const [consulta] = await conn.query(`select *from tbl2_productos where ruc_ = '20522094120' and visibilidad_tienda = 1`)
       // const [revision] = await conn.query(`select *from tbl2_fases_prod_modelos where `)

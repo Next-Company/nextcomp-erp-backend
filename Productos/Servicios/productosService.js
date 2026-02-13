@@ -435,7 +435,7 @@ export class ProductosService{
       // CARGANDO IMAGENES
       if (imagenes.length > 0){
         const resultado = await ProductosService.uploadImagesProduct(imagenes,info.imageslist ? JSON.parse(info.imageslist) : [],result.info)
-        if(!resultado.ok) throw new Error("Error subiendo las imagenes")
+        if(!resultado.ok) throw new Error(resultado.message)
         imageslist = JSON.stringify(resultado.newimageslist)
       } else {
         imageslist = info.imageslist ?? null
@@ -463,8 +463,9 @@ export class ProductosService{
         password: "JSJPeru2024++",
       })
       for(let image of [...images]){
+        console.log("La info de la imagen es:",image)
         let newname = null
-        newname = `20522094120_${idx}_${Date.now()}.` + image.name.split('.').pop().toLowerCase()
+        newname = `20522094120_${idx}_${Date.now()}.` + image.originalname.split('.').pop().toLowerCase()
         const oldPath = image.path;
         const newPath = path.join('public/images', newname);
         await fs.rename(oldPath, newPath)

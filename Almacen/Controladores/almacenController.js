@@ -979,6 +979,7 @@ export default class AlmacenController{
         BINARY_CHUNKS4: BINARY_CHUNKS4.toString('base64'),
         BINARY_CHUNKS5: BINARY_CHUNKS5.toString('base64'),
         cabecera: cabecera,
+        correlativo: String(cabecera.id_CAB).padStart(8,'0'),
         datos: requerimiento,
         detalle: detalle,
         cuadre: cuadre,
@@ -1035,7 +1036,7 @@ export default class AlmacenController{
           },
           foo(items) {
             let itemsAsHtml = null
-            let extra = 30 - items.length
+            let extra = 45 - items.length
             if (tipo == 'AVIOS') {
               // itemsAsHtml = items.map((item, key) => `
               // <tr style="height:22px;">
@@ -1121,7 +1122,7 @@ export default class AlmacenController{
           },
           fuu(items) {
             let itemsAsHtml = null
-            let extra = 20 - items.length
+            let extra = 40 - items.length
             if (tipo == 'avios') {
               itemsAsHtml = items.map((item, key) => `
               <tr style="height:22px;">
@@ -1214,7 +1215,7 @@ export default class AlmacenController{
             itemsAsHtml = `
               <div style="height:14px;padding-top:5px;border-top:1px solid black;">
                 <div style="text-align:left;display:flex;flex-direction: row;">
-                  <div style='font-size:8px;'><strong>OBS:</strong> Una vez recibidos los avíos, cuenta con 48 horas hábiles para reportar cualquier incidencia. Pasado este plazo, el envío se considerará <br/> conforme y cualquier solicitud adicional será facturada como un pedido nuevo.</div>
+                  <div style='font-size:8px;'><strong>OBS:</strong> Una vez recibidos los avíos, cuenta con 48 horas hábiles para reportar cualquier incidencia. Pasado este plazo, el envío se considerará <br/> conforme y cualquier solicitud adicional será facturada como un pedido nuevo. Para cualquier duda y consulta adicional comunicarse al número <strong>901276957</strong>.</div>
                   <div style="flex:1;text-align:right;font-weight:bold;">TOTAL</div>
                   <div style="width:60px;text-align:left;padding-left:10px;">${total}</div>
                 </div>
@@ -1234,18 +1235,33 @@ export default class AlmacenController{
           const page = await browser.newPage();
           await page.setContent(html);
 
-          const pdfOptions = {
-            // format: 'A4',
-            width: '20cm',
-            height: '27.94cm',
-            landscape: false,
-            printBackground: true,
-            margin: {
-              left: 0,
-              right: 0
+          const pdfOptions = cabecera.Suc_Tienda == '508' 
+          ? 
+            {
+              // format: 'A4',
+              width: '20cm',
+              height: '27.94cm',
+              landscape: true,
+              printBackground: true,
+              margin: {
+                left: 0,
+                right: 0
+              }
+              , scale: 1
             }
-            , scale: 1
-          };
+          :
+            {
+              // format: 'A4',
+              width: '20cm',
+              height: '27.94cm',
+              landscape: false,
+              printBackground: true,
+              margin: {
+                left: 0,
+                right: 0
+              }
+              , scale: 1
+            };
 
           const pdfBuffer = await page.pdf(pdfOptions);
           await browser.close();
