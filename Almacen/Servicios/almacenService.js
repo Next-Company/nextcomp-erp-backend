@@ -92,6 +92,7 @@ export default class AlmacenModel{
           ts.nom,
           COALESCE((select tp.codUnidadMedida from tbl2_productos tp where tp.idx = ts.idx_CAB_PROD),'') as unidad,
           COALESCE((select tc.nom from tbl2_colores tc where tc.idx = ts.idx_CAB_COLOR),'') as color,
+          ts.talla,
           -- COALESCE((select COALESCE(tpoi.cantidad,0) from tbl2_fases_prod_ordenes_insumos tpoi where tpoi.id_orden_CAB = ? and tpoi.id_subprod_CAB = t1.id_subprod ),0) AS comprometido
           COALESCE((
             select sum(tboc.cantidad_combo) from tbl2_fases_prod_ordenes_combos tboc 

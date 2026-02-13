@@ -1053,7 +1053,7 @@ export default class AlmacenController{
               itemsAsHtml = items.map((item, key) => `
               <tr style="height:22px;">
                 <td style="width:35px;text-align: center;background-color:#ddebf7;">${key + 1}</td>
-                <td style="width:160px;text-align: left;">` + item['nom'] + `</td>
+                <td style="width:160px;text-align: left;">` + (item['nom'] + ' ' + item['talla'] + ' ' + item['color'] ) + `</td>
                 <td style="width:60px;text-align: center;background-color:#ddebf7;">` + item['unidad'] + `</td>
                 <td style="width: 60px;text-align: center;background-color:#ddebf7;">` + item['Cant_despacho_DET'] + `</td>
               </tr>`)

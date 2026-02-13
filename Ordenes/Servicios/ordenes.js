@@ -1520,19 +1520,28 @@ export class OrdenesModel {
 
       if(base_add.length > 0){
         console.log("Dentro de la secciones")
+        let INFO_NEWPROD = {}
         for(let modelo of [...base_add]){
+          console.log("Mostrando informacion del modelo:",modelo)
           const cantidad = tallasbase.tallasformateado.split('-').reduce((sum,talla)=>{
             return sum + (isNaN(parseInt(modelo[talla])) ? 0 : parseInt(modelo[talla]) > 0 ? parseInt(modelo[talla]) : 0)
           },0)
 
-          const newinfo = {...INFO_RECETA_ORIGIN[0],modelo:modelo.articulo,nom:INFO_RECETA_ORIGIN[0].rubro.trim() + ' ' + INFO_RECETA_ORIGIN[0].base + ' ' + modelo.articulo}
+          const newinfo = {...INFO_RECETA_ORIGIN[0],modelo:modelo.articulo,nom:INFO_RECETA_ORIGIN[0].rubro + ' ' + INFO_RECETA_ORIGIN[0].base + ' ' + modelo.articulo}
           Reflect.deleteProperty(newinfo,'idx')
+          console.log("La newinfo es la siguiente:",newinfo)
+          
           if(!modelo.idreceta){
-            const INFO_NEWPROD = await ProductosService.createNewProduct(newinfo,conn)
+            // const [validaprod] = await conn.query("select *from tbl2_productos where ruc_ = '20522094120' and nom = ?",[newinfo.nom])
+            console.log("Dentro de la creacion del producto")
+            INFO_NEWPROD = await ProductosService.createNewProduct(newinfo,conn)
             if(!INFO_NEWPROD.ok) throw new Error(INFO_NEWPROD.message)
+            // if(validaprod.length == 0){
+            // } else {
+            //   INFO_NEWPROD['info'] = INFO_RECETA_ORIGIN[0].idx
+            // }
             // console.log("La nueva receta creada es :",INFO_NEWPROD)
           }
-
           const info_subprod = tallasbase.tallas.reduce((carry,current)=>{
             const registro = {
               idx_CAB_PROD: modelo.idreceta ?? INFO_NEWPROD.info,
@@ -1550,7 +1559,7 @@ export class OrdenesModel {
           },[])
           for(let subprod of info_subprod){
             const INFOT_SUBPROD = await ProductosService.createNewSubProduct(subprod,conn)
-            if(!INFOT_SUBPROD.ok) throw new Error(INFOT_SUBPROD.message)
+            // if(!INFOT_SUBPROD.ok) throw new Error(INFOT_SUBPROD.message)
           }
 
           const [resultinsert] = await conn.execute("INSERT INTO tbl2_fases_prod_modelos(id_orden_CAB,id_receta_CAB,idx_color,color_modelo,cantidad_modelo) VALUES(?,?,?,?,?)",[idorden,modelo.idreceta ?? INFO_NEWPROD.info,modelo.idcolor,modelo.color,cantidad])
@@ -1654,32 +1663,31 @@ export class OrdenesModel {
   static async saveFasePrecios(info) {
     console.log("Dentro de la fase de configuracion de precios")
     let conn
-    let nameimg = null
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
       conn.beginTransaction()
 
       const data = JSON.parse(info.info)
-      const id = info.idx
       console.log("La info recibida es:",data,data[0].precios,id)
+      const id = data[0].idx
 
-      const [result] = await conn.execute(`UPDATE tbl2_fases_prod_ordenes SET precios = ? WHERE idx = ?`,[data[0].precios,data[0].idx])
-      console.log("La cantidad de items observados fueron:",result.affectedRows)
+      const precios_modelo = { precio2: [ 22, 0 ], precio3: [ 14, 12 ], precio1: [ 12, 0 ] }
+
+      // const [result] = await conn.execute(`UPDATE tbl2_fases_prod_ordenes SET precios = ? WHERE idx = ?`,[data[0].precios,data[0].idx])
+      // console.log("La cantidad de items observados fueron:",result.affectedRows)
 
       const [modelos] = await conn.execute(`select *from tbl2_fases_prod_modelos where id_orden_CAB = ?`,[data[0].idx])
 
       for(let modelo of [...modelos]){
         const lista_precios = data[0].precios
         const consulta = lista_precios
+        console.log("La info del modelo es el siguiente:", modelo)
         // await conn.query(`update tbl2_productos set utilidad1 = (precio/costo-1)*100`)
       }
-
-      // if (id == '') {
-  
-      // } else {
-        
-      // }
+      // const [consulta] = await conn.query(`select *from tbl2_productos where ruc_ = '20522094120' and visibilidad_tienda = 1`)
+      // const [revision] = await conn.query(`select *from tbl2_fases_prod_modelos where `)
+      // if(consulta.affectedRows == 0) throw Error()
 
       if (conn) conn.rollback()
       // if (conn) conn.commit()

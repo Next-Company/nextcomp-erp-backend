@@ -489,7 +489,7 @@ export class ProductosService{
 
       insert['codigo'] = '09000' + indice_prod + '0';
       insert['isbn'] = '09000' + indice_prod + '0';
-      insert['nom'] = info.producto;
+      insert['nom'] = info.nom ?? info.producto;
       insert['ruc_']= '20522094120';
       insert['costo']= 0;
       insert['utilidad1']= 0;
