@@ -1669,43 +1669,47 @@ export class OrdenesModel {
       conn.beginTransaction()
 
       const data = JSON.parse(info.info)
+      const modelos = JSON.parse(info.modelos)
       const id = data[0].idx
 
-      console.log("La info recibida es la siguiente:",data,data[0].precios,id)
+      console.log("La info recibida es la siguiente:",modelos,data[0].precios,id)
 
       // { precio2: [ 22, 0 ], precio3: [ 14, 12 ], precio1: [ 12, 0 ] }
+      // validacion
+      const [revision] = await conn.query('select *from tbl2_')
+      if(revision.length > 0){
+        throw new Error('')
+      }
 
-      // const [result] = await conn.execute(`UPDATE tbl2_fases_prod_ordenes SET precios = ? WHERE idx = ?`,[data[0].precios,data[0].idx])
-      // console.log("La cantidad de items observados fueron:",result.affectedRows)
-
-      const [modelos] = await conn.execute(`select *from tbl2_fases_prod_modelos where id_orden_CAB = ?`,[data[0].idx])
-
+      const eq_soles = {precio1:'utilidad1',precio2:'utilidad2',precio3:'utilidad3',precio4:'utilidad4',precio5:'utilidad5',precio6:'utilidad6',}
+      const eq_dolares = {precio1:['tiendaUtilidad1','switchPrecioTienda1'],precio2:['tiendaUtilidad2','switchPrecioTienda2'],precio3:['tiendaUtilidad3','switchPrecioTienda3'],precio4:['tiendaUtilidad4','switchPrecioTienda4'],precio5:['tiendaUtilidad5','switchPrecioTienda5'],precio6:['tiendaUtilidad6','switchPrecioTienda6']}
       for(let modelo of [...modelos]){
-        const lista_precios = data[0].precios
-        // const consulta = lista_precios
-        console.log("La info del modelo es el siguiente:", modelo)
+        const lista_precios = data[0].precios[modelo.pricemodel - 1]
+        console.log("La info del modelo es el siguiente:",modelo, lista_precios)
+
+        // { precio1: [ 22, 0 ], precio2: [ 14, 12 ]}
+        let subquery_soles = Object.keys(lista_precios).reduce((c,v)=>{
+          let p = `${eq_soles[v]}=(${lista_precios[v][0]}/costo-1)*100`
+          c.push(p)
+          return c
+        },[])
+        await conn.query(`
+          UPDATE tbl2_productos SET ${subquery_soles.join(',')} WHERE ruc_ = ? idx = ?
+        `,['20522094120',modelo.id_receta_CAB])
 
         await conn.query(`CALL sp_CreacionPreciosPropios(?)`,[modelo.id_receta_CAB])
+
+        let subquery_dolares = Object.keys(lista_precios).reduce((c,v)=>{
+          let p = `${eq_dolares[v][0]}=(${lista_precios[v][0]}/costo-1)*100,${eq_dolares[v][1]}=1`
+          c.push(p)
+          return c
+        },[])
         await conn.query(`
-          UPDATE tbl2_productos SET 
-            utilidad1 = (?/10-1)*100,
-            utilidad1 = (?/costo-1)*100,
-            utilidad1 = (?/costo-1)*100,
-            utilidad1 = (?/costo-1)*100,
-            utilidad1 = (?/costo-1)*100,
-          WHERE
-
-        `)
-
-        // const [validacion] = await conn.execute(`SELECT *FROM tbl2_productos WHERE ruc_ = '20522094120' AND tipo = 'P' LIMIT 20`)
-        // for(let orden of [...validacion]){
-
-        // }
-
+          UPDATE tbl2_preciosxtienda SET ${subquery_dolares} WHERE idx_CAB_PROD = ? and idx_almacen in (?)
+        `,[modelo.id_receta_CAB,[12,23].join(',')])
       }
-      // const [consulta] = await conn.query(`select *from tbl2_productos where ruc_ = '20522094120' and visibilidad_tienda = 1`)
-      // const [revision] = await conn.query(`select *from tbl2_fases_prod_modelos where `)
-      // if(consulta.affectedRows == 0) throw Error()
+      // const [result] = await conn.execute(`UPDATE tbl2_fases_prod_ordenes SET precios = ? WHERE idx = ?`,[data[0].precios,data[0].idx])
+      // await conn.query(`update tbl2_fases_prod_modelos set pricemodel=? where `,[])
 
       if (conn) conn.rollback()
       // if (conn) conn.commit()
