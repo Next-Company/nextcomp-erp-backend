@@ -492,7 +492,7 @@ export class ProductosService{
       insert['isbn'] = '09000' + indice_prod + '0';
       insert['nom'] = info.nom ?? info.producto;
       insert['ruc_']= '20522094120';
-      insert['costo']= 0;
+      insert['costo']= 10;
       insert['utilidad1']= 0;
       insert['moneda']= '';
       insert['codUnidadMedida']= 'NIU';

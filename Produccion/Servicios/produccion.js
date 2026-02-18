@@ -3325,7 +3325,7 @@ export class ProduccionModel {
         try {
           const [res] = await conn.query('INSERT INTO tbl2_despachos_cab(fec_emision_guia,fec_despacho,tipo,id_proveedor_CAB,proveedor,responsable,id_guia_origen,nro_guia_origen,id_pedido_origen,nro_pedido_origen,observaciones,nro_guia,nro_factura,imp_factura,facturado,fase) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [cabecera.fec_emision_guia, cabecera.fec_despacho, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.id_guia_origen, cabecera.nro_guia_origen, cabecera.id_pedido_origen, cabecera.nro_pedido_origen, cabecera.observaciones, cabecera.nro_guia, cabecera.nro_factura, cabecera.imp_factura,cabecera.facturado,cabecera.fase])
 
-          console.log("Inicia insertado detalle despacho")
+          console.log("Inicia insertado detalle despacho",articulos)
           for(let detalle of [...articulos]){
             const [results] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,precio,despacho,caidos,incompletos,id_combo) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, detalle.id_item, detalle.precio, parseFloat(detalle.despacho ?? 0), parseFloat(detalle.caidos ?? 0), parseFloat(detalle.incompletos ?? 0),detalle.id_combo]);
             if(results.insertId <= 0) throw new Error("No se pudo obtener el ID del detalle de despacho insertado")
@@ -3360,16 +3360,21 @@ export class ProduccionModel {
             FROM tbl2_guias_traslado_cab where idx = ?
             `,[parseInt(cabecera.id_guia_origen)])
 
-          console.log("Info de la validacoines :",result)
+          console.log("Info de la validacoines:",result)
       
           let valida = result[0].ingresos >= result[0].cantidad_servicio ? 1 : 0
           if(valida){
             await conn.query("UPDATE tbl2_guias_traslado_cab SET estado = 'FINALIZADO' WHERE idx = ?",[parseInt(cabecera.id_guia_origen)])
           }
+
+          const [validacion] = await conn.query('select *from tbl2_despachos_cab t1 join tbl2_despachos_det t2 on t1.idx = t2.id_despacho_CAB where t1.idx = ?',[parseInt(res.insertId)])
+          console.log("La info del despachO ingressado es:",validacion)
+
         } catch (err) {
           console.log("error en la consulta", err)
           throw new Error("Se produjo un error en el guardado de la guia de despacho: " + err)
         }
+
       }
 
       ///////////////////////////////////////////

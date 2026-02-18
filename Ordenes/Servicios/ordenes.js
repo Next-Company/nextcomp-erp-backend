@@ -1649,8 +1649,10 @@ export class OrdenesModel {
         }
       }
 
-      // if (conn) conn.rollback()
-      if (conn) conn.commit()
+      await conn.execute('UPDATE tbl2_fases_prod_ordenes SET fraccionado = 1 WHERE idx = ?',[idorden])
+
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito' }
     } catch (err) {
       console.log(err)
@@ -1676,16 +1678,23 @@ export class OrdenesModel {
 
       // { precio2: [ 22, 0 ], precio3: [ 14, 12 ], precio1: [ 12, 0 ] }
       // validacion
-      const [revision] = await conn.query('select *from tbl2_')
-      if(revision.length > 0){
-        throw new Error('')
-      }
 
       const eq_soles = {precio1:'utilidad1',precio2:'utilidad2',precio3:'utilidad3',precio4:'utilidad4',precio5:'utilidad5',precio6:'utilidad6',}
       const eq_dolares = {precio1:['tiendaUtilidad1','switchPrecioTienda1'],precio2:['tiendaUtilidad2','switchPrecioTienda2'],precio3:['tiendaUtilidad3','switchPrecioTienda3'],precio4:['tiendaUtilidad4','switchPrecioTienda4'],precio5:['tiendaUtilidad5','switchPrecioTienda5'],precio6:['tiendaUtilidad6','switchPrecioTienda6']}
       for(let modelo of [...modelos]){
         const lista_precios = data[0].precios[modelo.pricemodel - 1]
         console.log("La info del modelo es el siguiente:",modelo, lista_precios)
+
+        await conn.query(`UPDATE tbl2_fases_prod_modelos SET pricemodel = ? WHERE idx = ? AND id_orden_CAB`,[modelo.pricemodel,modelo.idx,data[0].idx])
+
+        const [revision] = await conn.query(`
+          SELECT *FROM tbl2_almacen_det t1
+          JOIN tbl2_almacen t2 ON t1.id_CAB_DET = t2.idx
+          WHERE t2.ruc_ = '20522094120' AND t1.id_cabprod = ? AND t1.estado = 1
+        `,[modelo.id_receta_CAB])
+        if(revision.length > 0) break;
+
+        const [info_receta] = await conn.execute(`SELECT *FROM tbl2_productos WHERE ruc_ = '20522094120' AND idx = ?`,[modelo.id_receta_CAB])
 
         // { precio1: [ 22, 0 ], precio2: [ 14, 12 ]}
         let subquery_soles = Object.keys(lista_precios).reduce((c,v)=>{
@@ -1694,25 +1703,26 @@ export class OrdenesModel {
           return c
         },[])
         await conn.query(`
-          UPDATE tbl2_productos SET ${subquery_soles.join(',')} WHERE ruc_ = ? idx = ?
+          UPDATE tbl2_productos SET ${subquery_soles.join(',')} WHERE ruc_ = ? AND idx = ?
         `,['20522094120',modelo.id_receta_CAB])
 
         await conn.query(`CALL sp_CreacionPreciosPropios(?)`,[modelo.id_receta_CAB])
 
         let subquery_dolares = Object.keys(lista_precios).reduce((c,v)=>{
-          let p = `${eq_dolares[v][0]}=(${lista_precios[v][0]}/costo-1)*100,${eq_dolares[v][1]}=1`
+          let p = `${eq_dolares[v][0]}=(${lista_precios[v][1]}/${info_receta[0].costo}-1)*100,${eq_dolares[v][1]}=1`
           c.push(p)
           return c
         },[])
         await conn.query(`
-          UPDATE tbl2_preciosxtienda SET ${subquery_dolares} WHERE idx_CAB_PROD = ? and idx_almacen in (?)
-        `,[modelo.id_receta_CAB,[12,23].join(',')])
-      }
-      // const [result] = await conn.execute(`UPDATE tbl2_fases_prod_ordenes SET precios = ? WHERE idx = ?`,[data[0].precios,data[0].idx])
-      // await conn.query(`update tbl2_fases_prod_modelos set pricemodel=? where `,[])
+          UPDATE tbl2_preciosxtienda SET ${subquery_dolares} WHERE idx_CAB_PROD = ? and idx_almacen in (567,592)
+        `,[modelo.id_receta_CAB])
 
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+        
+      }
+      const [result] = await conn.execute(`UPDATE tbl2_fases_prod_ordenes SET precios = ? WHERE idx = ?`,[JSON.stringify(data[0].precios),data[0].idx])
+
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito' }
     } catch (err) {
       console.log(err)

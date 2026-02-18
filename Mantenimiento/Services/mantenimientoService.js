@@ -9,7 +9,8 @@ export default class MantenimientoService {
       await conn.connect();
       let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(COALESCE(TRIM(codigo),''),' ',COALESCE(TRIM(nom),''),' ',COALESCE(TRIM(detalle),''))) > 0").join(" ") : ""
 
-      let query = `SELECT *FROM tbl2_colores where ruc in ('20522094120','20523875583') ${extra} limit 200`
+      // let query = `SELECT *FROM tbl2_colores where ruc in ('20522094120','20523875583') ${extra} limit 200`
+      let query = `SELECT *FROM tbl2_colores where ruc in ('20522094120') ${extra} limit 200`
       console.log("La consulta generada es la lsiguiente:", query)
       let [colores] = await conn.query(query);
 

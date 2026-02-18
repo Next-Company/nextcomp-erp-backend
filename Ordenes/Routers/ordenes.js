@@ -31,7 +31,7 @@ ordenesRouter.get('/extraerdisponible/:id/:id_corte', OrdenesController.ExtraerD
 // ordenesRouter.put("/saveFaseMolde",OrdenesController.saveFaseMolde)
 // ordenesRouter.put("/saveFaseCorte",OrdenesController.saveFaseCorte)
 // ordenesRouter.put("/saveFaseMateriales",OrdenesController.saveFaseMateriales)
-// ordenesRouter.put("/saveFaseFraccionamiento",OrdenesController.saveFaseFraccionamiento)
+ordenesRouter.put("/saveFaseFraccionamiento",OrdenesController.saveFaseFraccionamiento)
 ordenesRouter.put("/saveFasePrecios",OrdenesController.saveFasePrecios)
 
 ordenesRouter.get("/lizzet/:id",OrdenesController.regulaLizzet)
