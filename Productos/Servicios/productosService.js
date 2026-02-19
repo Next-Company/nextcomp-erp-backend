@@ -851,7 +851,8 @@ export class ProductosService{
               tad.cantidad as stock
             FROM tbl2_productos tp
             LEFT join tbl2_subproductos ts on tp.idx = ts.idx_CAB_PROD
-            LEFT join tbl2_almacen_det tad on tad.idx_subproducto = ts.idx and tad.id_cabprod = ts.idx_CAB_PROD ${newfilters}
+            -- LEFT join tbl2_almacen_det tad on tad.idx_subproducto = ts.idx and tad.id_cabprod = ts.idx_CAB_PROD ${newfilters}
+            LEFT join tbl2_almacen_det tad on tad.idx_subproducto = ts.idx ${newfilters}
             WHERE tp.ruc_ = '20522094120' and tp.tipo in ('I','A') and ts.idx_CAB_COLOR is not null 
         ) AS cc
         WHERE 1=1 ${extra}

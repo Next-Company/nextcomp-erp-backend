@@ -2318,42 +2318,20 @@ export class ProduccionModel {
 
         }
 
-        // const insert = async () => {
-        //   const fila = articulos.shift()
+        for(let fila of [...ids_delete]){
+          await conn.query('DELETE FROM `tbl2_pedidos_insumos_det` WHERE `id_pedido_CAB` = ? and `idx` = ?', [parseInt(data.id), parseInt(fila.idx)])
+        }
+
+        // const eliminar = async () => {
+        //   const fila = ids_delete.shift()
         //   if (fila) {
-        //     let fracciones = []
-        //     if (fila.idx && fila.idx !== '') {
-        //       console.log("Dentro de 1 actualizacion")
-        //       const [results, fields] = await conn.query('UPDATE tbl2_pedidos_insumos_det SET id_pedido_CAB=NULLIF(?, ""),id_producto_CAB=NULLIF(?, ""),producto=NULLIF(?, ""),color=NULLIF(?, ""),rollos=NULLIF(?, ""),cantidad=NULLIF(?, ""),unidad=NULLIF(?, ""),precio=NULLIF(?, ""),anulado=NULLIF(?, ""),modelo=NULLIF(?, ""),corte=NULLIF(?, "") WHERE idx = ?', [parseInt(data.id), fila.id_producto_CAB, fila.producto, fila.color, fila.rollos, fila.cantidad, fila.unidad, fila.precio, fila.anulado, fila.modelo, fila.corte, fila.idx]);
-
-        //     } else {
-        //       console.log("Dentro de 2 insertado")
-        //       // const [results, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_det(id_pedido_CAB,id_producto_CAB,producto,color,rollos,cantidad,unidad,precio,anulado,modelo,corte) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [parseInt(data.id), fila.id_producto_CAB, fila.producto, fila.color, fila.rollos, fila.cantidad, fila.unidad, fila.precio, fila.anulado, fila.modelo, fila.corte]);
-
-        //       const [results, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_det(id_pedido_CAB,id_producto_CAB,producto,color,rollos,cantidad,unidad,precio,anulado,modelo,corte) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [parseInt(data.id), fila.id_producto_CAB, fila.producto, fila.color, fila.rollos, fila.cantidad, fila.unidad, fila.precio, fila.anulado, fila.modelo, fila.corte]);
-
-        //     }
-        //     await insert()
+        //     await conn.query('DELETE FROM `tbl2_pedidos_insumos_det` WHERE `id_pedido_CAB` = ? and `idx` = ?', [parseInt(data.id), parseInt(fila.idx)])
+        //     await eliminar()
         //   } else {
-        //     console.log("Devolviendo resolve")
         //     return Promise.resolve('')
         //   }
         // }
-        // await insert()
-
-        const eliminar = async () => {
-          const fila = ids_delete.shift()
-          if (fila) {
-            await conn.query('DELETE FROM `tbl2_pedidos_insumos_det` WHERE `id_pedido_CAB` = ? and `idx` = ?', [parseInt(data.id), parseInt(fila.idx)])
-            await eliminar()
-          } else {
-            return Promise.resolve('')
-          }
-        }
-        await eliminar()
-
-        // const [test,otro] = await conn.query("select *from tbl2_pedidos_insumos_det tpid where id_pedido_CAB = 13")
-        // console.log("Comprueba actualizacion:",test)
+        // await eliminar()
 
       } else {
         console.log("Creandsssso")
@@ -2370,10 +2348,19 @@ export class ProduccionModel {
               console.log("Error:",error)
             }
           }
+          // const pp = await conn.query("select *from tbl2_pedidos_insumos_det where id_pedido_CAB = ?",[res.insertId])
+          // console.log("El detalle de avios detalle es:",pp)
+          const [validacion] = await conn.query(`
+            SELECT t3.nom,t4.nom as color,t2.producto,t2.color,t2.id_subprod_CAB 
+            FROM tbl2_pedidos_insumos_cab t1
+            JOIN tbl2_pedidos_insumos_det t2 ON t1.idx = t2.id_pedido_CAB
+            JOIN tbl2_subproductos t3 ON t3.idx = t2.id_subprod_CAB
+            JOIN tbl2_colores t4 ON t4.idx = t3.idx_CAB_COLOR
+            WHERE t1.idx = ?
+          `,[res.insertId])
 
-          const pp = await conn.query("select *from tbl2_pedidos_insumos_det where id_pedido_CAB = ?",[res.insertId])
-
-          console.log("El detalle de avios detalle es:",pp)
+          if(!validacion.length) throw new Error("La busqueda")
+          
 
           // const insert = async () => {
           //   const fila = articulos.shift()
@@ -2395,8 +2382,8 @@ export class ProduccionModel {
         // return results
       }
 
-      // if(conn) conn.rollback()
-      if(conn) conn.commit()
+      if(conn) conn.rollback()
+      // if(conn) conn.commit()
       return {ok:true,message:'Registro completo'}
     } catch (err) {
       if (conn) conn.rollback()
@@ -2806,8 +2793,18 @@ export class ProduccionModel {
 
           await conn.query("UPDATE tbl2_pedidos_insumos_correlativo SET codigo_num = codigo_num + 1 WHERE ruc_ = ? AND anio = YEAR(NOW()) AND tipo = ? AND origen = ?",['20522094120','AVIOS','NEXT'])
 
-          let [verificacion] = await conn.query("SELECT *FROM tbl2_pedidos_insumos_correlativo WHERE ruc_ = ? AND anio = YEAR(NOW()) AND tipo = ? AND origen = ?",['20522094120','TELAS',cabecera.emisor])
-          console.log("Verificacion de correlativo despues de la actualizacion:",verificacion)
+          // let [verificacion] = await conn.query("SELECT *FROM tbl2_pedidos_insumos_correlativo WHERE ruc_ = ? AND anio = YEAR(NOW()) AND tipo = ? AND origen = ?",['20522094120','TELAS',cabecera.emisor])
+          // console.log("Verificacion de correlativo despues de la actualizacion:",verificacion)
+
+          let [revision] = await conn.query(`
+            SELECT t3.nom,t4.nom as colorsubprod,t2.producto,t2.color,t2.id_subprod_CAB 
+            FROM tbl2_pedidos_insumos_cab t1
+            JOIN tbl2_pedidos_insumos_det t2 ON t1.idx = t2.id_pedido_CAB
+            JOIN tbl2_subproductos t3 ON t3.idx = t2.id_subprod_CAB
+            JOIN tbl2_colores t4 ON t4.idx = t3.idx_CAB_COLOR
+            WHERE t1.idx = ?
+          `,[res.insertId])
+          console.log("La reviio del cruce es:",revision)
 
         } catch (err) {
           console.log("Dentro del error del subcoidigo",err)
@@ -2817,8 +2814,8 @@ export class ProduccionModel {
         // return resultS
       }
 
-      // if(conn) conn.rollback()
-      if(conn) conn.commit()
+      if(conn) conn.rollback()
+      // if(conn) conn.commit()
       return {ok:true,message:'Registro completo'}
     } catch (err) {
       console.log("Error en el proceso:", err)
@@ -2859,7 +2856,12 @@ export class ProduccionModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      const [results, fields] = await conn.query(`
+      let results = []
+      let busqueda = null
+      const [infocab] = await conn.query('select *from tbl2_pedidos_insumos_cab where idx = ?',[id])
+
+      if(infocab[0].tipo == 'ADICIONALES'){
+        busqueda = await conn.query(`
         SELECT 
           t1.*,COALESCE(t1.id_producto_CAB,'') as idx_producto,
           COALESCE((
@@ -2870,7 +2872,37 @@ export class ProduccionModel {
         FROM tbl2_pedidos_insumos_det t1 
         WHERE t1.id_pedido_CAB = ?
       `, [id]);
-
+      } else {
+        busqueda = await conn.query(`
+          SELECT 
+            t1.idx,
+            t1.id_pedido_CAB,
+            t1.id_subprod_CAB,
+            t1.id_producto_CAB,
+            t1.producto,
+            t1.modelo,
+            t1.corte,
+            t3.nom as color,
+            t1.rollos,
+            t1.cantidad,
+            t1.unidad,
+            t1.conversion,
+            t1.precio,
+            t1.anulado,
+            COALESCE(t1.id_producto_CAB,'') as idx_producto,
+            COALESCE((
+              select sum(tbdd.despacho) from tbl2_despachos_cab tbdc
+              join tbl2_despachos_det tbdd on tbdc.idx = tbdd.id_despacho_CAB
+              where tbdc.id_pedido_origen = t1.id_pedido_CAB and tbdd.id_item = t1.idx
+            ),0) as ingresos
+          FROM tbl2_pedidos_insumos_det t1 
+          join tbl2_subproductos t2 on t2.idx = t1.id_subprod_CAB
+          join tbl2_colores t3 on t2.idx_CAB_COLOR = t3.idx
+          WHERE t1.id_pedido_CAB = ?
+        `, [id]);
+      }
+      console.log("El resultado de la busqueda es la siguiente:",busqueda)
+      results = busqueda[0]
 
       const ids = results.map(row => row.idx)
       // const [cruce] = await conn.execute("select *from tbl2_despachos where") 
@@ -2888,30 +2920,27 @@ export class ProduccionModel {
         return carry 
       },{})
 
-      let pp = results.reduce((carry,value)=>{
-        value['despachos'] = Object.keys(lista_despachos).reduce((carry,valor)=>{
-          let info = cruce.filter(item=>item.id_despacho == valor && item.idx == value.idx)
-          carry.push({
-            'id_despacho':info.length > 0 ? info[0].id_despacho : parseInt(valor),
-            'fec_despacho':info.length > 0 ? info[0].fec_despacho : lista_despachos[valor], 
-            'cantidad_despacho':info.length > 0 ? info[0].despacho : 0,
-            'cantidad_caidos':info.length > 0 ? info[0].caidos : 0,
-            'cantidad_incompletos':info.length > 0 ? info[0].incompletos : 0,
-            'fracciones': info.length > 0 ? info[0].fracciones : []
-          })
+      let pp = []
+      if(results.length > 0){
+        console.log("Dentros de guardado de results")
+        pp = results.reduce((carry,value)=>{
+          value['despachos'] = Object.keys(lista_despachos).reduce((carry,valor)=>{
+            let info = cruce.filter(item=>item.id_despacho == valor && item.idx == value.idx)
+            carry.push({
+              'id_despacho':info.length > 0 ? info[0].id_despacho : parseInt(valor),
+              'fec_despacho':info.length > 0 ? info[0].fec_despacho : lista_despachos[valor], 
+              'cantidad_despacho':info.length > 0 ? info[0].despacho : 0,
+              'cantidad_caidos':info.length > 0 ? info[0].caidos : 0,
+              'cantidad_incompletos':info.length > 0 ? info[0].incompletos : 0,
+              'fracciones': info.length > 0 ? info[0].fracciones : []
+            })
+            return carry
+          },[])
+          carry.push(value)
           return carry
-        },[])
-        carry.push(value)
-        return carry
-      },[])      
-      // const [results2] = await conn.query("select id_guia_DET,concat('({',GROUP_CONCAT(concat(talla,':',CAST(cantidad as unsigned))),'})') as fracciones from tbl2_guias_traslado_det_fracciones where id_guia_DET in (?) group by id_guia_DET", [ids])
-
-      // let new_articulos = pp.map(row => {
-      //   let add = eval(results2.filter(row2 => row2.id_guia_DET == row.idx)[0].fracciones)
-      //   return { ...row, ...add }
-      // })
-
-      await conn.end();
+        },[])      
+      }
+      
       return pp
     } catch (err) {
       console.log(err)
@@ -3011,7 +3040,7 @@ export class ProduccionModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      let extra = search.split(" ").length > 0 ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(TRIM(COALESCE(tdc.tipo,'')),' ',TRIM(COALESCE(tdc.proveedor,'')),' ',TRIM(COALESCE(tdc.nro_guia,'')),' ',TRIM(COALESCE(COALESCE(tgtc.servicio,''),'')),' ',TRIM(COALESCE(tgtc.producto,'')),' ',TRIM(COALESCE(tgtc.marca,'')),' ',TRIM(COALESCE(tgtc.modelo,'')))) > 0").join(" ") : ""
+      let extra = search.split(" ").length > 0 ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(TRIM(COALESCE(tdc.tipo,'')),' ',TRIM(COALESCE(tdc.proveedor,'')),' ',TRIM(COALESCE(tdc.nro_guia,'')),' ',TRIM(COALESCE(COALESCE(tgtc.servicio,''),'')),' ',TRIM(COALESCE(tgtc.producto,'')),' ',TRIM(COALESCE(tgtc.marca,'')),' ',TRIM(COALESCE(tgtc.modelo,'')),' ',TRIM(COALESCE(tpic.idx,'')))) > 0").join(" ") : ""
 
       const consulta = `SELECT tdc.idx,DATE_FORMAT(tdc.fec_emision_guia,'%d/%m/%Y') as fec_emision_guia,DATE_FORMAT(tdc.fec_despacho,'%d/%m/%Y') as fec_despacho,tdc.id_proveedor_CAB,tdc.proveedor,tdc.tipo,tdc.nro_guia,tdc.id_guia_origen,tdc.nro_guia_origen,tdc.id_pedido_origen,tdc.nro_pedido_origen,tdc.id_orden_origen,tdc.nro_orden_origen,tdc.responsable,tdc.observaciones,tdc.created_at,tgtc.servicio,tgtc.producto,tgtc.marca,tgtc.modelo,COALESCE(tgtc.distribucion,'') as distribucion,if(tdc.tipo = 'PEDIDOS',tpic.idx,tgtc.idx) as idguia_ref,tpic.tipo as subtipo,(select sum(COALESCE(tdd.despacho,0)) from tbl2_despachos_det tdd where tdd.id_despacho_CAB = tdc.idx) as total_despacho
       FROM tbl2_despachos_cab tdc 
@@ -3809,7 +3838,7 @@ export class ProduccionModel {
             tgtd.anulado,
             IF(tdd.precio IS NULL,tgtd.precio,tdd.precio) as costo_unit,
             tdd.despacho,
-            tdd.info_rollos,
+            COALESCE(tdd.info_rollos,JSON_ARRAY()) as info_rollos,
             IFNULL(tgtd.conversion,1) as conversion,
             ROUND(IF(tdd.precio IS NULL,tgtd.precio,tdd.precio)*(IFNULL(tgtd.conversion,1)*tgtd.cantidad),2) as precio,
             IFNULL(tgtd.conversion,1)*IFNULL(tgtd.cantidad,0) as requerido,
