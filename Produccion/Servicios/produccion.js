@@ -217,6 +217,7 @@ export class ProduccionModel {
           t1.id_receta_CAB,
           (select tp.modelo from tbl2_productos tp where tp.idx = t1.id_receta_CAB) as articulo,
           t1.idx_color,
+          t1.idx_color as idcolor,
           (select tc.nom from tbl2_colores tc where tc.idx = t1.idx_color) as color,
           t1.color_modelo,
           t1.cantidad_modelo,

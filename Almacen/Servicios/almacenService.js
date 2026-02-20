@@ -465,20 +465,6 @@ export default class AlmacenModel{
       WHERE t1.id_CAB_DET = ?`,[parseInt(idguia)])
       console.log("La informacion del backup es:",backup)
 
-      // return {ok:true,message:"Proceso ok"};
-
-      // ///////////////////////////////////////////////
-
-      // const [consulta,fields] = await conn.execute("SELECT *FROM tbl_kard_compras_CAB WHERE id_CAB = ?",[idguia])
-
-      // const campos = Object.keys(cabecera).reduce((carry, current) => {
-      //   fields.filter(row => row.name !== 'idx').map(row => row.name).includes(current) && carry.push(current)
-      //   return carry
-      // }, [])
-      // const values = campos.map(row => cabecera[row])
-      // console.log("Informacion de campos :",campos)
-      // await conn.query('UPDATE tbl_kard_compras_CAB SET ' + campos.map(row => row + " = NULLIF(?,'')").toString() + ' WHERE id_CAB = ' + idguia,values)
-
       // Obtener cod_cuenta
       const cod_cnta = 20;
       const tip_prod_cdp = 2;
@@ -503,8 +489,14 @@ export default class AlmacenModel{
         id_requerimiento: parseInt(cabecera.id_pedido_origen ?? 0),
         id_modelo: parseInt(cabecera.id_modelo ?? 0)
       };
-      console.log("El detalle a insertar es:",data_guia)
-      await conn.query('UPDATE tbl_kard_compras_CAB SET ' + Object.keys(data_guia).map(row => row + " = NULLIF(?,'')").toString() + ' WHERE id_CAB = ' + idguia,Object.keys(data_guia).map(row => cabecera[row]))
+      console.log("La info cabecera a actualizar es la siguiente:",data_guia)
+      const query = 'UPDATE tbl_kard_compras_CAB SET ' + Object.keys(data_guia).map(row => row + " = NULLIF(?,'')").toString() + ' WHERE id_CAB = ' + idguia
+      const valores = Object.keys(data_guia).map(row => cabecera[row])
+      console.log("Los parametros de la consulta son:",query,valores)
+      // await conn.query(query,valores)
+
+      conn.rollback()
+      throw new Error("Error de prueba")
 
       await conn.execute("DELETE FROM tbl_kard_compras_DET WHERE ruc = '20522094120' and id_CAB_DET = ?",[idguia])
       for(let element of detalle){
@@ -528,6 +520,13 @@ export default class AlmacenModel{
           Object.values(data_guia_det)
         );
       }
+
+      const [validacion] = await conn.execute(`
+        SELECT *FROM tbl_kard_compras_CAB t1
+        JOIN tbl_kard_compras_DET t2 on t1.id_CAB = t2.id_CAB_DET
+        where t1.id_CAB = ?
+      `,[parseInt(idguia)])
+      console.log("La informacion de la validacion es:",validacion)
 
 
       let res_mov = undefined ,articulos = [] ,data_comprobante = {}, busqueda = undefined;
@@ -632,11 +631,11 @@ export default class AlmacenModel{
       if(!res_mov.ok) throw new Error(res_mov.message)
 
 
-      const [verifica] = await conn.execute('select *from tbl2_almacen_det where idx_subproducto = 14590 and lote = 287')
-      console.log("EL stock actual es:",verifica)
+      // const [verifica] = await conn.execute('select *from tbl2_almacen_det where idx_subproducto = 14590 and lote = 287')
+      // console.log("EL stock actual es:",verifica)
 
-      // if(conn) conn.rollback()
-      if(conn) conn.commit()
+      if(conn) conn.rollback()
+      // if(conn) conn.commit()
       return {ok:true,message:'Guardado exitoso'}
     } catch (error) {
       console.log(error)

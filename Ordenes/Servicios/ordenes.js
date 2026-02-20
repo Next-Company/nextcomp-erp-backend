@@ -1460,15 +1460,40 @@ export class OrdenesModel {
     const modelos = JSON.parse(data.info)
     const idorden = parseInt(data.id)
     const tallasbase = JSON.parse(data.tallasbase)
+    const tallasorden = JSON.parse(data.tallasoriginal)
     const idreceta = data.idreceta
     let conn
-    console.log("Dentro de la fase de configuracion :",modelos,tallasbase,idreceta)
+    console.log("Dentro de la fase de configuracion:",modelos,tallasbase,tallasorden,idreceta)
     
     try {
       // throw new Error("Termino de forma inesperada")
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
       conn.beginTransaction()
+
+      // /////////////////////////////////////////////////////
+      // VALIDAR QUE EL TOTAL DE ITEMS POR MODELO SEA IGUAL AL DISPONIBLE ACTUAL
+      // /////////////////////////////////////////////////////      
+      const EQUIVALENTSIZES = {
+        'st':{'1':'st','2':'st','3':'st'},
+        'xs':{'2':'26','3':'8'},
+        's':{'2':'28','3':'10'},
+        'm':{'2':'30','3':'12'},
+        'l':{'2':'32','3':'14'},
+        'xl':{'2':'34','3':'16'},
+        'xxl':{'2':'36'},
+        '26':{'1':'xs','3':'8'},
+        '28':{'1':'s','3':'10'},
+        '30':{'1':'m','3':'12'},
+        '32':{'1':'l','3':'14'},
+        '34':{'1':'xl','3':'16'},
+        '36':{'1':'xxl'},
+        '8':{'1':'xs','2':'26'},
+        '10':{'1':'s','2':'28'},
+        '12':{'1':'m','2':'30'},
+        '14':{'1':'l','2':'32'},
+        '16':{'1':'xl','2':'34'}   
+      }
 
       // /////////////////////////////////////////////////////
       // VALIDAR QUE EL TOTAL DE ITEMS POR MODELO SEA IGUAL AL DISPONIBLE ACTUAL
@@ -1485,9 +1510,9 @@ export class OrdenesModel {
           GROUP BY t3.talla
         ) as cc
       `,[idorden])
-      const DISPONIBLE_ACTUAL = consulta_disponible[0].distribucion
+      let DISPONIBLE_ACTUAL = consulta_disponible[0].distribucion
 
-      const DISPONIBLE_NUEVO = modelos.reduce((carry,current)=>{
+      let DISPONIBLE_NUEVO = modelos.reduce((carry,current)=>{
         tallasbase.tallas.forEach(talla=>{
           if(!carry[talla.desc]){
             carry[talla.desc] = 0
@@ -1496,6 +1521,20 @@ export class OrdenesModel {
         })
         return carry
       },{})
+
+      if(tallasbase.idx !== tallasorden.idx){
+        console.log("Realizando el mapeo de tallas debido a la diferencia de template")
+        DISPONIBLE_ACTUAL = Object.keys(DISPONIBLE_ACTUAL).reduce((carry,current)=>{
+          const equiv = EQUIVALENTSIZES[current][tallasbase.idx]
+          if(equiv){
+            carry[equiv] = DISPONIBLE_ACTUAL[current] ?? 0
+          } else {
+            carry[current] = DISPONIBLE_ACTUAL[current] ?? 0
+          }
+          // carry[equiv] = carry[current]
+          return carry
+        },{})
+      }
 
       console.log('Informacion de la validacion:',DISPONIBLE_ACTUAL,DISPONIBLE_NUEVO)
 
@@ -1649,10 +1688,17 @@ export class OrdenesModel {
         }
       }
 
+      // const [revision] = await conn.query(`
+      //   select *from tbl2_fases_prod_modelos t1
+      //   join tbl2_fases_prod_modelos_fracciones t2 on t1.idx = t2.id_modelo_CAB
+      //   where t1.id_orden_CAB = ?
+      // `,[idorden])
+      // console.log("Resultado de la revision final:",revision)
+
       await conn.execute('UPDATE tbl2_fases_prod_ordenes SET fraccionado = 1 WHERE idx = ?',[idorden])
 
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito' }
     } catch (err) {
       console.log(err)
