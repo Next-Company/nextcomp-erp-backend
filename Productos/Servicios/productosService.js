@@ -590,7 +590,8 @@ export class ProductosService{
       if(info.idx){
 
       }else{
-        let [busqueda] = await conn.query("SELECT *FROM tbl2_colores WHERE nom = ? AND ruc IN ('20522094120','20523875583') LIMIT 1",[info.nom])
+        // let [busqueda] = await conn.query("SELECT *FROM tbl2_colores WHERE nom = ? AND ruc IN ('20522094120','20523875583') LIMIT 1",[info.nom])
+        let [busqueda] = await conn.query("SELECT *FROM tbl2_colores WHERE nom = ? AND ruc IN ('20522094120') LIMIT 1",[info.nom])
         if(busqueda.length > 0){
           throw new Error('Esta intentando crear un color que ya exite')
         }

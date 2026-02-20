@@ -2322,7 +2322,7 @@ export class ProduccionModel {
           JOIN tbl2_colores t4 ON t4.idx = t3.idx_CAB_COLOR
           WHERE t1.idx = ?
         `,[parseInt(data.id)])
-        if(!validacion.length || validacion.map(row=>row.colorsubpro !== row.color).length > 0) throw new Error("Se detectaron inconsistencias durante la generacion de la orden de pedido. Por favor verifique.")
+        if(!validacion.length || validacion.filter(row=>row.colorsubpro !== row.color).length > 0) throw new Error("Se detectaron inconsistencias durante la generacion de la orden de pedido. Por favor verifique.")
 
         for(let fila of [...ids_delete]){
           await conn.query('DELETE FROM `tbl2_pedidos_insumos_det` WHERE `id_pedido_CAB` = ? and `idx` = ?', [parseInt(data.id), parseInt(fila.idx)])
@@ -2351,15 +2351,15 @@ export class ProduccionModel {
           JOIN tbl2_colores t4 ON t4.idx = t3.idx_CAB_COLOR
           WHERE t1.idx = ?
         `,[res.insertId])
-        console.log("La validiacoin es la siguiet",validacion)
-        if(!validacion.length || validacion.map(row=>row.colorsubpro !== row.color).length > 0) throw new Error("Se detectaron inconsistencias durante la generacion de la orden de pedido. Por favor verifique.")
+        console.log("La validiacoin es la siguiet",validacion,validacion.map(row=>row.colorsubpro !== row.color))
+        if(!validacion.length || validacion.filter(row=>row.colorsubpro !== row.color).length > 0) throw new Error("Se detectaron inconsistencias durante la generacion de la orden de pedido. Por favor verifique.")
 
         await conn.query("update tbl2_pedidos_insumos_correlativo set codigo_num = codigo_num + 1 where ruc_ = ? and anio = YEAR(NOW()) and tipo = ? and origen = ?",['20522094120','AVIOS','NEXT'])
 
       }
 
-      if(conn) conn.rollback()
-      // if(conn) conn.commit()
+      // if(conn) conn.rollback()
+      if(conn) conn.commit()
       return {ok:true,message:'Registro completo'}
     } catch (err) {
       console.log("El errror es el sigueinte;",err)
