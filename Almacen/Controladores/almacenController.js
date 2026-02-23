@@ -1484,72 +1484,91 @@ export default class AlmacenController{
       }
     )
   }
+  static getCodeBar(sku = null){
+    try {
+      let canvas = new Canvas(100,50)
+      JsBarcode(canvas,sku,{
+        format:"EAN13",
+        displayValue:false,
+        height:12,
+        width:1,
+        margin:0,
+        flat:true
+      })
+      const INF = canvas.toBuffer('image/png')
+      return INF.toString('base64')
+    } catch (error) {
+      console.log("Error al generar el codigo de barra:",error)
+      throw new Error(error)
+    }
+  }
   static async printEtiquetasByOrden(req, res) {
-
     const data = req.body
     console.log("Info del body es:",data)
 
     const orden = JSON.parse(req.body.orden)
-    const modelos = JSON.parse(req.body.modelos)
+    let modelos = JSON.parse(req.body.modelos)
     const tallas = JSON.parse(req.body.tallas)
     const cantidad = req.body.cantidad ?? 0
     const distribucion = parseInt(req.body.distribucion ?? 0)
     const idorden = req.params.idorden ?? 0
-    let canvas = new Canvas(100,50)
-    
-    const infopadre = await ProductosService.searchProductoById(orden.id_receta)
-    console.log("La info del padre es:",infopadre)
-    
-    res.send("Saludos desde modeulo de impresion")
-    // return 0
-
-    // const jsbarcode = createRequire("/home/juanjhonv/proyects/api_rest_expressDev/JsBarcode.js");
-
+    const moneda = req.body.moneda ?? 'PEN'
     let base = [], group = [], acumulado = []
-    for(const modelo of [...modelos]){
+    
+    const INFO = await ProductosService.searchProductoById(orden.id_receta)
 
-      // console.log("La info del body es:",data,idorden)
-      // const COUNTRY_CODE = '775';
-      // const CODE_COMPANY = '0062';
-      // const PRE_CODEBAR = COUNTRY_CODE + CODE_COMPANY + ('00000' + $idx_subprod).slice()
-      // const CODEBAR = numControlBarcode(PRE_CODEBAR)
-
-      // JsBarcode(canvas,'7750062152898',{
-      //   format:"EAN13",
-      //   displayValue:false,
-      //   height:12,
-      //   width:1,
-      //   margin:0,
-      //   flat:true
-      // })
-      // let inf = canvas.toBuffer('image/png')
+    try {
+      const new_modelos = modelos.reduce((carry,modelo)=>{
+        const codebar = {}
+        Object.keys(modelo.sku).forEach(async (key)=>{
+          const CODEBAR = AlmacenController.getCodeBar(modelo.sku[key])
+          codebar[key] = CODEBAR
+        })
+        carry.push({...modelo,codebar:codebar})
+        return carry
+      },[])
+      // console.log("Modelos con codigo de barra incluidos:",modelos)
+      console.log("La nueva reestructuracion es:",new_modelos)
 
       if(distribucion == 1) {
-        tallas.forEach(talla=>{
-          Array(parseInt(modelo.fracciones[talla])).fill('p').forEach((v)=>{
-            acumulado.push({
-              model:modelo,
-              talla:talla
-            })
+        for(const modelo of [...new_modelos]){
+          tallas.forEach(talla=>{
+            if(parseInt(modelo.fracciones[talla.desc]) > 0){
+              Array(parseInt(modelo.fracciones[talla.desc])).fill('p').forEach((v)=>{    
+                acumulado.push({  
+                  model:modelo,
+                  talla:talla.desc,
+                  color:modelo.color,
+                  sku:modelo.sku[talla.desc],
+                  codebar:modelo.codebar[talla.desc]
+                })
+              })
+            }
           })
-        })
+        }
       } else {
         Array(cantidad).fill('p').forEach((v)=>{
-          modelos.forEach((modelo)=>{
+          new_modelos.forEach((modelo)=>{
             tallas.forEach((talla)=>{
               acumulado.push({
                 model:modelo,
-                talla:talla.desc
+                talla:talla.desc,
+                color:modelo.color,
+                sku:modelo.sku[talla.desc],
+                codebar:modelo.codebar[talla.desc]
               })
             })
           })
         })
       }
+      
+    } catch (error) {
+      console.log("Error al obtener la receta padre:",error)
     }
-
-    console.log("La informacion de acumulado es:",acumulado)
-    res.send(acumulado)
-    return 0
+    
+    // console.log("La informacion de acumulado es:",acumulado)
+    // res.send("Informacion del acumulado procesado con exito")
+    // return 0
 
     // const cantidad = 5
     // const combinacion = modelos.length * tallas.length
@@ -1574,32 +1593,38 @@ export default class AlmacenController{
       }
     }
     k()
+
+    console.log("La informacion de base es:",base)
+    // res.send("Informacion de base procesada con exito")
+    // return 0
     ///////////////////////////////////////
 
     // const BINARY_CHUNKS = await fs.readFile('public/images/firma_jefferson.png')
     res.render(
       'hangtag_formatoA',
       {
-        BINARY_CHUNKS5: inf.toString('base64'),
+        // BINARY_CHUNKS5: inf.toString('base64'),
         BASE:base,
-        INFO:data.info,
+        INFO:INFO[0],
+        MONEDA:moneda,
+        ORDEN:orden,
         helpers: {
-          foo(codebar,base,info){
+          foo(base,info,moneda,orden){
             let info_print = []
             base.forEach((v)=>{
               const fila = v.map((row)=>{
                 return `
                   <div class='etiqueta'>
                     <div>
-                      <div style="font-size:.5rem;">OP:2500712</div>
-                      <h2>${info.articulo}</h2>
+                      <div style="font-size:.5rem;">OP:${orden.oc}</div>
+                      <h2>${info.rubro}</h2>
                       <h2>${info.modelo}</h2>
                     </div>
                     <div>
                       <h3>${info.estilo}</h3>
                       <h3>${info.base}</h3>
                       <h3>${row.color.length > 8 ? row.color.substr(0,8) + '.' : row.color }</h3>
-                      <h3>${info.tela}</h3>
+                      <h3>${info.presentacion}</h3>
                     </div>
                     <div>
                       <div style="display:flex;justify-content:space-between;">
@@ -1607,7 +1632,7 @@ export default class AlmacenController{
                           ORIGINAL
                         </div>
                         <div>
-                          <h3>${data.moneda == 'PEN' ? 'S/' : '$'}149.90</h3>
+                          <h3>${moneda == 'PEN' ? 'S/' : '$'}${moneda == 'PEN' ? orden.precios[0].precio1[0] : orden.precios[0].precio1[1]}</h3>
                         </div>
                       </div>
                       <div style="display:flex;justify-content:space-between;">
@@ -1615,13 +1640,13 @@ export default class AlmacenController{
                           OFERTA
                         </div>
                         <div>
-                          <h3>${data.moneda == 'PEN' ? 'S/' : '$'}149.90</h3>
+                          <h3>${moneda == 'PEN' ? 'S/' : '$'}${moneda == 'PEN' ? orden.precios[0].precio2[0] : orden.precios[0].precio2[1]}</h3>
                         </div>
                       </div>
                     </div>
                     <div>
-                      <img src="data:image/jpg;base64,${codebar}"/>
-                      <div id="idcodbar">7750062152898</div>
+                      <img src="data:image/jpg;base64,${row.codebar}"/>
+                      <div id="idcodbar">${row.sku}</div>
                     </div>
                     <div id="talla">${row.talla}</div>
                     <div class="bar" id="bar_left"></div>

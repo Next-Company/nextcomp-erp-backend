@@ -1604,7 +1604,7 @@ export class OrdenesModel {
 
               const COUNTRY_CODE = '775';
               const CODE_COMPANY = '0062';
-              const PRE_CODEBAR = COUNTRY_CODE + CODE_COMPANY + ('00000' + INFOT_SUBPROD.resultid).slice()
+              const PRE_CODEBAR = COUNTRY_CODE + CODE_COMPANY + ('00000' + INFOT_SUBPROD.resultid).slice(-5)
               const CODEBAR = numControlBarcode(PRE_CODEBAR)
 
               await conn.query('UPDATE tbl2_subproductos SET sku = ? WHERE idx = ?',[CODEBAR,INFOT_SUBPROD.resultid])
@@ -1662,7 +1662,7 @@ export class OrdenesModel {
                 if (INFOT_SUBPROD.ok) {
                   const COUNTRY_CODE = '775';
                   const CODE_COMPANY = '0062';
-                  const PRE_CODEBAR = COUNTRY_CODE + CODE_COMPANY + ('00000' + INFOT_SUBPROD.resultid).slice()
+                  const PRE_CODEBAR = COUNTRY_CODE + CODE_COMPANY + ('00000' + INFOT_SUBPROD.resultid).slice(-5)
                   const CODEBAR = numControlBarcode(PRE_CODEBAR)
 
                   await conn.query('UPDATE tbl2_subproductos SET sku = ? WHERE idx = ?',[CODEBAR,INFOT_SUBPROD.resultid])
@@ -1708,8 +1708,9 @@ export class OrdenesModel {
       await conn.execute('UPDATE tbl2_fases_prod_ordenes SET fraccionado = 1, tallasfracciones = ?, fracciones_con_receta = ? WHERE idx = ?',[tallasbase.idx,usareceta,idorden])
 
       const [revision] = await conn.query(`
-        select *from tbl2_fases_prod_modelos t1
+        select t1.color_modelo,t3.* from tbl2_fases_prod_modelos t1
         join tbl2_fases_prod_modelos_fracciones t2 on t1.idx = t2.id_modelo_CAB
+        join tbl2_subproductos t3 on t3.idx_CAB_PROD = t1.id_receta_CAB and t3.idx_CAB_COLOR = t1.idx_color and t3.idx_talla = t2.id_talla_CAB
         where t1.id_orden_CAB = ?
       `,[idorden])
       console.log("Resultado de la revision final:",revision)
@@ -1719,9 +1720,8 @@ export class OrdenesModel {
       `,[idorden])
       console.log("La info de la validacoin 2 es:",revision2)
 
-      
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito' }
     } catch (err) {
       console.log(err)

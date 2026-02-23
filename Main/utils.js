@@ -76,9 +76,9 @@ export const numControlBarcode = (codbar = null)=>{
     // loop backwards to make the loop length-agnostic. The same basic functionality 
     // will work for codes of different lengths.
     // echo $codbar;
-    for (let $i = codbar.lenght - 1; $i >= 0; $i--)
+    for (let $i = codbar.length - 1; $i >= 0; $i--)
     {
-        sum += intval(codbar[$i]) * (weightflag ? 3 : 1);
+        sum += parseInt(codbar[$i]) * (weightflag ? 3 : 1);
         weightflag = !weightflag;
     //   $sum += (int)$codbar[$i] * ($weightflag?3:1);
     //   $weightflag = !$weightflag;

@@ -228,9 +228,11 @@ export class ProduccionModel {
           (select tc.nom from tbl2_colores tc where tc.idx = t1.idx_color) as color,
           t1.color_modelo,
           t1.cantidad_modelo,
-          JSON_OBJECTAGG(t2.talla,t2.cantidad) as fracciones
+          JSON_OBJECTAGG(t2.talla,t2.cantidad) as fracciones,
+          JSON_OBJECTAGG(t2.talla,t3.sku) as sku
         FROM tbl2_fases_prod_modelos t1
         JOIN tbl2_fases_prod_modelos_fracciones t2 on t1.idx = t2.id_modelo_CAB 
+        JOIN tbl2_subproductos t3 on t3.idx_CAB_PROD = t1.id_receta_CAB and t3.idx_CAB_COLOR = t1.idx_color and t3.idx_talla = t2.id_talla_CAB 
         WHERE t1.id_orden_CAB = ?
         GROUP BY t1.idx,t1.id_orden_CAB,t1.id_receta_CAB,t1.idx_color,t1.color_modelo,t1.cantidad_modelo
       `,[info.id])

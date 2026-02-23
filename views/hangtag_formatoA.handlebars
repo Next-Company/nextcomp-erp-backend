@@ -6,7 +6,6 @@
     height: 45mm;
   }
   .row{
-    background-color: aquamarine;
     display: flex;
     justify-content: space-between;
     width: 107.5mm;
@@ -17,8 +16,7 @@
   }
   .etiqueta{
     box-sizing:border-box;
-    background-color: rgb(221, 221, 221);
-    font-size: .6rem;
+    font-size: .4rem;
     width: 33.5mm;
     height: 45mm;
     padding: 2.5mm;
@@ -73,7 +71,7 @@
     h:40mm
     gap:2.5mm 
     --}}
-    {{#foo this.BINARY_CHUNKS5 this.BASE this.INFO}}
+    {{#foo this.BASE this.INFO this.MONEDA this.ORDEN}}
     {{/foo}}
     {{!-- <img src="data:image/jpg;base64,{{this.BINARY_CHUNKS5}}" /> --}}
     {{!-- <div class="etiqueta">que</div>
