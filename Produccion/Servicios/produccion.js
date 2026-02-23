@@ -201,11 +201,18 @@ export class ProduccionModel {
 
       let [fasesprod] = await conn.query("SELECT *FROM tbl2_fases_produccion")
       let [materialesref] = await conn.query("SELECT *FROM tbl2_materiales_sugerido WHERE ruc_ = '20522094120'")
-      let [tallasbase] = await conn.query("SELECT *FROM tbl2_tallas_template")
+      let [tallastemplate] = await conn.query("SELECT *FROM tbl2_tallas_template")
 
-      tallasbase = tallasbase.reduce((c,v)=>{
+      let tallasbase = tallastemplate.reduce((c,v)=>{
         v.tallasformateado = v.tallas.map(row=>row.desc).join("-")
         v.selected = v.idx == parseInt(ordenes[0].tallasbase) ? true : false
+        c.push(v)
+        return c
+      },[])
+
+      let tallasfracciones = tallastemplate.reduce((c,v)=>{
+        v.tallasformateado = v.tallas.map(row=>row.desc).join("-")
+        v.selected = v.idx == parseInt(ordenes[0].tallasfracciones) ? true : false
         c.push(v)
         return c
       },[])
@@ -243,7 +250,7 @@ export class ProduccionModel {
       },{})
       // console.log("El disponible formateado es:",disponible)
   
-      return [ordenes,moldes,cortes,materiales,fasesprod,materialesref,insumos,requerimientos,tallasbase,modelos,disponible_resumen,disponible]
+      return [ordenes,moldes,cortes,materiales,fasesprod,materialesref,insumos,requerimientos,tallasbase,modelos,disponible_resumen,disponible,tallasfracciones]
     } catch (err) {
       console.log("Estamos en error:", err);
       return err

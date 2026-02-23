@@ -68,15 +68,15 @@ export const numControlBarcode = (codbar = null)=>{
     // 5.Redondeamos el valor obtenido a la decena inmediatamante superior, en este caso 100
     // 6.El dígito de control es el valor obtenido del redondeo de decenas menos la suma total del punto 4: 100 – 99 = 1
     // '7750243042963'
-    weightflag = true;
-    sum_imp = 0;
-    sum_par = 0;
-    sum = 0;
+    let weightflag = true;
+    let sum_imp = 0;
+    let sum_par = 0;
+    let sum = 0;
     // Weight for a digit in the checksum is 3, 1, 3.. starting from the last digit. 
     // loop backwards to make the loop length-agnostic. The same basic functionality 
     // will work for codes of different lengths.
     // echo $codbar;
-    for ($i = codbar.lenght - 1; $i >= 0; $i--)
+    for (let $i = codbar.lenght - 1; $i >= 0; $i--)
     {
         sum += intval(codbar[$i]) * (weightflag ? 3 : 1);
         weightflag = !weightflag;

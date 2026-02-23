@@ -1,9 +1,8 @@
-import { raceWith } from "puppeteer-core/lib/esm/third_party/rxjs/rxjs.js";
-import { configs } from "../../Main/utils.js";
+import { configs, numControlBarcode } from "../../Main/utils.js";
 import mysql from "mysql2/promise";
-import { ConsoleMessage } from "puppeteer-core";
-import { CdpKeyboard } from "puppeteer-core";
-import { ifError } from "node:assert";
+// import { ConsoleMessage } from "puppeteer-core";
+// import { CdpKeyboard } from "puppeteer-core";
+// import { ifError } from "node:assert";
 import { ProductosService } from "../../Productos/Servicios/productosService.js";
 // import { inventario } from "../../Main/config.js";
 
@@ -1457,14 +1456,16 @@ export class OrdenesModel {
     }
   }
   static async saveFaseFraccionamiento(data, user_data) {
-    const modelos = JSON.parse(data.info)
-    const idorden = parseInt(data.id)
+    const modelos = JSON.parse(data.info ?? [])
+    const usareceta = parseInt(data.usareceta ?? 0)
+    const idorden = parseInt(data.id ?? 0)
     const tallasbase = JSON.parse(data.tallasbase)
     const tallasorden = JSON.parse(data.tallasoriginal)
     const idreceta = data.idreceta
     let conn
     console.log("Dentro de la fase de configuracion:",modelos,tallasbase,tallasorden,idreceta)
-    
+
+    // return {ok:true,message:hola}
     try {
       // throw new Error("Termino de forma inesperada")
       conn = await mysql.createConnection(configs[1])
@@ -1553,7 +1554,7 @@ export class OrdenesModel {
 
       let base_add = modelos.filter(row=>row.idx == '' || !row.idx)
       let base_update = modelos.filter(row=>base_ids.includes(row.idx))
-      let base_delete = base_modelos.filter(row=>!modelos.map(item=>item.idx).includes(row.idx))
+      let base_delete = base_modelos.filter(row=>!modelos.map(item=>item.idx ?? '').includes(row.idx))
 
       const INFO_RECETA_ORIGIN = await ProductosService.searchProductoById(idreceta,conn)
 
@@ -1599,6 +1600,15 @@ export class OrdenesModel {
           for(let subprod of info_subprod){
             const INFOT_SUBPROD = await ProductosService.createNewSubProduct(subprod,conn)
             // if(!INFOT_SUBPROD.ok) throw new Error(INFOT_SUBPROD.message)
+            if (INFOT_SUBPROD.ok) {
+
+              const COUNTRY_CODE = '775';
+              const CODE_COMPANY = '0062';
+              const PRE_CODEBAR = COUNTRY_CODE + CODE_COMPANY + ('00000' + INFOT_SUBPROD.resultid).slice()
+              const CODEBAR = numControlBarcode(PRE_CODEBAR)
+
+              await conn.query('UPDATE tbl2_subproductos SET sku = ? WHERE idx = ?',[CODEBAR,INFOT_SUBPROD.resultid])
+            }
           }
 
           const [resultinsert] = await conn.execute("INSERT INTO tbl2_fases_prod_modelos(id_orden_CAB,id_receta_CAB,idx_color,color_modelo,cantidad_modelo) VALUES(?,?,?,?,?)",[idorden,modelo.idreceta ?? INFO_NEWPROD.info,modelo.idcolor,modelo.color,cantidad])
@@ -1648,7 +1658,15 @@ export class OrdenesModel {
                   estado: 'primera',
                   nro_lote: 0
                 }
-                await ProductosService.createNewSubProduct(info,conn)
+                const INFOT_SUBPROD = await ProductosService.createNewSubProduct(info,conn)
+                if (INFOT_SUBPROD.ok) {
+                  const COUNTRY_CODE = '775';
+                  const CODE_COMPANY = '0062';
+                  const PRE_CODEBAR = COUNTRY_CODE + CODE_COMPANY + ('00000' + INFOT_SUBPROD.resultid).slice()
+                  const CODEBAR = numControlBarcode(PRE_CODEBAR)
+
+                  await conn.query('UPDATE tbl2_subproductos SET sku = ? WHERE idx = ?',[CODEBAR,INFOT_SUBPROD.resultid])
+                }
               }
             }
             await conn.execute(`update tbl2_fases_prod_modelos set idx_color = ?, color_modelo = ?, cantidad_modelo = ? where id_orden_CAB = ? and idx = ?`,[modelo.idcolor,modelo.color,Object.values(modelo.fracciones).reduce((c,v)=>c+v,0),modelo.id_orden_CAB,modelo.idx])
@@ -1687,18 +1705,23 @@ export class OrdenesModel {
           } 
         }
       }
+      await conn.execute('UPDATE tbl2_fases_prod_ordenes SET fraccionado = 1, tallasfracciones = ?, fracciones_con_receta = ? WHERE idx = ?',[tallasbase.idx,usareceta,idorden])
 
-      // const [revision] = await conn.query(`
-      //   select *from tbl2_fases_prod_modelos t1
-      //   join tbl2_fases_prod_modelos_fracciones t2 on t1.idx = t2.id_modelo_CAB
-      //   where t1.id_orden_CAB = ?
-      // `,[idorden])
-      // console.log("Resultado de la revision final:",revision)
+      const [revision] = await conn.query(`
+        select *from tbl2_fases_prod_modelos t1
+        join tbl2_fases_prod_modelos_fracciones t2 on t1.idx = t2.id_modelo_CAB
+        where t1.id_orden_CAB = ?
+      `,[idorden])
+      console.log("Resultado de la revision final:",revision)
 
-      await conn.execute('UPDATE tbl2_fases_prod_ordenes SET fraccionado = 1 WHERE idx = ?',[idorden])
+      const [revision2] = await conn.query(`
+        select *from tbl2_fases_prod_ordenes where idx = ?
+      `,[idorden])
+      console.log("La info de la validacoin 2 es:",revision2)
 
-      // if (conn) conn.rollback()
-      if (conn) conn.commit()
+      
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito' }
     } catch (err) {
       console.log(err)

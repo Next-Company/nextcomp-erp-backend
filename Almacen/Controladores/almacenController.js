@@ -11,6 +11,7 @@ import { releaseObject } from "puppeteer-core";
 import { configs, numControlBarcode } from "../../Main/utils.js";
 import mysql from 'mysql2/promise'
 import { Console } from "node:console";
+import { ProductosService } from "../../Productos/Servicios/productosService.js";
 
 export default class AlmacenController{
   static async getListaAlmacenes(req,reply){
@@ -1363,6 +1364,195 @@ export default class AlmacenController{
       })
     })
     console.log("Infoi de acumulado es:",acumulado)
+
+    const k = ()=>{
+      let p = acumulado.shift()
+      if(p){
+        if(group.length == 3){
+          base.push(group)
+          group = []
+          group.push(p)
+        } else if(acumulado.length == 0) {
+          group.push(p)  
+          base.push(group)
+          group = []
+        } else {
+          group.push(p)
+        }
+        k()
+      } else {
+        group.length > 0 && base.push(group)
+      }
+    }
+    k()
+    ///////////////////////////////////////
+
+    // const BINARY_CHUNKS = await fs.readFile('public/images/firma_jefferson.png')
+    res.render(
+      'hangtag_formatoA',
+      {
+        BINARY_CHUNKS5: inf.toString('base64'),
+        BASE:base,
+        INFO:data.info,
+        helpers: {
+          foo(codebar,base,info){
+            let info_print = []
+            base.forEach((v)=>{
+              const fila = v.map((row)=>{
+                return `
+                  <div class='etiqueta'>
+                    <div>
+                      <div style="font-size:.5rem;">OP:2500712</div>
+                      <h2>${info.articulo}</h2>
+                      <h2>${info.modelo}</h2>
+                    </div>
+                    <div>
+                      <h3>${info.estilo}</h3>
+                      <h3>${info.base}</h3>
+                      <h3>${row.color.length > 8 ? row.color.substr(0,8) + '.' : row.color }</h3>
+                      <h3>${info.tela}</h3>
+                    </div>
+                    <div>
+                      <div style="display:flex;justify-content:space-between;">
+                        <div>
+                          ORIGINAL
+                        </div>
+                        <div>
+                          <h3>${data.moneda == 'PEN' ? 'S/' : '$'}149.90</h3>
+                        </div>
+                      </div>
+                      <div style="display:flex;justify-content:space-between;">
+                        <div>
+                          OFERTA
+                        </div>
+                        <div>
+                          <h3>${data.moneda == 'PEN' ? 'S/' : '$'}149.90</h3>
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <img src="data:image/jpg;base64,${codebar}"/>
+                      <div id="idcodbar">7750062152898</div>
+                    </div>
+                    <div id="talla">${row.talla}</div>
+                    <div class="bar" id="bar_left"></div>
+                  </div>
+                `
+              })
+              info_print.push('<div class="row">'+fila.join('')+'</div>')
+            })
+            // const example = 
+            // const cuerpo = `<div class="etiqueta">${example}</div><div class="etiqueta">${example}</div><div class="etiqueta">${example}</div>`            
+            return info_print.join('')
+          }
+        }
+      },
+      async (err, html) => {
+        try {
+          const browser = await puppeteer.launch();
+
+          const version = await browser.version();
+          console.log(`Versión de Chrome: ${version}`);
+          const page = await browser.newPage();
+          await page.setContent(html);
+
+          const pdfOptions = {
+            // format: 'A4',
+            width: '107.5mm',
+            height: '45mm',
+            landscape: false,
+            printBackground: true,
+            margin: {
+              left: 0,
+              right: 0,
+              top:0,
+              bottom:0
+            }
+            , scale: 1
+          };
+
+          const pdfBuffer = await page.pdf(pdfOptions);
+          await browser.close();
+          res.send({ data: pdfBuffer.toString('base64') })
+          // res.send(pdfBuffer)
+        } catch (error) {
+          res.status(500).send('Error al generar el PDF');
+          // await browser.close();
+        } finally {
+          // await browser.close();
+        }
+      }
+    )
+  }
+  static async printEtiquetasByOrden(req, res) {
+
+    const data = req.body
+    console.log("Info del body es:",data)
+
+    const orden = JSON.parse(req.body.orden)
+    const modelos = JSON.parse(req.body.modelos)
+    const tallas = JSON.parse(req.body.tallas)
+    const cantidad = req.body.cantidad ?? 0
+    const distribucion = parseInt(req.body.distribucion ?? 0)
+    const idorden = req.params.idorden ?? 0
+    let canvas = new Canvas(100,50)
+    
+    const infopadre = await ProductosService.searchProductoById(orden.id_receta)
+    console.log("La info del padre es:",infopadre)
+    
+    res.send("Saludos desde modeulo de impresion")
+    // return 0
+
+    // const jsbarcode = createRequire("/home/juanjhonv/proyects/api_rest_expressDev/JsBarcode.js");
+
+    let base = [], group = [], acumulado = []
+    for(const modelo of [...modelos]){
+
+      // console.log("La info del body es:",data,idorden)
+      // const COUNTRY_CODE = '775';
+      // const CODE_COMPANY = '0062';
+      // const PRE_CODEBAR = COUNTRY_CODE + CODE_COMPANY + ('00000' + $idx_subprod).slice()
+      // const CODEBAR = numControlBarcode(PRE_CODEBAR)
+
+      // JsBarcode(canvas,'7750062152898',{
+      //   format:"EAN13",
+      //   displayValue:false,
+      //   height:12,
+      //   width:1,
+      //   margin:0,
+      //   flat:true
+      // })
+      // let inf = canvas.toBuffer('image/png')
+
+      if(distribucion == 1) {
+        tallas.forEach(talla=>{
+          Array(parseInt(modelo.fracciones[talla])).fill('p').forEach((v)=>{
+            acumulado.push({
+              model:modelo,
+              talla:talla
+            })
+          })
+        })
+      } else {
+        Array(cantidad).fill('p').forEach((v)=>{
+          modelos.forEach((modelo)=>{
+            tallas.forEach((talla)=>{
+              acumulado.push({
+                model:modelo,
+                talla:talla.desc
+              })
+            })
+          })
+        })
+      }
+    }
+
+    console.log("La informacion de acumulado es:",acumulado)
+    res.send(acumulado)
+    return 0
+
+    // const cantidad = 5
+    // const combinacion = modelos.length * tallas.length
 
     const k = ()=>{
       let p = acumulado.shift()

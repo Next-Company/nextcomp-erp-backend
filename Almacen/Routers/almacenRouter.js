@@ -36,6 +36,7 @@ ALMACEN_ROUTER.delete('/deleteinfocuadretelas/:idmov',AlmacenController.deleteIn
 
 ALMACEN_ROUTER.get('/getinfoetiqueta/:idprod',AlmacenController.getInfoEtiqueta)
 ALMACEN_ROUTER.post('/imprimiretiquetas/:idprod',AlmacenController.printEtiquetas)
+ALMACEN_ROUTER.post('/imprimiretiquetasbyorden/:idorden',AlmacenController.printEtiquetasByOrden)
 
 
 export default ALMACEN_ROUTER
