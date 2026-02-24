@@ -1518,7 +1518,7 @@ export default class AlmacenController{
     const INFO = await ProductosService.searchProductoById(orden.id_receta)
 
     try {
-      const new_modelos = modelos.reduce((carry,modelo)=>{
+      const new_modelos = modelos.filter(row=>row.selected).reduce((carry,modelo)=>{
         const codebar = {}
         Object.keys(modelo.sku).forEach(async (key)=>{
           const CODEBAR = AlmacenController.getCodeBar(modelo.sku[key])
@@ -1532,7 +1532,7 @@ export default class AlmacenController{
 
       if(distribucion == 1) {
         for(const modelo of [...new_modelos]){
-          tallas.forEach(talla=>{
+          tallas.filter(row=>row.selected).forEach(talla=>{
             if(parseInt(modelo.fracciones[talla.desc]) > 0){
               Array(parseInt(modelo.fracciones[talla.desc])).fill('p').forEach((v)=>{    
                 acumulado.push({  
@@ -1547,9 +1547,9 @@ export default class AlmacenController{
           })
         }
       } else {
-        Array(cantidad).fill('p').forEach((v)=>{
+        Array(parseInt(cantidad)).fill('p').forEach((v,k)=>{
           new_modelos.forEach((modelo)=>{
-            tallas.forEach((talla)=>{
+            tallas.filter(row=>row.selected).forEach((talla)=>{
               acumulado.push({
                 model:modelo,
                 talla:talla.desc,
@@ -1616,9 +1616,9 @@ export default class AlmacenController{
                 return `
                   <div class='etiqueta'>
                     <div>
-                      <div style="font-size:.5rem;">OP:${orden.oc}</div>
+                      <div style="font-size:.5rem;">${orden.oc}</div>
                       <h2>${info.rubro}</h2>
-                      <h2>${info.modelo}</h2>
+                      <h2>${row.model.articulo}</h2>
                     </div>
                     <div>
                       <h3>${info.estilo}</h3>
