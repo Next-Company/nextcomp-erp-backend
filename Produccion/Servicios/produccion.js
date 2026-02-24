@@ -1063,7 +1063,7 @@ export class ProduccionModel {
         FROM tbl2_guias_traslado_det_fracciones tgtdf WHERE tgtdf.id_guia_DET = tgtd.idx),JSON_ARRAY()) AS fracciones
       FROM tbl2_guias_traslado_det tgtd WHERE COALESCE(tgtd.isprototipo,0) <> 1 and tgtd.id_guia_CAB = ?`,[data.id])
 
-      const [infotallas] = await conn.execute('select t2.* from tbl2_fases_prod_ordenes t1 join tbl2_tallas_template t2 on t1.tallasbase = t2.idx where t1.idx = ?',[cabecera.id_orden_CAB])
+      const [infotallas] = await conn.execute('select t2.* from tbl2_fases_prod_ordenes t1 join tbl2_tallas_template t2 on case when t1.fraccionado = 1 then t1.tallasfracciones else t1.tallasbase end = t2.idx where t1.idx = ?',[cabecera.id_orden_CAB])
       const tallasbase = infotallas[0].tallas.map(row=>row.desc)
 
       //////////////////////////////////////
@@ -1616,7 +1616,7 @@ export class ProduccionModel {
     ////////////////////////////////////
     let p1 = '', p2 = '', p3 = ''
 
-    const [infotallas] = await conn.execute('select t2.* from tbl2_fases_prod_ordenes t1 join tbl2_tallas_template t2 on t1.tallasbase = t2.idx where t1.idx = ?',[parseInt(orden)])
+    const [infotallas] = await conn.execute('select t2.* from tbl2_fases_prod_ordenes t1 join tbl2_tallas_template t2 on case when t1.fraccionado = 1 then t1.tallasfracciones else t1.tallasbase end = t2.idx where t1.idx = ?',[parseInt(orden)])
     try {
 
       if(backup_articulos.length > 0){
@@ -5327,7 +5327,7 @@ export class ProduccionModel {
 
       let [result] = await conn.execute(`
         SELECT t2.tallas FROM tbl2_fases_prod_ordenes t1 
-        JOIN tbl2_tallas_template t2 ON t1.tallasbase = t2.idx 
+        JOIN tbl2_tallas_template t2 ON case when t1.fraccionado = 1 then t1.tallasfracciones else t1.tallasbase end = t2.idx 
         WHERE t1.idx = ?
       `,[idorden])
 

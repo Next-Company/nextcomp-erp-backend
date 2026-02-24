@@ -1535,7 +1535,7 @@ export class ProduccionController {
             let extra = 20 - items.length
 
             itemsAsHtml = items.map((item, key) => `
-            <tr style="height:14px;font-size:10px;">
+            <tr style="height:14px;font-size:8px;">
               <td style="text-align: center;background-color:#ddebf7;">${key + 1}</td>
               <td style="width:60px;text-align: center;">` + item['modelo'] + `</td>
               <td style="width:60px;text-align: center;">` + (item['corte'] ? ('#' + item['corte']) : '') + `</td>

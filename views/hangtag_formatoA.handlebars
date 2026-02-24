@@ -4,6 +4,7 @@
     padding: 0;
     width: 100mm;
     height: 45mm;
+    background-color: gray;
   }
   .row{
     display: flex;
@@ -15,6 +16,7 @@
     break-after: page;
   }
   .etiqueta{
+    background-color: white;
     box-sizing:border-box;
     font-size: .4rem;
     width: 33.5mm;
@@ -41,9 +43,9 @@
   }
   #talla{
     position: absolute;
-    right: 6px;
-    bottom: 58px;
-    font-size: 2rem;
+    right: 5px;
+    bottom: 98px;
+    font-size: 1.8rem;
     font-weight: bolder;
   }
   .bar{
@@ -57,9 +59,19 @@
     top: -10mm;
   }
   #bar_right{
-    height: 28mm;
-    right: -.5mm;
+    height: 24mm;
+    padding: 4px;
+    right: 4mm;
     top: 0;
+    position: absolute;
+    background-color: black;
+    color:white;
+    writing-mode: vertical-lr;
+    font-size: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: Arial, Helvetica, sans-serif;
   }
 </style>
 <body>

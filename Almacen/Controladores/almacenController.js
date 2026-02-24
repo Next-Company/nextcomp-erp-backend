@@ -1490,7 +1490,7 @@ export default class AlmacenController{
       JsBarcode(canvas,sku,{
         format:"EAN13",
         displayValue:false,
-        height:12,
+        height:32,
         width:1,
         margin:0,
         flat:true
@@ -1616,9 +1616,9 @@ export default class AlmacenController{
                 return `
                   <div class='etiqueta'>
                     <div>
-                      <div style="font-size:.5rem;">${orden.oc}</div>
-                      <h2>${info.rubro}</h2>
-                      <h2>${row.model.articulo}</h2>
+                      <div style="font-size:.3rem;">.</div>
+                      <div style="font-size:.4rem;">${info.rubro}</div>
+                      <div style="font-size:10px;font-weight:bold;">${row.model.articulo}</div>
                     </div>
                     <div>
                       <h3>${info.estilo}</h3>
@@ -1626,27 +1626,27 @@ export default class AlmacenController{
                       <h3>${row.color.length > 8 ? row.color.substr(0,8) + '.' : row.color }</h3>
                       <h3>${info.presentacion}</h3>
                     </div>
-                    <div>
-                      <div style="display:flex;justify-content:space-between;">
-                        <div>
-                          ORIGINAL
+                    <div style="margin-bottom:10px;">
+                      <div style="display:flex;flex-direction:column;justify-content:space-between;font-size:11px;margin-bottom:4px;margin-top:14px;">
+                        <div style="font-size:6px;">
+                          PRECIO ORIGINAL
                         </div>
                         <div>
-                          <h3>${moneda == 'PEN' ? 'S/' : '$'}${moneda == 'PEN' ? orden.precios[0].precio1[0] : orden.precios[0].precio1[1]}</h3>
+                          <h3>${moneda == 'PEN' ? 'S/' : '$'}1${moneda == 'PEN' ? orden.precios[0].precio1[0] : orden.precios[0].precio1[1]}.00</h3>
                         </div>
                       </div>
-                      <div style="display:flex;justify-content:space-between;">
-                        <div>
-                          OFERTA
+                      <div style="display:flex;flex-direction:column;justify-content:space-between;font-size:11px;">
+                        <div style="font-size:6px;">
+                          PRECIO OFERTA
                         </div>
                         <div>
-                          <h3>${moneda == 'PEN' ? 'S/' : '$'}${moneda == 'PEN' ? orden.precios[0].precio2[0] : orden.precios[0].precio2[1]}</h3>
+                          <h3>${moneda == 'PEN' ? 'S/' : '$'}1${moneda == 'PEN' ? orden.precios[0].precio2[0] : orden.precios[0].precio2[1]}.00</h3>
                         </div>
                       </div>
                     </div>
-                    <div>
+                    <div>${orden.oc}</div>
+                    <div style="transform:rotate(90deg);position:absolute;bottom:35px;right:-22px;">
                       <img src="data:image/jpg;base64,${row.codebar}"/>
-                      <div id="idcodbar">${row.sku}</div>
                     </div>
                     <div id="talla">${row.talla}</div>
                     <div class="bar" id="bar_left"></div>
