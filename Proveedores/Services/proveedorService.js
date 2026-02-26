@@ -28,7 +28,14 @@ export default class ProveedorService{
         FROM tbl2_proveedor
         WHERE ruc_ = '20522094120' AND idx = ?
       `,[id])
-      return result;
+
+      const [locales] = await conn.query(`
+        SELECT *FROM tbl2_proveedor t1
+        JOIN tbl2_proveedor_local t2 ON t1.idx = t2.id_proveedor_CAB
+        WHERE t1.ruc_ = '20522094120' AND t1.idx = ?
+      `,[id])
+
+      return {ok:true,result,locales}
     } catch(e) {
       console.log(e);
     } finally {

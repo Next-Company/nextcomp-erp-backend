@@ -142,7 +142,7 @@ export class OrdenesModel {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
 
-      let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(COALESCE(TRIM(oc),''),' ',COALESCE(TRIM(cliente),''),' ',COALESCE(TRIM(marca),''),' ',COALESCE(TRIM(producto),''),' ',COALESCE(TRIM(modelos),''),' ',COALESCE(TRIM(estado_orden),''),' ',COALESCE(TRIM(status_servicio),''),' ',estado_preprod)) > 0").join(" ") : ""
+      let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(COALESCE(TRIM(presentacion),''),' ',COALESCE(TRIM(oc),''),' ',COALESCE(TRIM(cliente),''),' ',COALESCE(TRIM(marca),''),' ',COALESCE(TRIM(producto),''),' ',COALESCE(TRIM(modelos),''),' ',COALESCE(TRIM(estado_orden),''),' ',COALESCE(TRIM(status_servicio),''),' ',estado_preprod)) > 0").join(" ") : ""
 
       let [results] = await conn.query(`
         SELECT t1.*,
@@ -1572,10 +1572,15 @@ export class OrdenesModel {
           console.log("La newinfo es la siguiente:",newinfo)
           
           if(!modelo.idreceta){
-            // const [validaprod] = await conn.query("select *from tbl2_productos where ruc_ = '20522094120' and nom = ?",[newinfo.nom])
+            const [validaprod] = await conn.query("select *from tbl2_productos where ruc_ = '20522094120' and nom = ?",[newinfo.nom])
             console.log("Dentro de la creacion del producto")
-            INFO_NEWPROD = await ProductosService.createNewProduct(newinfo,conn)
-            if(!INFO_NEWPROD.ok) throw new Error(INFO_NEWPROD.message)
+            if(!validaprod.length){
+              INFO_NEWPROD = await ProductosService.createNewProduct(newinfo,conn)
+              if(!INFO_NEWPROD.ok) throw new Error(INFO_NEWPROD.message)
+            } else {
+              console.log("No se encontro un producto con el mismo nombre, se asignara la receta original")
+              INFO_NEWPROD['info'] = validaprod[0].idx
+            }
             // if(validaprod.length == 0){
             // } else {
             //   INFO_NEWPROD['info'] = INFO_RECETA_ORIGIN[0].idx
