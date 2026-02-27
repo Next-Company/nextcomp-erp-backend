@@ -88,8 +88,10 @@ export default class ProveedorService{
       await conn.connect();
       conn.beginTransaction()
 
+      const locales = data.locales ? JSON.parse(data.locales) : []
       const [valor,fields] = await conn.query("select *from tbl2_proveedor limit 1")
-
+      const [baselocales,fieldslocales] = await conn.query("select *from tbl2_proveedor_local where id_proveedor_CAB = ?",[id])
+      
       data['ruc_'] = '20522094120'
       const campos = Object.keys(data).reduce((carry, current) => {
         fields.filter(row => row.name !== 'idx').map(row => row.name).includes(current) && carry.push(current)
@@ -103,6 +105,24 @@ export default class ProveedorService{
       const [result] = await conn.query(query,newinfo)
 
       console.log("Los registro alterados fueron:",result.affectedRows)
+      console.log("Comenzamos con la actualización de locales")
+
+      const addlocales = locales.filter(row => !baselocales.some(row2 => row2.idx == row.idx))
+      const updatelocales = locales.filter(row => baselocales.some(row2 => row2.idx == row.idx))
+      const dellocales = baselocales.filter(row => !locales.some(row2 => row2.idx == row.idx))
+
+      for(const loc of addlocales) {
+        const [resultadd] =await conn.execute('INSERT INTO tbl2_proveedor_local(ruc_, id_proveedor_CAB,  nombre_local, tipo_local, direccion, referencia, latitud, longitud) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [data.ruc_, id, loc.nombre_local, loc.tipo_local, loc.direccion, loc.referencia, loc.latitud, loc.longitud])
+        console.log("Resultado de inserción de local:",resultadd.affectedRows)
+      }
+      for(const loc of updatelocales) {
+        const [resultupdate] = await conn.execute('UPDATE tbl2_proveedor_local SET nombre_local = ?, tipo_local = ?, direccion = ?, referencia = ?, latitud = ?, longitud = ? WHERE idx = ? AND id_proveedor_CAB = ?', [loc.nombre_local, loc.tipo_local, loc.direccion, loc.referencia, loc.latitud, loc.longitud, loc.idx, id])
+        console.log("Resultado de actualización de local:",resultupdate.affectedRows)
+      }
+      for(const loc of dellocales) {
+        const [resultdelete] = await conn.execute('DELETE FROM tbl2_proveedor_local WHERE idx = ? AND id_proveedor_CAB = ?', [loc.idx, id])
+        console.log("Resultado de eliminación de local:",resultdelete.affectedRows)
+      }
 
       // if (conn) conn.rollback()
       if (conn) conn.commit()
