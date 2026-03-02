@@ -33,6 +33,7 @@ export default class LocalesService{
           t1.longitud,
           t2.nom as proveedor,
           t2.correo,
+          t2.telefono,
           t2.web,
           t2.cuenta_corriente
         FROM tbl2_proveedor_local t1 
