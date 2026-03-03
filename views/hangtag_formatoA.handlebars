@@ -47,6 +47,33 @@
     bottom: 98px;
     font-size: 1.8rem;
     font-weight: bolder;
+    display: flex;
+    justify-content: center;
+  }
+  #talla div{
+    position:absolute;
+    top:-5px;
+    font-size: 8px;
+    font-weight: bold;
+  }
+  #footer-circles{
+    display: flex;
+    gap: 4px;
+  }
+  #footer-circles div{
+    width: 1px;
+    height: 1px;
+    border: thin solid black;
+  }
+  #footer-circles div:nth-child(2n-1){
+    background-color: black;
+    border-radius: 100%;
+  }
+  #footer-circles div:nth-child(2n){
+    border-radius: 100%;
+  }
+  #footer-circles div:nth-child(2n+1){
+    background-color: black;
   }
   .bar{
     width: 2mm;
