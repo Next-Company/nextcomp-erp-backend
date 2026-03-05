@@ -71,7 +71,7 @@ export default class LocalesService{
       `,[infolocal[0].id_proveedor_CAB])
       const auditorias = []
 
-      console.log("Procesos en curso:",servicios,compras,auditorias)
+      // console.log("Procesos en curso:",servicios,compras,auditorias)
 
       return [servicios,compras,auditorias]
     } catch (error) {

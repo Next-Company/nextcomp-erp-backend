@@ -65,13 +65,13 @@
   }
 
   table.contenido{
-      /* width: 100%; */
-      border-collapse: collapse;
-      border-left: 0.5px solid #004080;
+    /* width: 100%; */
+    border-collapse: collapse;
+    {{!-- border-left: 0.5px solid #004080; --}}
   }
 
 
-  table.contenido tr th {
+  table.contenido tbody tr th, thead tr th {
       background-color: #a8ac5c;
       border-right: 0.5px solid #004080;
       border-bottom: 0.5px solid #004080;
@@ -84,7 +84,7 @@
   }
 
 
-  table.contenido tr td {
+  table.contenido tbody tr td {
 
       border-right: 0.5px solid #a8ac5c;
       border-bottom: 0px solid #a8ac5c;
@@ -118,6 +118,27 @@
   }
   .tipo_orden td{
       border:0.5px solid black;
+  }
+  @media print {
+    /* Asegura que el footer se imprima al final de la última página */
+    tfoot {
+      display: table-row-group;
+    }
+
+    .footer-contenido {
+      /* Si quieres que se vea abajo del todo, 
+        puedes darle un margen superior grande 
+        o una altura mínima */
+      padding-top: 20px;
+      border-top: 1px solid #000;
+      text-align: center;
+    }
+
+    /* Evita que una fila se corte a la mitad */
+    tr {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
   }
 </style>
 <body>
@@ -195,18 +216,33 @@
           {{/cuerpo}}
       </tbody>
       <tfoot>
+        <tr>
+          <td colspan="10">
+
+            <div style="bottom:0px;display:flex;width:100%;gap:15px;flex-direction:column;padding-top:50px;">
+              <div style="display:flex;width:95%;gap:15px;">
+                <div style="height:20px;background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">AUXILIAR DE ALMACEN</div>
+                <div style="height:20px;background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">CONTROL DE INGRESO</div>
+              </div>
+              <div style="font-weight: bold;font-size:12px;text-align:right;padding:10px;border:0px solid red;margin-right: 20px;">
+                Fecha/hora emisión: {{cabecera.fecha_sistema}}
+              </div>
+            </div>
+
+          </td>
+        </tr>
       </tfoot>
     </table>
-    <div style="position:absolute;bottom:0px;display:flex;width:100%;gap:15px;flex-direction:column;">
+
+    {{!-- <div style="bottom:0px;display:flex;width:100%;gap:15px;flex-direction:column;">
       <div style="display:flex;width:95%;gap:15px;">
         <div style="height:20px;background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">AUXILIAR DE ALMACEN</div>
         <div style="height:20px;background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">JEFE DE CORTE</div>
-        {{!-- <div style="height:20px;background-color:transparent;flex:1;text-align:center;border-top:thin dashed;padding-top:5px;">NOMBRE RESPONSABLE</br> RESONSABLE DE COMPRA</div> --}}
       </div>
       <div style="font-weight: bold;font-size:12px;text-align:right;padding:10px;border:0px solid red;margin-right: 20px;">
         Fecha/hora emisión: {{cabecera.fecha_sistema}}
       </div>
-    </div>
+    </div> --}}
     <style>
         table#totales {
             border: 0.5px solid #004080;

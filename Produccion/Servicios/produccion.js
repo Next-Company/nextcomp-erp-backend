@@ -3780,6 +3780,7 @@ export class ProduccionModel {
           t1.*,
           COALESCE(t2.distribucion,'') as distribucion,
           (select tfpo.oc from tbl2_fases_prod_ordenes tfpo where tfpo.idx = t2.id_orden_CAB) as oc,
+          t1.responsable as responsable_ingreso,
           t2.servicio,
 	        t2.responsable 
         FROM tbl2_despachos_cab t1 

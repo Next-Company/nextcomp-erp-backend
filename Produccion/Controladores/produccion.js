@@ -617,6 +617,8 @@ export class ProduccionController {
 
     const BINARY_CHUNKS3 = await fs.readFile('public/images/guia_despacho_title.png')
 
+    let data1 = await ProduccionModel.getInfoDespachoCab(params.id)
+    console.log("La info cabecera del despacho es:",data1)
     let data2 = await ProduccionModel.getInfoDespachoDet(params.id,'PEDIDOS')
     console.log("Mostrando la informacion del detalle del despacho:",data2)
     // console.log("Reestructurando la variable data2",data2.map(row=>row.fracciones_despacho))
@@ -630,6 +632,7 @@ export class ProduccionController {
           BINARY_CHUNKS3: BINARY_CHUNKS3.toString('base64'),
           color: 'black',
           info: params,
+          cabecera_ingreso: data1[0],
           cabecera: data[0],
           detalle: data2,
           date: (new Date(data[0].created_at)).toLocaleDateString('en-GB'),
@@ -659,14 +662,14 @@ export class ProduccionController {
             encabezado(datos){
               const info = `
                 <tr >
-                  <td style="font-weight:100;font-size: 12px;"><strong style="font-size: 14px;font-weight:100;">OP.: </strong>`+ datos.orden_ref +`</td>
-                  <td style="font-weight:100;font-size: 12px;"><strong style="font-size: 14px;font-weight:100;">ARTICULO: </strong>`+ datos.produccion +`</td>
+                  <td style="font-weight:100;font-size: 12px;"><strong style="font-size: 14px;font-weight:100;">OC.: </strong>`+ datos.orden_ref +`</td>
                   <td style="font-weight:100;font-size: 12px;"><strong style="font-size: 14px;font-weight:100;">MODELO: </strong>`+ datos.produccion +`</td>
+                  <td style="font-weight:100;font-size: 12px;"><strong style="font-size: 14px;font-weight:100;">PROVEEDOR: </strong>`+ datos.proveedor +`</td>
                 </tr>
                 <tr >
                 <td style="font-weight:100;font-size: 12px;"><strong style="font-size: 14px;font-weight:100;">TIPO MOV.: </strong>INGRESO</td>
-                <td style="font-weight:100;font-size: 12px;"><strong style="font-size: 14px;font-weight:100;">GIRADO POR: </strong>` + datos.responsable + `</td>
-                  <td style="font-weight:100;font-size: 12px;"><strong style="font-size: 14px;font-weight:100;"></strong></td>
+                <td style="font-weight:100;font-size: 12px;"><strong style="font-size: 14px;font-weight:100;">GIRADO POR: </strong>` + data1[0].responsable_ingreso + `</td>
+                  <td style="font-weight:100;font-size: 12px;"><strong style="font-size: 14px;font-weight:100;">N°GUIA REF:</strong>` + data1[0].nro_guia + `</td>
                 </tr>  
               `
               return info
