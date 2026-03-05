@@ -1516,8 +1516,28 @@ export default class AlmacenController{
     let base = [], group = [], acumulado = []
     
     const INFO = await ProductosService.searchProductoById(orden.id_receta)
+    
+    // modelos.filter(ob=>!Object.values(ob.sku).filter(v=>!v).length)
+    // if(Object.values(modelos.sku).filter(v=>!v).length > 0){
+
+    // }
+    // console.log("El listado de los modelos es:", modelos, modelos.filter(ob=>Object.values(ob.sku).filter(v=>!v).length))
+    // res.send({ok:false,mensaje:'Sku error'})
+    // return 0
 
     try {
+
+      if(!orden.precios){
+        // throw new Error("Las lista de precios aún no se encuentra configurada. Verifique.")
+        res.send({ok:false,mensaje:'Las lista de precios aún no se encuentra configurada. Verifique.'})
+        return 0
+      }
+      if(!modelos.filter(ob=>Object.values(ob.sku).filter(v=>!v).length).length){
+        res.send({ok:false,mensaje:'Las lista de precios aún no se encuentra configurada. Verifique.'})
+        return 0
+      }
+
+
       const new_modelos = modelos.filter(row=>row.selected).reduce((carry,modelo)=>{
         const codebar = {}
         Object.keys(modelo.sku).forEach(async (key)=>{
@@ -1527,10 +1547,9 @@ export default class AlmacenController{
         carry.push({...modelo,codebar:codebar})
         return carry
       },[])
-      // console.log("Modelos con codigo de barra incluidos:",modelos)
       console.log("La nueva reestructuracion es:",new_modelos)
 
-      if(distribucion == 1) {
+      if (distribucion == 1) {
         for(const modelo of [...new_modelos]){
           tallas.filter(row=>row.selected).forEach(talla=>{
             if(parseInt(modelo.fracciones[talla.desc]) > 0){
@@ -1564,14 +1583,9 @@ export default class AlmacenController{
       
     } catch (error) {
       console.log("Error al obtener la receta padre:",error)
+      // res.send({ok:false,mensaje:error.message ?? error})
+      // return 0
     }
-    
-    // console.log("La informacion de acumulado es:",acumulado)
-    // res.send("Informacion del acumulado procesado con exito")
-    // return 0
-
-    // const cantidad = 5
-    // const combinacion = modelos.length * tallas.length
 
     const k = ()=>{
       let p = acumulado.shift()
@@ -1697,7 +1711,7 @@ export default class AlmacenController{
 
           const pdfBuffer = await page.pdf(pdfOptions);
           await browser.close();
-          res.send({ data: pdfBuffer.toString('base64') })
+          res.send({ ok:true, data: pdfBuffer.toString('base64') })
           // res.send(pdfBuffer)
         } catch (error) {
           res.status(500).send('Error al generar el PDF');

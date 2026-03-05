@@ -1736,6 +1736,52 @@ export class OrdenesModel {
       if (conn) await conn.end();
     }
   }
+  static async updateSkuModels(idorden) {
+    let conn
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect();
+      conn.beginTransaction()
+
+      console.log("Dentro de actualizacion de skus!!")
+      const [busqueda_model] = await conn.execute(`
+        SELECT t2.* 
+        FROM tbl2_fases_prod_modelos t1
+        JOIN tbl2_subproductos t2 ON t1.id_receta_CAB = t2.idx_CAB_PROD AND t1.idx_color = t2.idx_CAB_COLOR
+        WHERE t1.id_orden_CAB = ?
+      `,[idorden])
+      
+      if(!busqueda_model.length) throw new Error('No se pudo localizar la información del fraccionamiento. Verifique.')
+
+      for(let subprod of busqueda_model){
+        const COUNTRY_CODE = '775';
+        const CODE_COMPANY = '0062';
+        const PRE_CODEBAR = COUNTRY_CODE + CODE_COMPANY + ('00000' + subprod.idx).slice(-5)
+        const CODEBAR = numControlBarcode(PRE_CODEBAR)
+
+        const [result] = await conn.query('UPDATE tbl2_subproductos SET sku = ? WHERE idx = ? and idx_CAB_PROD = ?',[CODEBAR,subprod.idx,subprod.idx_CAB_PROD])
+        // console.log("FIlas afectadas",result.affectedRows)
+      }
+
+      const [revision] = await conn.query(`
+        select t1.color_modelo,t3.* from tbl2_fases_prod_modelos t1
+        join tbl2_fases_prod_modelos_fracciones t2 on t1.idx = t2.id_modelo_CAB
+        join tbl2_subproductos t3 on t3.idx_CAB_PROD = t1.id_receta_CAB and t3.idx_CAB_COLOR = t1.idx_color and t3.idx_talla = t2.id_talla_CAB
+        where t1.id_orden_CAB = ?
+      `,[idorden])
+      console.log("Resultado de la revision final:",revision)
+
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
+      return { ok: true, mensaje: 'Guardado con exito' }
+    } catch (err) {
+      console.log(err)
+      if (conn) conn.rollback()
+      return { ok: false, mensaje: err.message ?? err }
+    } finally {
+      if (conn) await conn.end();
+    }
+  }
   static async saveFasePrecios(info) {
     console.log("Dentro de la fase de configuracion de precios")
     let conn
@@ -1755,11 +1801,14 @@ export class OrdenesModel {
 
       const eq_soles = {precio1:'utilidad1',precio2:'utilidad2',precio3:'utilidad3',precio4:'utilidad4',precio5:'utilidad5',precio6:'utilidad6',}
       const eq_dolares = {precio1:['tiendaUtilidad1','switchPrecioTienda1'],precio2:['tiendaUtilidad2','switchPrecioTienda2'],precio3:['tiendaUtilidad3','switchPrecioTienda3'],precio4:['tiendaUtilidad4','switchPrecioTienda4'],precio5:['tiendaUtilidad5','switchPrecioTienda5'],precio6:['tiendaUtilidad6','switchPrecioTienda6']}
-      for(let modelo of [...modelos]){
+      const filtro_models = [...new Set(modelos.map(r=>JSON.stringify({...r})))].map(r=>JSON.parse(r))
+
+      // console.log("asdfasdfasdf:",filtro_models)
+      for(let modelo of [...filtro_models]){
         const lista_precios = data[0].precios[modelo.pricemodel - 1]
         console.log("La info del modelo es el siguiente:",modelo, lista_precios)
 
-        await conn.query(`UPDATE tbl2_fases_prod_modelos SET pricemodel = ? WHERE idx = ? AND id_orden_CAB`,[modelo.pricemodel,modelo.idx,data[0].idx])
+        await conn.query(`UPDATE tbl2_fases_prod_modelos SET pricemodel = ? WHERE id_receta_CAB = ? AND id_orden_CAB`,[modelo.pricemodel,modelo.id_receta_CAB,data[0].idx])
 
         const [revision] = await conn.query(`
           SELECT *FROM tbl2_almacen_det t1
@@ -1770,7 +1819,6 @@ export class OrdenesModel {
 
         const [info_receta] = await conn.execute(`SELECT *FROM tbl2_productos WHERE ruc_ = '20522094120' AND idx = ?`,[modelo.id_receta_CAB])
 
-        // { precio1: [ 22, 0 ], precio2: [ 14, 12 ]}
         let subquery_soles = Object.keys(lista_precios).reduce((c,v)=>{
           let p = `${eq_soles[v]}=(${lista_precios[v][0]}/costo-1)*100`
           c.push(p)
@@ -1790,13 +1838,13 @@ export class OrdenesModel {
         await conn.query(`
           UPDATE tbl2_preciosxtienda SET ${subquery_dolares} WHERE idx_CAB_PROD = ? and idx_almacen in (567,592)
         `,[modelo.id_receta_CAB])
-
         
       }
       const [result] = await conn.execute(`UPDATE tbl2_fases_prod_ordenes SET precios = ? WHERE idx = ?`,[JSON.stringify(data[0].precios),data[0].idx])
+      console.log("Las filas afectadas fueron:",result.affectedRows)
 
-      // if (conn) conn.rollback()
-      if (conn) conn.commit()
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito' }
     } catch (err) {
       console.log(err)

@@ -223,6 +223,11 @@ export class OrdenesController {
     const data = await OrdenesModel.saveFaseFraccionamiento(info, user_data)
     resp.json(data)
   }
+  static async updateSkuModels(req, resp) {
+    const idorden = req.params.idorden ?? 0
+    const data = await OrdenesModel.updateSkuModels(idorden)
+    resp.json(data)
+  }
   static async saveFasePrecios(req, resp) {
     const info = req.body
     const data = await OrdenesModel.saveFasePrecios(info)
