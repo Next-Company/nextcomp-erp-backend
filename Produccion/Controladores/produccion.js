@@ -74,6 +74,16 @@ export class ProduccionController {
         tallas: data4[0]?.tallas.map(row=>row.desc) ?? ['st','xs','s','m','l','xl','xxl',],
         colspanbody: data4[0]?.tallas?.length + 2 ?? 2,
         colspantotales: data4[0]?.tallas.length + 2,
+        igv:data[0].igv ? 'No Aplica' : 'Aplica',
+        condicion: ['','Pago contra entrega','Pago programado','Pago semanal','Pago con adelanto + prog.'][data[0].condicion_pago],
+        valor_igv:(data2.reduce((carry, valor) => {
+          carry += valor.isprototipo ? 0 : parseFloat(valor.cantidad)
+          return carry;
+        }, 0)*data[0].costo*(data[0].igv ? 0 : 0.18)).toFixed(2),
+        importetotal:(data2.reduce((carry, valor) => {
+          carry += valor.isprototipo ? 0 : parseFloat(valor.cantidad)
+          return carry;
+        }, 0)*data[0].costo*(data[0].igv ? 1 : 1.18)).toFixed(2),
         // relleno:data2.filter(),
         prototipos: data2.filter(row => row.isprototipo),
         numproto: data2.filter(row => row.isprototipo).length,
@@ -84,6 +94,10 @@ export class ProduccionController {
           carry += valor.isprototipo ? 0 : parseFloat(valor.cantidad)
           return carry;
         }, 0),
+        totalimporte: (data2.reduce((carry, valor) => {
+          carry += valor.isprototipo ? 0 : parseFloat(valor.cantidad)
+          return carry;
+        }, 0)*data[0].costo).toFixed(2),
         proveedor: data3[0],
         helpers: {
           plusindex(index) {
@@ -105,6 +119,21 @@ export class ProduccionController {
                   ${infotallas.join("")}
                   <td style="width:1.5px;text-align: center;">NIU</td>
                   <td style="width:1.5px;text-align: center;">${row.cantidad}</td>
+                  <td style="width:1.5px;text-align: center;">${data[0].costo}</td>
+                  <td style="width:1.5px;text-align: center;">${row.cantidad*data[0].costo}</td>
+                </tr>
+              `)
+            })
+            Array(3).fill(0).forEach(r=>{
+              cuerpo.push(`
+                <tr>
+                  <td style="text-align: center;"></td>
+                  <td></td>
+                  ${tallas.map(s=>'<td style="text-align: center;">-</td>').join("")}
+                  <td style="text-align: center;">-</td>
+                  <td style="text-align: center;">-</td>
+                  <td style="text-align: center;">-</td>
+                  <td style="text-align: center;">-</td>
                 </tr>
               `)
             })
@@ -1314,12 +1343,15 @@ export class ProduccionController {
   static async getInfoGuias(req, res) {
     const id = req.params.id
     const data = await ProduccionModel.getInfoGuiaCab(id)
+    // const data = []
     const data2 = await ProduccionModel.getInfoGuiaDet(id)
+    // const data2 = []
     const data3 = await ProduccionModel.getInfoGuiaPenalidades(id)
     const data4 = await ProduccionModel.getListaPenalidades()
     const data5 = await OrdenesModel.getFasesProduccion('')
     const data6 = await ProduccionModel.getListaReprogramacionGuias(id)
     const data7 = await ProduccionModel.getPlantillasTallasByOrden(data[0].id_orden_CAB)
+    // const data7 = []
     res.json([data[0], data2, data3, data4, data5, data6, data7[0]])
   }
   static async getInfoMuestras(req, res) {

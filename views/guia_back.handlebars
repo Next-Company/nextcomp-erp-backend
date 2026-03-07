@@ -77,7 +77,9 @@
         </p>
       </section>
       <p style="font-size: 1.1rem;font-weight:bolder;text-align:center;">
-        GUIA DE TRASLADO INTERNO - REMITENTE<br/>
+        {{!-- GUIA DE TRASLADO INTERNO - REMITENTE --}}
+        ORDEN DE SERVICIO
+        <br/>
         {{idguia}}
       </p>
       <section style="display: flex;justify-content:space-between;border-bottom:.5px dashed black;padding-bottom: 10px;">
@@ -101,26 +103,17 @@
         <table>
           <tbody>
             <tr>
-              <td>Señor(es):</td>
-              <td style="width: 300px;">{{proveedor.nom}}</td>
-              {{!-- <td style="width: 300px;">ARTURO COVEÑAS</td> --}}
               <td>RUC:</td>
               <td>{{proveedor.ruc}}</td>
-            </tr>
-            <tr>
               <td>Punto de Partida :</td>
               <td>CAL FELIPE SANTIAGO CRESPO NRO. 581 LIMA-SAN LUIS LIMA</td>
-              <td>Punto de Llegada :</td>
-              <td>{{proveedor.direccion}}</td>
-              {{!-- <td>Destino: </td>
-              <td>P17672 - {{proveedor.nom}}</td> --}}
             </tr>
-            {{!-- <tr>
+            <tr>
+              <td>Señor(es):</td>
+              <td style="width: 300px;">{{proveedor.nom}}</td>
               <td>Punto de Llegada :</td>
               <td>{{proveedor.direccion}}</td>
-              <td></td>
-              <td></td>
-            </tr> --}}
+            </tr>
           </tbody>
         </table>
       </section>
@@ -135,10 +128,11 @@
           Responsable: {{cabecera.responsable}}
         </div>
         <div>
-          Servicio: {{cabecera.servicio}}
+          {{!-- Servicio: {{cabecera.servicio}} --}}
         </div>
         <div>
-          Motivo: {{cabecera.motivo_traslado}}
+          {{!-- Motivo: {{cabecera.motivo_traslado}} --}}
+          Motivo: SERVICIO DE {{cabecera.servicio}}
         </div>
       </section>
       <p style="font-size: 1.1rem;font-weight:bold;">
@@ -151,13 +145,17 @@
               <td>Modelo:</td>
               <td style="width: 300px;">{{cabecera.modelo}}</td>
               <td>Precio:</td>
-              <td>S/.{{cabecera.costo}}</td>
+              <td style="width: 120px;">S/.{{cabecera.costo}}</td>
+              <td>IGV(18%):</td>
+              <td>{{igv}}</td>
             </tr>
             <tr>
               <td>Descripción:</td>
               <td>{{cabecera.producto}}</td>
               <td>OP/Corte:</td>
-              <td>#{{cabecera.orden_ref}}</td>
+              <td style="width: 120px;">#{{cabecera.orden_ref}}</td>
+              <td>Cond.Pago:</td>
+              <td>{{condicion}}</td>
             </tr>
           </tbody>
         </table>
@@ -176,17 +174,36 @@
               {{/header}}
               <th style="text-align:center;">UM</th>
               <th style="text-align:center;">Cantidad</th>
+              <th style="text-align:center;width:60px;">Costo</th>
+              <th style="text-align:center;">Importe</th>
             </tr>
           </thead>
           <tbody>
             {{#cuerpo detalle tallas}}
             {{/cuerpo}}
+            </tr>
           </tbody>
-          <tfoot>
+          <tfoot style="border-top: .25px solid gray;">
             <tr>
               <td colspan="{{colspantotales}}"></td>
               <td style="text-align: center;font-size:.9rem;"><strong>Total</strong></td>
               <td style="text-align: center;font-size:.9rem;"><strong>{{totalunid}}</strong></td>
+              <td style="text-align: center;font-size:.9rem;"><strong>Subtotal</strong></td>
+              <td style="text-align: center;font-size:.9rem;"><strong>{{totalimporte}}</strong></td>
+            </tr>
+            <tr>
+              <td colspan="{{colspantotales}}"></td>
+              <td style="text-align: center;font-size:.9rem;"><strong></strong></td>
+              <td style="text-align: center;font-size:.9rem;"><strong></strong></td>
+              <td style="text-align: center;font-size:.9rem;"><strong>Igv</strong></td>
+              <td style="text-align: center;font-size:.9rem;"><strong>{{valor_igv}}</strong></td>
+            </tr>
+            <tr>
+              <td colspan="{{colspantotales}}"></td>
+              <td style="text-align: center;font-size:.9rem;"><strong></strong></td>
+              <td style="text-align: center;font-size:.9rem;"><strong></strong></td>
+              <td style="text-align: center;font-size:.9rem;"><strong>Total</strong></td>
+              <td style="text-align: center;font-size:.9rem;"><strong>{{importetotal}}</strong></td>
             </tr>
           </tfoot>
         </table>
@@ -255,7 +272,7 @@
           <div style="text-align:left;height:30px;border-bottom:.5px dotted gray;display:flex;align-items:center;">Nom:</div>
         </div>
       </section>
-      <section style="padding-top:50px;font-size:.9rem;">
+      <section style="padding-top:20px;font-size:.8rem;">
         
         {{!-- <strong>Observaciones:</strong> {{cabecera.observaciones}}<br/>
         <strong>Fecha retorno:</strong> {{cabecera.fec_retorno}}<br/>
@@ -263,7 +280,7 @@
         {{!-- <p>
           <strong>PENALIDADES:</strong> El despacho deberá ser al 100% de la OC, con el fin de compensar el perjuicio por la pérdida de ventas y contribución por la mercadería perdida y no despachada en periodo establecido se fija un cobro del 1% de penalidad que aplica sobre la mercadería no despachada para las OC que tengan un FILL RATE
         </p> --}}
-        <strong>CONDICIONES DE DESPACHO:</strong> Para garantizar una entrega y recepción de mercadería eficiente, es crucial que cada envío incluya documentación completa y clara (guía de remisión, factura/boleta y órdenes de compra si aplican), que la mercancía esté en embalajes adecuados con identificación clara, y, fundamentalmente, que se detalle información exhaustiva de las prendas por talla y color(SKU, color, y cantidad por talla) para una correcta verificación de inventario. Además, las entregas deben respetar los horarios y puntos acordados, y el personal de entrega debe estar identificado para facilitar el proceso. El cumplimiento de estas condiciones es vital para evitar demoras y asegurar la fluidez de la cadena logística.<br/><br/>
+        {{!-- <strong>CONDICIONES DE DESPACHO:</strong> Para garantizar una entrega y recepción de mercadería eficiente, es crucial que cada envío incluya documentación completa y clara (guía de remisión, factura/boleta y órdenes de compra si aplican), que la mercancía esté en embalajes adecuados con identificación clara, y, fundamentalmente, que se detalle información exhaustiva de las prendas por talla y color(SKU, color, y cantidad por talla) para una correcta verificación de inventario. Además, las entregas deben respetar los horarios y puntos acordados, y el personal de entrega debe estar identificado para facilitar el proceso. El cumplimiento de estas condiciones es vital para evitar demoras y asegurar la fluidez de la cadena logística.<br/><br/> --}}
         <strong>CONDICIONES DE PAGO:</strong> Las fechas de cierre son los días miércoles de cada semana. La programación de pagos variaran dependiendo de si los despachos fueron recepcionados antes o después de la fecha de cierre. Los proveedores cuyos despachos sean recibidos antes de la fecha de cierre(lunes, martes o miércoles), recibirán el pago en un plazo máximo de 10 días a partir de dicha fecha de cierre; por el contrario, los proveedores cuyos despachos sean recibidos después de la fecha de cierre(jueves, viernes o sábado), recibirán el pago en un plazo máximo de 10 días a partir de la fecha de cierre de la semana siguiente.<br/><br/>
         <strong>PENALIDADES :</strong> El despacho deberá ejecutarse segun las fechas indicadas en el presente documento, despues de la fecha de vencimineto se aplicará una penalidad sobre el valor costo de la OC: de 1 a 5 días de retraso la penalidad sera de <strong>5%</strong>, de 6 a 10 días la penalidad serea de <strong>10%</strong> y de 11 a 15 días sera <strong>%15</strong>, de 16 días a más se evaluará la recepción de la OC. El proveedor consignado en el presente documento autoriza a Next Company a retener de forma automática el pago de facturas del proveedor por el valor de lo adeudado.<br/><br/>
         {{!-- <strong>Consulta web de este GRE: https://portal.efacturacion.pe/appefacturacion</strong><br/> --}}
