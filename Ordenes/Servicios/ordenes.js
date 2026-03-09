@@ -1824,9 +1824,11 @@ export class OrdenesModel {
           c.push(p)
           return c
         },[])
-        await conn.query(`
+        
+        const [updateprod] = await conn.query(`
           UPDATE tbl2_productos SET ${subquery_soles.join(',')} WHERE ruc_ = ? AND idx = ?
         `,['20522094120',modelo.id_receta_CAB])
+        console.log("Validando update prod:",updateprod.affectedRows)
 
         await conn.query(`CALL sp_CreacionPreciosPropios(?)`,[modelo.id_receta_CAB])
 
@@ -1843,8 +1845,8 @@ export class OrdenesModel {
       const [result] = await conn.execute(`UPDATE tbl2_fases_prod_ordenes SET precios = ? WHERE idx = ?`,[JSON.stringify(data[0].precios),data[0].idx])
       console.log("Las filas afectadas fueron:",result.affectedRows)
 
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito' }
     } catch (err) {
       console.log(err)

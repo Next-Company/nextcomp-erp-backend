@@ -1514,6 +1514,8 @@ export default class AlmacenController{
     const idorden = req.params.idorden ?? 0
     const moneda = req.body.moneda ?? 'PEN'
     let base = [], group = [], acumulado = []
+
+    console.log("La info de la orden es la siguiente:",orden,modelos)
     
     const INFO = await ProductosService.searchProductoById(orden.id_receta)
     
@@ -1532,11 +1534,13 @@ export default class AlmacenController{
         res.send({ok:false,mensaje:'Las lista de precios aún no se encuentra configurada. Verifique.'})
         return 0
       }
-      if(!modelos.filter(ob=>Object.values(ob.sku).filter(v=>!v).length).length){
-        res.send({ok:false,mensaje:'Las lista de precios aún no se encuentra configurada. Verifique.'})
+
+      console.log("Resultado de validaciones sku es:",modelos.filter(ob=>Object.values(ob.sku).filter(v=>!v).length > 0))
+
+      if(modelos.filter(ob=>Object.values(ob.sku).filter(v=>!v).length > 0).length){
+        res.send({ok:false,mensaje:'Existen modelos que no tienen configurado su SKU. Por favor verifique.'})
         return 0
       }
-
 
       const new_modelos = modelos.filter(row=>row.selected).reduce((carry,modelo)=>{
         const codebar = {}
@@ -1631,12 +1635,13 @@ export default class AlmacenController{
                   <div class='etiqueta'>
                     <div>
                       <div style="font-size:.3rem;">.</div>
-                      <div style="font-size:.4rem;">${info.rubro}</div>
-                      <div style="font-size:10px;font-weight:bold;">${row.model.articulo}</div>
+                      <div style="font-size:.3rem;">MODELO</div>
+                      <div style="font-size:11px;font-weight:bold;">${row.model.articulo}</div>
                     </div>
                     <div>
-                      <h3>${info.estilo}</h3>
+                      <h3>${info.rubro}</h3>
                       <h3>${info.base}</h3>
+                      <h3>${INFO[0].modelo}</h3>
                       <h3>${row.color.length > 8 ? row.color.substr(0,8) + '.' : row.color }</h3>
                       <h3>${info.presentacion}</h3>
                     </div>
@@ -1671,7 +1676,7 @@ export default class AlmacenController{
                     </div>
                     <div id="talla">
                       <div>TALLA</div>
-                      ${row.talla}                      
+                      <div style="font-size:1.8rem;width:40px;text-align:center;">${row.talla.toUpperCase()}</div>
                     </div>
                     <div class="bar" id="bar_left"></div>
                   </div>

@@ -4,7 +4,6 @@
     padding: 0;
     width: 100mm;
     height: 45mm;
-    background-color: gray;
   }
   .row{
     display: flex;
@@ -44,23 +43,28 @@
   #talla{
     position: absolute;
     right: 5px;
-    bottom: 98px;
+    bottom: 95px;
     font-size: 1.8rem;
     font-weight: bolder;
     display: flex;
+    flex-direction: column;
     justify-content: center;
+    align-items: center;
+    width: 40px;
   }
-  #talla div{
+  #talla div:first-child{
     position:absolute;
-    top:-5px;
+    top:-4px;
     font-size: 8px;
     font-weight: bold;
   }
   #footer-circles{
     display: flex;
     gap: 4px;
+    
+    width: 70px;
   }
-  #footer-circles div{
+  #footer-circless div{
     width: 1px;
     height: 1px;
     border: thin solid black;
