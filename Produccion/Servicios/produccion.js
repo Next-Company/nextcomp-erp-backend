@@ -204,14 +204,14 @@ export class ProduccionModel {
       let [materialesref] = await conn.query("SELECT *FROM tbl2_materiales_sugerido WHERE ruc_ = '20522094120'")
       let [tallastemplate] = await conn.query("SELECT *FROM tbl2_tallas_template")
 
-      let tallasbase = tallastemplate.reduce((c,v)=>{
+      let tallasbase = JSON.parse(JSON.stringify(tallastemplate)).reduce((c,v)=>{
         v.tallasformateado = v.tallas.map(row=>row.desc).join("-")
         v.selected = v.idx == parseInt(ordenes[0].tallasbase) ? true : false
         c.push(v)
         return c
       },[])
 
-      let tallasfracciones = tallastemplate.reduce((c,v)=>{
+      let tallasfracciones = JSON.parse(JSON.stringify(tallastemplate)).reduce((c,v)=>{
         v.tallasformateado = v.tallas.map(row=>row.desc).join("-")
         v.selected = v.idx == parseInt(ordenes[0].tallasfracciones) ? true : false
         c.push(v)
@@ -253,6 +253,8 @@ export class ProduccionModel {
         return c
       },{})
       // console.log("El disponible formateado es:",disponible)
+
+      console.log("LA INFO DE LAS TALLAS BASE ES LA SIGUIENTE: ",tallasbase)
   
       return [ordenes,moldes,cortes,materiales,fasesprod,materialesref,insumos,requerimientos,tallasbase,modelos,disponible_resumen,disponible,tallasfracciones]
     } catch (err) {
