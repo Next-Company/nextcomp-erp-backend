@@ -144,7 +144,7 @@ export class OrdenesModel {
 
       let extra = (search && search.split(" ").length > 0) ? search.split(" ").map(word => "AND LOCATE('" + word + "',CONCAT(COALESCE(TRIM(presentacion),''),' ',COALESCE(TRIM(oc),''),' ',COALESCE(TRIM(cliente),''),' ',COALESCE(TRIM(marca),''),' ',COALESCE(TRIM(producto),''),' ',COALESCE(TRIM(modelos),''),' ',COALESCE(TRIM(estado_orden),''),' ',COALESCE(TRIM(status_servicio),''),' ',estado_preprod)) > 0").join(" ") : ""
 
-      let [results] = await conn.query(`
+      const query_ = `
         SELECT t1.*,
         DATE_FORMAT(t1.fec_emitida,'%d/%m/%Y') as fec_emitida_orden,
         DATE_FORMAT(t1.fec_entrega,'%d/%m/%Y') as fec_entrega_orden,
@@ -158,7 +158,9 @@ export class OrdenesModel {
         ) as despachos_conteo
         FROM viewProduccionOrdenesV2 t1
         WHERE 1=1 ${extra} ORDER BY t1.idx desc
-      `);
+      `
+      console.log("La uery consult es:",query_)
+      let [results] = await conn.query(query_);
       await conn.end();
 
       // console.log("Resultado de la busquda:",results)
