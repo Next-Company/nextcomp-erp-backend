@@ -63,6 +63,7 @@ export class ProduccionController {
     
     console.log("La info detalle de la guia es:",data2)
     console.log("La info de las tallas:",data4)
+    // console.log("La condicion de igv es:",data[0].igv,parseInt(data[0].igv) ? 'No Aplica' : 'Aplica')
     resp.render(
       data[0].tipo == 'SERVICIOS' ? 'guia_back' : 'guia_muestras_v2',
       {
@@ -74,16 +75,16 @@ export class ProduccionController {
         tallas: data4[0]?.tallas.map(row=>row.desc) ?? ['st','xs','s','m','l','xl','xxl',],
         colspanbody: data4[0]?.tallas?.length + 2 ?? 2,
         colspantotales: data4[0]?.tallas.length + 2,
-        igv:data[0].igv ? 'No Aplica' : 'Aplica',
+        igv:parseInt(data[0].igv ?? 0) ? 'No Aplica' : 'Aplica',
         condicion: ['','Pago contra entrega','Pago programado','Pago semanal','Pago con adelanto + prog.'][data[0].condicion_pago],
         valor_igv:(data2.reduce((carry, valor) => {
           carry += valor.isprototipo ? 0 : parseFloat(valor.cantidad)
           return carry;
-        }, 0)*data[0].costo*(data[0].igv ? 0 : 0.18)).toFixed(2),
+        }, 0)*data[0].costo*(parseInt(data[0].igv ?? 0) ? 0 : 0.18)).toFixed(2),
         importetotal:(data2.reduce((carry, valor) => {
           carry += valor.isprototipo ? 0 : parseFloat(valor.cantidad)
           return carry;
-        }, 0)*data[0].costo*(data[0].igv ? 1 : 1.18)).toFixed(2),
+        }, 0)*data[0].costo*(parseInt(data[0].igv ?? 0) ? 1 : 1.18)).toFixed(2),
         // relleno:data2.filter(),
         prototipos: data2.filter(row => row.isprototipo),
         numproto: data2.filter(row => row.isprototipo).length,

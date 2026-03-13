@@ -3373,64 +3373,64 @@ export class ProduccionModel {
       //////////////INICIA SEGUNDA SECCION DE INGRE/////////////////
       //////////////////////////////////////////////////////////////
       } else {
-        try {
-          const [res] = await conn.query('INSERT INTO tbl2_despachos_cab(fec_emision_guia,fec_despacho,tipo,id_proveedor_CAB,proveedor,responsable,id_guia_origen,nro_guia_origen,id_pedido_origen,nro_pedido_origen,observaciones,nro_guia,nro_factura,imp_factura,facturado,fase) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [cabecera.fec_emision_guia, cabecera.fec_despacho, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.id_guia_origen, cabecera.nro_guia_origen, cabecera.id_pedido_origen, cabecera.nro_pedido_origen, cabecera.observaciones, cabecera.nro_guia, cabecera.nro_factura, cabecera.imp_factura,cabecera.facturado,cabecera.fase])
+        const [res] = await conn.query('INSERT INTO tbl2_despachos_cab(fec_emision_guia,fec_despacho,tipo,id_proveedor_CAB,proveedor,responsable,id_guia_origen,nro_guia_origen,id_pedido_origen,nro_pedido_origen,observaciones,nro_guia,nro_factura,imp_factura,facturado,fase) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [cabecera.fec_emision_guia, cabecera.fec_despacho, cabecera.tipo, cabecera.id_proveedor_CAB, cabecera.proveedor, cabecera.responsable, cabecera.id_guia_origen, cabecera.nro_guia_origen, cabecera.id_pedido_origen, cabecera.nro_pedido_origen, cabecera.observaciones, cabecera.nro_guia, cabecera.nro_factura, cabecera.imp_factura,cabecera.facturado,cabecera.fase])
 
-          console.log("Inicia insertado detalle despacho",articulos)
-          for(let detalle of [...articulos]){
-            const [results] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,precio,despacho,caidos,incompletos,id_combo) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, detalle.id_item, detalle.precio, parseFloat(detalle.despacho ?? 0), parseFloat(detalle.caidos ?? 0), parseFloat(detalle.incompletos ?? 0),detalle.id_combo]);
-            if(results.insertId <= 0) throw new Error("No se pudo obtener el ID del detalle de despacho insertado")
+        console.log("Inicia insertado detalle despacho",articulos)
+        for(let detalle of [...articulos]){
+          const [results] = await conn.query('INSERT INTO tbl2_despachos_det(id_despacho_CAB,id_item,precio,despacho,caidos,incompletos,id_combo) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, detalle.id_item, detalle.precio, parseFloat(detalle.despacho ?? 0), parseFloat(detalle.caidos ?? 0), parseFloat(detalle.incompletos ?? 0),detalle.id_combo]);
+          if(results.insertId <= 0) throw new Error("No se pudo obtener el ID del detalle de despacho insertado")
 
-            if(cabecera.tipo !== 'PEDIDOS' && detalle.fracciones_despacho.length > 0){
-              console.log("Informacion de la fraccion :",detalle.fracciones_despacho)
-              let fracciones_despacho = detalle.fracciones_despacho.reduce((c,v)=>{
-                c.push([results.insertId,v.talla,v.cantidad,v.caidos,v.incompletos])
-                return c
-              },[])
-              console.log("La informacion a insertar es:",fracciones_despacho)
-              const [resultsFracciones] = await conn.query(`INSERT INTO tbl2_despachos_det_fracciones(id_despacho_DET,talla,despachos,caidos,incompletos) values ?`,[fracciones_despacho])
-              if(resultsFracciones.affectedRows <= 0) throw new Error("No se pudo insertar la informacion de las fracciones de despacho")
-            }
+          if(cabecera.tipo !== 'PEDIDOS' && detalle.fracciones_despacho.length > 0){
+            console.log("Informacion de la fraccion :",detalle.fracciones_despacho)
+            let fracciones_despacho = detalle.fracciones_despacho.reduce((c,v)=>{
+              c.push([results.insertId,v.talla,v.cantidad,v.caidos,v.incompletos])
+              return c
+            },[])
+            console.log("La informacion a insertar es:",fracciones_despacho)
+            const [resultsFracciones] = await conn.query(`INSERT INTO tbl2_despachos_det_fracciones(id_despacho_DET,talla,despachos,caidos,incompletos) values ?`,[fracciones_despacho])
+            if(resultsFracciones.affectedRows <= 0) throw new Error("No se pudo insertar la informacion de las fracciones de despacho")
           }
-
-          for(let fila of [...facturas]){
-            await conn.query('INSERT INTO tbl2_despachos_adi(id_despacho_CAB,tipodoc,moneda,serie,numero,fec_emision,unidades,importe_bruto,base_imponible,monto_inafecto,igv,importe_total) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.tipodoc, fila.moneda, fila.serie, fila.numero, fila.fec_emision, parseFloat(fila.unidades), parseFloat(fila.importe_bruto), parseFloat(fila.base_imponible), parseFloat(fila.monto_inafecto), parseFloat(fila.igv), parseFloat(fila.importe_total)]);
-          }
-
-          console.log("Comienza validacion del saldo de articulos")
-          let [result] = await conn.query(`
-            SELECT idx,orden_ref,producto,responsable,modelo,marca,estado,tipo,servicio,id_proveedor_CAB,proveedor,fec_emision,DATE_FORMAT(fec_emision,'%d/%m/%Y') as fec_emision_guia,fec_retorno,DATE_FORMAT(fec_retorno,'%d/%m/%Y') as fec_retorno_guia,fec_recepcion,costo,COALESCE(DATEDIFF(fec_retorno,fec_emision),'') as tiempo_produccion,COALESCE(DATEDIFF(STR_TO_DATE(fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
-            (
-              select sum(cantidad) from tbl2_guias_traslado_det tgtd where tgtd.id_guia_CAB = tbl2_guias_traslado_cab.idx
-            ) as cantidad_servicio,
-            (
-              select COALESCE(sum(COALESCE(tdd.despacho,0) + COALESCE(tdd.caidos,0) + COALESCE(tdd.incompletos,0)),0) as total from tbl2_despachos_cab tdc 
-              join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
-              where tdc.id_guia_origen = tbl2_guias_traslado_cab.idx
-            ) as ingresos
-            FROM tbl2_guias_traslado_cab where idx = ?
-            `,[parseInt(cabecera.id_guia_origen)])
-
-          console.log("Info de la validacoines:",result)
-      
-          let valida = result[0].ingresos >= result[0].cantidad_servicio ? 1 : 0
-          if(valida){
-            await conn.query("UPDATE tbl2_guias_traslado_cab SET estado = 'FINALIZADO' WHERE idx = ?",[parseInt(cabecera.id_guia_origen)])
-          }
-
-          const [validacion] = await conn.query('select *from tbl2_despachos_cab t1 join tbl2_despachos_det t2 on t1.idx = t2.id_despacho_CAB where t1.idx = ?',[parseInt(res.insertId)])
-          console.log("La info del despachO ingressado es:",validacion)
-
-        } catch (err) {
-          console.log("error en la consulta", err)
-          throw new Error("Se produjo un error en el guardado de la guia de despacho: " + err)
         }
+
+        for(let fila of [...facturas]){
+          await conn.query('INSERT INTO tbl2_despachos_adi(id_despacho_CAB,tipodoc,moneda,serie,numero,fec_emision,unidades,importe_bruto,base_imponible,monto_inafecto,igv,importe_total) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.tipodoc, fila.moneda, fila.serie, fila.numero, fila.fec_emision, parseFloat(fila.unidades), parseFloat(fila.importe_bruto), parseFloat(fila.base_imponible), parseFloat(fila.monto_inafecto), parseFloat(fila.igv), parseFloat(fila.importe_total)]);
+        }
+
+        console.log("Comienza validacion del saldo de articulos")
+        let [result] = await conn.query(`
+          SELECT idx,orden_ref,producto,responsable,modelo,marca,estado,tipo,servicio,id_proveedor_CAB,proveedor,fec_emision,DATE_FORMAT(fec_emision,'%d/%m/%Y') as fec_emision_guia,fec_retorno,DATE_FORMAT(fec_retorno,'%d/%m/%Y') as fec_retorno_guia,fec_recepcion,costo,COALESCE(DATEDIFF(fec_retorno,fec_emision),'') as tiempo_produccion,COALESCE(DATEDIFF(STR_TO_DATE(fec_retorno,'%Y-%m-%d'),date(now())),0) as dias_pendientes,
+          (
+            select sum(cantidad) from tbl2_guias_traslado_det tgtd where tgtd.id_guia_CAB = tbl2_guias_traslado_cab.idx
+          ) as cantidad_servicio,
+          (
+            select COALESCE(sum(COALESCE(tdd.despacho,0) + COALESCE(tdd.caidos,0) + COALESCE(tdd.incompletos,0)),0) as total from tbl2_despachos_cab tdc 
+            join tbl2_despachos_det tdd on tdc.idx = tdd.id_despacho_CAB
+            where tdc.id_guia_origen = tbl2_guias_traslado_cab.idx
+          ) as ingresos
+          FROM tbl2_guias_traslado_cab where idx = ?
+          `,[parseInt(cabecera.id_guia_origen)])
+
+        console.log("Info de la validacoines:",result)
+    
+        let valida = result[0].ingresos >= result[0].cantidad_servicio ? 1 : 0
+        if(valida){
+          await conn.query("UPDATE tbl2_guias_traslado_cab SET estado = 'FINALIZADO' WHERE idx = ?",[parseInt(cabecera.id_guia_origen)])
+        }
+
+        const [validacion] = await conn.query('select *from tbl2_despachos_cab t1 join tbl2_despachos_det t2 on t1.idx = t2.id_despacho_CAB where t1.idx = ?',[parseInt(res.insertId)])
+        console.log("La info del despachO ingressado es:",validacion)
+        // try {
+
+        // } catch (err) {
+        //   console.log("error en la consulta", err)
+        //   throw new Error("Se produjo un error en el guardado de la guia de despacho: " + err)
+        // }
 
       }
 
       ///////////////////////////////////////////
       ///// UPDATE MASTES DE PRODUCCION /////////
-      if(parseInt(cabecera.fase)){
+      if(cabecera.tipo == 'SERVICIOS' && parseInt(cabecera.fase)){
         console.log("Comenzando actulizacion master de produccion")
         console.log("Data backup :",data_backup)
         // muestra info [{idcombo:22,xs:[0,3],s:[0,3],m:[0,3],l:[0,3],xl:[0,3],xxl:[0,3]},{},{},...]
@@ -3458,13 +3458,13 @@ export class ProduccionModel {
         if(!respuesta.ok) throw respuesta.message
         // console.log("Resultado del update master :",resp_update)
       }                                                                                                                                                                                                  
-      // if (conn) conn.rollback()
-      if (conn) conn.commit()
+      if (conn) conn.rollback()
+      // if (conn) conn.commit()
       return {ok:true,message:'Proceso ejecutado con éxito'}
     } catch (err) {
       console.log("asdlkfaslfjlaskdfjlf:",err)
       if (conn) conn.rollback()
-      return {ok:false,message:err}
+      return {ok:false,message:err.message ?? err}
     } finally {
       if (conn) await conn.end();
     }

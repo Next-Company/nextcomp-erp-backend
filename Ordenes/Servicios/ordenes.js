@@ -1806,6 +1806,7 @@ export class OrdenesModel {
       const filtro_models = [...new Set(modelos.map(r=>JSON.stringify({...r})))].map(r=>JSON.parse(r))
 
       // console.log("asdfasdfasdf:",filtro_models)
+      
       for(let modelo of [...filtro_models]){
         const lista_precios = data[0].precios[modelo.pricemodel - 1]
         console.log("La info del modelo es el siguiente:",modelo, lista_precios)
