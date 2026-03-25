@@ -812,8 +812,49 @@ export class ProduccionModel {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
       const [results, fields] = await conn.query(`
-        SELECT tgtc.idx,tgtc.id_orden_CAB,tgtc.orden_ref,tgtc.destino,tgtc.tipo,tgtc.motivo_traslado,tgtc.id_proveedor_CAB,tgtc.proveedor,tgtc.servicio,tgtc.responsable,tgtc.modelo,tgtc.marca,tgtc.producto,DATE_FORMAT(tgtc.fec_emision,"%d/%m/%Y") as fec_emision_guia,tgtc.fec_emision,tgtc.fec_recepcion,tgtc.fec_retorno,DATE_FORMAT(tgtc.fec_retorno,"%d/%m/%Y") as fec_retorno_guia, date_format(tgtc.fec_recepcion,"%d/%m/%Y") as fec_recepcion_guia,tgtc.costo,tgtc.observaciones,tgtc.estado,tgtc.created_at, DATEDIFF(STR_TO_DATE(tgtc.fec_retorno,"%Y-%m-%d"), STR_TO_DATE(tgtc.fec_emision,"%Y-%m-%d")) as duracion,tgtc.distribucion,tgtc.igv,tgtc.porcentaje_adelanto,tgtc.programacion,tgtc.condicion_pago
-        FROM tbl2_guias_traslado_cab tgtc 
+        SELECT 
+            tgtc.idx,
+            tgtc.id_orden_CAB,
+            tgtc.orden_ref,
+            tgtc.destino,
+            tgtc.tipo,
+            tgtc.motivo_traslado,
+            tgtc.id_proveedor_CAB,
+            tgtc.proveedor,
+
+            p.nom AS proveedor_nombre,
+            p.telefono AS proveedor_telefono,
+
+            tgtc.servicio,
+            tgtc.responsable,
+            tgtc.modelo,
+            tgtc.marca,
+            tgtc.producto,
+            DATE_FORMAT(tgtc.fec_emision,"%d/%m/%Y") as fec_emision_guia,
+            tgtc.fec_emision,
+            tgtc.fec_recepcion,
+            tgtc.fec_retorno,
+            DATE_FORMAT(tgtc.fec_retorno,"%d/%m/%Y") as fec_retorno_guia,
+            DATE_FORMAT(tgtc.fec_recepcion,"%d/%m/%Y") as fec_recepcion_guia,
+            tgtc.costo,
+            tgtc.observaciones,
+            tgtc.estado,
+            tgtc.created_at,
+            DATEDIFF(
+                STR_TO_DATE(tgtc.fec_retorno,"%Y-%m-%d"), 
+                STR_TO_DATE(tgtc.fec_emision,"%Y-%m-%d")
+            ) as duracion,
+            tgtc.distribucion,
+            tgtc.igv,
+            tgtc.porcentaje_adelanto,
+            tgtc.programacion,
+            tgtc.condicion_pago
+
+        FROM tbl2_guias_traslado_cab tgtc
+
+        LEFT JOIN tbl2_proveedor p 
+            ON p.idx = tgtc.id_proveedor_CAB
+
         WHERE tgtc.idx = ?
       `, [id]);
       await conn.end();

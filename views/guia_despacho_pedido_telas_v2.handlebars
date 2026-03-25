@@ -1,0 +1,82 @@
+{{#> guia-ingreso}}
+
+<p style="font-size:10px;font-weight:bold;margin:8px 0;">RESUMEN DETALLE:</p>
+
+<section style="padding-bottom:10px;">
+
+  <table style="
+    border-collapse:collapse;
+    width:100%;
+    table-layout:fixed;
+    font-size:9px;
+    border-top:1px solid #000;
+  ">
+
+    <!-- HEADER -->
+    <thead>
+      <tr style="height:22px; background-color:#b4c7e7;">
+        <th style="width:4%; border-left:1px solid #000; border-right:1px solid #000; font-weight:bold;">Item</th>
+        <th style="width:32%; border-left:1px solid #000; border-right:1px solid #000; text-align:left; padding-left:4px; font-weight:bold;">Descripción</th>
+        <th style="width:8%; border-left:1px solid #000; border-right:1px solid #000; font-weight:bold;">Color</th>
+        <th style="width:6%; border-left:1px solid #000; border-right:1px solid #000; font-weight:bold;">U.M.</th>
+        <th style="width:8%; border-left:1px solid #000; border-right:1px solid #000; text-align:right; padding-right:3px; font-weight:bold;">Peso</th>
+        <th style="width:8%; border-left:1px solid #000; border-right:1px solid #000; text-align:right; font-weight:bold;">Prog.</th>
+        <th style="width:8%; border-left:1px solid #000; border-right:1px solid #000; text-align:right; font-weight:bold;">Pend.</th>
+        <th style="width:8%; border-left:1px solid #000; border-right:1px solid #000; text-align:right; font-weight:bold;">Ingreso</th>
+        <th style="width:8%; border-left:1px solid #000; border-right:1px solid #000; text-align:right; font-weight:bold;">Costo</th>
+        <th style="width:10%; border-left:1px solid #000; border-right:1px solid #000; text-align:right; font-weight:bold;">Importe</th>
+      </tr>
+    </thead>
+
+    <!-- BODY -->
+    <tbody>
+      {{{cuerpoDespachoTelas detalle}}}
+    </tbody>
+
+    <!-- FOOTER -->
+    <tfoot>
+      <tr>
+        <td colspan="7"></td>
+
+        <td style="
+          border-left:1px solid #000;
+          border-right:1px solid #000;
+          border-top:1px solid #000;
+          border-bottom:1px solid #000;
+          text-align:center;
+          font-weight:bold;
+        ">
+          Total
+        </td>
+
+        <td style="
+          border-left:1px solid #000;
+          border-right:1px solid #000;
+          border-top:1px solid #000;
+          border-bottom:1px solid #000;
+          text-align:right;
+          padding-right:3px;
+          font-weight:bold;
+        ">
+          {{totaldespacho}}
+        </td>
+
+        <td style="
+          border-left:1px solid #000;
+          border-right:1px solid #000;
+          border-top:1px solid #000;
+          border-bottom:1px solid #000;
+          text-align:right;
+          padding-right:3px;
+          font-weight:bold;
+        ">
+          {{totalimporte}}
+        </td>
+      </tr>
+    </tfoot>
+
+  </table>
+
+</section>
+
+{{/guia-ingreso}}

@@ -1,0 +1,59 @@
+<section class="datos-proveedor-section general">
+
+  <div style="
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px 6px;
+  ">
+    <!-- RUC -->
+    {{#if proveedor.ruc}}
+    <div style="min-width:120px;">
+      <strong>Ruc:</strong>
+      <span>{{proveedor.ruc}}</span>
+    </div>
+    {{/if}}
+
+    <!-- Razón Social -->
+    <div style="min-width:200px; ">
+      <strong>Razón Social:</strong>
+      <span style="word-break:break-word;">{{proveedor.nom}}</span>
+    </div>
+
+
+    <!-- Guia Ref -->
+    {{!-- <div style="min-width:120px;">
+      <strong>#GuiaRef:</strong>
+      <span>{{idref}}</span>
+    </div> --}}
+
+    <!-- Responsable -->
+    {{#if cabecera.responsable}}
+    <div style="min-width:160px;">
+      <strong>Responsable:</strong>
+      <span style="word-break:break-word;">
+        {{cabecera.responsable}}
+      </span>
+    </div>
+    {{/if}}
+
+    <!-- OC -->
+    {{#if oc}}
+    <div style="min-width:120px;">
+      <strong>OC:</strong>
+      <span style="font-weight:bold;">{{oc}}</span>
+    </div>
+
+    <div style="min-width:140px;">
+      <strong>Modelo:</strong>
+      <span>{{modelo}}</span>
+    </div>
+
+    {{!-- <div style="min-width:140px;">
+      <strong>N° Guía Ref:</strong>
+      <span>{{nroGuiaRef}}</span>
+    </div> --}}
+    {{/if}}
+
+  </div>
+
+</section>

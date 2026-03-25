@@ -1,0 +1,110 @@
+<table style="
+  width:100%;
+  border:1px solid white; 
+">
+  <tbody>
+
+    <!-- 🔥 DEBUG AQUÍ -->
+    <tr>
+      <td colspan="2" style="padding:0;">
+        <pre style="
+          font-size:10px;
+          background:black;
+          color:lime;
+          padding:10px;
+          margin:0;
+        ">
+          documentNumber: {{documentNumber}}
+          documentDate: {{documentDate}}
+          documentDeliveryDate: {{documentDeliveryDate}}
+          documentTitle: {{documentTitle}}
+          emisor: {{emisor}}
+        </pre>
+      </td>
+    </tr>
+
+    <tr>
+
+      <!-- Bloque izquierdo -->
+      <td style="width:10%;padding:5px;text-align:center;">
+        <table style="font-size:10px;">
+          <tbody>
+            <tr>
+              <td style="text-align:center;">
+                <img src="http://192.168.18.20:5173/images/logo_next-02.jpg" style="width:220px;" />
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <br />
+                Calle Felipo Santiago Crespo Nro 581 - San Luis - Lima - Lima<br />
+                R.U.C. 20522094120<br />
+                Telf: 3233128<br />
+                <strong>next.company.sac@gmail.com</strong>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </td>
+
+      <!-- Bloque derecho -->
+      <td style="text-align:center;padding-top:15px;width:30%;vertical-align:top;">
+
+        <table style="border-collapse:collapse;width:100%;">
+          <tbody>
+
+            <!-- TÍTULO -->
+            <tr>
+              <td colspan="2"
+                style="border:1px solid black;font-weight:bold;font-size:15px;text-align:center;padding:5px; background: rgb(150, 211, 150)">
+                {{documentTitle}}
+              </td>
+            </tr>
+
+            <!-- NÚMERO -->
+            <tr>
+              <td style="height:30px;width:150px;font-weight:bolder;border:1px solid black;">
+                {{documentNumberLabel}}
+              </td>
+
+              <td style="border:1px solid black;padding:4px;font-weight:bold;font-size:18px;text-align:center;">
+                {{documentNumber}}
+              </td>
+            </tr>
+
+            <!-- FECHAS -->
+            {{#if documentDeliveryDate}}
+            <tr>
+              <td style="height:25px;font-weight:bolder;border:1px solid black;font-size:11px;">
+                Fecha Emisión: <strong>{{documentDate}}</strong>
+              </td>
+
+              <td rowspan="2" style="border:1px solid black;font-weight:bold;text-align:center;font-size:11px;">
+                Tiempo de producción:
+                {{#if documentDiasProduccion}}
+                <span style="font-size:11px;">{{documentDiasProduccion}} dias</span>
+                {{/if}}
+              </td>
+            </tr>
+
+            <tr>
+              <td style="height:25px;font-weight:bolder;border:1px solid black;font-size:11px;">
+                Fecha Entrega: <strong>{{documentDeliveryDate}}</strong>
+              </td>
+            </tr>
+            {{else}}
+            <tr>
+              <td colspan="2" style="height:30px;font-weight:bolder;border:1px solid black;font-size:11px;">
+                Fecha: <strong>{{documentDate}}</strong>
+              </td>
+            </tr>
+            {{/if}}
+
+          </tbody>
+        </table>
+
+      </td>
+
+    </tr>
+  </tbody>
+</table>

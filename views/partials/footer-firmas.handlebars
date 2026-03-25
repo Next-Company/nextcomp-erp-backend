@@ -1,0 +1,58 @@
+<footer style="margin-top:10px; font-size:0.75rem; color:#333;">
+
+  <!-- FIRMAS (NORMALES) -->
+  <section style="
+    display:flex;
+    justify-content:space-between;
+    gap:100px;
+    padding:50px
+  ">
+    {{#each firmas}}
+      <div style="
+        border-top:0.5px dashed #999;
+        padding:4px;
+        text-align:center;
+        flex:1;
+      ">
+        {{this}}
+
+        {{!-- <div style="
+          height:20px;
+          border-bottom:0.5px dotted #bbb;
+          display:flex;
+          align-items:center;
+          justify-content:flex-start;
+          padding-left:3px;
+          font-size:0.7rem;
+        ">
+          Nom:
+        </div> --}}
+      </div>
+    {{/each}}
+  </section>
+
+  <!-- EMISOR + FECHA (SUAVE / DISCRETO) -->
+  <section style="
+    margin-top:6px;
+    display:flex;
+    justify-content:space-between;
+    font-size:0.65rem;
+    color:#777;
+  ">
+
+    <!-- IZQUIERDA -->
+    <div>
+      {{#if emisor}}
+        Emitido por: <span style="font-weight:500;">{{emisor}}</span>
+      {{/if}}
+    </div>
+
+    <!-- DERECHA -->
+    <div>
+      Fecha/hora {{#if labelFecha}}{{labelFecha}}{{else}}emisión{{/if}}:
+      {{date}} {{time}}
+    </div>
+
+  </section>
+
+</footer>

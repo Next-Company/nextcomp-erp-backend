@@ -1,0 +1,40 @@
+{{!--
+Partial: condiciones-penalidades
+Variables esperadas:
+- condicion_pago (string ya mapeado, ej: "Pago programado")
+- mostrarPenalidades (boolean, opcional — default true si no se pasa)
+--}}
+
+{{#if (eq condicion_pago "Pago programado")}}
+<section style="
+  margin-top:10px;
+  padding:8px;
+  border:.5px dashed #666;
+  font-size:8px;
+">
+    <strong>CONDICIONES DE PAGO:</strong>
+    <div style="margin-top:4px; line-height:1.4;">
+        Las fechas de cierre son los días miércoles de cada semana. Los proveedores cuyos
+        despachos sean recibidos antes del cierre (<strong>lunes, martes o miércoles</strong>)
+        recibirán pago en un plazo máximo de 10 días a partir de dicha fecha; los recibidos
+        después del cierre (<strong>jueves, viernes o sábado</strong>), en un plazo máximo de
+        10 días a partir del cierre de la semana siguiente.
+    </div>
+</section>
+{{/if}}
+
+<section style="
+  margin-top:10px;
+  padding:8px;
+  border:.5px dashed #666;
+  font-size:8px;
+">
+    <strong>PENALIDADES:</strong>
+    <div style="margin-top:4px; line-height:1.4;">
+        El despacho deberá ejecutarse según las fechas indicadas en el presente documento.
+        Después de la fecha de vencimiento se aplicará una penalidad sobre el valor de la OC:
+        1-5 días de retraso = 5%, 6-10 días = 10%, 11-15 días = 15%, 16+ días se evaluará
+        la recepción. El proveedor autoriza a Next Company a retener de forma automática el
+        pago de facturas por el valor de lo adeudado.
+    </div>
+</section>

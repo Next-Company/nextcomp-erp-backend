@@ -1,0 +1,109 @@
+{{#> guia-ingreso}}
+
+<section style="padding-bottom:8px;margin:6px 0">
+
+  <table style="
+    border-collapse:collapse;
+    width:100%;
+    table-layout:fixed;
+    font-size:8px;
+    border-top:1px solid #000;
+  ">
+
+    <!-- HEADER -->
+    <thead>
+      <tr style="background-color:#d9e1f2;">
+        <th style="width:4%; border-bottom:1px solid #000;">Item</th>
+        <th style="width:12%; text-align:left; padding-left:3px; border-bottom:1px solid #000;">Modelo</th>
+        <th style="width:12%; text-align:left; padding-left:3px; border-bottom:1px solid #000;">Corte</th>
+        <th style="width:20%; text-align:left; padding-left:3px; border-bottom:1px solid #000;">Producto</th>
+        <th style="width:10%; border-bottom:1px solid #000;">Color</th>
+        <th style="width:8%; text-align:right; border-bottom:1px solid #000;">Cant.</th>
+        <th style="width:8%; text-align:center; border-bottom:1px solid #000;">U.M.</th>
+        <th style="width:10%; text-align:right; border-bottom:1px solid #000;">Precio</th>
+        <th style="width:10%; text-align:right; border-bottom:1px solid #000;">Importe</th>
+      </tr>
+    </thead>
+
+    <!-- BODY -->
+    <tbody>
+      {{{cuerpoAvios detalle}}}
+    </tbody>
+
+    <!-- FOOTER -->
+    <tfoot>
+
+      <!-- SUBTOTAL -->
+      <tr>
+        <td colspan="6"></td>
+
+        <td colspan="2" style="
+          text-align:right;
+          padding-right:4px;
+          font-weight:bold;
+          border-top:1px solid #000;
+        ">
+          SUBTOTAL
+        </td>
+
+        <td style="
+          text-align:right;
+          padding-right:4px;
+          font-weight:bold;
+          border-top:1px solid #000;
+        ">
+          {{subtotal}}
+        </td>
+      </tr>
+
+      <!-- IGV -->
+      <tr>
+        <td colspan="6"></td>
+
+        <td colspan="2" style="
+          text-align:right;
+          padding-right:4px;
+          font-weight:bold;
+        ">
+          IGV 18%
+        </td>
+
+        <td style="
+          text-align:right;
+          padding-right:4px;
+          font-weight:bold;
+        ">
+          {{igv}}
+        </td>
+      </tr>
+
+      <!-- TOTAL -->
+      <tr>
+        <td colspan="6"></td>
+
+        <td colspan="2" style="
+          text-align:right;
+          padding-right:4px;
+          font-weight:bold;
+          border-top:1px solid #000;
+        ">
+          TOTAL FINAL
+        </td>
+
+        <td style="
+          text-align:right;
+          padding-right:4px;
+          font-weight:bold;
+          border-top:1px solid #000;
+        ">
+          {{totalFinal}}
+        </td>
+      </tr>
+
+    </tfoot>
+
+  </table>
+
+</section>
+
+{{/guia-ingreso}}

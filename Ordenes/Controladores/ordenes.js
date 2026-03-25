@@ -7,7 +7,7 @@ import { Client } from "basic-ftp"
 // import { OtherTarget } from "puppeteer-core";
 // import { concat } from "puppeteer-core/lib/esm/third_party/rxjs/rxjs.js";
 import { OrdenesModel } from "../Servicios/ordenes.js";
-import { Console } from "node:console";
+import { Console, log } from "node:console";
 import { CLIENT_RENEG_WINDOW } from "node:tls";
 
 export class OrdenesController {
@@ -218,6 +218,8 @@ export class OrdenesController {
     resp.json(data)
   }
   static async saveFaseFraccionamiento(req, resp) {
+    console.log("<<<TEST>>>")
+
     const info = req.body
     const user_data = req.session
     const data = await OrdenesModel.saveFaseFraccionamiento(info, user_data)

@@ -1,0 +1,89 @@
+<style>
+  :root {
+    font-size: 14px;
+    font-family: Arial, Helvetica, sans-serif;
+    --datos-proveedor-font-size: 10px;
+    --datos-proveedor-font-family: Arial, Helvetica, sans-serif;
+    --datos-proveedor-line-height: 1.4;
+  }
+  body { padding: 0; margin: 0; }
+  .main_informe {
+    display: flex;
+    flex-direction: column;
+    height: 27.94cm;
+    box-sizing: border-box;
+    padding: 10px;
+  }
+  section.cuerpo {
+    flex: 1;
+    overflow: visible;
+    display: flex;
+    flex-direction: column;
+    justify-content: 0 0 auto;
+  }
+  section.cuerpo > * {
+    align-self: flex-start;
+  }
+  
+  /* Estilos globales para datos proveedor */
+  .datos-proveedor-section {
+    border-top:.5px dashed black;
+    border-bottom:.5px dashed black;
+    font-size: var(--datos-proveedor-font-size);
+    font-family: var(--datos-proveedor-font-family);
+    line-height: var(--datos-proveedor-line-height);
+    padding:10px 12px;
+  }
+  
+  .datos-proveedor-section.general {
+    {{!-- background: #139200; --}}
+    margin-bottom: 0;
+  }
+  
+  .datos-proveedor-section.servicio {
+    border-top: none;
+    {{!-- background: #402345; --}}
+    padding: 8px 12px;
+    margin-top: -5px;
+  }
+  
+  .datos-proveedor-section.traslado {
+    margin-top: 8px;
+  }
+</style>
+
+<div class="main_informe">
+
+  {{!-- cabecera dentro del contenedor --}}
+  {{> document-header
+    documentTitle=documentTitle
+    documentNumberLabel=documentNumberLabel
+    documentNumber=documentNumber
+    documentDate=documentDate
+    emisor=emisor
+  }}
+
+  {{!-- datos proveedor (condicional según tipo) --}}
+  {{#if tipoProveedorPartial}}
+    {{#if (eq tipoProveedorPartial 'traslado')}}
+      {{> datos-proveedor-traslado}}
+    {{else}}
+      {{> datos-proveedor-general}}
+    {{/if}}
+  {{else}}
+    {{> datos-proveedor-general}}
+  {{/if}}
+
+  {{!-- cuerpo específico del documento --}}
+  <section class="cuerpo">
+    {{> @partial-block}}
+  </section>
+
+  {{!-- footer pegado al fondo por flex --}}
+  {{> footer-firmas
+    firmas=firmas
+    date=date
+    time=time
+  }}
+
+</div>

@@ -484,7 +484,7 @@ export class OrdenesModel {
       join tbl2_fases_prod_hojacorte tfph on tfphc.id_hojacorte_CAB = tfph.idx
       join tbl2_fases_prod_ordenes tfpo on tfph.id_cab_orden = tfpo.idx
       where tfpo.idx = ?
-      having cantidad_fracciones > 0`,[idorden])
+      having cantidad_fracciones >= 0`,[idorden])
       console.log("Resultados de extraer items de caja:",results)
 
       results = results.reduce((c,v)=>{

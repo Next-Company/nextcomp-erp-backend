@@ -1,0 +1,104 @@
+<section class="datos-proveedor-section traslado">
+
+  <div style="
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:12px;
+  ">
+
+    <!-- COLUMNA IZQUIERDA: REMITENTE -->
+    <div>
+      <div style="font-weight:bold; margin-bottom:3px;">REMITENTE:</div>
+      
+      {{#if proveedor.nom}}
+      <div>
+        <strong>Empresa:</strong> {{proveedor.nom}}
+      </div>
+      {{/if}}
+      
+      {{#if proveedor.ruc}}
+      <div>
+        <strong>RUC:</strong> {{proveedor.ruc}}
+      </div>
+      {{/if}}
+      
+      {{#if puntoPartida}}
+      <div>
+        <strong>Punto de Partida:</strong> {{puntoPartida}}
+      </div>
+      {{/if}}
+    </div>
+
+    <!-- COLUMNA DERECHA: MOVIMIENTO/TRASLADO -->
+    <div>
+      <div style="font-weight:bold; margin-bottom:3px;">TRASLADO:</div>
+      
+      {{#if puntoLlegada}}
+      <div>
+        <strong>Punto de Llegada:</strong> {{puntoLlegada}}
+      </div>
+      {{/if}}
+      
+      {{#if cabecera.responsable}}
+      <div>
+        <strong>Responsable:</strong> {{cabecera.responsable}}
+      </div>
+      {{/if}}
+      
+      {{#if cabecera.motivo}}
+      <div>
+        <strong>Motivo:</strong> {{cabecera.motivo}}
+      </div>
+      {{/if}}
+    </div>
+
+  </div>
+
+  <!-- DATOS DE BIENES TRASLADADOS -->
+  <div style="
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap:12px;
+    margin-top:8px;
+    padding-top:8px;
+    border-top:.5px solid #ddd;
+  ">
+    
+    {{#if cabecera.modelo}}
+    <div>
+      <strong>Modelo:</strong> {{cabecera.modelo}}
+    </div>
+    {{/if}}
+    
+    {{#if cabecera.costo}}
+    <div>
+      <strong>Valor:</strong> S/. {{cabecera.costo}}
+    </div>
+    {{/if}}
+    
+    {{#if cabecera.producto}}
+    <div>
+      <strong>Descripción:</strong> {{cabecera.producto}}
+    </div>
+    {{/if}}
+    
+    {{#if cabecera.orden_ref}}
+    <div>
+      <strong>OP/Ref:</strong> #{{cabecera.orden_ref}}
+    </div>
+    {{/if}}
+    
+    {{#if cantidad}}
+    <div>
+      <strong>Cantidad:</strong> {{cantidad}}
+    </div>
+    {{/if}}
+    
+    {{#if idref}}
+    <div>
+      <strong>Ref Guía:</strong> {{idref}}
+    </div>
+    {{/if}}
+  </div>
+
+</section>

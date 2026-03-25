@@ -1,0 +1,104 @@
+<section class="datos-proveedor-section servicio">
+
+  <div style="
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:12px;
+  ">
+
+    <!-- COLUMNA IZQUIERDA: DESTINATARIO -->
+    <div>
+      <div style="font-weight:bold; margin-bottom:3px;">DATOS DEL DESTINATARIO:</div>
+      
+      {{!-- {{#if cabecera.responsable}}
+      <div>
+        <strong>Responsable:</strong> {{cabecera.responsable}}
+      </div>
+      {{/if}} --}}
+      
+      {{#if cabecera.servicio}}
+      <div>
+        <strong>Motivo:</strong> SERVICIO DE {{cabecera.servicio}}
+      </div>
+      {{/if}}
+
+      {{!-- {{#if proveedor.ruc}}
+      <div>
+        <strong>RUC:</strong> {{proveedor.ruc}}
+      </div>
+      {{/if}} --}}
+      
+      {{!-- {{#if proveedor.nom}}
+      <div>
+        <strong>Señor(es):</strong> {{proveedor.nom}}
+      </div>
+      {{/if}} --}}
+      
+    </div>
+
+    <!-- COLUMNA DERECHA: MOVIMIENTO -->
+    <div>
+      <div style="font-weight:bold; margin-bottom:3px;">MOVIMIENTO:</div>
+      
+      <div>
+        <strong>Punto de Partida:</strong> {{puntoPartida}}
+      </div>
+      
+      {{#if proveedor.direccion}}
+      <div>
+        <strong>Punto de Llegada:</strong> {{proveedor.direccion}}
+      </div>
+      {{/if}}
+      
+    </div>
+
+  </div>
+
+  <!-- DATOS DE BIENES -->
+  <div style="
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap:12px;
+    margin-top:8px;
+    padding-top:8px;
+    border-top:.5px solid #ddd;
+  ">
+    
+    {{#if cabecera.modelo}}
+    <div>
+      <strong>Modelo:</strong> {{cabecera.modelo}}
+    </div>
+    {{/if}}
+    
+    {{#if cabecera.costo}}
+    <div>
+      <strong>Precio:</strong> S/. {{cabecera.costo}}
+    </div>
+    {{/if}}
+    
+    {{#if igv}}
+    <div>
+      <strong>IGV (18%):</strong> {{igv}}
+    </div>
+    {{/if}}
+    
+    {{#if cabecera.producto}}
+    <div>
+      <strong>Descripción:</strong> {{cabecera.producto}}
+    </div>
+    {{/if}}
+    
+    {{#if cabecera.orden_ref}}
+    <div>
+      <strong>OP/Corte:</strong> #{{cabecera.orden_ref}}
+    </div>
+    {{/if}}
+    
+    {{#if condicion}}
+    <div>
+      <strong>Cond. Pago:</strong> {{condicion}}
+    </div>
+    {{/if}}
+  </div>
+
+</section>
