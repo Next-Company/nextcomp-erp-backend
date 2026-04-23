@@ -1484,23 +1484,23 @@ export default class AlmacenController{
       }
     )
   }
-  static getCodeBar(sku = null){
-    try {
-      let canvas = new Canvas(100,50)
-      JsBarcode(canvas,sku,{
-        format:"EAN13",
-        displayValue:false,
-        height:32,
-        width:1,
-        margin:0,
-        flat:true
-      })
-      const INF = canvas.toBuffer('image/png')
-      return INF.toString('base64')
-    } catch (error) {
-      console.log("Error al generar el codigo de barra:",error)
-      throw new Error(error)
-    }
+  static getCodeBar(sku = null) {
+    if (!sku) return '';
+
+    // Canvas ancho y razonable para rotación 90°
+    const canvas = new Canvas(300, 600);
+
+    JsBarcode(canvas, sku, {
+      format: "EAN13",
+      displayValue: false,
+      height: 650,   // 🔥 alto real del barcode
+      width: 3.5,    // 🔥 más grosor = más relleno
+      margin: 0,
+      flat: true
+    });
+
+    const buffer = canvas.toBuffer('image/png');
+    return buffer.toString('base64');
   }
   static async printEtiquetasByOrden(req, res) {
     const data = req.body
@@ -1632,60 +1632,54 @@ export default class AlmacenController{
             base.forEach((v)=>{
               const fila = v.map((row)=>{
                 return `
-                  <div class='etiqueta'>
-                    <div>
-                      <div style="font-size:.3rem;">.</div>
-                      <div style="font-size:.3rem;">MODELO</div>
-                      <div style="font-size:11px;font-weight:bold;">${row.model.articulo}</div>
-                    </div>
-                    <div>
-                      <h3>${info.rubro}</h3>
-                      <h3>${info.base}</h3>
-                      <h3>${INFO[0].modelo}</h3>
-                      <h3>${row.color.length > 8 ? row.color.substr(0,8) + '.' : row.color }</h3>
-                      <h3>${info.presentacion}</h3>
-                    </div>
-                    <div>
-                      <h3>${orden.oc}</h3>
-                    </div>
-                    <div style="height:35px;width:70px;"></div>
-                    <div style="margin-bottom:2px;">
-                      <div style="display:flex;flex-direction:column;justify-content:space-between;font-size:12px;">
-                        <div style="font-size:6px;">
-                          PRECIO VENTA
-                        </div>
-                        <div>
-                          <h3>${moneda == 'PEN' ? 'S/' : '$'}${moneda == 'PEN' ? orden.precios[0].precio1[0].toFixed(2) : orden.precios[0].precio1[1].toFixed(2)}</h3>
-                        </div>
-                      </div>
-                    </div>
-                    <div id="footer-circles">
-                      <div></div>
-                      <div></div>
-                      <div></div>
-                      <div></div>
-                      <div></div>
-                      <div></div>
-                      <div></div>
-                      <div></div>
-                      <div></div>
-                      <div></div>
-                    </div>
-                    <div style="transform:rotate(90deg);position:absolute;bottom:35px;right:-22px;">
-                      <img src="data:image/jpg;base64,${row.codebar}"/>
-                    </div>
-                    <div id="talla">
-                      <div>TALLA</div>
-                      <div style="font-size:1.8rem;width:40px;text-align:center;">${row.talla.toUpperCase()}</div>
-                    </div>
-                    <div class="bar" id="bar_left"></div>
+          <div class='etiqueta'>
+            <!-- COLUMNA IZQUIERDA: texto (todo lo que estaba antes) -->
+            <div class="columna-texto">
+              <div>
+                <div style="font-size:.3rem;">.</div>
+                <div style="font-size:.3rem;">MODELO</div>
+                <div style="font-size:11px;font-weight:bold;">${row.model.articulo}</div>
+              </div>
+              <div>
+                <h3>${info.rubro}</h3>
+                <h3>${info.base}</h3>
+                <h3>${INFO[0].modelo}</h3>
+                <h3>${row.color.length > 8 ? row.color.substr(0, 8) + '.' : row.color}</h3>
+                <h3>${info.presentacion}</h3>
+              </div>
+              <div>
+                <h3>${orden.oc}</h3>
+              </div>
+              <div id="talla" style="margin-top:5px>
+                <div style="font-size:1.2rem;width:20px;text-align:center;">${row.talla.toUpperCase()}</div>
+              </div>
+              <div style="height:35px;width:70px;"></div>
+              <div style="margin-bottom:2px;">
+                <div style="display:flex;flex-direction:column;justify-content:space-between;font-size:15px;margin-top:3px;">
+                  <div style="font-size:6px;">PRECIO VENTA</div>
+                  <div>
+                    <h3 >${moneda == 'PEN' ? 'S/' : '$'}${moneda == 'PEN' ? orden.precios[0].precio1[0].toFixed(2) : orden.precios[0].precio1[1].toFixed(2)}</h3>
                   </div>
-                `
+                </div>
+              </div>
+              <div id="footer-circles">
+                <div></div><div></div><div></div><div></div><div></div>
+                <div></div><div></div><div></div><div></div><div></div>
+              </div>
+              
+            </div>
+
+            <!-- COLUMNA DERECHA: SOLO código de barras (ocupa la mitad) -->
+            <div class="columna-barcode">
+              <img src="data:image/png;base64,${row.codebar}" alt="Código de barras">
+            </div>
+
+            <div class="bar" id="bar_left"></div>
+          </div>
+        `
               })
               info_print.push('<div class="row">'+fila.join('')+'</div>')
             })
-            // const example = 
-            // const cuerpo = `<div class="etiqueta">${example}</div><div class="etiqueta">${example}</div><div class="etiqueta">${example}</div>`            
             return info_print.join('')
           }
         }

@@ -1,56 +1,47 @@
-<footer style="margin-top:10px; font-size:0.75rem; color:#333;">
+{{!-- footer-firmas.handlebars - VERSIÓN CORREGIDA Y ESTANDARIZADA --}}
+<footer style="margin-top: 15px; font-size: 0.75rem; color: #333;">
 
-  <!-- FIRMAS (NORMALES) -->
+  <!-- FIRMAS -->
   <section style="
-    display:flex;
-    justify-content:space-between;
-    gap:100px;
-    padding:50px
+    display: flex;
+    justify-content: space-between;
+    gap: 60px;
+    padding: 40px 20px 30px 20px;
   ">
     {{#each firmas}}
       <div style="
-        border-top:0.5px dashed #999;
-        padding:4px;
-        text-align:center;
-        flex:1;
+        border-top: 1.5px dashed #666;
+        padding-top: 8px;
+        text-align: center;
+        flex: 1;
+        min-width: 0;
       ">
-        {{this}}
-
-        {{!-- <div style="
-          height:20px;
-          border-bottom:0.5px dotted #bbb;
-          display:flex;
-          align-items:center;
-          justify-content:flex-start;
-          padding-left:3px;
-          font-size:0.7rem;
-        ">
-          Nom:
-        </div> --}}
+        <strong>{{this}}</strong>
       </div>
     {{/each}}
   </section>
 
-  <!-- EMISOR + FECHA (SUAVE / DISCRETO) -->
+  <!-- INFORMACIÓN DE EMISIÓN (discreta) -->
   <section style="
-    margin-top:6px;
-    display:flex;
-    justify-content:space-between;
-    font-size:0.65rem;
-    color:#777;
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.68rem;
+    color: #555;
+    border-top: 0.5px dashed #ccc;
+    padding-top: 8px;
   ">
 
-    <!-- IZQUIERDA -->
+    <!-- Izquierda: Emisor -->
     <div>
       {{#if emisor}}
-        Emitido por: <span style="font-weight:500;">{{emisor}}</span>
+        Emitido por: <span style="font-weight: 600;">{{emisor}}</span>
       {{/if}}
     </div>
 
-    <!-- DERECHA -->
+    <!-- Derecha: Fecha y hora -->
     <div>
-      Fecha/hora {{#if labelFecha}}{{labelFecha}}{{else}}emisión{{/if}}:
-      {{date}} {{time}}
+      Fecha/hora de emisión:
+      <strong>{{date}} {{time}}</strong>
     </div>
 
   </section>

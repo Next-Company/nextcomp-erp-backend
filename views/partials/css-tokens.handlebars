@@ -1,0 +1,119 @@
+{{!-- css-tokens.handlebars - ESTILOS BASE ESTANDARIZADOS (Senior) --}}
+<style>
+  :root {
+    /* Tipografía base - Recomendado para impresión clara */
+    font-size: 11.5px;
+    font-family: Arial, Helvetica, sans-serif;
+
+    /* Variables tipográficas */
+    --font-small: 0.85rem;      /* tablas, datos proveedor, pie */
+    --font-normal: 0.95rem;
+    --font-title: 1.1rem;       /* títulos de secciones y subtítulos */
+
+    /* Colores corporativos */
+    --primary-blue: #b4c7e7;    /* color de cabeceras de tabla */
+    --border-color: #000000;
+    --text-color: #000000;
+    --bg-soft: #f9f9f9;
+    --dashed-color: #999999;
+
+    /* Espaciado y medidas */
+    --padding-main: 0.8cm 0.6cm;
+    --gap-section: 12px;
+    --border-width: 1px;
+  }
+
+  body {
+    padding: 0;
+    margin: 0;
+  }
+
+  /* Contenedor principal de todos los documentos */
+  .main_informe {
+    display: block;
+    padding: var(--padding-main);
+    box-sizing: border-box;
+    color: var(--text-color);
+    width: 100%;
+  }
+
+  /* Tablas estandarizadas (usar clase .table-guia) */
+  .table-guia {
+    border-collapse: collapse;
+    width: 100%;
+    page-break-inside: auto;
+    margin: 8px 0;
+  }
+
+  .table-guia th,
+  .table-guia td {
+    border: var(--border-width) solid var(--border-color);
+    padding: 5px 6px;
+    font-size: var(--font-small);
+    line-height: 1.25;
+    vertical-align: middle;
+  }
+
+  .table-guia thead th {
+    background-color: var(--primary-blue);
+    font-weight: bold;
+    text-align: center;
+    border-bottom: 2px solid var(--border-color);
+  }
+
+  .table-guia tfoot td {
+    font-weight: bold;
+    border-top: 2px solid var(--border-color);
+  }
+
+  /* Control de páginas para PDF (impresión) */
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tfoot {
+    display: table-footer-group;
+  }
+
+  /* Secciones de datos proveedor / traslado */
+  .datos-proveedor-section {
+    border-top: 0.5px dashed var(--dashed-color);
+    border-bottom: 0.5px dashed var(--dashed-color);
+    font-size: var(--font-small);
+    line-height: 1.45;
+    padding: 9px 10px;
+    margin: 10px 0;
+  }
+
+  .datos-proveedor-section.traslado {
+    margin-top: 8px;
+  }
+
+  .datos-proveedor-section.servicio {
+    border-top: none;
+    margin-top: -4px;
+  }
+
+  /* Títulos de sección dentro del cuerpo */
+  .section-title {
+    font-size: var(--font-title);
+    font-weight: bold;
+    margin: 12px 0 6px 0;
+    padding-bottom: 4px;
+  }
+
+  /* Para duplicar páginas (familia C) */
+  .page-break {
+    page-break-after: always;
+  }
+</style>

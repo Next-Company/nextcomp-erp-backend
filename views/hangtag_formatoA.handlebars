@@ -1,11 +1,12 @@
 <style>
-  body{
+  body {
     margin: 0;
     padding: 0;
     width: 100mm;
     height: 45mm;
   }
-  .row{
+
+  .row {
     display: flex;
     justify-content: space-between;
     width: 107.5mm;
@@ -14,37 +15,80 @@
     overflow: hidden;
     break-after: page;
   }
-  .etiqueta{
+
+  .etiqueta {
     background-color: white;
-    box-sizing:border-box;
+    box-sizing: border-box;
     font-size: .4rem;
     width: 33.5mm;
     height: 45mm;
     padding: 2.5mm;
     position: relative;
     display: flex;
+    flex-direction: row;
+    /* ← CAMBIO MÍNIMO: ahora es horizontal */
+    gap: 1.5mm;
+    /* ← nuevo */
+  }
+
+  /* ==================== NUEVAS COLUMNAS (lo único nuevo) ==================== */
+  .columna-texto {
+    flex: 1.65;
+    display: flex;
     flex-direction: column;
     gap: 1.5mm;
   }
-  #idcodbar{
+
+  .columna-barcode {
+    flex: 1;
+    background-color: yellow;
+    overflow: hidden;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .columna-barcode img {
+    transform: rotate(90deg) scale(1.3);
+    height: 100%;
+    width: auto;
+  }
+
+
+  .xdaa img {
+    transform: rotate(90deg);
+    width: 100%;
+    height: auto;
+    max-height: 32mm;
+    image-rendering: crisp-edges;
+  }
+
+  /* Reglas originales (sin cambios) */
+  #idcodbar {
     font-size: 5px;
     letter-spacing: 5.5px;
     transform: scale(1, 0.8);
   }
-  img{
-    width: 100%;
+
+  img {
+    width: 500px;
   }
-  h2{
-    margin:0px;
-  }
-  h3{
+
+  h2 {
     margin: 0px;
   }
-  #talla{
-    position: absolute;
-    right: 5px;
-    bottom: 95px;
-    margin-bottom: 5px;
+
+  h3 {
+    margin: 0px;
+  }
+
+  #talla {
+    position: relative;
+    /* ← cambiado de absolute a relative */
+    right: auto;
+    bottom: auto;
+    margin-bottom: 9px;
     font-size: 1.2rem;
     font-weight: bolder;
     display: flex;
@@ -53,73 +97,45 @@
     align-items: center;
     width: 45px;
   }
-  #talla div:first-child{
-    position:absolute;
-    top:-4px;
+
+  #talla div:first-child {
+    position: absolute;
+    top: -4px;
     font-size: 8px;
     font-weight: bold;
   }
-  #footer-circles{
+
+  #footer-circles {
     display: flex;
     gap: 4px;
-    
     width: 70px;
   }
-  #footer-circless div{
-    width: 1px;
-    height: 1px;
-    border: thin solid black;
-  }
-  #footer-circles div:nth-child(2n-1){
-    background-color: black;
-    border-radius: 100%;
-  }
-  #footer-circles div:nth-child(2n){
-    border-radius: 100%;
-  }
-  #footer-circles div:nth-child(2n+1){
-    background-color: black;
-  }
-  .bar{
+
+  .bar {
     width: 2mm;
     background-color: black;
     position: absolute;
-  }
-  #bar_left{
-    height: 20mm;
-    left: -.5mm;
+    left: -1mm;
     top: -10mm;
+    height: 20mm;
   }
-  #bar_right{
-    height: 24mm;
-    padding: 4px;
-    right: 4mm;
-    top: 0;
-    position: absolute;
+
+  /* resto de reglas originales sin tocar */
+  #footer-circles div:nth-child(2n-1) {
     background-color: black;
-    color:white;
-    writing-mode: vertical-lr;
-    font-size: 20px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-family: Arial, Helvetica, sans-serif;
+    border-radius: 100%;
+  }
+
+  #footer-circles div:nth-child(2n) {
+    border-radius: 100%;
+  }
+
+  #footer-circles div:nth-child(2n+1) {
+    background-color: black;
   }
 </style>
+
 <body>
-  {{!-- <div id="row"> --}}
-    {{!-- 
-    w:100mm
-    h:45mm
-    w:30mm
-    h:40mm
-    gap:2.5mm 
-    --}}
-    {{#foo this.BASE this.INFO this.MONEDA this.ORDEN}}
-    {{/foo}}
-    {{!-- <img src="data:image/jpg;base64,{{this.BINARY_CHUNKS5}}" /> --}}
-    {{!-- <div class="etiqueta">que</div>
-    <div class="etiqueta">tal</div>
-    <div class="etiqueta">miguel</div> --}}
-  {{!-- </div> --}}
+  {{#foo this.BASE this.INFO this.MONEDA this.ORDEN}}
+  {{/foo}}
 </body>
