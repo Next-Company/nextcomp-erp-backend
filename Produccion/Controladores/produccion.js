@@ -1,7 +1,7 @@
 import { ProduccionModel } from "../Servicios/produccion.js";
 import PDFDocument from "pdfkit"
 import fs from "node:fs/promises"
-import puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-core';
 import { OtherTarget } from "puppeteer-core";
 import { concat } from "puppeteer-core/lib/esm/third_party/rxjs/rxjs.js";
 import { OrdenesModel } from "../../Ordenes/Servicios/ordenes.js";
@@ -33,7 +33,7 @@ export class ProduccionController {
       },
       async (err, html) => {
         try {
-          const browser = await puppeteer.launch();
+          const browser = await puppeteer.launch({ executablePath: '/usr/bin/chromium-browser', pipe: true, headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--no-zygote'] });
 
           const version = await browser.version();
           console.log(`Versión de Chrome: ${version}`);
@@ -50,7 +50,7 @@ export class ProduccionController {
           await browser.close();
           resp.send({ data: pdfBuffer.toString('base64') })
         } catch (error) {
-          resp.status(500).send('Error al generar el PDF');
+          console.error('ERROR PUPPETEER:', error); resp.status(500).send('Error al generar el PDF');
         }
       });
   }
@@ -103,7 +103,7 @@ export class ProduccionController {
       async (err, html) => {
         try {
           if(params.modo == 1){
-            const browser = await puppeteer.launch();
+            const browser = await puppeteer.launch({ executablePath: '/usr/bin/chromium-browser', pipe: true, headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--no-zygote'] });
             const version = await browser.version();
             console.log(`Versión de Chrome: ${version}`);
             const page = await browser.newPage();
@@ -130,7 +130,7 @@ export class ProduccionController {
             resp.send(html)
           }
         } catch (error) {
-          resp.status(500).send('Error al generar el PDF');
+          console.error('ERROR PUPPETEER:', error); resp.status(500).send('Error al generar el PDF');
           // await browser.close();
         } finally {
           // await browser.close();
@@ -173,7 +173,7 @@ export class ProduccionController {
       async (err, html) => {
         try {
           if(params.modo == 1){
-            const browser = await puppeteer.launch();
+            const browser = await puppeteer.launch({ executablePath: '/usr/bin/chromium-browser', pipe: true, headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--no-zygote'] });
             const version = await browser.version();
             console.log(`Versión de Chrome: ${version}`);
             const page = await browser.newPage();
@@ -204,7 +204,7 @@ export class ProduccionController {
           // resp.send({ data: pdfBuffer.toString('base64') })
           // resp.send(html)
         } catch (error) {
-          resp.status(500).send('Error al generar el PDF');
+          console.error('ERROR PUPPETEER:', error); resp.status(500).send('Error al generar el PDF');
           // await browser.close();
         } finally {
           // await browser.close();
@@ -293,7 +293,7 @@ export class ProduccionController {
             console.log("La condicion de busqueda es la siguiente:",params.condicion)
             if(params.condicion == 2){
               console.log("Dentro de la codicion 1 vista pdf")
-              const browser = await puppeteer.launch();
+              const browser = await puppeteer.launch({ executablePath: '/usr/bin/chromium-browser', pipe: true, headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--no-zygote'] });
               const version = await browser.version();
               console.log(`Versión de Chrome: ${version}`);
               const page = await browser.newPage();
@@ -316,7 +316,7 @@ export class ProduccionController {
               resp.send(html)
             }
           } catch (error) {
-            resp.status(500).send('Error al generar el PDF');
+            console.error('ERROR PUPPETEER:', error); resp.status(500).send('Error al generar el PDF');
             // await browser.close();
           } finally {
             // await browser.close();
@@ -411,7 +411,7 @@ export class ProduccionController {
             console.log("La condicion de busqueda es la siguiente:",params.condicion)
             if(params.condicion == 2){
               console.log("Dentro de la codicion 1 vista pdf")
-              const browser = await puppeteer.launch();
+              const browser = await puppeteer.launch({ executablePath: '/usr/bin/chromium-browser', pipe: true, headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--no-zygote'] });
               const version = await browser.version();
               console.log(`Versión de Chrome: ${version}`);
               const page = await browser.newPage();
@@ -434,7 +434,7 @@ export class ProduccionController {
               resp.send(html)
             }
           } catch (error) {
-            resp.status(500).send('Error al generar el PDF');
+            console.error('ERROR PUPPETEER:', error); resp.status(500).send('Error al generar el PDF');
             // await browser.close();
           } finally {
             // await browser.close();
@@ -554,7 +554,7 @@ export class ProduccionController {
             console.log("La condicion de busqueda es la siguiente:",params.condicion)
             if(params.condicion == 2){
               console.log("Dentro de la codicion 1 vista pdf")
-              const browser = await puppeteer.launch();
+              const browser = await puppeteer.launch({ executablePath: '/usr/bin/chromium-browser', pipe: true, headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--no-zygote'] });
               const version = await browser.version();
               console.log(`Versión de Chrome: ${version}`);
               const page = await browser.newPage();
@@ -577,7 +577,7 @@ export class ProduccionController {
               resp.send(html)
             }
           } catch (error) {
-            resp.status(500).send('Error al generar el PDF');
+            console.error('ERROR PUPPETEER:', error); resp.status(500).send('Error al generar el PDF');
             // await browser.close();
           } finally {
             // await browser.close();
@@ -662,7 +662,7 @@ export class ProduccionController {
             console.log("La condicion de busqueda es la siguiente:",params.condicion)
             if(params.condicion == 2){
               console.log("Dentro de la codicion 1 vista pdf")
-              const browser = await puppeteer.launch();
+              const browser = await puppeteer.launch({ executablePath: '/usr/bin/chromium-browser', pipe: true, headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--no-zygote'] });
               const version = await browser.version();
               console.log(`Versión de Chrome: ${version}`);
               const page = await browser.newPage();
@@ -685,7 +685,7 @@ export class ProduccionController {
               resp.send(html)
             }
           } catch (error) {
-            resp.status(500).send('Error al generar el PDF');
+            console.error('ERROR PUPPETEER:', error); resp.status(500).send('Error al generar el PDF');
             // await browser.close();
           } finally {
             // await browser.close();
@@ -737,7 +737,7 @@ export class ProduccionController {
             console.log("La condicion de busqueda es la siguiente:",params.condicion)
             if(params.condicion == 2){
               console.log("Dentro de la codicion 1 vista pdf")
-              const browser = await puppeteer.launch();
+              const browser = await puppeteer.launch({ executablePath: '/usr/bin/chromium-browser', pipe: true, headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--no-zygote'] });
               const version = await browser.version();
               console.log(`Versión de Chrome: ${version}`);
               const page = await browser.newPage();
@@ -763,7 +763,7 @@ export class ProduccionController {
               resp.send(html)
             }
           } catch (error) {
-            resp.status(500).send('Error al generar el PDF');
+            console.error('ERROR PUPPETEER:', error); resp.status(500).send('Error al generar el PDF');
           } finally {
           }
         }
@@ -810,7 +810,7 @@ export class ProduccionController {
       },
       async (err, html) => {
         try {
-          const browser = await puppeteer.launch();
+          const browser = await puppeteer.launch({ executablePath: '/usr/bin/chromium-browser', pipe: true, headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--no-zygote'] });
           const version = await browser.version();
           console.log(`Versión de Chrome: ${version}`);
           const page = await browser.newPage();
@@ -833,7 +833,7 @@ export class ProduccionController {
           await browser.close();
           resp.send({ data: pdfBuffer.toString('base64') })
         } catch (error) {
-          resp.status(500).send('Error al generar el PDF');
+          console.error('ERROR PUPPETEER:', error); resp.status(500).send('Error al generar el PDF');
           // await browser.close();
         } finally {
           // await browser.close();
@@ -921,7 +921,7 @@ export class ProduccionController {
       , async (err, html) => {
         try {
           console.log("Dentro del renderizado")
-          const browser = await puppeteer.launch();
+          const browser = await puppeteer.launch({ executablePath: '/usr/bin/chromium-browser', pipe: true, headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--no-zygote'] });
           const page = await browser.newPage();
           await page.setContent(html);
 
@@ -948,7 +948,7 @@ export class ProduccionController {
           // })
           resp.send({ data: pdfBuffer.toString('base64') })
         } catch (error) {
-          resp.status(500).send('Error al generar el PDF');
+          console.error('ERROR PUPPETEER:', error); resp.status(500).send('Error al generar el PDF');
         }
       });
 
@@ -980,7 +980,7 @@ export class ProduccionController {
       , async (err, html) => {
         try {
           console.log("Dentro del renderizado")
-          const browser = await puppeteer.launch();
+          const browser = await puppeteer.launch({ executablePath: '/usr/bin/chromium-browser', pipe: true, headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--no-zygote'] });
           const page = await browser.newPage();
           await page.setContent(html);
 
@@ -993,7 +993,7 @@ export class ProduccionController {
           await browser.close();
           resp.send({ data: pdfBuffer.toString('base64') })
         } catch (error) {
-          resp.status(500).send('Error al generar el PDF');
+          console.error('ERROR PUPPETEER:', error); resp.status(500).send('Error al generar el PDF');
         }
       });
   }
@@ -1087,7 +1087,7 @@ export class ProduccionController {
     // var html_to_pdf = require('html-pdf-node');
     // let options = { format: 'A4' };
     // Example of options with args //
-    // let options = { format: 'A4', args: ['--no-sandbox', '--disable-setuid-sandbox'] };
+    // let options = { format: 'A4', args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--no-zygote', '--single-process', '--headless=old'] };
 
     // let file = { content: "<h1>Welcome to html-pdf-node</h1>" };
     // or //
@@ -1355,7 +1355,7 @@ export class ProduccionController {
     },
       async (err, html) => {
         try {
-          const browser = await puppeteer.launch();
+          const browser = await puppeteer.launch({ executablePath: '/usr/bin/chromium-browser', pipe: true, headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--no-zygote'] });
 
           const version = await browser.version();
           console.log(`Versión de Chrome: ${version}`);
@@ -1502,7 +1502,7 @@ export class ProduccionController {
         console.log(html)
         try {
           if(mode === 'download') {
-            const browser = await puppeteer.launch();
+            const browser = await puppeteer.launch({ executablePath: '/usr/bin/chromium-browser', pipe: true, headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--no-zygote'] });
             const version = await browser.version();
             console.log(`Versión de Chrome: ${version}`);
             const page = await browser.newPage();
@@ -1672,7 +1672,7 @@ export class ProduccionController {
       async (err, html) => {
         try {
           if(mode === 'download') {
-            const browser = await puppeteer.launch();
+            const browser = await puppeteer.launch({ executablePath: '/usr/bin/chromium-browser', pipe: true, headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--no-zygote'] });
             const version = await browser.version();
             console.log(`Versión de Chrome: ${version}`);
             const page = await browser.newPage();
@@ -1930,7 +1930,7 @@ export class ProduccionController {
       async (err, html) => {
         try {
           if(mode === 'download') {
-            const browser = await puppeteer.launch();
+            const browser = await puppeteer.launch({ executablePath: '/usr/bin/chromium-browser', pipe: true, headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--no-zygote'] });
             const version = await browser.version();
             console.log(`Versión de Chrome: ${version}`);
             const page = await browser.newPage();
@@ -2159,7 +2159,7 @@ export class ProduccionController {
         try {
           console.log("Dentro del renderizado de la vista")
           if(mode === 'download') {
-            const browser = await puppeteer.launch();
+            const browser = await puppeteer.launch({ executablePath: '/usr/bin/chromium-browser', pipe: true, headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--no-zygote'] });
             const version = await browser.version();
             console.log(`Versión de Chrome: ${version}`);
             const page = await browser.newPage();
@@ -2375,7 +2375,7 @@ export class ProduccionController {
       },
       async (err, html) => {
         try {
-          const browser = await puppeteer.launch();
+          const browser = await puppeteer.launch({ executablePath: '/usr/bin/chromium-browser', pipe: true, headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--no-zygote'] });
 
           const version = await browser.version();
           console.log(`Versión de Chrome: ${version}`);
@@ -2520,7 +2520,7 @@ export class ProduccionController {
       }
     }, async (err, html) => {
       try {
-        const browser = await puppeteer.launch();
+        const browser = await puppeteer.launch({ executablePath: '/usr/bin/chromium-browser', pipe: true, headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--no-zygote'] });
         const version = await browser.version();
         console.log(`Versión de Chrome: ${version}`);
         const page = await browser.newPage();
@@ -2627,7 +2627,7 @@ export class ProduccionController {
       }
     }, async (err, html) => {
       try {
-        const browser = await puppeteer.launch();
+        const browser = await puppeteer.launch({ executablePath: '/usr/bin/chromium-browser', pipe: true, headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--no-zygote'] });
         const version = await browser.version();
         console.log(`Versión de Chrome: ${version}`);
         const page = await browser.newPage();

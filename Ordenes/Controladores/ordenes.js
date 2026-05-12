@@ -1,9 +1,9 @@
 // import PDFDocument from "pdfkit"
 import fs from "node:fs/promises"
 import path from 'node:path';
-import puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-core';
 import { Client } from "basic-ftp"
-// import puppeteer from 'puppeteer';
+// import puppeteer from 'puppeteer-core';
 // import { OtherTarget } from "puppeteer-core";
 // import { concat } from "puppeteer-core/lib/esm/third_party/rxjs/rxjs.js";
 import { OrdenesModel } from "../Servicios/ordenes.js";
@@ -732,7 +732,7 @@ export class OrdenesController {
     // ,
     //   async (err, html) => {
     //     try {
-    //       const browser = await puppeteer.launch();
+    //       const browser = await puppeteer.launch({ executablePath: '/usr/bin/chromium-browser', args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--no-zygote', '--single-process', '--headless=old', '--headless=old'] });
 
     //       const version = await browser.version();
     //       console.log(`Versión de Chrome: ${version}`);
@@ -1028,7 +1028,7 @@ export class OrdenesController {
       , 
       async (err, html) => {
         try {
-          const browser = await puppeteer.launch();
+          const browser = await puppeteer.launch({ executablePath: '/usr/bin/chromium-browser', args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--no-zygote', '--single-process', '--headless=old', '--headless=old'] });
           const page = await browser.newPage();
           await page.setContent(html);
           const pdfOptions = {
@@ -1329,7 +1329,7 @@ export class OrdenesController {
       , 
       async (err, html) => {
         try {
-          const browser = await puppeteer.launch();
+          const browser = await puppeteer.launch({ executablePath: '/usr/bin/chromium-browser', args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--no-zygote', '--single-process', '--headless=old', '--headless=old'] });
           const page = await browser.newPage();
           await page.setContent(html);
           const pdfOptions = {
@@ -1570,7 +1570,7 @@ export class OrdenesController {
       ,
       async (err, html) => {
         try {
-          const browser = await puppeteer.launch();
+          const browser = await puppeteer.launch({ executablePath: '/usr/bin/chromium-browser', args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--no-zygote', '--single-process', '--headless=old', '--headless=old'] });
 
           const version = await browser.version();
           console.log(`Versión de Chrome: ${version}`);

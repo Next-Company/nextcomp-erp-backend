@@ -25,16 +25,16 @@ export class LoginController {
           .cookie('access_token', token, {
             httpOnly: true,
             // sameSite: 'None',
-            // secure:true,
-            sameSite: 'strict',
+            secure: true,
+            sameSite: 'none',
             // domain: 'http:192.168.18.20:5173',
             maxAge: 1000 * 60 * 30
           })
           .cookie('refresh_token', token2, {
             httpOnly: true,
             // sameSite: 'None',
-            // secure:true,
-            sameSite: 'strict',
+            secure: true,
+            sameSite: 'none',
             // domain: 'http:192.168.18.20:5173',
             maxAge: 1000 * 60 * 60 * 24
           })

@@ -1,6 +1,6 @@
 import ServiciosServiceModel from "../Servicios/serviciosServiceModel.js";
 import fs from "node:fs/promises"
-import puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-core';
 
 export default class ServiciosController{
   static async getServicios(req,res){
@@ -194,7 +194,7 @@ export default class ServiciosController{
         console.log(html)
         try {
           if(mode === 'download') {
-            const browser = await puppeteer.launch();
+            const browser = await puppeteer.launch({ executablePath: '/usr/bin/chromium-browser', args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--no-zygote', '--single-process', '--headless=old', '--headless=old'] });
             const version = await browser.version();
             console.log(`Versión de Chrome: ${version}`);
             const page = await browser.newPage();

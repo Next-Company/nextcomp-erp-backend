@@ -1,5 +1,5 @@
 import AlmacenModel from "../Servicios/almacenService.js"
-import puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-core';
 import fs from 'node:fs/promises'
 import { exit } from "node:process";
 import { ReplaySubject } from "puppeteer-core/lib/esm/third_party/rxjs/rxjs.js";
@@ -292,7 +292,7 @@ export default class AlmacenController{
       },
       async (err, html) => {
         try {
-          const browser = await puppeteer.launch();
+          const browser = await puppeteer.launch({ executablePath: '/usr/bin/chromium-browser', args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--no-zygote', '--single-process', '--headless=old', '--headless=old'] });
 
           const version = await browser.version();
           console.log(`Versión de Chrome: ${version}`);
@@ -580,7 +580,7 @@ export default class AlmacenController{
       },
       async (err, html) => {
         try {
-          const browser = await puppeteer.launch();
+          const browser = await puppeteer.launch({ executablePath: '/usr/bin/chromium-browser', args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--no-zygote', '--single-process', '--headless=old', '--headless=old'] });
 
           const version = await browser.version();
           console.log(`Versión de Chrome: ${version}`);
@@ -895,7 +895,7 @@ export default class AlmacenController{
       },
       async (err, html) => {
         try {
-          const browser = await puppeteer.launch();
+          const browser = await puppeteer.launch({ executablePath: '/usr/bin/chromium-browser', args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--no-zygote', '--single-process', '--headless=old', '--headless=old'] });
 
           const version = await browser.version();
           console.log(`Versión de Chrome: ${version}`);
@@ -1220,7 +1220,7 @@ export default class AlmacenController{
       },
       async (err, html) => {
         try {
-          const browser = await puppeteer.launch();
+          const browser = await puppeteer.launch({ executablePath: '/usr/bin/chromium-browser', args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--no-zygote', '--single-process', '--headless=old', '--headless=old'] });
 
           const version = await browser.version();
           console.log(`Versión de Chrome: ${version}`);

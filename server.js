@@ -78,8 +78,8 @@ app.use((req, resp, next) => {
       resp.cookie('access_token', new_token, {
         httpOnly: true,
         // sameSite: 'None',
-        // secure:true,
-        sameSite: 'strict',
+        secure: true,
+        sameSite: 'none',
         maxAge: 1000 * 60 * 60 * 2
       })
       next()

@@ -1,3 +1,4 @@
+const groupBy = (arr, fn) => arr.reduce((acc, item) => { const key = fn(item); acc[key] = acc[key] || []; acc[key].push(item); return acc; }, {});
 import { raceWith } from "puppeteer-core/lib/esm/third_party/rxjs/rxjs.js";
 import { configs } from "../../Main/utils.js";
 import mysql from "mysql2/promise";
@@ -117,7 +118,7 @@ export class OrdenesModel {
         return carry
       },[])
 
-      let bb = Object.groupBy(results,(item)=>item.nro_guias)
+      let bb = groupBy(results,(item)=>item.nro_guias)
       let kk = Object.keys(bb).reduce((carry,item)=>{
         console.log(`La info de bb(${item}) es :`,bb[item].map(row=>({idx:row.idx,modelos:row.modelos})))
         carry = [...carry,...bb[item]]
@@ -251,15 +252,15 @@ export class OrdenesModel {
 
       // let aa = results.filter(item=>item.nro_guias == 0)
       // console.log("Ordenes sin guias:",aa)
-      let aa = Object.groupBy(results.filter(item=>item.nro_guias == 0),(orden)=>orden.longitud)
+      let aa = groupBy(results.filter(item=>item.nro_guias == 0),(orden)=>orden.longitud)
       // console.log("Ordenes con guias:",aa)
       let kk1 = Object.keys(aa).reduce((carry,item)=>{
         carry = [...carry,...aa[item]]
         return carry
       },[])
 
-      // let bb = Object.groupBy(results.filter(item=>item.nro_guias > 0),(item)=>item.nro_guias)
-      let bb = Object.groupBy(results.filter(item=>item.nro_guias > 0),(item)=>item.faltantes)
+      // let bb = groupBy(results.filter(item=>item.nro_guias > 0),(item)=>item.nro_guias)
+      let bb = groupBy(results.filter(item=>item.nro_guias > 0),(item)=>item.faltantes)
       // console.log("Ordenes con guias:",bb)
       let kk2 = Object.keys(bb).reduce((carry,item)=>{
         // console.log(`La info de bb(${item}) es :`,bb[item].map(row=>({idx:row.idx,modelos:row.modelos})))  
@@ -1476,9 +1477,9 @@ export class OrdenesModel {
       FROM tbl2_guias_traslado_cab where tipo = 'SERVICIOS' and estado <> 'ANULADO' and id_orden_cab = ? order by created_at desc`
       
       let [infoguias] = await conn.query(query,[id])
-      infoguias = Object.groupBy(infoguias,(item)=>item.created_at)
+      infoguias = groupBy(infoguias,(item)=>item.created_at)
 
-      // console.log("Informcion agrupada",Object.groupBy(infoguias,(created_at)=>created_at))
+      // console.log("Informcion agrupada",groupBy(infoguias,(created_at)=>created_at))
 
       return [ordenes,moldes,cortes,infoguias]
     } catch (err) {
@@ -1524,9 +1525,9 @@ export class OrdenesModel {
       FROM tbl2_guias_traslado_cab where tipo = 'SERVICIOS' and estado <> 'ANULADO' and id_orden_cab = ? order by created_at desc`
       
       let [infoguias] = await conn.query(query,[id])
-      infoguias = Object.groupBy(infoguias,(item)=>item.created_at)
+      infoguias = groupBy(infoguias,(item)=>item.created_at)
 
-      // console.log("Informcion agrupada",Object.groupBy(infoguias,(created_at)=>created_at))
+      // console.log("Informcion agrupada",groupBy(infoguias,(created_at)=>created_at))
       let ruta = eval(ordenes[0].ruta_proceso)
       // let ruta_ordenada = ['MOLDE','CORTE','AVIOS','CONFECCION','OJAL','ESTAMPADO','LAVANDERIA','BORDADO','ACABADOS']
       
@@ -1554,7 +1555,7 @@ export class OrdenesModel {
       where t1.estado <> 'ANULADO' and t1.id_orden_CAB = ?
       `,[id])
 
-      let final = Object.groupBy(info_guias,(row)=>row.servicio)
+      let final = groupBy(info_guias,(row)=>row.servicio)
 
       let formateado = Object.keys(ruta).reduce((c,v)=>{
         if(!Object.keys(c).includes(v)) c[v] = []

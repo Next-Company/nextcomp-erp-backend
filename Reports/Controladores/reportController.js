@@ -1,8 +1,9 @@
+const groupBy = (arr, fn) => arr.reduce((acc, item) => { const key = fn(item); acc[key] = acc[key] || []; acc[key].push(item); return acc; }, {});
 import { configs } from "../../Main/utils.js";
 import mysql from "mysql2/promise"
 import fs from 'node:fs/promises'
 import path from 'node:path';
-import puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-core';
 import ReporteService from "../Servicios/reportServicio.js"
 import ExcelJS from 'exceljs';
 import { ProduccionModel } from "../../Produccion/Servicios/produccion.js";
@@ -88,7 +89,7 @@ export default class ReportController{
       await workbook.xlsx.readFile('public/templates/formato_letras.xlsx');
       const worksheet = workbook.getWorksheet('INFORME');
       let row  = 2
-      let formateo = Object.groupBy(result,row=>row.mes)
+      let formateo = groupBy(result,row=>row.mes)
       let totalMN = 0, totalUSD = 0
 
       Object.keys(formateo).forEach(key=>{
@@ -162,7 +163,7 @@ export default class ReportController{
       const worksheet = workbook.getWorksheet('INFORME');
       
       let row  = 2
-      // let formateo = Object.groupBy(result,row=>row.mes)
+      // let formateo = groupBy(result,row=>row.mes)
       let totalMN = 0, totalUSD = 0
       let fields = ['oc','id_cliente_CAB','cliente','fec_emitida','fec_entrega','marca','producto','base','precio','modelos','estado_orden','ruta_proceso']
 
@@ -377,7 +378,7 @@ export default class ReportController{
       },
       async (err, html) => {
         try {
-          const browser = await puppeteer.launch();
+          const browser = await puppeteer.launch({ executablePath: '/usr/bin/chromium-browser', args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--no-zygote', '--single-process', '--headless=old', '--headless=old'] });
 
           const version = await browser.version();
           console.log(`Versión de Chrome: ${version}`);
