@@ -11,9 +11,15 @@ export const ORIGINS = (origin, callback) => {
     'https://nextcompanysac.com',
     'https://dev.nextcompanysac.com',
   ]
-  if (!origin || allowed.includes(origin) || origin.endsWith('.vercel.app') || origin.endsWith('.nextcompanysac.com')) {
-    callback(null, true)
+
+  if (
+    !origin ||
+    allowed.includes(origin) ||
+    origin.endsWith('.vercel.app') ||
+    origin.endsWith('.nextcompanysac.com')
+  ) {
+    callback(null, origin) // ← origin exacto, no true
   } else {
-    callback(new Error('Not allowed by CORS'))
+    callback(new Error(`Not allowed by CORS: ${origin}`))
   }
 }
