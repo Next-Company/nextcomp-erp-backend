@@ -1291,11 +1291,11 @@ export class ProduccionModel {
       }
 
       // if (conn) conn.rollback()
-      if (conn) conn.commit()
+      if (conn) await conn.commit()
       return {ok:true,message:'Registro completo'}
     } catch (err) {
       //console.log(err)
-      if (conn) conn.rollback()
+      if (conn) await conn.rollback()
       return {ok:false,message:err.message ?? err}
     } finally {
       if (conn) await conn.end();
