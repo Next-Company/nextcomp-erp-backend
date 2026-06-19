@@ -1234,8 +1234,8 @@ export class ProduccionModel {
         if(!respuesta.ok) throw respuesta.message
       }
 
-      if (conn) conn.rollback()
-      // if (conn) conn.commit()
+      // if (conn) conn.rollback()
+      if (conn) conn.commit()
       return {ok:true,message:'Registro completo'}
     } catch (err) {
       console.log(err)

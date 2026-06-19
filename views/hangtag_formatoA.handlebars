@@ -1,124 +1,111 @@
 <style>
-  body{
+  * {
+    box-sizing: border-box;
     margin: 0;
     padding: 0;
+  }
+
+  body {
     width: 100mm;
     height: 45mm;
   }
-  .row{
+
+  .row {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     width: 107.5mm;
     height: 45mm;
     gap: 2.5mm;
     overflow: hidden;
     break-after: page;
   }
-  .etiqueta{
+
+  .etiqueta {
     background-color: white;
-    box-sizing:border-box;
     font-size: .4rem;
     width: 33.5mm;
     height: 45mm;
-    padding: 2.5mm;
+    padding: 2mm;
+    display: flex;
+    flex-direction: row;
+    gap: 1mm;
     position: relative;
+    overflow: hidden;
+  }
+
+  /* Columna izquierda: texto + talla */
+  .columna-texto {
+    flex: 1.5;
     display: flex;
     flex-direction: column;
-    gap: 1.5mm;
+    gap: 1mm;
+    overflow: hidden;
   }
-  #idcodbar{
+
+  /* Columna derecha: solo barcode */
+  .columna-barcode {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .columna-barcode img {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(90deg);
+    height: auto;
+    width: 36mm;
+  }
+
+  h2 { font-size: .5rem; }
+  h3 { font-size: .4rem; }
+
+  #talla {
+    font-size: 1.2rem;
+    font-weight: bolder;
+    text-align: center;
+  }
+
+  #idcodbar {
     font-size: 5px;
     letter-spacing: 5.5px;
     transform: scale(1, 0.8);
   }
-  img{
-    width: 100%;
-  }
-  h2{
-    margin:0px;
-  }
-  h3{
-    margin: 0px;
-  }
-  #talla{
-    position: absolute;
-    right: 5px;
-    bottom: 95px;
-    font-size: 1.8rem;
-    font-weight: bolder;
+
+  #footer-circles {
     display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    width: 40px;
+    gap: 3px;
+    width: 60px;
   }
-  #talla div:first-child{
-    position:absolute;
-    top:-4px;
-    font-size: 8px;
-    font-weight: bold;
-  }
-  #footer-circles{
-    display: flex;
-    gap: 4px;
-    
-    width: 70px;
-  }
-  #footer-circless div{
-    width: 1px;
-    height: 1px;
-    border: thin solid black;
-  }
-  #footer-circles div:nth-child(2n-1){
+
+  #footer-circles div:nth-child(2n-1) {
     background-color: black;
     border-radius: 100%;
+    width: 4px;
+    height: 4px;
   }
-  #footer-circles div:nth-child(2n){
+
+  #footer-circles div:nth-child(2n) {
     border-radius: 100%;
+    width: 4px;
+    height: 4px;
   }
-  #footer-circles div:nth-child(2n+1){
-    background-color: black;
-  }
-  .bar{
+
+  .bar {
     width: 2mm;
     background-color: black;
     position: absolute;
-  }
-  #bar_left{
-    height: 20mm;
-    left: -.5mm;
+    left: -1mm;
     top: -10mm;
-  }
-  #bar_right{
-    height: 24mm;
-    padding: 4px;
-    right: 4mm;
-    top: 0;
-    position: absolute;
-    background-color: black;
-    color:white;
-    writing-mode: vertical-lr;
-    font-size: 20px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-family: Arial, Helvetica, sans-serif;
+    height: 20mm;
   }
 </style>
+
 <body>
-  {{!-- <div id="row"> --}}
-    {{!-- 
-    w:100mm
-    h:45mm
-    w:30mm
-    h:40mm
-    gap:2.5mm 
-    --}}
-    {{#foo this.BASE this.INFO this.MONEDA this.ORDEN}}
-    {{/foo}}
-    {{!-- <img src="data:image/jpg;base64,{{this.BINARY_CHUNKS5}}" /> --}}
-    {{!-- <div class="etiqueta">que</div>
-    <div class="etiqueta">tal</div>
-    <div class="etiqueta">miguel</div> --}}
-  {{!-- </div> --}}
+  {{#foo this.BASE this.INFO this.MONEDA this.ORDEN}}
+  {{/foo}}
 </body>
