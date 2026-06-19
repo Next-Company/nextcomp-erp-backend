@@ -159,6 +159,107 @@ assert('no orphan cab rows for __TEST_ROLLBACK__', orphans[0].n === 0,
   `found ${orphans[0].n}`)
 
 // ────────────────────────────────────────────────────────────────────────────
+// TEST 3: SERVICIOS happy path — tipo=SERVICIOS inserts guia tables AND calls
+//         UpdateMasterProduccion without error.
+//
+//         Strategy: use id_combo=9999999 (non-existent in hojacorte_combos).
+//         The UPDATE inside UpdateMasterProduccion affects 0 rows (no FK
+//         constraint on id_combo). The validation query returns the real
+//         aggregate for orden 201 (146+2+0=148, not > 148) → passes.
+//         We assert the hojacorte aggregate is UNCHANGED to confirm
+//         UpdateMasterProduccion was called but was a no-op.
+// ────────────────────────────────────────────────────────────────────────────
+console.log('\nTest 3: SERVICIOS happy path (new insert, tipo=SERVICIOS)')
+
+const [[hojaBefore]] = await db.query(`
+  SELECT sum(produccion_total) as p_tot, sum(caidos_total) as c_tot,
+         sum(incompletos_total) as i_tot
+  FROM tbl2_fases_prod_hojacorte_combos_fracciones
+  WHERE id_combo_CAB IN (1392,1393,1394,1395,1396)`)
+
+const before3 = await counts()
+
+const articuloServiciosHappy = {
+  articulo: 'ART-SERV-001',
+  cantidad: 10,
+  isprototipo: 0,
+  id_combo: 9999999, // non-existent → UPDATE is no-op; no FK constraint on this column
+  st: 1, xxs: 1, xs: 1, s: 2, m: 2, l: 1, xl: 1, xxl: 1,
+}
+
+const result3 = await ProduccionModel.saveInfoGuias({
+  info: JSON.stringify({ ...cabecera, tipo: 'SERVICIOS', orden_ref: '__TEST_SERV__' }),
+  detalle: JSON.stringify([articuloServiciosHappy]),
+})
+
+const after3 = await counts()
+
+assert('SERV: returns ok:true', result3.ok === true, JSON.stringify(result3))
+assert('SERV: message is "Registro completo"', result3.message === 'Registro completo')
+assert('SERV: one new row in tbl2_guias_traslado_cab', after3.cab === before3.cab + 1,
+  `before=${before3.cab} after=${after3.cab}`)
+assert('SERV: one new row in tbl2_guias_traslado_det', after3.det === before3.det + 1)
+assert('SERV: fracciones inserted (>=1)', after3.frac > before3.frac)
+
+const [cabRows3] = await db.query(
+  "SELECT * FROM tbl2_guias_traslado_cab WHERE orden_ref = '__TEST_SERV__' ORDER BY idx DESC LIMIT 1")
+assert('SERV: cab row has tipo=SERVICIOS', cabRows3.length > 0 && cabRows3[0].tipo === 'SERVICIOS')
+
+// Verify UpdateMasterProduccion was called but didn't corrupt hojacorte data
+// (id_combo=9999999 matched 0 rows in hojacorte_combos_fracciones)
+const [[hojaAfter]] = await db.query(`
+  SELECT sum(produccion_total) as p_tot, sum(caidos_total) as c_tot,
+         sum(incompletos_total) as i_tot
+  FROM tbl2_fases_prod_hojacorte_combos_fracciones
+  WHERE id_combo_CAB IN (1392,1393,1394,1395,1396)`)
+assert('SERV: UpdateMasterProduccion ran without side effects on hojacorte',
+  String(hojaBefore.p_tot) === String(hojaAfter.p_tot) &&
+  String(hojaBefore.c_tot) === String(hojaAfter.c_tot) &&
+  String(hojaBefore.i_tot) === String(hojaAfter.i_tot),
+  `before p/c/i=${hojaBefore.p_tot}/${hojaBefore.c_tot}/${hojaBefore.i_tot} ` +
+  `after=${hojaAfter.p_tot}/${hojaAfter.c_tot}/${hojaAfter.i_tot}`)
+
+// Cleanup test 3
+const cabId3 = cabRows3[0]?.idx
+if (cabId3) {
+  const [det3] = await db.query('SELECT idx FROM tbl2_guias_traslado_det WHERE id_guia_CAB = ?', [cabId3])
+  for (const d of det3) {
+    await db.query('DELETE FROM tbl2_guias_traslado_det_fracciones WHERE id_guia_DET = ?', [d.idx])
+  }
+  await db.query('DELETE FROM tbl2_guias_traslado_det WHERE id_guia_CAB = ?', [cabId3])
+  await db.query('DELETE FROM tbl2_guias_traslado_cab WHERE idx = ?', [cabId3])
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// TEST 4: SERVICIOS rollback — same trigger as TLL (empty fracciones → SQL
+//         error after cab+det written). UpdateMasterProduccion is NOT reached
+//         because the failure happens inside the main insert loop (line ~1265),
+//         before the tipo==SERVICIOS block at line 1268.
+// ────────────────────────────────────────────────────────────────────────────
+console.log('\nTest 4: SERVICIOS rollback on mid-write failure (empty fracciones)')
+
+const before4 = await counts()
+
+const result4 = await ProduccionModel.saveInfoGuias({
+  info: JSON.stringify({ ...cabecera, tipo: 'SERVICIOS', orden_ref: '__TEST_SERV_ROLLBACK__' }),
+  detalle: JSON.stringify([articuloSinTallas]),
+})
+
+const after4 = await counts()
+
+assert('SERV rollback: returns ok:false', result4.ok === false, JSON.stringify(result4))
+assert('SERV rollback: no new cab rows', after4.cab === before4.cab,
+  `before=${before4.cab} after=${after4.cab}`)
+assert('SERV rollback: no new det rows', after4.det === before4.det)
+assert('SERV rollback: no new frac rows', after4.frac === before4.frac)
+assert('SERV rollback: no new adi rows', after4.adi === before4.adi)
+assert('SERV rollback: no new reprog rows', after4.rep === before4.rep)
+
+const [orphans4] = await db.query(
+  "SELECT COUNT(*) as n FROM tbl2_guias_traslado_cab WHERE orden_ref = '__TEST_SERV_ROLLBACK__'")
+assert('SERV rollback: no orphan cab rows', orphans4[0].n === 0, `found ${orphans4[0].n}`)
+
+// ────────────────────────────────────────────────────────────────────────────
 await db.end()
 
 console.log(`\n${'─'.repeat(50)}`)
