@@ -1,63 +1,28 @@
 import mysql from "mysql2/promise";
 import jwt_ from 'jsonwebtoken';
 
+const _host = process.env.DB_HOST
+const _port = process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306
+const _user = process.env.DB_USER
+const _pass = process.env.DB_PASS
+const _name = process.env.DB_NAME
+
 export const configs = [
   {
-    host: '192.168.18.20',
-    // host: '192.168.0.171',
-    port: '3306',
-    user: 'ubuntu',
-    password: '',
-    database: 'bd_next',
+    host: _host,
+    port: _port,
+    user: _user,
+    password: _pass,
+    database: _name,
   },
   {
-    // host: '192.168.18.20',
-    // host: '192.168.0.171',
-    // port: '3306',
-    // user: 'ubuntu',
-    // password: '',
-    // database: 'bd_next',
-    // host: 'jsjfact.com',
-    // port: '3306',
-    // user: 'facturador_seguro',
-    // password: 'JSJ@1984+-+',
-    // database: 'BD_FACTURADOR',
-    // connectionLimit: 30,
-    // waitForConnections: true, 
-    // queueLimit: 0, 
-    // enableKeepAlive: true
-
-    host: 'jsjfact.com',
-    port: '3306',
-    user: 'facturador_seguro',
-    password: 'JSJ@1984+-+',
-    database: 'BD_FACTURADOR',
-
-
-    // host: '192.168.18.20',
-    // port: '3306',
-    // user: 'ubuntu',
-    // password: '',
-    // database: 'bd_next',
-
-    // waitForConnections: true,
-    // connectionLimit: 10,
-    // maxIdle: 10,
-    // idleTimeout: 60000,
-    // queueLimit: 0,
-    // enableKeepAlive: false,
-    // keepAliveInitialDelay: 0,
+    host: _host,
+    port: _port,
+    user: _user,
+    password: _pass,
+    database: _name,
   }
 ]
-// export const connection = await mysql.createConnection({
-// export const connection = await mysql.createPool({
-//   host: '192.168.18.20',
-//   // host: '192.168.0.171',
-//   port: '3306',
-//   user: 'ubuntu',
-//   password: '',
-//   database: 'bd_next',
-// });
 
 export const numControlBarcode = (codbar = null)=>{
     // INSTRUCTIONS
@@ -72,21 +37,14 @@ export const numControlBarcode = (codbar = null)=>{
     let sum_imp = 0;
     let sum_par = 0;
     let sum = 0;
-    // Weight for a digit in the checksum is 3, 1, 3.. starting from the last digit. 
-    // loop backwards to make the loop length-agnostic. The same basic functionality 
-    // will work for codes of different lengths.
-    // echo $codbar;
     for (let $i = codbar.length - 1; $i >= 0; $i--)
     {
         sum += parseInt(codbar[$i]) * (weightflag ? 3 : 1);
         weightflag = !weightflag;
-    //   $sum += (int)$codbar[$i] * ($weightflag?3:1);
-    //   $weightflag = !$weightflag;
     }
     codbar += (10 - (sum % 10)) % 10;
     return codbar;
 }
 
 export const connection = mysql.createPool(configs[0]);
-// export const conn_jsjfact = mysql.createPool(configs[1]);
 export const jwt = jwt_

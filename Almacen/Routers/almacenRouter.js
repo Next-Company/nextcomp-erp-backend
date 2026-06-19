@@ -1,5 +1,6 @@
 import { Router } from "express";
 import AlmacenController from "../Controladores/almacenController.js";
+import { authorize } from "../../Main/middleware/authorize.js";
 
 const ALMACEN_ROUTER = new Router()
 
@@ -15,12 +16,12 @@ ALMACEN_ROUTER.get('/listaralmacenes/:search',AlmacenController.getListaAlmacene
 
 ALMACEN_ROUTER.get('/getguiamovimiento/:idmov',AlmacenController.getGuia)
 ALMACEN_ROUTER.put('/saveguia',AlmacenController.saveGuia)
-ALMACEN_ROUTER.delete('/deleteguiamov/:idguia',AlmacenController.deleteGuia)
+ALMACEN_ROUTER.delete('/deleteguiamov/:idguia', authorize(1), AlmacenController.deleteGuia)
 
 ALMACEN_ROUTER.get('/getdespacho/:idmov',AlmacenController.getDespacho)
 ALMACEN_ROUTER.post('/savedespacho',AlmacenController.saveDespacho)
 ALMACEN_ROUTER.put('/updatedespacho/:idguia',AlmacenController.updateDespacho)
-ALMACEN_ROUTER.delete('/deletedespacho/:idguia',AlmacenController.deleteDespacho)
+ALMACEN_ROUTER.delete('/deletedespacho/:idguia', authorize(1), AlmacenController.deleteDespacho)
 
 ALMACEN_ROUTER.get('/disponibilidadreq/:idreq',AlmacenController.getDisponibilidadRequerimiento)
 ALMACEN_ROUTER.get('/disponibilidadmod/:idmod',AlmacenController.getDisponibilidadModelo)
@@ -32,7 +33,7 @@ ALMACEN_ROUTER.post('/vistapreviadespachocorte_avios/:tipo', AlmacenController.V
 ALMACEN_ROUTER.post('/vistapreviaretiro/:tipo', AlmacenController.VistaPreviaRetiro)
 ALMACEN_ROUTER.get('/infocuadretelas/:idmov',AlmacenController.getInfoCuadreTelas)
 ALMACEN_ROUTER.put('/updateinfocuadretelas/:idmov',AlmacenController.updateInfoCuadreTelas)
-ALMACEN_ROUTER.delete('/deleteinfocuadretelas/:idmov',AlmacenController.deleteInfoCuadreTelas)
+ALMACEN_ROUTER.delete('/deleteinfocuadretelas/:idmov', authorize(1), AlmacenController.deleteInfoCuadreTelas)
 
 ALMACEN_ROUTER.get('/getinfoetiqueta/:idprod',AlmacenController.getInfoEtiqueta)
 ALMACEN_ROUTER.post('/imprimiretiquetas/:idprod',AlmacenController.printEtiquetas)

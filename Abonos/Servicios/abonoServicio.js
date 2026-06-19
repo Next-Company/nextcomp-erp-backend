@@ -4,7 +4,7 @@ import { OtherTarget } from 'puppeteer-core'
 import { count } from 'node:console'
 export default class AbonoServicio{
   static async getAbonosList(limit){
-    console.log("Dentro de la busqueda de abonos")
+    //console.log("Dentro de la busqueda de abonos")
     let conn
     try {
       conn = await mysql2.createConnection(configs[1])
@@ -48,7 +48,7 @@ export default class AbonoServicio{
       conn = await mysql2.createConnection(configs[1])
       await conn.connect()
 
-      console.log("Buscando por dato envaido del frontent ",search)
+      //console.log("Buscando por dato envaido del frontent ",search)
       const busqueda = search.length > 0 ? search.split(" ").map(item=>`AND LOCATE('${item}',CONCAT(TRIM(COALESCE(ruc,'')),TRIM(COALESCE(proveedor,'')))) > 0`).join(" ") : ""
 
       // let [rows] = await conn.execute(`
@@ -173,7 +173,7 @@ export default class AbonoServicio{
       await conn.end()
       return rows
     } catch (error) {
-      console.log(error)
+      //console.log(error)
     } finally {
       if(conn) conn.end()
     }
@@ -279,8 +279,8 @@ export default class AbonoServicio{
       resumen.costo
       `, [idproveedor])
       
-      console.log("Otro resultado adicional")
-      console.log("Resultado preliminar de busqueda de status abono:",resultado)
+      //console.log("Otro resultado adicional")
+      //console.log("Resultado preliminar de busqueda de status abono:",resultado)
 
       let resultado_new = resultado.reduce((ca,item)=>{
 
@@ -293,13 +293,13 @@ export default class AbonoServicio{
         cc()
         return ca
       },[])
-      console.log("Infor en procesar :",resultado_new)
+      //console.log("Infor en procesar :",resultado_new)
 
       await conn.end()
       // return resultado
       return resultado_new
     } catch (error) {
-      console.log(error)
+      //console.log(error)
     } finally {
       if(conn) conn.end()
     }
@@ -329,12 +329,12 @@ export default class AbonoServicio{
           ORDER BY tlc.idx DESC
           LIMIT 100
           `)
-        // console.log(result)
+        // //console.log(result)
   
         // await conn.end()
         return result 
       } catch (error) {
-        console.log(error)
+        //console.log(error)
       } finally {
         if(conn) await conn.end()
         // return 0
@@ -343,7 +343,7 @@ export default class AbonoServicio{
   static async getAbono(idabono){
     let conn
     try {
-      console.log("Llegando a getAbonao",idabono)
+      //console.log("Llegando a getAbonao",idabono)
       conn = await mysql2.createConnection(configs[1])
       await conn.connect()
       let infodet = undefined
@@ -352,7 +352,7 @@ export default class AbonoServicio{
         FROM tbl2_abonos ta 
         JOIN tbl2_conciliaciones tc on tc.id_abono_CAB = ta.idx
         LEFT JOIN tbl2_proveedor tp on tp.idx = ta.id_proveedor where ta.ruc_ = '20522094120' and ta.idx = ?`, [idabono])
-      console.log("Informacion cabecera:",infocab)
+      //console.log("Informacion cabecera:",infocab)
       if(infocab[0].tipo == 'SERV'){
 
         // [infodet] = await conn.execute(`
@@ -389,12 +389,12 @@ export default class AbonoServicio{
       }else{
         // let [infodet] = await conn.execute(`select *from tbl2_conciliaciones tc join tbl2_guias_traslado_cab tgtc on tgtc.idx = tc.id_servicio_CAB where tc.id_abono_CAB = ?`, [idabono])
       }
-      console.log("INformacion total:",[infocab[0],infodet])
+      //console.log("INformacion total:",[infocab[0],infodet])
 
       await conn.end()
       return [infocab[0],infodet]
     } catch (error) {
-      console.log(error)
+      //console.log(error)
     } finally {
       if(conn) conn.end()
     }
@@ -402,7 +402,7 @@ export default class AbonoServicio{
   static async getAbonoByServicio(idservicio){
     let conn
     try {
-      console.log("Llegando a getAbonao",idservicio)
+      //console.log("Llegando a getAbonao",idservicio)
       conn = await mysql2.createConnection(configs[1])
       await conn.connect()
 
@@ -411,7 +411,7 @@ export default class AbonoServicio{
       await conn.end()
       return infodet
     } catch (error) {
-      console.log(error)
+      //console.log(error)
     } finally {
       if(conn) conn.end()
     }
@@ -427,7 +427,7 @@ export default class AbonoServicio{
       await conn.end()
       return rows
     } catch (error) {
-      console.log(error)   
+      //console.log(error)   
     } finally {
       if(conn) conn
     }
@@ -444,7 +444,7 @@ export default class AbonoServicio{
       await conn.end()
       return rows
     } catch (error) {
-      console.log(error)   
+      //console.log(error)   
     } finally {
       if(conn) conn
     }
@@ -456,28 +456,28 @@ export default class AbonoServicio{
     const articulos = JSON.parse(data.detalle)
     const penalidades = articulos.penalidades ?? []
 
-    console.log("Informacion cabecera:",cabecera)
-    console.log("Informacion detalle:",articulos)
-    console.log("Informacion penalidades:",penalidades)
+    //console.log("Informacion cabecera:",cabecera)
+    //console.log("Informacion detalle:",articulos)
+    //console.log("Informacion penalidades:",penalidades)
     try {
       conn = await mysql2.createConnection(configs[1])
       await conn.connect(); 
-      conn.beginTransaction()
+      await conn.beginTransaction()
       if(data.id){
-        console.log("Actualizando nuevo abono a servicio")
+        //console.log("Actualizando nuevo abono a servicio")
         await conn.query('UPDATE tbl2_abonos SET entidad_bancaria=NULLIF(?, ""),cuenta_corriente=NULLIF(?, ""),id_proveedor=NULLIF(?, ""),num_operacion=NULLIF(?, ""),moneda=NULLIF(?, ""),fec_pago=NULLIF(?, ""),importe=NULLIF(?, ""),tipo=NULLIF(?, ""),tipo_operacion=NULLIF(?, "") WHERE idx = ?',[cabecera.entidad_bancaria,cabecera.cuenta_corriente,cabecera.id_proveedor_CAB,cabecera.num_operacion,cabecera.moneda,cabecera.fec_pago,cabecera.importe,cabecera.tipo,cabecera.tipo_operacion,parseInt(data.id)])
 
       }else{     
-        console.log("Insertando nuevo a bonno")  
+        //console.log("Insertando nuevo a bonno")  
         const [res,fields] = await conn.query('INSERT INTO tbl2_abonos(ruc_,entidad_bancaria,cuenta_corriente,id_proveedor,num_operacion,moneda,fec_pago,importe,tipo,tipo_operacion) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',cabecera.entidad_bancaria,cabecera.cuenta_corriente,cabecera.id_proveedor_CAB,cabecera.num_operacion,cabecera.moneda,cabecera.fec_pago,cabecera.importe,cabecera.tipo,cabecera.tipo_operacion])
 
         // row.penalidades.length > 0
 
         let conciliaciones_data = articulos.map(row=>['20522094120',row.idx,res.insertId,row.pago])
-        // console.log("Info filter:",articulos.filter(row=>row.penalidades && row.penalidades.length > 0).map(row=>row.penalidades))
+        // //console.log("Info filter:",articulos.filter(row=>row.penalidades && row.penalidades.length > 0).map(row=>row.penalidades))
         // let penalidades_data = articulos.filter(row=>row.penalidades && row.penalidades.length > 0).map(row=>row.penalidades)
 
-        console.log("Data conciliaciones :",conciliaciones_data)
+        //console.log("Data conciliaciones :",conciliaciones_data)
         
 
         let penalidades_data = []
@@ -486,7 +486,7 @@ export default class AbonoServicio{
             penalidades_data.push([row.idguia,row.idx,row.observacion,row.pago])
           })
         });
-        console.log("Data penalidades :",penalidades_data)
+        //console.log("Data penalidades :",penalidades_data)
 
         // const [results] = await conn.query('INSERT INTO tbl2_conciliaciones(ruc_,id_servicio_CAB,id_abono_CAB) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',articulos[0].id_guia,res.insertId]);
         await conn.query('INSERT INTO tbl2_conciliaciones(ruc_,id_servicio_CAB,id_abono_CAB,importe_conciliacion) VALUES ?',[conciliaciones_data]);
@@ -521,7 +521,7 @@ export default class AbonoServicio{
             pago:cabecera.importe*-1,
             idabono:res.insertId,
           }
-          // console.log("Info del abono de servicio:", data_mov)
+          // //console.log("Info del abono de servicio:", data_mov)
           let result_mov_caja = await this.saveMovimientoCaja('EGRE', data_mov_caja)
         }else{
           // throw new Error("No se dectecto un movimiento de caja para la fecha seleccionada")
@@ -531,7 +531,7 @@ export default class AbonoServicio{
         // try{
 
         // }catch(err){
-        //   console.log("error en la consulta",err)
+        //   //console.log("error en la consulta",err)
         // }
       }
 
@@ -539,7 +539,7 @@ export default class AbonoServicio{
       // if (conn) conn.commit()
       return {ok:true,message:'Se ha guardado el registros'}
     } catch (err) {
-      console.log("Error en la transaccion",err)
+      //console.log("Error en la transaccion",err)
       if (conn) conn.rollback()
       return {ok:false,message:err.message}
     } finally {
@@ -552,18 +552,18 @@ export default class AbonoServicio{
     const cabecera = JSON.parse(data.info)
     const articulos = JSON.parse(data.detalle)
 
-    console.log("Informacion cabecera:",cabecera)
-    console.log("Informacion detalle:",articulos)
+    //console.log("Informacion cabecera:",cabecera)
+    //console.log("Informacion detalle:",articulos)
     try {
       conn = await mysql2.createConnection(configs[1])
       await conn.connect(); 
-      conn.beginTransaction()
+      await conn.beginTransaction()
       if(data.id){
-        console.log("Actualizando cabecera")
+        //console.log("Actualizando cabecera")
         await conn.query('UPDATE tbl2_abonos SET entidad_bancaria=NULLIF(?, ""),cuenta_corriente=NULLIF(?, ""),id_proveedor=NULLIF(?, ""),num_operacion=NULLIF(?, ""),moneda=NULLIF(?, ""),fec_pago=NULLIF(?, ""),importe=NULLIF(?, ""),tipo=NULLIF(?, ""),tipo_operacion=NULLIF(?, "") WHERE idx = ?',[cabecera.entidad_bancaria,cabecera.cuenta_corriente,cabecera.id_proveedor_CAB,cabecera.num_operacion,cabecera.moneda,cabecera.fec_pago,cabecera.importe,cabecera.tipo,cabecera.tipo_operacion,parseInt(data.id)])
 
       }else{     
-        console.log("Insertando cabecera")   
+        //console.log("Insertando cabecera")   
         try{
           const [res,fields] = await conn.query('INSERT INTO tbl2_abonos(ruc_,entidad_bancaria,cuenta_corriente,id_proveedor,num_operacion,moneda,fec_pago,importe,tipo,tipo_operacion) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',cabecera.entidad_bancaria,cabecera.cuenta_corriente,cabecera.id_proveedor_CAB,cabecera.num_operacion,cabecera.moneda,cabecera.fec_pago,cabecera.pago,cabecera.tipo,cabecera.tipo_operacion])
 
@@ -572,7 +572,7 @@ export default class AbonoServicio{
           ///////////////////////////////////////////////
           //// GENERANDO MOVIMIENTOS DE CAJA POR EGRESO
           //////////////////////////////////////////////
-          console.log("Generando movimiento de caja :",cabecera.id_cuenta_CAB,cabecera.fec_pago)
+          //console.log("Generando movimiento de caja :",cabecera.id_cuenta_CAB,cabecera.fec_pago)
           let [infocaja] = await conn.query(`SELECT *FROM tbl2_caja tc JOIN tbl2_caja_movimientos_cab tcmc ON tc.idx = tcmc.id_caja_CAB WHERE tc.id_cuenta_corriente = ? AND tc.ruc_ = ? and tcmc.fec_operacion = ?`,[cabecera.id_cuenta_CAB,'20522094120',cabecera.fec_pago])
           if(infocaja.length > 0){
 
@@ -595,7 +595,7 @@ export default class AbonoServicio{
               pago:cabecera.pago*-1,
               idabono:res.insertId
             }
-            console.log("Ejecutando registro de movimiento de caja")
+            //console.log("Ejecutando registro de movimiento de caja")
             let result_mov_caja = await this.saveMovimientoCaja('EGRE', data_mov_caja)
           }else{
             // throw Error("No se dectecto un movimiento de caja para la fecha seleccionada")
@@ -605,7 +605,7 @@ export default class AbonoServicio{
           //////////////////////////////////////////////
 
         }catch(err){
-          console.log("error en la consulta",err)
+          //console.log("error en la consulta",err)
         }
         
       }
@@ -616,7 +616,7 @@ export default class AbonoServicio{
       if (conn) conn.commit()
       return {ok:true,message:'Se ha guardado el registros'}
     } catch (err) {
-      console.log("Error en la transaccion",err)
+      //console.log("Error en la transaccion",err)
       if (conn) conn.rollback()
       return {ok:false,message:err}
     } finally {
@@ -629,36 +629,36 @@ export default class AbonoServicio{
     const cabecera = JSON.parse(data.info)
     const articulos = JSON.parse(data.detalle)
 
-    console.log("Informacion cabecera:",cabecera)
-    console.log("Informacion detalle:",articulos)
+    //console.log("Informacion cabecera:",cabecera)
+    //console.log("Informacion detalle:",articulos)
     try {
       conn = await mysql2.createConnection(configs[1])
       await conn.connect(); 
-      conn.beginTransaction()
+      await conn.beginTransaction()
       if(data.id){
-        console.log("Actualizando cabecera,data.id")
+        //console.log("Actualizando cabecera,data.id")
         await conn.query('UPDATE tbl2_abonos SET entidad_bancaria=NULLIF(?, ""),cuenta_corriente=NULLIF(?, ""),id_proveedor=NULLIF(?, ""),num_operacion=NULLIF(?, ""),moneda=NULLIF(?, ""),fec_pago=NULLIF(?, ""),importe=NULLIF(?, ""),tipo=NULLIF(?, ""),tipo_operacion=NULLIF(?, "") WHERE idx = ?',[cabecera.entidad_bancaria,cabecera.cuenta_corriente,cabecera.id_proveedor_CAB,cabecera.num_operacion,cabecera.moneda,cabecera.fec_pago,cabecera.importe,cabecera.tipo,cabecera.tipo_operacion,parseInt(data.id)])
 
       }else{     
-        console.log("Insertando cabecera nuevo abono")
+        //console.log("Insertando cabecera nuevo abono")
         const [res,fields] = await conn.query('INSERT INTO tbl2_abonos(ruc_,entidad_bancaria,cuenta_corriente,id_proveedor,num_operacion,moneda,fec_pago,importe,tipo,tipo_operacion) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',cabecera.entidad_bancaria,cabecera.cuenta_corriente,cabecera.id_proveedor_CAB,cabecera.num_operacion,cabecera.moneda,cabecera.fec_pago,cabecera.pago,cabecera.tipo,cabecera.tipo_operacion])
 
         const [results] = await conn.query('INSERT INTO tbl2_conciliaciones(ruc_,id_prestamo_CAB,id_abono_CAB) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',['20522094120',articulos[0].idx,res.insertId]);
 
         if(parseFloat(articulos[0].monto_cuota) == parseFloat(cabecera.pago)){
-          console.log("Realizando la actualizacion del estado de la cuota a cancelado")
+          //console.log("Realizando la actualizacion del estado de la cuota a cancelado")
           await conn.query("UPDATE tbl2_prestamos_det tb1 SET tb1.estado_cuota = 'Pagada' where tb1.id_prestamo_CAB = ? and tb1.idx = ?",[articulos[0].id_prestamo_CAB,articulos[0].idx])
         }
         // try{
         // }catch(err){
-        //   console.log("error en la consulta",err)
+        //   //console.log("error en la consulta",err)
         // }
 
         ///////////////////////////////////////////////
         //// GENERANDO MOVIMIENTOS DE CAJA POR EGRESO
         //////////////////////////////////////////////
 
-        console.log("Generando movimiento de caja :",cabecera.id_cuenta_CAB,cabecera.fec_pago)
+        //console.log("Generando movimiento de caja :",cabecera.id_cuenta_CAB,cabecera.fec_pago)
         let [infocaja] = await conn.query(`SELECT *FROM tbl2_caja tc JOIN tbl2_caja_movimientos_cab tcmc ON tc.idx = tcmc.id_caja_CAB WHERE tc.id_cuenta_corriente = ? AND tc.ruc_ = ? and tcmc.fec_operacion = ?`,[cabecera.id_cuenta_CAB,'20522094120',cabecera.fec_pago])
         if(infocaja.length > 0){
 
@@ -694,7 +694,7 @@ export default class AbonoServicio{
       if (conn) conn.commit()
       return {ok:true,message:'Se ha guardado el registros'}
     } catch (err) {
-      console.log("Error en la transaccion pedro palotes",err)
+      //console.log("Error en la transaccion pedro palotes",err)
       if (conn) conn.rollback()
       return {ok:false,message:'Se produjo el siguiente error :' + err}
     } finally {
@@ -705,10 +705,10 @@ export default class AbonoServicio{
     let conn
     let resp
     try {
-      console.log("Comienza la eliminacion de la cuota del prestamo")
+      //console.log("Comienza la eliminacion de la cuota del prestamo")
       conn = await mysql2.createConnection(configs[1])
       await conn.connect()
-      conn.beginTransaction()
+      await conn.beginTransaction()
 
       await conn.query('DELETE FROM tbl2_abonos WHERE idx = ?',[idabono])
       await conn.query(`DELETE FROM tbl2_conciliaciones WHERE ruc_ = ? and id_abono_CAB = ?`,['20522094120',idabono])
@@ -728,10 +728,10 @@ export default class AbonoServicio{
     let conn
     let resp
     try {
-      console.log("Comienza la eliminacion de la cuota del prestamo")
+      //console.log("Comienza la eliminacion de la cuota del prestamo")
       conn = await mysql2.createConnection(configs[1])
       await conn.connect()
-      conn.beginTransaction()
+      await conn.beginTransaction()
 
       let [info] = await conn.query(`select t1.id_letra_CAB from tbl2_conciliaciones t1 join tbl2_abonos t2 on t1.id_abono_CAB = t2.idx where t2.idx = ?`,idabono)
 
@@ -763,10 +763,10 @@ export default class AbonoServicio{
     let conn
     let resp
     try {
-      console.log("Comienza la eliminacion de la cuota del prestamo")
+      //console.log("Comienza la eliminacion de la cuota del prestamo")
       conn = await mysql2.createConnection(configs[1])
       await conn.connect()
-      conn.beginTransaction()
+      await conn.beginTransaction()
 
       await conn.query(`UPDATE tbl2_prestamos_det JOIN tbl2_conciliaciones on tbl2_prestamos_det.idx = tbl2_conciliaciones.id_prestamo_CAB
       set tbl2_prestamos_det.estado_cuota = 'Pendiente'
@@ -833,7 +833,7 @@ export default class AbonoServicio{
       await conn.end()
       return resultado
     } catch (error) {
-      console.log(error)
+      //console.log(error)
     } finally {
       if(conn) conn.end()
     }
@@ -843,7 +843,7 @@ export default class AbonoServicio{
     try {
       conn = await mysql2.createConnection(configs[1])
       await conn.connect()
-      console.log("EL id de la letra es: ",idletra)
+      //console.log("EL id de la letra es: ",idletra)
       
       // const [resultado, fields] = await conn.query(`
       //   SELECT tlc.importe,tlc.idx,tlc.num_letra,tb1.idx as idpedido,tb1.orden_ref,tb1.tipo,tb1.proveedor,tb1.fec_emision,tb1.fec_retorno,COALESCE(DATEDIFF(tb1.fec_retorno,tb1.fec_emision),'') as tiempo_produccion,tlc.idx as idletra,
@@ -915,12 +915,12 @@ export default class AbonoServicio{
         WHERE tlc.idx = ?
       `,[idletra])
 
-      console.log("Resultado lestras status detalle:",resultado)
+      //console.log("Resultado lestras status detalle:",resultado)
 
       await conn.end()
       return resultado
     } catch (error) {
-      console.log(error)
+      //console.log(error)
     } finally {
       if(conn) conn.end()
     }
@@ -944,11 +944,11 @@ export default class AbonoServicio{
         WHERE tb1.idx = ? and tpd.estado_cuota <> ?
         `,[idprestamo,'Pagada']);
 
-      console.log("Resultado lestras status detalle:",resultado)
+      //console.log("Resultado lestras status detalle:",resultado)
       await conn.end()
       return resultado
     } catch (error) {
-      console.log(error)
+      //console.log(error)
     } finally {
       if(conn) conn.end()
     }
@@ -970,19 +970,19 @@ export default class AbonoServicio{
   }
   static async saveMovimientoCaja(tipo,data){
     let conn
-    console.log("Informacion movimiento de caja:",data)
+    //console.log("Informacion movimiento de caja:",data)
     return {ok:true,message:'Se ha guardado el registros'}
     try {
       conn = await mysql2.createConnection(configs[1])
       await conn.connect(); 
-      conn.beginTransaction()
+      await conn.beginTransaction()
 
       try {
         /////////////////////////////////////////////////////////////////////////////
         // Verificamos el estap de ultima caja anterior a la fechad preoceso
         // en caso de que este abierta se proede con su cirrere y la obtencion del saldo final
         ///////////////////////////////////////////////////////////////////////////
-        console.log("Empieza la seccion A del registro de movimiento de caja")
+        //console.log("Empieza la seccion A del registro de movimiento de caja")
 
         let monto = 0;
         let movcaja_anterior = await conn.query(`SELECT *from tbl2_caja_movimientos_cab tcmc JOIN tbl2_caja tc on tc.idx = tcmc.id_caja_CAB WHERE tc.ruc_ = '20522094120' AND tcmc.fec_operacion < ? AND tc.id_cuenta_corriente = ? ORDER BY tcmc.idx DESC LIMIT 1`,[data.fec_pago,parseInt(data.id_cuenta_CAB)])
@@ -994,20 +994,20 @@ export default class AbonoServicio{
         // Verificamos si existe la caja para la fecha de ejecucion actual del abono
         // en caso de que no existiea se precede con su creacion
         ////////////////////////////////////////////////////////////////
-        console.log("Empieza la seccion B del registro de movimiento de caja")
+        //console.log("Empieza la seccion B del registro de movimiento de caja")
 
         let idcajamov_cab = null
         let [info_caja] = await conn.query("SELECT *FROM tbl2_caja WHERE id_cuenta_corriente = ? LIMIT 1",[parseInt(data.id_cuenta_CAB)])
         let [busqueda_movcaja] = await conn.query(`SELECT tcmc.* FROM tbl2_caja_movimientos_cab tcmc JOIN tbl2_caja tc on tc.idx = tcmc.id_caja_CAB WHERE tc.ruc_ = '20522094120' AND tcmc.fec_operacion = ? AND tc.id_cuenta_corriente = ?`,[data.fec_pago,parseInt(data.id_cuenta_CAB)])
 
-        console.log("El resultado de la busqueda de la caja es:",info_caja, busqueda_movcaja)
+        //console.log("El resultado de la busqueda de la caja es:",info_caja, busqueda_movcaja)
         
         if(!(busqueda_movcaja.length > 0)){
-          console.log("Dentro de generacon caja movimiento cabecera 1")
+          //console.log("Dentro de generacon caja movimiento cabecera 1")
           let [insertcaja] = await conn.query(`INSERT INTO tbl2_caja_movimientos_cab(id_caja_CAB,ruc_,fec_operacion,saldo_inicial,ingresos,egresos,saldo_final,referencia,usuario,sucursal) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))`,[info_caja[0].idx,'20522094120',data.fec_pago,monto,0,0,0,'MOV CAJA AL' + data.fec_pago,'NEXT',390])
           idcajamov_cab = insertcaja.insertId
         } else{
-          console.log("Dentro de generacion caja movimiento cabecera 2",busqueda_movcaja[0])
+          //console.log("Dentro de generacion caja movimiento cabecera 2",busqueda_movcaja[0])
           idcajamov_cab = busqueda_movcaja[0].idx
         }
 
@@ -1015,7 +1015,7 @@ export default class AbonoServicio{
         // Se precede con el registro del movimietno de caja en realcion
         // al abono realizado
         ////////////////////////////////////////////////////////////////
-        console.log("Empieza la seccion C del registro de movimiento de caja")
+        //console.log("Empieza la seccion C del registro de movimiento de caja")
 
         let [info_detalle] = await conn.query("SELECT *FROM tbl2_caja_movimientos_det WHERE id_cajamov_CAB = " + idcajamov_cab)
 
@@ -1038,22 +1038,22 @@ export default class AbonoServicio{
 
         await conn.query(`INSERT INTO tbl2_caja_movimientos_det(ruc_,id_cajamov_CAB,fec_operacion,monto,usuario,sucursal,detalle_mov,doc_cliente,nom_cliente,tipdoc_ref,serie,numero,documento_ref,vta_no_gra,vta_gra,tot_igv,no_gravado,id_abono_ref) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))`,['20522094120',idcajamov_cab,data.fec_pago,parseFloat(data.pago),data.usuario,data.sucursal,data.detalle_mov,data.doc_cliente,data.nom_cliente,data.tipdoc_ref,data.serie,data.numero,data.documento_ref,data.vta_no_gra,data.vta_gra,data.tot_igv,data.no_gravado,data.idabono]) 
 
-        console.log("El valor de los ingresos es:",ingresos)
-        console.log("El valor de los egresos es:",egresos)
-        console.log("El valor de los egresos es:",saldo_final)
-        console.log("Id del movimiento de caja:",idcajamov_cab)
+        //console.log("El valor de los ingresos es:",ingresos)
+        //console.log("El valor de los egresos es:",egresos)
+        //console.log("El valor de los egresos es:",saldo_final)
+        //console.log("Id del movimiento de caja:",idcajamov_cab)
 
         await conn.query("UPDATE tbl2_caja_movimientos_cab SET ingresos = ?, egresos = ?, saldo_final = ? WHERE ruc_ = ? and idx = ?",[ingresos, egresos, saldo_final,'20522094120',idcajamov_cab])
 
       } catch (error) {
-        console.log("Se produjo un error durane el registro del movimiento de caja",error)
+        //console.log("Se produjo un error durane el registro del movimiento de caja",error)
       }
 
       // if (conn) conn.rollback()
       if (conn) conn.commit()
       return {ok:true,message:'Se ha guardado el registros'}
     } catch (err) {
-      console.log("Error en la transaccion",err)
+      //console.log("Error en la transaccion",err)
       if (conn) conn.rollback()
       return {ok:false,message:'Se produjo el siguiente error :' + err}
     } finally {
@@ -1065,7 +1065,7 @@ export default class AbonoServicio{
     try {
       conn = await mysql2.createConnection(configs[1])
       await conn.connect(); 
-      conn.beginTransaction()
+      await conn.beginTransaction()
       try{
         let [info_movimiento] = await conn.query(`SELECT *FROM tbl2_caja_movimientos_det WHERE id_abono_ref = ?`,[idabono])
         await conn.query(`DELETE FROM tbl2_caja_movimientos_det WHERE id_abono_ref = ${idabono} and ruc_ = '20522094120'`)
@@ -1085,16 +1085,16 @@ export default class AbonoServicio{
         await conn.query("UPDATE tbl2_caja_movimientos_cab SET ingresos = ?, egresos = ?, saldo_final = ? WHERE ruc_ = ? and idx = ?",[ingresos,egresos,saldo_inicial + ingresos + egresos, '20522094120',info_movimiento[0].id_cajamov_CAB])
         // await conn.query("UPDATE tbl2_caja_movimientos_cab SET egresos = egresos - ? WHERE ruc_ = ? and idx = ?",[info_movimiento[0].monto,'20522094120',info_movimiento[0].id_cajamov_CAB])
 
-        console.log("Infomacion del movuimiento de caja :",info_movimiento)
+        //console.log("Infomacion del movuimiento de caja :",info_movimiento)
       }catch(err){
-        console.log("error en la consulta",err)
+        //console.log("error en la consulta",err)
       }
   
       // if (conn) conn.rollback()
       if (conn) conn.commit()
       return {ok:true,message:'Se ha guardado el registros'}
     } catch (err) {
-      console.log("Error en la transaccion",err)
+      //console.log("Error en la transaccion",err)
       if (conn) conn.rollback()
       return {ok:false,message:'Se produjo el siguiente error :' + err}
     } finally {
@@ -1102,7 +1102,7 @@ export default class AbonoServicio{
     }
   }
   static async getPenalidadBygGuia(idguia){
-    console.log("Dentro de la busqueda del las penalidades por guia")
+    //console.log("Dentro de la busqueda del las penalidades por guia")
     let conn
     try {
       conn = await mysql2.createConnection(configs[1])
@@ -1125,7 +1125,7 @@ export default class AbonoServicio{
       await conn.connect()
       const [cabecera] = await conn.execute(`SELECT *FROM tbl2_penalidades_servicios`)
 
-      console.log("Resultado de la busqueda de penalidades:",cabecera)
+      //console.log("Resultado de la busqueda de penalidades:",cabecera)
       await conn.end()
       return cabecera
     } catch (error) {

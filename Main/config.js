@@ -1,5 +1,13 @@
-export const PORT_DEFAULT = 4002
-export const SECRET_JWT_KEY = 'info_fdasdf_234%%$_privda_1988128__sdf'
-export const SECRET_JWT_KEY2 = 'info_fdasdf_234%%$_privda_1988128__qqq'
-// export const ORIGINS = ['http://localhost:5173','http://192.168.18.20:5173']
-export const ORIGINS = ['http://localhost:5173', 'http://192.168.0.171:5173', 'http://192.168.137.1:5173', 'http://192.168.43.242:5173', 'http://192.168.18.20:5173', 'http://192.168.18.20:5174', 'http://localhost:5174']
+const REQUIRED_ENV = ['JWT_SECRET', 'JWT_SECRET2', 'DB_HOST', 'DB_USER', 'DB_PASS', 'DB_NAME', 'PORT'];
+for (const key of REQUIRED_ENV) {
+  if (!process.env[key]) {
+    console.error(`[FATAL] Missing required environment variable: ${key}`);
+    process.exit(1);
+  }
+}
+
+export const PORT_DEFAULT = Number(process.env.PORT)
+export const SECRET_JWT_KEY = process.env.JWT_SECRET
+export const SECRET_JWT_KEY2 = process.env.JWT_SECRET2
+export const ORIGINS = process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : []
+export const EMPRESA_RUC = process.env.EMPRESA_RUC ?? '20522094120'

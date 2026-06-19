@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { OrdenesController } from "../Controladores/ordenes.js";
+import { authorize } from "../../Main/middleware/authorize.js";
 
 export const ordenesRouter = Router()
 
@@ -19,7 +20,7 @@ ordenesRouter.get('/:id', OrdenesController.getOrdenesById)
 ordenesRouter.post("/",OrdenesController.saveInfoOrdenes)
 ordenesRouter.post("/getstatusgeneral/:id",OrdenesController.getStatusGeneral)
 ordenesRouter.post("/getstatusgeneral2/:id",OrdenesController.getStatusGeneral2)
-ordenesRouter.delete('/:id', OrdenesController.deleteOrden)
+ordenesRouter.delete('/:id', authorize(1), OrdenesController.deleteOrden)
 ordenesRouter.get('/updatecombos/combos', OrdenesController.updateCombos)
 // ordenesRouter.get('/extraeritemscaja/:id/:id_corte', OrdenesController.ExtraerItemsCaja)
 // ordenesRouter.get('/extraermodelosdisponible/:id', OrdenesController.ExtraerModelosDisponible)

@@ -39,7 +39,7 @@ export class OrdenesModel {
       `);
       await conn.end();
 
-      console.log("Info general:",results)
+      //console.log("Info general:",results)
 
       results = results.reduce((carry,value)=>{
         value['total_orden'] = value.ordenes_combos.length == 0 ? 0 : value.ordenes_combos.reduce((c,v)=>{
@@ -69,8 +69,8 @@ export class OrdenesModel {
         let ruta_actual = JSON.parse(value.ruta_proceso)
         let servicios = value.lista_servicios ? value.lista_servicios.split(',') : []
 
-        console.log("La lista de servicios es:",servicios)
-        console.log("La ruta actual es :",ruta_actual)
+        //console.log("La lista de servicios es:",servicios)
+        //console.log("La ruta actual es :",ruta_actual)
 
         if(servicios.length > 0){
           let generado = ruta_actual.concat(servicios).reduce((carry,value)=>{!carry.includes(value) && carry.push(value);return carry;},['MOLDE','CORTE','AVIOS'])
@@ -120,7 +120,7 @@ export class OrdenesModel {
 
       let bb = Object.groupBy(results,(item)=>item.nro_guias)
       let kk = Object.keys(bb).reduce((carry,item)=>{
-        console.log(`La info de bb(${item}) es :`,bb[item].map(row=>({idx:row.idx,modelos:row.modelos})))
+        //console.log(`La info de bb(${item}) es :`,bb[item].map(row=>({idx:row.idx,modelos:row.modelos})))
         carry = [...carry,...bb[item]]
         return carry
       },[])
@@ -128,7 +128,7 @@ export class OrdenesModel {
       // return results
       return kk
     } catch (err) {
-      console.log(err);
+      //console.log(err);
       return { 'msg': err }
     } finally {
       if (conn) {
@@ -159,11 +159,11 @@ export class OrdenesModel {
         FROM viewProduccionOrdenesV2 t1
         WHERE 1=1 ${extra} ORDER BY t1.idx desc
       `
-      console.log("La uery consult es:",query_)
+      //console.log("La uery consult es:",query_)
       let [results] = await conn.query(query_);
       await conn.end();
 
-      // console.log("Resultado de la busquda:",results)
+      // //console.log("Resultado de la busquda:",results)
       ///////////////////////////////////////////////////////
       // Se reduce la informacion de las ordenes para agregar 
       // los totales de combos, el estado de las fases y la ruta de produccion 
@@ -183,8 +183,8 @@ export class OrdenesModel {
         let ruta_actual = JSON.parse(value.ruta_proceso)
         let servicios = value.lista_servicios ? value.lista_servicios.split(',') : []
 
-        // console.log("La lista de servicios es:",servicios)
-        // console.log("La ruta actual es :",ruta_actual)
+        // //console.log("La lista de servicios es:",servicios)
+        // //console.log("La ruta actual es :",ruta_actual)
 
         let faltantes = []
         // (JSON.parse(value.ruta_proceso).map(ruta=>!['MOLDE','CORTE','MATERIALES'].includes(ruta))).forEach(fase=>{
@@ -253,9 +253,9 @@ export class OrdenesModel {
       ///////////////////////////////////////////////////////
 
       // let aa = results.filter(item=>item.nro_guias == 0)
-      // console.log("Ordenes sin guias:",aa)
+      // //console.log("Ordenes sin guias:",aa)
       let aa = Object.groupBy(results.filter(item=>item.nro_guias == 0),(orden)=>orden.longitud)
-      // console.log("Ordenes con guias:",aa)
+      // //console.log("Ordenes con guias:",aa)
       let kk1 = Object.keys(aa).reduce((carry,item)=>{
         carry = [...carry,...aa[item]]
         return carry
@@ -263,9 +263,9 @@ export class OrdenesModel {
 
       // let bb = Object.groupBy(results.filter(item=>item.nro_guias > 0),(item)=>item.nro_guias)
       let bb = Object.groupBy(results.filter(item=>item.nro_guias > 0),(item)=>item.faltantes)
-      // console.log("Ordenes con guias:",bb)
+      // //console.log("Ordenes con guias:",bb)
       let kk2 = Object.keys(bb).reduce((carry,item)=>{
-        // console.log(`La info de bb(${item}) es :`,bb[item].map(row=>({idx:row.idx,modelos:row.modelos})))  
+        // //console.log(`La info de bb(${item}) es :`,bb[item].map(row=>({idx:row.idx,modelos:row.modelos})))  
         carry = [...carry,...bb[item]]
         return carry
       },[])
@@ -273,7 +273,7 @@ export class OrdenesModel {
       // return results
       return [...kk1,...kk2]
     } catch (err) {
-      console.log(err);
+      //console.log(err);
       return { 'msg': err }
     } finally {
       if (conn) {
@@ -301,7 +301,7 @@ export class OrdenesModel {
       let [results] = await conn.query(query);
       return results
     } catch (err) {
-      console.log(err);
+      //console.log(err);
       return { 'msg': err }
     } finally {
       if (conn) await conn.end()
@@ -396,13 +396,13 @@ export class OrdenesModel {
         WHERE 1=1 ${extra} ORDER BY idx desc
       `
       
-      console.log('Consulta de listado de ordenes:',query)
+      //console.log('Consulta de listado de ordenes:',query)
       let [results] = await conn.query(query);
       await conn.end();
 
       return results
     } catch (err) {
-      console.log(err);
+      //console.log(err);
       return { 'msg': err }
     } finally {
       if (conn) {
@@ -432,7 +432,7 @@ export class OrdenesModel {
       join tbl2_fases_prod_ordenes tfpo on tfph.id_cab_orden = tfpo.idx
       where tfpo.idx = ? and tfph.idx = ?
       having cantidad_fracciones > 0`,[idorden,idhoja])
-      console.log("Resultados de extraer items de caja:",results)
+      //console.log("Resultados de extraer items de caja:",results)
 
       results = results.reduce((c,v)=>{
         let total = 0
@@ -457,11 +457,11 @@ export class OrdenesModel {
         return c
       },[])
 
-      console.log("Nuevo result:",results)
+      //console.log("Nuevo result:",results)
 
       return results
     } catch (err) {
-      console.log(err);
+      //console.log(err);
       return { ok:false, 'message': err }
     }
   }
@@ -485,7 +485,7 @@ export class OrdenesModel {
       join tbl2_fases_prod_ordenes tfpo on tfph.id_cab_orden = tfpo.idx
       where tfpo.idx = ?
       having cantidad_fracciones > 0`,[idorden])
-      console.log("Resultados de extraer items de caja:",results)
+      //console.log("Resultados de extraer items de caja:",results)
 
       results = results.reduce((c,v)=>{
         let total = 0
@@ -510,11 +510,11 @@ export class OrdenesModel {
         return c
       },[])
 
-      console.log("Nuevo result:",results)
+      //console.log("Nuevo result:",results)
 
       return results
     } catch (err) {
-      console.log(err);
+      //console.log(err);
       return { ok:false, 'message': err }
     }
   }
@@ -549,7 +549,7 @@ export class OrdenesModel {
         where tfpo.idx = ?
         having cantidad_fracciones > 0
       `,[idorden])
-      console.log("Resultados de extraer items de caja:",results)
+      //console.log("Resultados de extraer items de caja:",results)
 
       results = results.reduce((c,v)=>{
         let total = 0
@@ -574,7 +574,7 @@ export class OrdenesModel {
         return c
       },[])
 
-      console.log("Nuevo result:",results)
+      //console.log("Nuevo result:",results)
 
       return results
     } catch (err) {
@@ -590,10 +590,10 @@ export class OrdenesModel {
       let [info_orden] = await conn.execute("select *from tbl2_fases_prod_ordenes t1 join tbl2_tallas_template t2 on t1.tallasbase = t2.idx where t1.idx = ?",[idorden])
       const fraccionado = info_orden[0].fraccionado
 
-      console.log("El fraacoinado es:",fraccionado)
+      //console.log("El fraacoinado es:",fraccionado)
       let results = null
       if (fraccionado) {
-        console.log("Dentro de extraccion disponible por modelo")
+        //console.log("Dentro de extraccion disponible por modelo")
         results = await OrdenesModel.ExtraerModelosDisponible(idorden,conn)
       } else {
         results = await OrdenesModel.ExtraerItemsCaja(idorden,idhojacorte,conn)
@@ -601,7 +601,7 @@ export class OrdenesModel {
 
       return results
     } catch (err) {
-      console.log(err);
+      //console.log(err);
       return { ok:false, 'message': err }
     } finally {
       if (conn) await conn.end();
@@ -613,7 +613,7 @@ export class OrdenesModel {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
 
-      console.log("Id orden:",idorden,"Id hoja:",idhoja)
+      //console.log("Id orden:",idorden,"Id hoja:",idhoja)
       let [results] = await conn.query(`SELECT 
         tfphc.idx as id_combo,
         CONCAT(tfpo.producto,' ',tfpo.marca,' ',tfpo.modelos,' ',tfphc.color_combo) as articulo,
@@ -627,7 +627,7 @@ export class OrdenesModel {
       where tfpo.idx = ? and tfph.idx = ?
       having cantidad_fracciones > 0`,[idorden,idhoja])
 
-      console.log("Resultados de extraer items de caja:",results)
+      //console.log("Resultados de extraer items de caja:",results)
 
       results = results.reduce((c,v)=>{
         let total = 0
@@ -644,11 +644,11 @@ export class OrdenesModel {
         return c
       },[])
 
-      console.log("Nuevo result:",results)
+      //console.log("Nuevo result:",results)
 
       return results
     } catch (err) {
-      console.log(err);
+      //console.log(err);
       return { 'msg': err }
     } finally {
       if (conn) {
@@ -666,14 +666,14 @@ export class OrdenesModel {
 
       return results
     } catch (err) {
-      console.log(err);
+      //console.log(err);
       return { 'msg': err }
     } finally {
       if (conn) await conn.end();
     }
   }
   static async getFasesProduccion(categoria) {
-    console.log("La categoria filtrada es :",categoria)
+    //console.log("La categoria filtrada es :",categoria)
     let conn
     try {
       conn = await mysql.createConnection(configs[1])
@@ -683,7 +683,7 @@ export class OrdenesModel {
 
       return results
     } catch (err) {
-      console.log(err);
+      //console.log(err);
       return { 'msg': err }
     } finally {
       if (conn) await conn.end();
@@ -695,7 +695,7 @@ export class OrdenesModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      // console.log("Esta es mi connectoin control:", conn)
+      // //console.log("Esta es mi connectoin control:", conn)
       if (info == '') {
         query = 'SELECT * FROM `viewProduccionOrdenes`'
       } else {
@@ -704,13 +704,13 @@ export class OrdenesModel {
         }).join(' and ')
         query = 'SELECT * FROM `viewProduccionOrdenes` where ' + formateo
       }
-      console.log('Busqueda de ordenes produccion :', query)
+      //console.log('Busqueda de ordenes produccion :', query)
       const [results, fields] = await conn.query(query)
-      console.log("Respuesta busqueda por param :", results)
+      //console.log("Respuesta busqueda por param :", results)
       await conn.end();
       return results
     } catch (err) {
-      console.log(err);
+      //console.log(err);
     } finally {
       if (conn) {
         await conn.end();
@@ -726,7 +726,7 @@ export class OrdenesModel {
       await conn.end();
       return results
     } catch (err) {
-      console.log("Estamos en error:", err);
+      //console.log("Estamos en error:", err);
     } finally {
       if (conn) {
         await conn.end();
@@ -747,7 +747,7 @@ export class OrdenesModel {
       await conn.end();
       return requerimientos
     } catch (err) {
-      console.log("Estamos en error:", err);
+      //console.log("Estamos en error:", err);
     } finally {
       if (conn) {
         await conn.end();
@@ -761,15 +761,15 @@ export class OrdenesModel {
       await conn.connect();
       const results = [{ ok: true, mensaje: 'Guardado con exito' }]
       const otro = "'[" + info.frutas.map(ele => '"' + ele + '"') + "]'"
-      console.log("Volviendo en texto :" + otro)
-      console.log("Informacion enviadad del fronted :", info.frutas, info.frutas.toString())
+      //console.log("Volviendo en texto :" + otro)
+      //console.log("Informacion enviadad del fronted :", info.frutas, info.frutas.toString())
       const sql = "INSERT INTO `tbl2_testmulti`(ruta_proceso) VALUES (" + otro + ")"
-      console.log("Mi consulta : ", sql)
+      //console.log("Mi consulta : ", sql)
       const [result] = await conn.query("INSERT INTO `tbl2_testmulti`(ruta_proceso) VALUES (" + otro + ")")
       await conn.end();
       return results
     } catch (err) {
-      console.log(err);
+      //console.log(err);
     } finally {
       if (conn) await conn.end();
     }
@@ -780,11 +780,11 @@ export class OrdenesModel {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
       const [result] = await conn.query("select *from tbl2_testmulti")
-      console.log(result)
+      //console.log(result)
       await conn.end();
       return result
     } catch (err) {
-      console.log(err);
+      //console.log(err);
     } finally {
       if (conn) await conn.end();
     }
@@ -796,19 +796,19 @@ export class OrdenesModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      conn.beginTransaction()
+      await conn.beginTransaction()
 
       let sql = ''
       const table = info.table
       const id = info.idx
-      console.log("Empezando guardado de orodenses",info,user_data)
+      //console.log("Empezando guardado de orodenses",info,user_data)
 
       const info_combos_orden = info.combos_orden && JSON.parse(info.combos_orden)
       const info_combos_corte = info.combos_corte && JSON.parse(info.combos_corte)
       // if(info.combos_corte){
-      //   console.log("Parsando combos corte")
+      //   //console.log("Parsando combos corte")
       // }
-      console.log("Monstrando combos orden:",JSON.parse(info.combos_orden))
+      //console.log("Monstrando combos orden:",JSON.parse(info.combos_orden))
 
       if (id == '') {
         sql = 'SELECT *FROM `' + table + '` LIMIT 1';
@@ -817,22 +817,22 @@ export class OrdenesModel {
       }
       const [consulta, fields] = await conn.execute(sql)
 
-      console.log("La primera busqueda es: ", consulta, fields)
+      //console.log("La primera busqueda es: ", consulta, fields)
       if (id == '') {
         let busqueda = `select *from tbl2_fases_prod_ordenes tfpo where tfpo.oc = ${info.oc}`
-        console.log("La busqueda de duplicados :",busqueda)
+        //console.log("La busqueda de duplicados :",busqueda)
         let [validacion] = await conn.query(`select *from tbl2_fases_prod_ordenes tfpo where tfpo.oc = ?`,[info.oc])
         if(validacion.length > 0) throw new Error("La oc ingresada ya se encuentra registrada. Por favor verifique.")
 
         try {
-          console.log("Dentro de nueva orden de produccion")
+          //console.log("Dentro de nueva orden de produccion")
           const campos = Object.keys(info).reduce((carry, current) => {
             fields.filter(row => row.name !== 'idx').map(row => row.name).includes(current) && carry.push(current)
             return carry
           }, [])
           const values = campos.map(row => info[row])
           sql = 'INSERT INTO `' + table + '`(' + campos.toString() + ') VALUES (' + campos.map(row => "NULLIF(?, '')").toString() + ')';
-          console.log(sql, values)
+          //console.log(sql, values)
           const [result] = await conn.execute(sql, values)
           const idinsert = result.insertId
 
@@ -847,7 +847,7 @@ export class OrdenesModel {
           nameimg = `op_${idinsert}.jpg`
           
         } catch (error) {
-          console.log(error)
+          //console.log(error)
         }
   
       } else {
@@ -858,14 +858,14 @@ export class OrdenesModel {
         }, [])
         const values = campos.map(row => info[row])
 
-        console.log("Lista de valores a insertar:",values)
+        //console.log("Lista de valores a insertar:",values)
 
         if (consulta.length > 0) {
           sql = 'UPDATE `' + table + '` SET ' + campos.map(row => row + " = NULLIF(?,'')").toString() + ' WHERE `' + (table == 'tbl2_fases_prod_ordenes' ? 'idx' : 'id_cab_orden') + '` = ' + id;
         } else {
           sql = 'INSERT INTO `' + table + '`(id_cab_orden,' + campos.toString() + ') VALUES (' + id + ',' + campos.map(row => "NULLIF(?, '')").toString() + ')';
         }
-        console.log("Consulta de insertado:", sql)
+        //console.log("Consulta de insertado:", sql)
         const [result] = await conn.execute(sql, values)
 
 
@@ -885,13 +885,13 @@ export class OrdenesModel {
           await conn.query("insert into tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB,color_combo,cantidad_combo) values ?",[new_combos_corte])
         }
         nameimg = `op_${id}.jpg`
-        // console.log(sql)
+        // //console.log(sql)
       }
       // if (conn) conn.rollback()
       if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito', filename: nameimg }
     } catch (err) {
-      console.log(err)
+      //console.log(err)
       if (conn) conn.rollback()
       return { ok: false, mensaje: err.message, filename: nameimg }
     } finally {
@@ -904,22 +904,22 @@ export class OrdenesModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      conn.beginTransaction()
+      await conn.beginTransaction()
 
       let sql = ''
       const id = info.idx
-      console.log("Empezando guardado de orodenses",info,user_data)
+      //console.log("Empezando guardado de orodenses",info,user_data)
       const combos = JSON.parse(info.combos)
 
       const [consulta,fields] = await conn.execute("SELECT *FROM tbl2_fases_prod_ordenes WHERE idx = ?",[id])
       if (id == '') {
         // let busqueda = `select *from tbl2_fases_prod_ordenes tfpo where tfpo.oc = ${info.oc}`
-        // console.log("La busqueda de duplicados :",busqueda)
+        // //console.log("La busqueda de duplicados :",busqueda)
         let [validacion] = await conn.query(`SELECT *FROM tbl2_fases_prod_ordenes tfpo WHERE tfpo.oc = ?`,[info.oc])
         if(validacion.length > 0) throw new Error("La oc ingresada ya se encuentra registrada. Por favor verifique.")
 
         try {
-          console.log("Dentro de nueva orden de produccion")
+          //console.log("Dentro de nueva orden de produccion")
 
           let correlativo = await OrdenesModel.getCorrelativoProduccion('ORDEN',conn)
           info.oc = correlativo.resp
@@ -936,7 +936,7 @@ export class OrdenesModel {
           let recursive = async()=>{
             let combo_data = combos.shift()
             if(combo_data){
-              console.log("Ejecutando nuevamente",combo_data)
+              //console.log("Ejecutando nuevamente",combo_data)
               let [insert_combo] = await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos(id_orden_CAB,color_combo,cantidad_combo) VALUES (?,?,?)",[idinsert,combo_data.color_combo,combo_data.cantidad_combo])
 
               let fraccionado = [];
@@ -945,7 +945,7 @@ export class OrdenesModel {
                 c.push([insert_combo.insertId,v,parseInt(combo_data[v]) > 0 ? parseInt(combo_data[v]) : 0])
                 return c
               },fraccionado)
-              console.log("Imprimiento fraccionado",fraccionado)
+              //console.log("Imprimiento fraccionado",fraccionado)
 
               await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos_fracciones(id_combo_CAB,talla,cantidad) values ?",[fraccionado])
               await recursive()
@@ -954,7 +954,7 @@ export class OrdenesModel {
             }
           }
           await recursive()
-          console.log("Finalizando recursive")
+          //console.log("Finalizando recursive")
           // let combos_formateado = combos.map(row=>{
           //   return [idinsert,row.color_combo,row.cantidad_combo]
           // })
@@ -970,7 +970,7 @@ export class OrdenesModel {
 
           nameimg = `op_${idinsert}.jpg`
         } catch (error) {
-          console.log(error)
+          //console.log(error)
         }
   
       } else {
@@ -980,10 +980,10 @@ export class OrdenesModel {
           return carry
         }, [])
         const values = campos.map(row => info[row])
-        console.log("Informacion de campos :",campos)
+        //console.log("Informacion de campos :",campos)
         let result_update = await conn.query('UPDATE tbl2_fases_prod_ordenes SET ' + campos.map(row => row + " = NULLIF(?,'')").toString() + ' WHERE idx = ' + id,values)
 
-        console.log("Resultado de la actualziaoo : ",result_update)
+        //console.log("Resultado de la actualziaoo : ",result_update)
 
 
         await conn.query("DELETE FROM tbl2_fases_prod_ordenes_combos WHERE id_orden_CAB = ?",[id])
@@ -1014,13 +1014,13 @@ export class OrdenesModel {
         // await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos(id_orden_CAB,color_combo,cantidad_combo) VALUES ?",[combos_formateo])
 
         nameimg = `op_${id}.jpg`
-        // console.log(sql)
+        // //console.log(sql)
       }
       // if (conn) conn.rollback()
       if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito',filename: nameimg }
     } catch (err) {
-      console.log(err)
+      //console.log(err)
       if (conn) conn.rollback()
       return { ok: false, mensaje: err.message,filename: nameimg }
     } finally {
@@ -1033,25 +1033,25 @@ export class OrdenesModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      conn.beginTransaction()
+      await conn.beginTransaction()
 
       const id = info.idx
-      console.log("Empezando guardado de orodenses",info,user_data)
+      //console.log("Empezando guardado de orodenses",info,user_data)
       const combos = JSON.parse(info.combos)
       const insumos = JSON.parse(info.insumos)
       const requerimientos = JSON.parse(info.requerimientos)
 
-      console.log("La info de los combos es:",combos)
+      //console.log("La info de los combos es:",combos)
 
       const [infotallas] = await conn.execute("select *from tbl2_tallas_template where idx = ?",[info.tallasbase])
       const tallasbase = infotallas[0].tallas.map(row=>row.desc)
-      console.log("Info tallas:",tallasbase)
+      //console.log("Info tallas:",tallasbase)
 
       const [consulta,fields] = await conn.execute("SELECT *FROM tbl2_fases_prod_ordenes WHERE idx = ?",[id]) 
       let [validacion] = await conn.query(`SELECT *FROM tbl2_fases_prod_ordenes tfpo WHERE tfpo.oc = ?`,[info.oc])
       if(validacion.length > 0) throw new Error("La oc ingresada ya se encuentra registrada. Por favor verifique.")
 
-      console.log("Dentro de nueva orden de produccion")
+      //console.log("Dentro de nueva orden de produccion")
 
       let correlativo = await OrdenesModel.getCorrelativoProduccion('ORDEN',conn)
       info.oc = correlativo.resp
@@ -1060,14 +1060,14 @@ export class OrdenesModel {
         fields.filter(row => row.name !== 'idx').map(row => row.name).includes(current) && carry.push(current)
         return carry
       }, [])
-      console.log("La lista de campos es:",campos)
+      //console.log("La lista de campos es:",campos)
       const values = campos.map(row => info[row])
-      console.log("La lista de valores es:",values)
+      //console.log("La lista de valores es:",values)
       const [result] = await conn.execute('INSERT INTO tbl2_fases_prod_ordenes(' + campos.toString() + ') VALUES (' + campos.map(row => "NULLIF(?, '')").toString() + ')', values)
       const idinsert = result.insertId
 
       for(let combo of [...combos]){
-        console.log("Ejecutando nuevamente",combo)
+        //console.log("Ejecutando nuevamente",combo)
         let [insert_combo] = await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos(id_orden_CAB,color_combo,cantidad_combo,insumos) VALUES (?,?,?,?)",[idinsert,combo.color_combo,combo.cantidad_combo,JSON.stringify(combo.insumos ?? [])])
 
         let fraccionado = [];
@@ -1076,7 +1076,7 @@ export class OrdenesModel {
           c.push([insert_combo.insertId,v,parseInt(combo[v]) > 0 ? parseInt(combo[v]) : 0])
           return c
         },fraccionado)
-        console.log("Imprimiento fraccionado",fraccionado)
+        //console.log("Imprimiento fraccionado",fraccionado)
 
         await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos_fracciones(id_combo_CAB,talla,cantidad) values ?",[fraccionado])
       }
@@ -1092,7 +1092,7 @@ export class OrdenesModel {
       if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito',filename: nameimg }
     } catch (err) {
-      console.log(err)
+      //console.log(err)
       if (conn) conn.rollback()
       return { ok: false, mensaje: err.message,filename: nameimg }
     } finally {
@@ -1100,23 +1100,23 @@ export class OrdenesModel {
     }
   }
   static async updateFaseOrden(info, user_data) {
-    console.log("Empezando con la actualizacion de las ordenes melcochita")
+    //console.log("Empezando con la actualizacion de las ordenes melcochita")
     let conn
     let nameimg = null
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      conn.beginTransaction()
+      await conn.beginTransaction()
 
       let sql = ''
       const id = info.idx
-      console.log("Empezando guardado de orodenses",info,user_data)
+      //console.log("Empezando guardado de orodenses",info,user_data)
       const combos = JSON.parse(info.combos)
       const insumos = JSON.parse(info.insumos)
       const requerimientos = JSON.parse(info.requerimientos)
 
-      console.log("El listado de los insumos es :",insumos)
-      console.log("El listado de los requerimientos es :",requerimientos)
+      //console.log("El listado de los insumos es :",insumos)
+      //console.log("El listado de los requerimientos es :",requerimientos)
 
       const [infotallas] = await conn.execute("select *from tbl2_tallas_template where idx = ?",[info.tallasbase])
       const tallasbase = infotallas[0].tallas.map(row=>row.desc)
@@ -1129,16 +1129,16 @@ export class OrdenesModel {
         return carry
       }, [])
       const values = campos.map(row => info[row])
-      console.log("Informacion de campos :",campos)
-      console.log("Informacion de values :",values)
+      //console.log("Informacion de campos :",campos)
+      //console.log("Informacion de values :",values)
       let result_update = await conn.query('UPDATE tbl2_fases_prod_ordenes SET ' + campos.map(row => row + " = NULLIF(?,'')").toString() + ' WHERE idx = ' + id,values)
 
-      console.log("Resultado de la actualziaoo : ",result_update)
+      //console.log("Resultado de la actualziaoo : ",result_update)
 
       await conn.query("DELETE FROM tbl2_fases_prod_ordenes_combos WHERE id_orden_CAB = ?",[id])
       await conn.query("DELETE FROM tbl2_fases_prod_ordenes_combos_fracciones WHERE id_combo_CAB in (select idx from tbl2_fases_prod_ordenes_combos where id_orden_CAB = ?)",[id])
       for(let rdata of [...combos]){
-        // console.log("Validacion insumos:",rdata.insumos,JSON.stringify(rdata.insumos ?? []))
+        // //console.log("Validacion insumos:",rdata.insumos,JSON.stringify(rdata.insumos ?? []))
         let [insert_info] = await conn.query("INSERT INTO tbl2_fases_prod_ordenes_combos(id_orden_CAB,color_combo,cantidad_combo,insumos) VALUES (?,?,?,?)",[id,rdata.color_combo,rdata.cantidad_combo,JSON.stringify(rdata.insumos ?? [])])
 
           // let fracciones = ['st','xs','s','m','l','xl','xxl'].reduce((c,v)=>{
@@ -1163,7 +1163,7 @@ export class OrdenesModel {
       if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito',filename: nameimg }
     } catch (err) {
-      console.log(err)
+      //console.log(err)
       if (conn) conn.rollback()
       return { ok: false, mensaje: err.message,filename: nameimg }
     } finally {
@@ -1176,11 +1176,11 @@ export class OrdenesModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      conn.beginTransaction()
+      await conn.beginTransaction()
 
       let sql = ''
       const id = info.idx
-      console.log("Empezando guardado de molde",info,user_data)
+      //console.log("Empezando guardado de molde",info,user_data)
 
       const [consulta,fields] = await conn.execute("SELECT *FROM tbl2_fases_prod_molde WHERE idx = ?",[id])
       if (id == '') {
@@ -1193,7 +1193,7 @@ export class OrdenesModel {
           const [result] = await conn.execute('INSERT INTO tbl2_fases_prod_molde(' + campos.toString() + ') VALUES (' + campos.map(row => "NULLIF(?, '')").toString() + ')', values)
           const idinsert = result.insertId
         } catch (error) {
-          console.log(error)
+          //console.log(error)
         }
   
       } else {
@@ -1203,19 +1203,19 @@ export class OrdenesModel {
           return carry
         }, [])
         const values = campos.map(row => info[row])
-        console.log("Informacion de campos :",campos)
+        //console.log("Informacion de campos :",campos)
         await conn.query('UPDATE tbl2_fases_prod_molde SET ' + campos.map(row => row + " = NULLIF(?,'')").toString() + ' WHERE idx = ' + id,values)
-        // console.log(sql)
+        // //console.log(sql)
       }
 
       // const [verifica] = await conn.query("SELECT *FROM tbl2_fases_prod_molde WHERE id_cab_orden = ?",[id])
-      // console.log("Resultado de la verificacion :",verifica)
+      // //console.log("Resultado de la verificacion :",verifica)
 
       // if (conn) conn.rollback()
       if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito' }
     } catch (err) {
-      console.log(err)
+      //console.log(err)
       if (conn) conn.rollback()
       return { ok: false, mensaje: err.message }
     } finally {
@@ -1227,9 +1227,9 @@ export class OrdenesModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      conn.beginTransaction()
+      await conn.beginTransaction()
 
-      console.log("Empezando guardado de corte",info,user_data)
+      //console.log("Empezando guardado de corte",info,user_data)
       let data = JSON.parse(info.info)
       let id_orden = info.id
       let [base_cortes] = await conn.query("SELECT *FROM tbl2_fases_prod_hojacorte WHERE id_cab_orden = ?",[id_orden])
@@ -1239,16 +1239,16 @@ export class OrdenesModel {
       let base_update = data.filter(row=>base_ids.includes(row.idx))
       let base_delete = base_cortes.filter(row=>!data.map(item=>item.idx).includes(row.idx))
 
-      console.log("Info formateada :",base_add,base_update,base_delete)
+      //console.log("Info formateada :",base_add,base_update,base_delete)
       const tallasbase = JSON.parse(info.tallasbase)
-      console.log("Las tallas base son:",tallasbase)
+      //console.log("Las tallas base son:",tallasbase)
 
       // ///////////////////////////////////////
       // INFORMARCCION DE NUEVAS HOJAS DE CORTE
       // ///////////////////////////////////////
 
       if(base_add.length > 0){
-        console.log("Dentro de seccion 1")
+        //console.log("Dentro de seccion 1")
 
         const processCortes = async (id_orden, base_add, conn) => {
           try {
@@ -1258,7 +1258,7 @@ export class OrdenesModel {
                   // Asegúrate de que 'base_add' se pase como un array de objetos,
                   // y que 'corte.combos' también lo sea.
 
-                  console.log(`Procesando corte número: ${corte.numero_corte}`);
+                  //console.log(`Procesando corte número: ${corte.numero_corte}`);
 
                   // Insertar hoja de corte
                   const [hojaCorteResult] = await conn.query(
@@ -1270,7 +1270,7 @@ export class OrdenesModel {
                   // Itera sobre los 'combos' de este corte
                   // También creamos una copia de los combos para el bucle
                   for (const combo of [...corte.combos]) {
-                    console.log(`  Procesando combo: ${combo.color_combo}, Cantidad: ${combo.cantidad_combo}`);
+                    //console.log(`  Procesando combo: ${combo.color_combo}, Cantidad: ${combo.cantidad_combo}`);
 
                     // Insertar combo de hoja de corte
                     const [comboInsertResult] = await conn.query(
@@ -1287,7 +1287,7 @@ export class OrdenesModel {
                         fraccionado.push([idComboCorte, talla, isNaN(cantidad) ? 0 : cantidad > 0 ? cantidad : 0, isNaN(cantidad) ? 0 : cantidad > 0 ? cantidad : 0]);
                     });
 
-                    console.log("  La info del fraccionado es:", fraccionado);
+                    //console.log("  La info del fraccionado es:", fraccionado);
 
                     // Insertar fracciones
                     await conn.query(
@@ -1295,9 +1295,9 @@ export class OrdenesModel {
                       [fraccionado]
                     );
                   }
-                  console.log("Corte procesado completamente:", corte.numero_corte);
+                  //console.log("Corte procesado completamente:", corte.numero_corte);
               }
-              console.log("Todos los cortes y sus combos/fracciones procesados.");
+              //console.log("Todos los cortes y sus combos/fracciones procesados.");
               return true;
           } catch (error) {
               console.error("Error en el proceso de inserción recursiva:", error);
@@ -1311,15 +1311,15 @@ export class OrdenesModel {
       // INFORMARCCION DE HOJAS DE CORTE ACTUALES
       // ///////////////////////////////////////
       if(base_update.length > 0){
-        console.log("Dentro de seccion 2",base_update)
-        console.log("otroasd sdaf :",base_update.map(row=>row.combos))
+        //console.log("Dentro de seccion 2",base_update)
+        //console.log("otroasd sdaf :",base_update.map(row=>row.combos))
         let base_combos = base_update.map(row=>row.combos).filter(item=>item)
 
         let recursive = async (id_orden,base_update,conn)=>{
           try {
             for(let corte of [...base_update]){
 
-              console.log("Info del corte",corte)
+              //console.log("Info del corte",corte)
 
               let base = ['numero_corte','estado_corte','fec_emision']
               let acumulado = []
@@ -1330,12 +1330,12 @@ export class OrdenesModel {
                 text += `ELSE ${campo} END`
                 acumulado.push(text)
               })
-              console.log("Imprimiendo acumulado :",acumulado)
+              //console.log("Imprimiendo acumulado :",acumulado)
               let [combosbase] = await conn.query(`SELECT *FROM tbl2_fases_prod_hojacorte_combos WHERE id_hojacorte_CAB = ?`,[parseInt(corte['idx'])])
               await conn.query(`UPDATE tbl2_fases_prod_hojacorte SET ${acumulado.join(',')} WHERE idx in (${base_update.map(row=>row.idx).join(',')}) and id_cab_orden = ?`,[id_orden])
 
               for(let combo of [...combosbase.filter(row=>!corte.combos.map(item=>item.idx).includes(row.idx))]){
-                console.log("Combo a eliminar:",combo)
+                //console.log("Combo a eliminar:",combo)
                 let [validacion] = await conn.query(`SELECT *FROM tbl2_guias_traslado_cab t1 JOIN tbl2_guias_traslado_det t2 ON t1.idx = t2.id_guia_CAB WHERE t1.tipo = 'SERVICIOS' AND t1.estado <> 'ANULADO' AND t1.id_corte_CAB = ? AND t2.id_combo = ?`,[parseInt(corte['idx']),combo.idx ?? 0])
 
                 if(validacion.length == 0){
@@ -1347,11 +1347,11 @@ export class OrdenesModel {
               for(let combo of [...corte.combos]){
 
                 let [validacion] = await conn.query(`SELECT *FROM tbl2_guias_traslado_cab t1 JOIN tbl2_guias_traslado_det t2 ON t1.idx = t2.id_guia_CAB WHERE t1.tipo = 'SERVICIOS' AND t1.estado <> 'ANULADO' AND t1.id_corte_CAB = ? AND t2.id_combo = ?`,[parseInt(corte['idx']),combo.idx ?? 0])
-                console.log("Validacion de combos:",validacion,parseInt(corte['idx']),combo.idx)
-                console.log("Info del combo",combo)
+                //console.log("Validacion de combos:",validacion,parseInt(corte['idx']),combo.idx)
+                //console.log("Info del combo",combo)
 
                 if(validacion.length == 0){
-                  console.log("Dentro del update de combos complejo")
+                  //console.log("Dentro del update de combos complejo")
                   await conn.query("DELETE FROM tbl2_fases_prod_hojacorte_combos WHERE idx = ?",[combo.idx])
                   await conn.query("DELETE FROM tbl2_fases_prod_hojacorte_combos_fracciones WHERE id_combo_CAB = ?",[combo.idx])
   
@@ -1366,11 +1366,11 @@ export class OrdenesModel {
                   // }else{
                   // }
                   fraccionado = tallasbase.map(talla=>([info_insert.insertId,talla,combo[talla] ?? 0, combo[talla] ?? 0]))
-                  console.log("Info del fraccionado:",fraccionado)
+                  //console.log("Info del fraccionado:",fraccionado)
                   // await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos_fracciones(id_combo_CAB,talla,cantidad,produccion_total) values ? ",[fraccionado.filter(row=>row.cantidad > 0)])
                   await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos_fracciones(id_combo_CAB,talla,cantidad,produccion_total) values ? ",[fraccionado])
                 } else {
-                  console.log("Dentro del update de combos simple")
+                  //console.log("Dentro del update de combos simple")
                   await conn.query("UPDATE tbl2_fases_prod_hojacorte_combos SET idx_color = ?,color_combo = ?, insumos = ? WHERE idx = ? and id_hojacorte_CAB = ?",[combo.idx_color,combo.color_combo,JSON.stringify(combo.insumos ?? []),combo.idx,parseInt(corte['idx'])])
                 }
               }
@@ -1387,20 +1387,20 @@ export class OrdenesModel {
       // INFORMARCCION DE HOJAS DE CORTE A ELIMINAR
       // ///////////////////////////////////////////
       if(base_delete.length > 0){
-        console.log("Dentro de seccion 3")
+        //console.log("Dentro de seccion 3")
         for(let corte of [...base_delete]){
           await conn.query("DELETE t1,t2,t3 FROM tbl2_fases_prod_hojacorte t1 LEFT JOIN tbl2_fases_prod_hojacorte_combos t2 ON t1.idx = t2.id_hojacorte_CAB LEFT JOIN tbl2_fases_prod_hojacorte_combos_fracciones t3 ON t2.idx = t3.id_combo_CAB WHERE t1.idx = ? and t1.id_cab_orden = ?",[corte.idx,id_orden])
         }
       }
       let [verificar] = await conn.query("select *from tbl2_fases_prod_hojacorte t1 join tbl2_fases_prod_hojacorte_combos t2 on t1.idx = t2.id_hojacorte_CAB where t1.id_cab_orden = ?",id_orden)
-      console.log("Verificando la informacion de corte :",verificar)
-      console.log("Terminando el actulizado de corte")
+      //console.log("Verificando la informacion de corte :",verificar)
+      //console.log("Terminando el actulizado de corte")
 
       // if (conn) conn.rollback()
       if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito' }
     } catch (err) {
-      console.log(err)
+      //console.log(err)
       if (conn) conn.rollback()
       return { ok: false, mensaje: err.message }
     } finally {
@@ -1409,17 +1409,17 @@ export class OrdenesModel {
   }
   static async saveFaseMateriales(info, user_data) {
     // dentro de la fases de matirales de contruccion de la produccion
-    console.log("Dentro de la fase de materiales :",info)
+    //console.log("Dentro de la fase de materiales :",info)
     let conn
     let nameimg = null
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      conn.beginTransaction()
+      await conn.beginTransaction()
 
       let sql = ''
       const id = info.idx
-      console.log("Empezando guardado de materiales",info,user_data)
+      //console.log("Empezando guardado de materiales",info,user_data)
 
       const [consulta,fields] = await conn.execute("SELECT *FROM tbl2_fases_prod_materiales WHERE idx = ?",[id])
       if (id == '') {
@@ -1432,7 +1432,7 @@ export class OrdenesModel {
           const [result] = await conn.execute('INSERT INTO tbl2_fases_prod_materiales(' + campos.toString() + ') VALUES (' + campos.map(row => "NULLIF(?, '')").toString() + ')', values)
           const idinsert = result.insertId
         } catch (error) {
-          console.log(error)
+          //console.log(error)
         }
   
       } else {
@@ -1442,15 +1442,15 @@ export class OrdenesModel {
           return carry
         }, [])
         const values = campos.map(row => info[row])
-        console.log("Informacion de campos :",campos)
+        //console.log("Informacion de campos :",campos)
         await conn.query('UPDATE tbl2_fases_prod_materiales SET ' + campos.map(row => row + " = NULLIF(?,'')").toString() + ' WHERE idx = ' + id,values)
-        // console.log(sql)
+        // //console.log(sql)
       }
       // if (conn) conn.rollback()
       if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito' }
     } catch (err) {
-      console.log(err)
+      //console.log(err)
       if (conn) conn.rollback()
       return { ok: false, mensaje: err.message }
     } finally {
@@ -1465,14 +1465,14 @@ export class OrdenesModel {
     const tallasorden = JSON.parse(data.tallasoriginal)
     const idreceta = data.idreceta
     let conn
-    console.log("Dentro de la fase de configuracion:",modelos,tallasbase,tallasorden,idreceta)
+    //console.log("Dentro de la fase de configuracion:",modelos,tallasbase,tallasorden,idreceta)
 
     // return {ok:true,message:hola}
     try {
       // throw new Error("Termino de forma inesperada")
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      conn.beginTransaction()
+      await conn.beginTransaction()
 
       // /////////////////////////////////////////////////////
       // VALIDAR QUE EL TOTAL DE ITEMS POR MODELO SEA IGUAL AL DISPONIBLE ACTUAL
@@ -1526,7 +1526,7 @@ export class OrdenesModel {
       },{})
 
       if(tallasbase.idx !== tallasorden.idx){
-        console.log("Realizando el mapeo de tallas debido a la diferencia de template")
+        //console.log("Realizando el mapeo de tallas debido a la diferencia de template")
         DISPONIBLE_ACTUAL = Object.keys(DISPONIBLE_ACTUAL).reduce((carry,current)=>{
           const equiv = EQUIVALENTSIZES[current][tallasbase.idx]
           if(equiv){
@@ -1539,12 +1539,12 @@ export class OrdenesModel {
         },{})
       }
 
-      console.log('Informacion de la validacion:',DISPONIBLE_ACTUAL,DISPONIBLE_NUEVO)
+      //console.log('Informacion de la validacion:',DISPONIBLE_ACTUAL,DISPONIBLE_NUEVO)
 
       for(let talla of tallasbase.tallas){
         if((DISPONIBLE_ACTUAL[talla.desc] ?? 0) < (DISPONIBLE_NUEVO[talla.desc] ?? 0)) {
-          // console.log("Disponibles:",DISPONIBLE_ACTUAL,DISPONIBLE_NUEVO)
-          // console.log("Comparacion:",talla.desc,DISPONIBLE_ACTUAL[talla.desc],DISPONIBLE_NUEVO[talla.desc])
+          // //console.log("Disponibles:",DISPONIBLE_ACTUAL,DISPONIBLE_NUEVO)
+          // //console.log("Comparacion:",talla.desc,DISPONIBLE_ACTUAL[talla.desc],DISPONIBLE_NUEVO[talla.desc])
           throw new Error("El disponible actual coincide con el nuevo disponible. Verifique.")
         }
       }
@@ -1558,36 +1558,37 @@ export class OrdenesModel {
       let base_update = modelos.filter(row=>base_ids.includes(row.idx))
       let base_delete = base_modelos.filter(row=>!modelos.map(item=>item.idx ?? '').includes(row.idx))
 
+
       const INFO_RECETA_ORIGIN = await ProductosService.searchProductoById(idreceta,conn)
 
       if(base_add.length > 0){
-        console.log("Dentro de la secciones")
+        //console.log("Dentro de la secciones")
         let INFO_NEWPROD = {}
         for(let modelo of [...base_add]){
-          console.log("Mostrando informacion del modelo:",modelo)
+          //console.log("Mostrando informacion del modelo:",modelo)
           const cantidad = tallasbase.tallasformateado.split('-').reduce((sum,talla)=>{
             return sum + (isNaN(parseInt(modelo[talla])) ? 0 : parseInt(modelo[talla]) > 0 ? parseInt(modelo[talla]) : 0)
           },0)
 
           const newinfo = {...INFO_RECETA_ORIGIN[0],modelo:modelo.articulo,nom:INFO_RECETA_ORIGIN[0].rubro + ' ' + INFO_RECETA_ORIGIN[0].base + ' ' + modelo.articulo}
           Reflect.deleteProperty(newinfo,'idx')
-          console.log("La newinfo es la siguiente:",newinfo)
+          //console.log("La newinfo es la siguiente:",newinfo)
           
           if(!modelo.idreceta){
             const [validaprod] = await conn.query("select *from tbl2_productos where ruc_ = '20522094120' and nom = ?",[newinfo.nom])
-            console.log("Dentro de la creacion del producto")
+            //console.log("Dentro de la creacion del producto")
             if(!validaprod.length){
               INFO_NEWPROD = await ProductosService.createNewProduct(newinfo,conn)
               if(!INFO_NEWPROD.ok) throw new Error(INFO_NEWPROD.message)
             } else {
-              console.log("No se encontro un producto con el mismo nombre, se asignara la receta original")
+              //console.log("No se encontro un producto con el mismo nombre, se asignara la receta original")
               INFO_NEWPROD['info'] = validaprod[0].idx
             }
             // if(validaprod.length == 0){
             // } else {
             //   INFO_NEWPROD['info'] = INFO_RECETA_ORIGIN[0].idx
             // }
-            // console.log("La nueva receta creada es :",INFO_NEWPROD)
+            // //console.log("La nueva receta creada es :",INFO_NEWPROD)
           }
           const info_subprod = tallasbase.tallas.reduce((carry,current)=>{
             const registro = {
@@ -1639,7 +1640,7 @@ export class OrdenesModel {
         }
       }
       if(base_update.length > 0){
-        console.log("La info de la base update es:",base_update)
+        //console.log("La info de la base update es:",base_update)
         for(let modelo of [...base_update]){
 
           const [validacion] = await conn.execute(`
@@ -1649,8 +1650,22 @@ export class OrdenesModel {
             where t1.id_orden_CAB = ? and t1.id_receta_CAB = ? and t3.estado <> 'ANULADO'
           `,[modelo.id_orden_CAB, modelo.id_receta_CAB])
           const [validacion2] = await conn.execute(`select *from tbl2_almacen_det where id_cabprod = ? and estado = 1`,[modelo.id_receta_CAB])
-
+          
+          // TODO: Modificar para permitir la edición de modelos
+          // const nuevoNom = INFO_RECETA_ORIGIN[0].rubro.trim() + ' ' + INFO_RECETA_ORIGIN[0].base + ' ' + modelo.articulo
+          // console.log("Actualizando nombre:", modelo.id_receta_CAB, nuevoNom)
+          // await conn.execute(
+          //   `UPDATE tbl2_productos SET nom = ?, modelo = ? WHERE ruc_ = '20522094120' AND idx = ?`,
+          //   [nuevoNom, modelo.articulo, modelo.id_receta_CAB]
+          // )
+          // await conn.execute(
+          //   `UPDATE tbl2_subproductos SET nom = ? WHERE idx_CAB_PROD = ?`,
+          //   [nuevoNom, modelo.id_receta_CAB]
+          // )
+          
           if(validacion.length == 0 && validacion2.length == 0){
+
+
 
             if(modelo.idcolor && modelo.idcolor !== modelo.idx_color){
               for(let talla of [...tallasbase.tallas]){
@@ -1683,17 +1698,17 @@ export class OrdenesModel {
               c.push([modelo.idx,tallasbase.tallas.find(row=>row.desc == v).id,v,modelo[v],modelo[v]])
               return c
             },[])
-            console.log("La info de nuevas fracciones es:",info_fracciones)
+            //console.log("La info de nuevas fracciones es:",info_fracciones)
             const [result0] = await conn.execute(`delete from tbl2_fases_prod_modelos_fracciones where id_modelo_CAB = ?`,[modelo.idx])
-            console.log("Los registros afectados fueron:",result0.affectedRows)
+            //console.log("Los registros afectados fueron:",result0.affectedRows)
             const [result1] = await conn.query(`insert into tbl2_fases_prod_modelos_fracciones(id_modelo_CAB,id_talla_CAB,talla,cantidad,produccion_total) values ?`,[info_fracciones])
-            console.log("Los registros afectados fueron:",result1.affectedRows)
+            //console.log("Los registros afectados fueron:",result1.affectedRows)
           }
         }
         
       }
       if(base_delete.length > 0){
-        console.log("Dentro de la seccion de eliminacion")
+        //console.log("Dentro de la seccion de eliminacion")
         for(let modelo of [...base_delete]){
           const [validacion] = await conn.execute(`
             select *from tbl2_fases_prod_modelos t1
@@ -1706,9 +1721,9 @@ export class OrdenesModel {
 
           if(validacion.length == 0 && validacion2.length == 0){
             const [result1] = await conn.execute(`delete t1,t2 from tbl2_productos t1 join tbl2_subproductos t2 on t1.idx = t2.idx_CAB_PROD where t1.ruc_ = '20522094120' and t1.idx = ?`,[modelo.id_receta_CAB])
-            console.log('Items elimindaso:',result1.affectedRows)
+            //console.log('Items elimindaso:',result1.affectedRows)
             const [result2] = await conn.execute(`delete t1,t2 from tbl2_fases_prod_modelos t1 join tbl2_fases_prod_modelos_fracciones t2 on t1.idx = t2.id_modelo_CAB where t1.id_orden_CAB = ? and t1.idx = ?`,[modelo.id_orden_CAB, modelo.idx])
-            console.log('Items elimindaso:',result2.affectedRows)
+            //console.log('Items elimindaso:',result2.affectedRows)
           } 
         }
       }
@@ -1720,18 +1735,18 @@ export class OrdenesModel {
         join tbl2_subproductos t3 on t3.idx_CAB_PROD = t1.id_receta_CAB and t3.idx_CAB_COLOR = t1.idx_color and t3.idx_talla = t2.id_talla_CAB
         where t1.id_orden_CAB = ?
       `,[idorden])
-      console.log("Resultado de la revision final:",revision)
+      //console.log("Resultado de la revision final:",revision)
 
       const [revision2] = await conn.query(`
         select *from tbl2_fases_prod_ordenes where idx = ?
       `,[idorden])
-      console.log("La info de la validacoin 2 es:",revision2)
+      //console.log("La info de la validacoin 2 es:",revision2)
 
       // if (conn) conn.rollback()
       if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito' }
     } catch (err) {
-      console.log(err)
+      //console.log(err)
       if (conn) conn.rollback()
       return { ok: false, mensaje: err.message }
     } finally {
@@ -1743,9 +1758,9 @@ export class OrdenesModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      conn.beginTransaction()
+      await conn.beginTransaction()
 
-      console.log("Dentro de actualizacion de skus!!")
+      //console.log("Dentro de actualizacion de skus!!")
       const [busqueda_model] = await conn.execute(`
         SELECT t2.* 
         FROM tbl2_fases_prod_modelos t1
@@ -1762,7 +1777,7 @@ export class OrdenesModel {
         const CODEBAR = numControlBarcode(PRE_CODEBAR)
 
         const [result] = await conn.query('UPDATE tbl2_subproductos SET sku = ? WHERE idx = ? and idx_CAB_PROD = ?',[CODEBAR,subprod.idx,subprod.idx_CAB_PROD])
-        // console.log("FIlas afectadas",result.affectedRows)
+        // //console.log("FIlas afectadas",result.affectedRows)
       }
 
       const [revision] = await conn.query(`
@@ -1771,13 +1786,13 @@ export class OrdenesModel {
         join tbl2_subproductos t3 on t3.idx_CAB_PROD = t1.id_receta_CAB and t3.idx_CAB_COLOR = t1.idx_color and t3.idx_talla = t2.id_talla_CAB
         where t1.id_orden_CAB = ?
       `,[idorden])
-      console.log("Resultado de la revision final:",revision)
+      //console.log("Resultado de la revision final:",revision)
 
       // if (conn) conn.rollback()
       if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito' }
     } catch (err) {
-      console.log(err)
+      //console.log(err)
       if (conn) conn.rollback()
       return { ok: false, mensaje: err.message ?? err }
     } finally {
@@ -1785,18 +1800,18 @@ export class OrdenesModel {
     }
   }
   static async saveFasePrecios(info) {
-    console.log("Dentro de la fase de configuracion de precios")
+    //console.log("Dentro de la fase de configuracion de precios")
     let conn
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      conn.beginTransaction()
+      await conn.beginTransaction()
 
       const data = JSON.parse(info.info)
       const modelos = JSON.parse(info.modelos)
       const id = data[0].idx
 
-      console.log("La info recibida es la siguiente:",modelos,data[0].precios,id)
+      //console.log("La info recibida es la siguiente:",modelos,data[0].precios,id)
 
       // { precio2: [ 22, 0 ], precio3: [ 14, 12 ], precio1: [ 12, 0 ] }
       // validacion
@@ -1805,10 +1820,10 @@ export class OrdenesModel {
       const eq_dolares = {precio1:['tiendaUtilidad1','switchPrecioTienda1'],precio2:['tiendaUtilidad2','switchPrecioTienda2'],precio3:['tiendaUtilidad3','switchPrecioTienda3'],precio4:['tiendaUtilidad4','switchPrecioTienda4'],precio5:['tiendaUtilidad5','switchPrecioTienda5'],precio6:['tiendaUtilidad6','switchPrecioTienda6']}
       const filtro_models = [...new Set(modelos.map(r=>JSON.stringify({...r})))].map(r=>JSON.parse(r))
 
-      // console.log("asdfasdfasdf:",filtro_models)
+      // //console.log("asdfasdfasdf:",filtro_models)
       for(let modelo of [...filtro_models]){
         const lista_precios = data[0].precios[modelo.pricemodel - 1]
-        console.log("La info del modelo es el siguiente:",modelo, lista_precios)
+        //console.log("La info del modelo es el siguiente:",modelo, lista_precios)
 
         await conn.query(`UPDATE tbl2_fases_prod_modelos SET pricemodel = ? WHERE id_receta_CAB = ? AND id_orden_CAB`,[modelo.pricemodel,modelo.id_receta_CAB,data[0].idx])
 
@@ -1830,7 +1845,7 @@ export class OrdenesModel {
         const [updateprod] = await conn.query(`
           UPDATE tbl2_productos SET ${subquery_soles.join(',')} WHERE ruc_ = ? AND idx = ?
         `,['20522094120',modelo.id_receta_CAB])
-        console.log("Validando update prod:",updateprod.affectedRows)
+        //console.log("Validando update prod:",updateprod.affectedRows)
 
         await conn.query(`CALL sp_CreacionPreciosPropios(?)`,[modelo.id_receta_CAB])
 
@@ -1845,13 +1860,13 @@ export class OrdenesModel {
         
       }
       const [result] = await conn.execute(`UPDATE tbl2_fases_prod_ordenes SET precios = ? WHERE idx = ?`,[JSON.stringify(data[0].precios),data[0].idx])
-      console.log("Las filas afectadas fueron:",result.affectedRows)
+      //console.log("Las filas afectadas fueron:",result.affectedRows)
 
       // if (conn) conn.rollback()
       if (conn) conn.commit()
       return { ok: true, mensaje: 'Guardado con exito' }
     } catch (err) {
-      console.log(err)
+      //console.log(err)
       if (conn) conn.rollback()
       return { ok: false, mensaje: err.message }
     } finally {
@@ -1867,10 +1882,10 @@ export class OrdenesModel {
       await conn.end();
       return results
     } catch (err) {
-      console.log(err);
+      //console.log(err);
     } finally {
       if (conn) {
-        // console.log("Cerrando session")
+        // //console.log("Cerrando session")
         // await conn.end();
         await conn.end();
       }
@@ -1891,8 +1906,8 @@ export class OrdenesModel {
       // const [result, fields] = await conn_jsjfact.execute(sql, values);
 
 
-      // console.log(results);
-      // console.log(fields);
+      // //console.log(results);
+      // //console.log(fields);
       // const [{ok:true,mensaje:'Guardado con exito'}]
       return [{ ok: true, mensaje: 'Guardado con exito' }]
     } catch (err) {
@@ -1900,7 +1915,7 @@ export class OrdenesModel {
       return [err]
     } finally {
       if (conn) {
-        console.log("Cerrando session")
+        //console.log("Cerrando session")
         await conn.end();
       }
     }
@@ -1910,9 +1925,9 @@ export class OrdenesModel {
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      conn.beginTransaction()
+      await conn.beginTransaction()
 
-      console.log("El id dela orden es :",id)
+      //console.log("El id dela orden es :",id)
       await conn.query('DELETE FROM `tbl2_fases_prod_ordenes` WHERE `idx` = "' + id + '"');
       await conn.query('DELETE FROM `tbl2_fases_prod_ordenes_combos` WHERE `id_orden_CAB` = "' + id + '"');
       await conn.query('DELETE FROM `tbl2_fases_prod_molde` WHERE `id_cab_orden` = ? ',[id]);
@@ -1936,11 +1951,11 @@ export class OrdenesModel {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
       const [results, fields] = await conn.query('SELECT *FROM tbl2_proveedor where ruc_ = "20522094120" limit ?', [parseInt(limit)]);
-      // console.log("Lista de provedored :",results)
+      // //console.log("Lista de provedored :",results)
       await conn.end();
       return results
     } catch (err) {
-      console.log(err)
+      //console.log(err)
       return [err]
     } finally {
       if (conn) {
@@ -1961,7 +1976,7 @@ export class OrdenesModel {
       await conn.end();
       return results
     } catch (err) {
-      console.log(err)
+      //console.log(err)
       return [err]
     } finally {
       if (conn) {
@@ -1978,7 +1993,7 @@ export class OrdenesModel {
       await conn.end();
       return results
     } catch (err) {
-      console.log(err)
+      //console.log(err)
       return [err]
     } finally {
       if (conn) {
@@ -2024,11 +2039,11 @@ export class OrdenesModel {
       let [infoguias] = await conn.query(query,[id])
       infoguias = Object.groupBy(infoguias,(item)=>item.created_at)
 
-      // console.log("Informcion agrupada",Object.groupBy(infoguias,(created_at)=>created_at))
+      // //console.log("Informcion agrupada",Object.groupBy(infoguias,(created_at)=>created_at))
 
       return [ordenes,moldes,cortes,infoguias]
     } catch (err) {
-      console.log(err)
+      //console.log(err)
       return [err]
     } finally {
       if (conn) await conn.end();
@@ -2072,7 +2087,7 @@ export class OrdenesModel {
       let [infoguias] = await conn.query(query,[id])
       infoguias = Object.groupBy(infoguias,(item)=>item.created_at)
 
-      // console.log("Informcion agrupada",Object.groupBy(infoguias,(created_at)=>created_at))
+      // //console.log("Informcion agrupada",Object.groupBy(infoguias,(created_at)=>created_at))
       let ruta = eval(ordenes[0].ruta_proceso)
       // let ruta_ordenada = ['MOLDE','CORTE','AVIOS','CONFECCION','OJAL','ESTAMPADO','LAVANDERIA','BORDADO','ACABADOS']
       
@@ -2081,7 +2096,7 @@ export class OrdenesModel {
         return c
       },{})
 
-      console.log("La ruta de la orden es:",ruta)      
+      //console.log("La ruta de la orden es:",ruta)      
       let [info_guias] = await conn.query(`
       select 
       t1.*,
@@ -2111,7 +2126,7 @@ export class OrdenesModel {
         return c
       },{})
 
-	    console.log("La informafion organizada por servicio es:",formateado,estadofase)
+	    //console.log("La informafion organizada por servicio es:",formateado,estadofase)
       const [infodespachoacabados] = await conn.query(`
         select JSON_ARRAYAGG(JSON_OBJECT('id',tdc.idx,'fase',tdc.fase,'idguia',tdc.id_guia_origen,'nro_guia',tdc.nro_guia,'id_orden_origen',tdc.id_orden_origen,'nro_orden_origen',tdc.nro_orden_origen,'fecha_ingreso',tdc.fec_despacho,'despacho',
         (select sum(tdd.despacho) from tbl2_despachos_det tdd where tdc.idx = tdd.id_despacho_CAB))) as despachos
@@ -2120,11 +2135,11 @@ export class OrdenesModel {
         HAVING COUNT(tdc.idx) > 0
       `,[id])
 
-      console.log("Info de despacho y acabados :",infodespachoacabados)
+      //console.log("Info de despacho y acabados :",infodespachoacabados)
 
       return [ordenes,moldes,cortes,infoguias,formateado,estadofase,infodespachoacabados]
     } catch (err) {
-      console.log(err)
+      //console.log(err)
       return [err]
     } finally {
       if (conn) await conn.end();
@@ -2132,32 +2147,32 @@ export class OrdenesModel {
   }
   static async ActualizaCombos(){
     let conn
-    console.log("Comienza la actualizadoin")
+    //console.log("Comienza la actualizadoin")
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      conn.beginTransaction()
+      await conn.beginTransaction()
 
       let [info] = await conn.query("SELECT *FROM tbl2_fases_prod_hojacorte tb1 WHERE idx NOT IN (SELECT DISTINCT id_orden_CAB FROM tbl2_fases_prod_hojacorte_combos)")
       let contador = 1
 
       let grupo_combos = [1,2,3,4,5,6,7,8,9,10,11,12,13,14]
 
-      // console.log("Info de ordenes :",info)
+      // //console.log("Info de ordenes :",info)
       let pp = info.reduce((carry,value)=>{
-        // console.log("Info de orden: ",value)
+        // //console.log("Info de orden: ",value)
         let array_combos = grupo_combos.reduce((c,v)=>{
           value[`combo${v}_corte`] && c.push([value.idx,'NEGRO',value[`combo${v}_corte`]])
           return c
         },carry)
-        // console.log("Array de combos:",array_combos)
+        // //console.log("Array de combos:",array_combos)
         // carry.push({idx:value.idx,array_combos})
         return carry
       },[])
 
       await conn.query("INSERT INTO tbl2_fases_prod_hojacorte_combos(id_hojacorte_CAB,color_combo,cantidad_combo) VALUES ? ",[pp])
 
-      console.log("Lista de ordene formateado para combos :",pp)
+      //console.log("Lista de ordene formateado para combos :",pp)
 
       // let actualiza = async ()=>{
       //   let orden = lista_ordenes.shift()
@@ -2183,13 +2198,13 @@ export class OrdenesModel {
   }
   static async regulaLizzet(){
     let conn
-    console.log("Dentro de regula lizzet")
+    //console.log("Dentro de regula lizzet")
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      conn.beginTransaction()
+      await conn.beginTransaction()
 
-      // console.log("La data de lizset es:",info de lizzet pronto)
+      // //console.log("La data de lizset es:",info de lizzet pronto)
 
       // let p1 = ''
       // for(let combo of [...infolizzet]){
@@ -2200,7 +2215,7 @@ export class OrdenesModel {
       // await conn.query("UPDATE tbl2_inventario_det SET cantidad = " + p1 + " WHERE id_inventario_CAB = 789")
 
       // let [verifica] = await conn.query("select sum(cantidad) from tbl2_inventario_det where id_inventario_CAB = 789")
-      // console.log("El tocal actuzliado 3es :",verifica)
+      // //console.log("El tocal actuzliado 3es :",verifica)
 
       // if (conn) conn.rollback();
       if (conn) conn.commit();
@@ -2242,7 +2257,7 @@ export class OrdenesModel {
       }
       return {ok:true,resp:correlativo}
     } catch (error) {
-      console.log(error)
+      //console.log(error)
       return {ok:false,resp:0}
     } finally {
       if (conn) await conn.end();
@@ -2260,10 +2275,10 @@ export class OrdenesModel {
         c.push(v)
         return c
       },[])
-      console.log("La info de plantillas de tallas es :",result)
+      //console.log("La info de plantillas de tallas es :",result)
       return result
     } catch (error) {
-      console.log(error)
+      //console.log(error)
       return {ok:false,resp:0}
     } finally {
       if (conn) await conn.end();
@@ -2339,7 +2354,7 @@ export class OrdenesModel {
       // return results
       return newinfo
     } catch (err) {
-      console.log(err);
+      //console.log(err);
       return { 'msg': err }
     } finally {
       if (conn) await conn.end();
