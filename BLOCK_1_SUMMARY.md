@@ -1,7 +1,13 @@
-# Resumen Consolidado — refactor/block-1-security
+# Resumen Consolidado — refactor/block-1-security-clean
 
-**Branch:** refactor/block-1-security | **Base:** staging | **Worktree:** api_rest_express_staging  
-**Total commits:** 11 | **Total archivos cambiados:** 48 | **Total líneas:** +2524 / -1897
+**Branch:** refactor/block-1-security-clean | **Base:** staging | **Worktree:** api_rest_express_staging  
+**Total commits:** 8 (solo seguridad e integridad)
+
+> El branch original `refactor/block-1-security` (13 commits) fue dividido el 2026-06-19.
+> El trabajo operativo no relacionado (hangtag, guia export, handlebars, console.log cleanup)
+> vive ahora en `feature/guia-export-and-hangtag-improvements` (6 commits), pendiente de
+> su propia revisión por separado. Los console.log de debug en produccion.js (5dc9181) están
+> marcados con un TODO comment en ese branch antes de que sea revisado.
 
 ---
 
