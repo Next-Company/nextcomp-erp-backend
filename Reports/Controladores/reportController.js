@@ -18,7 +18,7 @@ export default class ReportController{
         req.files.forEach(async element => {
           const oldPath = element.path;
           const newPath = path.join(str, 'import_letras.xlsx');
-          console.log('Renombrando :',oldPath,newPath)
+          //console.log('Renombrando :',oldPath,newPath)
           await fs.rename(oldPath, newPath)
           resolve('Renombrado')
         });
@@ -45,14 +45,14 @@ export default class ReportController{
             base_letras.push(info)
           }
         });
-        console.log('Aca estamos :',base_letras)
+        //console.log('Aca estamos :',base_letras)
         try {
           conn = await mysql.createConnection(configs[1])
           await conn.connect()
-          conn.beginTransaction()
+          await conn.beginTransaction()
           let insert = async ()=>{
             let data = base_letras.shift()
-            console.log('Fila a insertar :',data)
+            //console.log('Fila a insertar :',data)
             if(data){
               const [res,fields] = await conn.query('INSERT INTO tbl2_letras_cab(ruc_,num_letra,fec_emision,documentos_ref,id_proveedor_CAB,proveedor,fec_vencimiento,importe,moneda,estado) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),0,NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))',data)
               await insert()
@@ -63,7 +63,7 @@ export default class ReportController{
           await insert()
           resp.json({ message: 'Archivo subido de forma satisfactoria' })
         } catch (error) {
-          console.log(error)
+          //console.log(error)
           conn.rollback()
         } finally {
           if (conn) {
@@ -74,7 +74,7 @@ export default class ReportController{
         }
       })
     } catch (error) {
-      console.log(error)
+      //console.log(error)
       resp.json(error)
     }
 
@@ -146,7 +146,7 @@ export default class ReportController{
       res.json({data:buffer.toString('hex')})
       
     } catch (error) {
-      console.log(error)
+      //console.log(error)
       res.json(error)
     }
   }
@@ -192,7 +192,7 @@ export default class ReportController{
       const buffer = await workbook.xlsx.writeBuffer()
       res.json({data:buffer.toString('hex')})
     } catch (error) {
-      console.log(error)
+      //console.log(error)
       res.json(error)
     }
   }
@@ -232,14 +232,14 @@ export default class ReportController{
       const buffer = await workbook.xlsx.writeBuffer()
       res.json({data:buffer.toString('hex')})
     } catch (error) {
-      console.log(error)
+      //console.log(error)
       res.json(error)
     }
   }
   static async VistaPreviaRetiro(req, res) {
     const tipo = req.params.tipo
     const data = req.body
-    console.log("La informacion es:", data)
+    //console.log("La informacion es:", data)
     let cabecera = []
     let detalle = []
 
@@ -250,13 +250,13 @@ export default class ReportController{
       cabecera = JSON.parse(data.info)
       detalle = JSON.parse(data.detalle)
     }
-    console.log("DEtalle de la cabecerea es: ", cabecera)
+    //console.log("DEtalle de la cabecerea es: ", cabecera)
     const BINARY_CHUNKS = await fs.readFile('public/images/firma_jefferson.png')
     let BINARY_CHUNKS2 = null
     BINARY_CHUNKS2 = await fs.readFile('public/images/logo_next.png')
     const BINARY_CHUNKS3 = await fs.readFile('public/images/guia_traslado.png')
     // const tipo = JSON.parse(data.info).tipo
-    console.log("El tipo de pedido es :", tipo)
+    //console.log("El tipo de pedido es :", tipo)
     res.render(
       'retiro_telas',
       {
@@ -278,12 +278,12 @@ export default class ReportController{
               const fecha = new Date(anio, mes, dia);
               const nombreMes = fecha.toLocaleString('es-ES', { month: 'short' });
               formateo = `${dia}-${nombreMes}`;
-              console.log("La fecha corta es:", nombreMes)
+              //console.log("La fecha corta es:", nombreMes)
             }
             return formateo
           },
           fuu(cabecera){
-            console.log("asldfalsdfj:",cabecera.id_proveedor_CAB,parseInt(cabecera.id_proveedor_CAB) !== 30208 ? 'a' : 'b')
+            //console.log("asldfalsdfj:",cabecera.id_proveedor_CAB,parseInt(cabecera.id_proveedor_CAB) !== 30208 ? 'a' : 'b')
             let condiciones = parseInt(cabecera.id_proveedor_CAB) !== 30208
             ? `
               <tr>
@@ -380,7 +380,7 @@ export default class ReportController{
           const browser = await puppeteer.launch();
 
           const version = await browser.version();
-          console.log(`Versión de Chrome: ${version}`);
+          //console.log(`Versión de Chrome: ${version}`);
           const page = await browser.newPage();
           await page.setContent(html);
 

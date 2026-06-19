@@ -3,7 +3,7 @@ import { configs } from "../../Main/utils.js";
 import mysql from "mysql2/promise"
 export class LetrasService{
   static async getLetrasLista(search){
-    console.log("Cosultando letras registrasdsd")
+    //console.log("Cosultando letras registrasdsd")
     let conn = undefined
     try {
       conn = await mysql.createConnection(configs[1])
@@ -30,15 +30,15 @@ export class LetrasService{
         ORDER BY tlc.idx DESC
         LIMIT 100
         `
-      console.log("Consulta letraSsD:",query_search)
+      //console.log("Consulta letraSsD:",query_search)
       
       let [result] = await conn.query(query_search)
-      // console.log(result)
+      // //console.log(result)
 
       // await conn.end()
       return result 
     } catch (error) {
-      console.log(error)
+      //console.log(error)
     } finally {
       if(conn) await conn.end()
       // return 0
@@ -85,11 +85,11 @@ export class LetrasService{
         JOIN tbl2_letras_adi tla ON tla.id_pedido_CAB = tb1.idx
         WHERE tla.id_letra_CAB = ?
         `,[id]);
-        console.log("Consultando info cancela pedido:",result2)
+        //console.log("Consultando info cancela pedido:",result2)
 
       return [result,result2]
     } catch (error) {
-      console.log(error)
+      //console.log(error)
     } finally {
       if(conn) await conn.end()
     }
@@ -103,23 +103,23 @@ export class LetrasService{
       let [result2] = await conn.query(`DELETE FROM tbl2_letras_adi WHERE id_letra_CAB = ?`,[id])
       return [{ok:true,resp:'ok'}]
     } catch (error) {
-      console.log(error)
+      //console.log(error)
     } finally {
       if(conn) await conn.end()
     }
   }
   static async saveInfoLetra(data){
     let conn
-    console.log("Info del formulario:",data)
+    //console.log("Info del formulario:",data)
     const results = {ok:true,message:'test'}
     const cabecera = JSON.parse(data.info)
     const detalle = JSON.parse(data.registros)
-    console.log("Muestra info cabecera :",cabecera)
-    console.log("Muestra info detalle :",detalle)
+    //console.log("Muestra info cabecera :",cabecera)
+    //console.log("Muestra info detalle :",detalle)
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      conn.beginTransaction()
+      await conn.beginTransaction()
       if(data.id){
         await conn.query('UPDATE tbl2_letras_cab SET id_proveedor_CAB=NULLIF(?, ""),proveedor=NULLIF(?, ""),documentos_ref=NULLIF(?, ""),num_letra=NULLIF(?, ""),fec_emision=NULLIF(?, ""),fec_vencimiento=NULLIF(?, ""),importe=NULLIF(?, ""),estado=NULLIF(?, ""),observaciones=NULLIF(?, ""),moneda=NULLIF(?, "") WHERE idx = ?',[cabecera.id_proveedor_CAB,cabecera.proveedor,cabecera.documentos_ref,cabecera.num_letra,cabecera.fec_emision,cabecera.fec_vencimiento,cabecera.importe,cabecera.estado,cabecera.observaciones,cabecera.moneda,parseInt(data.id)])
 
@@ -129,20 +129,20 @@ export class LetrasService{
           const fila = detalle.shift()
           if(fila){
             if(fila.idx && fila.idx !== ''){
-              console.log("Detro de la actualizacion")
+              //console.log("Detro de la actualizacion")
               const [results, fields] = await conn.query('UPDATE tbl2_letras_adi SET id_pedido_CAB=NULLIF(?, "") WHERE idx = ? and id_letra_CAB = ?',[fila.idpedido,fila.idx,parseInt(data.id)]);
             }else{
               const [results,fields] = await conn.query('INSERT INTO tbl2_letras_adi(id_letra_CAB,id_pedido_CAB) VALUES(NULLIF(?, ""),NULLIF(?, ""))',[parseInt(data.id),fila.idpedido]);
             }
             await insert()
           }else{
-            console.log("Devolviendo resolve")
+            //console.log("Devolviendo resolve")
             return Promise.resolve('')
           }
         }
         await insert();
         const eliminar = async ()=>{
-          console.log("Eliminando")
+          //console.log("Eliminando")
           const fila = ids_delete.shift()
           if(fila){
             await conn.query('DELETE FROM `tbl2_letras_adi` WHERE `id_letra_CAB` = ? and `idx` = ?',[parseInt(data.id),parseInt(fila.idx)])
@@ -169,7 +169,7 @@ export class LetrasService{
           await insert()
           
         }catch(err){
-          console.log("error en la consulta",err)
+          //console.log("error en la consulta",err)
         }
         // await conn.end();
       }
@@ -186,7 +186,7 @@ export class LetrasService{
   }
   static async getFacturasByProveedor(idproveedor){
     let conn = undefined
-    console.log("Consultando facturas por proveedor:",idproveedor)
+    //console.log("Consultando facturas por proveedor:",idproveedor)
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect()
@@ -206,7 +206,7 @@ export class LetrasService{
         `,[idproveedor])
       return result 
     } catch (error) {
-      console.log(error)
+      //console.log(error)
     } finally {
       if(conn) await conn.end()
       // return 0
@@ -214,7 +214,7 @@ export class LetrasService{
   }
   static async getFacturasByPedido(idpedido){
     let conn = undefined
-    console.log("Consultando facturas por proveedor:",idpedido)
+    //console.log("Consultando facturas por proveedor:",idpedido)
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect()
@@ -234,7 +234,7 @@ export class LetrasService{
         `,[idpedido])
       return result 
     } catch (error) {
-      console.log(error)
+      //console.log(error)
     } finally {
       if(conn) await conn.end()
       // return 0
@@ -242,7 +242,7 @@ export class LetrasService{
   }
   static async getPedidosByProveedor(idproveedor){
     let conn = undefined
-    console.log("Consultando facturas por proveedor:",idproveedor)
+    //console.log("Consultando facturas por proveedor:",idproveedor)
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
@@ -359,7 +359,7 @@ export class LetrasService{
       
       return results
     } catch (error) {
-      console.log(error)
+      //console.log(error)
     } finally {
       if(conn) await conn.end()
       // return 0

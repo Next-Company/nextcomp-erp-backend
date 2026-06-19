@@ -2,7 +2,7 @@ import mysql from "mysql2/promise";
 import { configs } from "../../Main/utils.js";
 export default class ProveedorService{
   static async getListaProveedores(search = ''){
-    console.log("Dentro de la consulta lista de proveeores")
+    //console.log("Dentro de la consulta lista de proveeores")
     let conn = undefined
     try {
       conn = await mysql.createConnection(configs[1])
@@ -37,26 +37,26 @@ export default class ProveedorService{
 
       return {ok:true,result,locales}
     } catch(e) {
-      console.log(e);
+      //console.log(e);
     } finally {
       await conn.end();
     }
   }
   static async saveInfoProveedor(data) {
-    console.log("Dentro de guardado de proveedores")
+    //console.log("Dentro de guardado de proveedores")
     let conn
-    console.log("Info del formulario:", data)
+    //console.log("Info del formulario:", data)
     // const cabecera = JSON.parse(data.info)
-    // console.log('Detalle multiple:', cabecera)
+    // //console.log('Detalle multiple:', cabecera)
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      conn.beginTransaction()
+      await conn.beginTransaction()
 
       const [validacion,fields] = await conn.query("select *from tbl2_proveedor where ruc_ = ? and (ruc = ? or nom = ?)",['20522094120',data.ruc.trim(),data.nom.trim()])
       if(validacion.length > 0) throw new Error('Proveedor duplicado. Por favor verifique los datos ingresados.')
 
-      console.log("La columnas de tabla son:",fields.map(row=>row.name))
+      //console.log("La columnas de tabla son:",fields.map(row=>row.name))
 
       data['ruc_'] = '20522094120'
       const campos = Object.keys(data).reduce((carry, current) => {
@@ -65,14 +65,14 @@ export default class ProveedorService{
       }, [])
       const newinfo = campos.map(row => data[row])
 
-      console.log("La info formateada es:",campos,newinfo)
+      //console.log("La info formateada es:",campos,newinfo)
       await conn.execute('INSERT INTO tbl2_proveedor(' + campos.toString() + ') VALUES (' + campos.map(row => "NULLIF(?, '')").toString() + ')', newinfo)
 
       // if (conn) conn.rollback()
       if (conn) conn.commit()
       return {ok:true,message:'Los datos ingresados fueron registrados con éxito!!'}
     } catch (err) {
-      console.log(err)
+      //console.log(err)
       if (conn) conn.rollback()
       return {ok:false,message:err.message ?? err}
     } finally {
@@ -80,13 +80,13 @@ export default class ProveedorService{
     }
   }
   static async updateInfoProveedor(id,data) {
-    console.log("Dentro de actualizado de proveedores")
+    //console.log("Dentro de actualizado de proveedores")
     let conn
-    console.log("Info del formulario:", data)
+    //console.log("Info del formulario:", data)
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      conn.beginTransaction()
+      await conn.beginTransaction()
 
       const locales = data.locales ? JSON.parse(data.locales) : []
       const [valor,fields] = await conn.query("select *from tbl2_proveedor limit 1")
@@ -104,8 +104,8 @@ export default class ProveedorService{
       const query = `UPDATE tbl2_proveedor SET ${campos.map(row => row + "=NULLIF(?, '')").toString()} WHERE ruc_ = ? and idx = ?`
       const [result] = await conn.query(query,newinfo)
 
-      console.log("Los registro alterados fueron:",result.affectedRows)
-      console.log("Comenzamos con la actualización de locales")
+      //console.log("Los registro alterados fueron:",result.affectedRows)
+      //console.log("Comenzamos con la actualización de locales")
 
       const addlocales = locales.filter(row => !baselocales.some(row2 => row2.idx == row.idx))
       const updatelocales = locales.filter(row => baselocales.some(row2 => row2.idx == row.idx))
@@ -113,22 +113,22 @@ export default class ProveedorService{
 
       for(const loc of addlocales) {
         const [resultadd] =await conn.execute('INSERT INTO tbl2_proveedor_local(ruc_, id_proveedor_CAB,  nombre_local, tipo_local, direccion, referencia, latitud, longitud) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [data.ruc_, id, loc.nombre_local, loc.tipo_local, loc.direccion, loc.referencia, loc.latitud, loc.longitud])
-        console.log("Resultado de inserción de local:",resultadd.affectedRows)
+        //console.log("Resultado de inserción de local:",resultadd.affectedRows)
       }
       for(const loc of updatelocales) {
         const [resultupdate] = await conn.execute('UPDATE tbl2_proveedor_local SET nombre_local = ?, tipo_local = ?, direccion = ?, referencia = ?, latitud = ?, longitud = ? WHERE idx = ? AND id_proveedor_CAB = ?', [loc.nombre_local, loc.tipo_local, loc.direccion, loc.referencia, loc.latitud, loc.longitud, loc.idx, id])
-        console.log("Resultado de actualización de local:",resultupdate.affectedRows)
+        //console.log("Resultado de actualización de local:",resultupdate.affectedRows)
       }
       for(const loc of dellocales) {
         const [resultdelete] = await conn.execute('DELETE FROM tbl2_proveedor_local WHERE idx = ? AND id_proveedor_CAB = ?', [loc.idx, id])
-        console.log("Resultado de eliminación de local:",resultdelete.affectedRows)
+        //console.log("Resultado de eliminación de local:",resultdelete.affectedRows)
       }
 
       // if (conn) conn.rollback()
       if (conn) conn.commit()
       return {ok:true,message:'Los registros fueron actualizados con éxito.'}
     } catch (err) {
-      console.log(err)
+      //console.log(err)
       if (conn) conn.rollback()
       return {ok:false,message:err}
     } finally {
@@ -136,12 +136,12 @@ export default class ProveedorService{
     }
   }
   static async deleteInfoProveedor(id) {
-    console.log("Dentro de eliminado de proveedores")
+    //console.log("Dentro de eliminado de proveedores")
     let conn
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
-      conn.beginTransaction()
+      await conn.beginTransaction()
 
       // await conn.execute('DELETE FROM tbl2_proveedor WHERE ruc_ = ? AND idx = ?', ['20522094120',id])
 
@@ -149,7 +149,7 @@ export default class ProveedorService{
       // if (conn) conn.commit()
       return {ok:true,message:'Registro completo'}
     } catch (err) {
-      console.log(err)
+      //console.log(err)
       if (conn) conn.rollback()
       return {ok:false,message:err}
     } finally {

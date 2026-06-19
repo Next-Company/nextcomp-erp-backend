@@ -20,7 +20,7 @@ export default class AlmacenModel{
       const [result] = await conn.execute(query);
       return result
     } catch (error) {
-      console.log(error)
+      //console.log(error)
     } finally {
       if(conn) await conn.end()
     }
@@ -42,12 +42,12 @@ export default class AlmacenModel{
         ORDER BY tkc.fecha_sys DESC
         LIMIT 50
       `;
-      // console.log("La consulta generada es:",query)
+      // //console.log("La consulta generada es:",query)
   
       const [result] = await conn.execute(query);
       return result
     } catch (error) {
-      console.log(error)
+      //console.log(error)
     } finally {
       if(conn) await conn.end()
     }
@@ -137,10 +137,10 @@ export default class AlmacenModel{
         where t1.ruc = '20522094120' and t1.id_CAB = ? and t1.estado = 'EMITIDO'
       `,[id])
   
-      console.log("El resultado de la consulta es:", cabmov, detbmov, cuadre)
+      //console.log("El resultado de la consulta es:", cabmov, detbmov, cuadre)
       return [cabmov[0],inforeq[0], detmov, cuadre]
     } catch (error) {
-      console.log(error)
+      //console.log(error)
     } finally {
       if(conn) await conn.end()
     }
@@ -180,13 +180,13 @@ export default class AlmacenModel{
         WHERE 1=1 ${extra}
         LIMIT 100
       `;
-      console.log("El query de busque de producto es:",query)
+      //console.log("El query de busque de producto es:",query)
   
       const [result] = await conn.execute(query);
-      console.log("El resultado de la consulta es:", result)
+      //console.log("El resultado de la consulta es:", result)
       return result
     } catch (error) {
-      console.log(error)
+      //console.log(error)
     } finally {
       if(conn) await conn.end()
     }
@@ -234,11 +234,11 @@ export default class AlmacenModel{
         where t1.ruc = '20522094120' and t1.id_CAB = ? and t1.estado = 'EMITIDO'
       `,[idmov])
 
-      console.log("La informacion consulta es: ",cabmov,detmov)
+      //console.log("La informacion consulta es: ",cabmov,detmov)
 
       return {ok:true,cab:cabmov[0],det:detmov}
     } catch (error) {
-      console.log(error)
+      //console.log(error)
       return {ok:false,message:error.message ?? error}
     } finally {
       if(conn) await conn.end()
@@ -289,25 +289,25 @@ export default class AlmacenModel{
 
       return {ok:true,cab:cabmov[0],det:detmov}
     } catch (error) {
-      console.log(error)
+      //console.log(error)
       return {ok:false,message:error.message ?? error}
     } finally {
       if(conn) await conn.end()
     }
   }
   static async saveDespacho(data,session){
-    console.log("Inicia el proceso save movimiento")
+    //console.log("Inicia el proceso save movimiento")
     let conn = undefined
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect()
-      conn.beginTransaction()
+      await conn.beginTransaction()
 
-      console.log("La info recibida es:",data)
+      //console.log("La info recibida es:",data)
       let cabecera = JSON.parse(data.info)
       let detalle = JSON.parse(data.detalle)
-      console.log("La informacion de la cebecra es:",cabecera)
-      console.log("La informacion del detalle es:",detalle)
+      //console.log("La informacion de la cebecra es:",cabecera)
+      //console.log("La informacion del detalle es:",detalle)
 
       // Obtener cod_cuenta
       const cod_cnta = 20;
@@ -336,7 +336,7 @@ export default class AlmacenModel{
         id_orden: cabecera.id_orden ?? 0,
         producto: cabecera.producto ?? ''
       };
-      console.log("El detalle a insertar es:",data_guia)
+      //console.log("El detalle a insertar es:",data_guia)
       const [resultGuia] = await conn.execute(
         `INSERT INTO tbl_kard_compras_CAB (${Object.keys(data_guia).join(',')}) VALUES (${Object.keys(data_guia).map(() => '?').join(',')})`,
         Object.values(data_guia)
@@ -373,25 +373,25 @@ export default class AlmacenModel{
       let articulos = []
       for(let item of [...detalle]){
         if(item.idx_color == ''){
-          console.log("Creando nuevo color")
+          //console.log("Creando nuevo color")
           let [busqueda] = await conn.query("SELECT idx FROM tbl2_colores WHERE nom = ? AND ruc IN ('20522094120','20523875583') LIMIT 1",[item.color.trim()])
           if(busqueda.length > 0){
-            console.log("Color hallado")
+            //console.log("Color hallado")
             item.idx_color = busqueda[0].idx
           }else{
-            console.log("Creadndo cnuevo cokir")
+            //console.log("Creadndo cnuevo cokir")
             let resultcolor = await ProductosService.createNewColor({codigo:'',nom:item.color.trim(),ruc:'20522094120'},conn)
             if(!resultcolor.ok) throw new Error(resultcolor.message)
-            console.log("Info de la creacion del color:",resultcolor)
+            //console.log("Info de la creacion del color:",resultcolor)
             item.idx_color = resultcolor.idcolor
           }
         }
         if(item.id_subprod == ''){
           let [newprod] = await conn.query(`SELECT *FROM tbl2_productos WHERE ruc_ = '20522094120' AND idx = ?`,[item.id_producto_DET])
-          console.log("La informacion del producto consultado es:",newprod)
+          //console.log("La informacion del producto consultado es:",newprod)
           let resultsubprod = await ProductosService.createNewSubProduct({idx_CAB_PROD:item.id_producto_DET,codigo:newprod[0].codigo,isbn:newprod[0].isbn,nom:newprod[0].nom,idx_CAB_COLOR:item.idx_color,idx_talla:26,talla:'S/T',estado:'primera',nro_lote:item.num_lote},conn)
           if(!resultsubprod.ok) throw new Error(resultsubprod.message)
-          console.log("Info de la creacion del subproducto:",resultsubprod)
+          //console.log("Info de la creacion del subproducto:",resultsubprod)
           item.id_subprod = resultsubprod.resultid
         }
         // const [centro] = await conn.query("select valor from tbl2_produccion_config where ruc = ? and codigo = ?",['20522094120',(item.tipo == 'A' ? 'ALM_AVIOS' : 'ALM_TELAS')])
@@ -409,7 +409,7 @@ export default class AlmacenModel{
           }
         )
       }
-      console.log("La lista de articulos formateados es:",articulos)
+      //console.log("La lista de articulos formateados es:",articulos)
 
       const data_comprobante = {
         id_comprobante_CAB: busqueda[0].idx,
@@ -423,7 +423,7 @@ export default class AlmacenModel{
         // articulos: JSON.stringify(detalle),
         articulos: JSON.stringify(articulos),
       };
-      console.log("El detalle a insertar es el siguiente:",data_comprobante)
+      //console.log("El detalle a insertar es el siguiente:",data_comprobante)
       let res_mov = await AlmacenModel.saveMovimiento(data_comprobante,conn)
       if(!res_mov.ok) throw new Error(res_mov.message)
 
@@ -431,7 +431,7 @@ export default class AlmacenModel{
       if(conn) conn.commit()
       return {ok:true,message:'Ingreso de despacho registrado con éxito.'}
     } catch (error) {
-      console.log(error)
+      //console.log(error)
       if(conn) conn.rollback()
       return {ok:false,message:error.message ?? error}
     } finally {
@@ -439,19 +439,19 @@ export default class AlmacenModel{
     }
   }
   static async updateDespacho(data,session,idguia){
-    console.log("Inicia el proceso de actualizado de movimiento")
+    //console.log("Inicia el proceso de actualizado de movimiento")
     let conn = undefined
 
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect()
-      conn.beginTransaction()
+      await conn.beginTransaction()
 
-      console.log("La info recibida es:",data)
+      //console.log("La info recibida es:",data)
       let cabecera = JSON.parse(data.info)
       let detalle = JSON.parse(data.detalle)
-      console.log("La informacion de la cebecra es:",cabecera)
-      console.log("La informacion del detalle es:",detalle)
+      //console.log("La informacion de la cebecra es:",cabecera)
+      //console.log("La informacion del detalle es:",detalle)
 
       // const [backup] = await conn.query("SELECT t1.* FROM tbl_kard_compras_DET t1 join tbl2_subproductos ts WHERE id_CAB_DET = ?",[idguia])
       const [backup] = await conn.query(`SELECT
@@ -463,7 +463,7 @@ export default class AlmacenModel{
       FROM tbl_kard_compras_DET t1 
       LEFT JOIN tbl2_subproductos ts on t1.id_subprod = ts.idx
       WHERE t1.id_CAB_DET = ?`,[parseInt(idguia)])
-      console.log("La informacion del backup es:",backup)
+      //console.log("La informacion del backup es:",backup)
 
       // Obtener cod_cuenta
       const cod_cnta = 20;
@@ -489,10 +489,10 @@ export default class AlmacenModel{
         id_requerimiento: parseInt(cabecera.id_pedido_origen ?? 0),
         id_modelo: parseInt(cabecera.id_modelo ?? 0)
       };
-      console.log("La info cabecera a actualizar es la siguiente:",data_guia)
+      //console.log("La info cabecera a actualizar es la siguiente:",data_guia)
       const query = 'UPDATE tbl_kard_compras_CAB SET ' + Object.keys(data_guia).map(row => row + " = NULLIF(?,'')").toString() + ' WHERE id_CAB = ' + idguia
       const valores = Object.keys(data_guia).map(row => cabecera[row])
-      console.log("Los parametros de la consulta son:",query,valores)
+      //console.log("Los parametros de la consulta son:",query,valores)
       // await conn.query(query,valores)
 
       conn.rollback()
@@ -526,7 +526,7 @@ export default class AlmacenModel{
         JOIN tbl_kard_compras_DET t2 on t1.id_CAB = t2.id_CAB_DET
         where t1.id_CAB = ?
       `,[parseInt(idguia)])
-      console.log("La informacion de la validacion es:",validacion)
+      //console.log("La informacion de la validacion es:",validacion)
 
 
       let res_mov = undefined ,articulos = [] ,data_comprobante = {}, busqueda = undefined;
@@ -551,7 +551,7 @@ export default class AlmacenModel{
           }
         )
       }
-      console.log("La lista de articulos formateados es:",articulos)
+      //console.log("La lista de articulos formateados es:",articulos)
 
       data_comprobante = {
         id_comprobante_CAB: busqueda[0].idx,
@@ -565,11 +565,11 @@ export default class AlmacenModel{
         // articulos: JSON.stringify(detalle),
         articulos: JSON.stringify(articulos),
       };
-      console.log("El detalle a insertar es el siguiente:",data_comprobante)
+      //console.log("El detalle a insertar es el siguiente:",data_comprobante)
       res_mov = await AlmacenModel.saveMovimiento(data_comprobante,conn)
       if(!res_mov.ok) throw new Error(res_mov.message);
 
-      console.log("CONTINUA TODO OKK =================>");
+      //console.log("CONTINUA TODO OKK =================>");
 
       // /////////////////////////////////////////////////////////
 
@@ -577,25 +577,25 @@ export default class AlmacenModel{
       articulos = [];
       for(let item of [...detalle]){
         if(item.idx_color == ''){
-          console.log("Creando nuevo color")
+          //console.log("Creando nuevo color")
           let [busqueda] = await conn.query("SELECT idx FROM tbl2_colores WHERE nom = ? AND ruc IN ('20522094120','20523875583') LIMIT 1",[item.color.trim()])
           if(busqueda.length > 0){
-            console.log("Color hallado")
+            //console.log("Color hallado")
             item.idx_color = busqueda[0].idx
           }else{
-            console.log("Creadndo cnuevo cokir")
+            //console.log("Creadndo cnuevo cokir")
             let resultcolor = await ProductosService.createNewColor({codigo:'',nom:item.color.trim(),ruc:'20522094120'},conn)
             if(!resultcolor.ok) throw new Error(resultcolor.message)
-            console.log("Info de la creacion del color:",resultcolor)
+            //console.log("Info de la creacion del color:",resultcolor)
             item.idx_color = resultcolor.idcolor
           }
         }
         if(item.id_subprod == ''){
           let [newprod] = await conn.query(`SELECT *FROM tbl2_productos WHERE ruc_ = '20522094120' AND idx = ?`,[item.id_producto_DET])
-          console.log("La informacion del producto consultado es:",newprod)
+          //console.log("La informacion del producto consultado es:",newprod)
           let resultsubprod = await ProductosService.createNewSubProduct({idx_CAB_PROD:item.id_producto_DET,codigo:newprod[0].codigo,isbn:newprod[0].isbn,nom:newprod[0].nom,idx_CAB_COLOR:item.idx_color,idx_talla:26,talla:'S/T',estado:'primera',nro_lote:item.num_lote},conn)
           if(!resultsubprod.ok) throw new Error(resultsubprod.message)
-          console.log("Info de la creacion del subproducto:",resultsubprod)
+          //console.log("Info de la creacion del subproducto:",resultsubprod)
           item.id_subprod = resultsubprod.resultid
         }
 
@@ -612,7 +612,7 @@ export default class AlmacenModel{
           }
         )
       }
-      console.log("La lista de articulos formateados es:",articulos)
+      //console.log("La lista de articulos formateados es:",articulos)
 
       data_comprobante = {
         id_comprobante_CAB: busqueda[0].idx,
@@ -626,19 +626,19 @@ export default class AlmacenModel{
         // articulos: JSON.stringify(detalle),
         articulos: JSON.stringify(articulos),
       };
-      console.log("El detalle a insertar es el siguiente:",data_comprobante)
+      //console.log("El detalle a insertar es el siguiente:",data_comprobante)
       res_mov = await AlmacenModel.saveMovimiento(data_comprobante,conn)
       if(!res_mov.ok) throw new Error(res_mov.message)
 
 
       // const [verifica] = await conn.execute('select *from tbl2_almacen_det where idx_subproducto = 14590 and lote = 287')
-      // console.log("EL stock actual es:",verifica)
+      // //console.log("EL stock actual es:",verifica)
 
       if(conn) conn.rollback()
       // if(conn) conn.commit()
       return {ok:true,message:'Guardado exitoso'}
     } catch (error) {
-      console.log(error)
+      //console.log(error)
       if(conn) conn.rollback()
       return {ok:false,message:error.message ?? error}
     } finally {
@@ -650,13 +650,13 @@ export default class AlmacenModel{
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect()
-      conn.beginTransaction()
+      await conn.beginTransaction()
 
-      console.log("La info recibida es:",data)
+      //console.log("La info recibida es:",data)
       let cabecera = JSON.parse(data.info)
       let detalle = JSON.parse(data.detalle)
-      console.log("La informacion de la cebecra es:",cabecera)
-      console.log("La informacion del detalle es:",detalle)
+      //console.log("La informacion de la cebecra es:",cabecera)
+      //console.log("La informacion del detalle es:",detalle)
 
       // Obtener cod_cuenta
       const cod_cnta = 20;
@@ -681,7 +681,7 @@ export default class AlmacenModel{
         id_requerimiento: parseInt(cabecera.id_pedido_origen ?? 0),
         id_modelo: parseInt(cabecera.id_modelo ?? 0)
       };
-      console.log("El detalle a insertar es:",data_guia)
+      //console.log("El detalle a insertar es:",data_guia)
       const [resultGuia] = await conn.execute(
         `INSERT INTO tbl_kard_compras_CAB (${Object.keys(data_guia).join(',')}) VALUES (${Object.keys(data_guia).map(() => '?').join(',')})`,
         Object.values(data_guia)
@@ -731,7 +731,7 @@ export default class AlmacenModel{
         almacen_destino: 509,
         articulos: JSON.stringify(detalle),
       };
-      console.log("El detalle a insertar es el siguiente:",data_comprobante)
+      //console.log("El detalle a insertar es el siguiente:",data_comprobante)
       // let res_mov = await AlmacenModel.saveMovimiento(data_comprobante,conn)
       // if(!res_mov.ok) throw new Error(res_mov.message)
 
@@ -739,7 +739,7 @@ export default class AlmacenModel{
       if(conn) conn.commit()
       return {ok:true,message:'Guardado exitoso'}
     } catch (error) {
-      console.log(error)
+      //console.log(error)
       if(conn) conn.rollback()
       return {ok:false,message:error.message ?? error}
     } finally {
@@ -747,12 +747,12 @@ export default class AlmacenModel{
     }
   }
   static async deleteGuia(id){
-    console.log("Dentro del proceso de eliminacion de guia:",id)
+    //console.log("Dentro del proceso de eliminacion de guia:",id)
     let conn = undefined
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect()
-      conn.beginTransaction()
+      await conn.beginTransaction()
 
       let [cabecera] = await conn.execute("SELECT *FROM tbl_kard_compras_CAB WHERE id_CAB = ? and ruc = ?",[id,'20522094120'])
       let [detalle] = await conn.execute("SELECT t1.*,COALESCE((select tp.nom from tbl2_productos tp where tp.idx = t1.id_producto_DET),'') as producto FROM tbl_kard_compras_DET t1 WHERE t1.id_CAB_DET = ?",[id])
@@ -773,7 +773,7 @@ export default class AlmacenModel{
           despacho:row.Cant_despacho_DET
         }
       ))
-      console.log("El listado de articulo es:",articulos)
+      //console.log("El listado de articulo es:",articulos)
       const data_comprobante = {
         id_comprobante_CAB: busqueda[0].idx,
         cod_comprobante: busqueda[0].codigo,
@@ -785,7 +785,7 @@ export default class AlmacenModel{
         almacen_destino: 509,
         articulos: JSON.stringify(articulos),
       };
-      console.log("El detalle a insertar es el siguiente:",data_comprobante)
+      //console.log("El detalle a insertar es el siguiente:",data_comprobante)
       let res_mov = await AlmacenModel.saveMovimiento(data_comprobante,conn)
       if(!res_mov.ok) throw new Error(res_mov.message)
 
@@ -795,7 +795,7 @@ export default class AlmacenModel{
       if(conn) conn.commit()
       return {ok:true,message:'Guardado exitoso'}
     } catch (error) {
-      console.log(error)
+      //console.log(error)
       if(conn) conn.rollback()
       return {ok:false,message:error.message ?? error}
     } finally {
@@ -803,17 +803,17 @@ export default class AlmacenModel{
     }
   }
   static async deleteDespacho(id){
-    console.log("Dentro del proceso de eliminacion de despacho almacen:",id)
+    //console.log("Dentro del proceso de eliminacion de despacho almacen:",id)
     let conn = undefined
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect()
-      conn.beginTransaction()
+      await conn.beginTransaction()
 
       let [cabecera] = await conn.execute("SELECT *FROM tbl_kard_compras_CAB WHERE id_CAB = ? and ruc = ?",[id,'20522094120'])
       let [detalle] = await conn.execute("SELECT t1.*,COALESCE((select tp.nom from tbl2_productos tp where tp.idx = t1.id_producto_DET),'') as producto FROM tbl_kard_compras_DET t1 WHERE t1.id_CAB_DET = ?",[id])
-      console.log("Impriminedo informacion de la cabecera del despacho registrado:",cabecera)
-      console.log("Imprimiendo informacion del detalle del despacho de almacen:",detalle)
+      //console.log("Impriminedo informacion de la cabecera del despacho registrado:",cabecera)
+      //console.log("Imprimiendo informacion del detalle del despacho de almacen:",detalle)
       // let [detguia] = await conn.execute("SELECT t1.*,ts.nom as producto FROM tbl_kard_compras_DET t1 join tbl2_subproductos ts on t1.id_subprod = ts.idx WHERE id_CAB_DET = ?",[id])
       // let [infomov] = await conn.execute("SELECT *FROM tbl2_almacen_mov_cab WHERE idx_documento_asoc = ?",[id])
 
@@ -830,7 +830,7 @@ export default class AlmacenModel{
           despacho:parseFloat(row.Cant_despacho_DET)
         }
       ))
-      console.log("El listado de articulos es el siguiente:",articulos)
+      //console.log("El listado de articulos es el siguiente:",articulos)
       const data_comprobante = {
         id_comprobante_CAB: busqueda[0].idx,
         cod_comprobante: busqueda[0].codigo,
@@ -841,7 +841,7 @@ export default class AlmacenModel{
         almacen_destino: parseInt(cabecera[0].Suc_Tienda),
         articulos: JSON.stringify(articulos),
       };
-      console.log("El detalle a insertar es el siguiente:",data_comprobante)
+      //console.log("El detalle a insertar es el siguiente:",data_comprobante)
       let res_mov = await AlmacenModel.saveMovimiento(data_comprobante,conn)
       if(!res_mov.ok) throw new Error(res_mov.message)
 
@@ -851,7 +851,7 @@ export default class AlmacenModel{
       if(conn) conn.commit()
       return {ok:true,message:'Guardado exitoso'}
     } catch (error) {
-      console.log(error)
+      //console.log(error)
       if(conn) conn.rollback()
       return {ok:false,message:error.message ?? error}
     } finally {
@@ -859,7 +859,7 @@ export default class AlmacenModel{
     }
   }
   static async saveMovimiento(data, conn){
-    console.log("Dentro de saveMovimiento:",data)
+    //console.log("Dentro de saveMovimiento:",data)
     try {
 
       let articulos = [];
@@ -869,10 +869,10 @@ export default class AlmacenModel{
       delete data.filters;
       delete data.articulos;
 
-      console.log("El listado de articulo es:",articulos)
+      //console.log("El listado de articulo es:",articulos)
 
       if (articulos.length > 0) {
-        console.log("Inicia el proceso de movimiento de almacen!!!",articulos)
+        //console.log("Inicia el proceso de movimiento de almacen!!!",articulos)
 
         let id;
         // Insertar cabecera de movimiento
@@ -891,17 +891,17 @@ export default class AlmacenModel{
         );
         id = resultCab.insertId;
 
-        console.log("El id de la cabecera es:",id)
+        //console.log("El id de la cabecera es:",id)
 
         switch (data.cod_comprobante) {
           case 'INGR':
             for (const value of articulos) {
-              console.log("El articulo a ingresar es:",value)
+              //console.log("El articulo a ingresar es:",value)
               let stock = 0;
               let num_rows = 0;
               let almacen_destino = value.almacen_destino ?? data.almacen_destino;
 
-              console.log("El dato a insertar es:", value)
+              //console.log("El dato a insertar es:", value)
               // Consultar stock actual en almacen
               const [consulta_deposito] = await conn.execute(
                 `SELECT SUM(IF(tad.cantidad IS NULL,0,tad.cantidad)) AS cantidad
@@ -935,18 +935,18 @@ export default class AlmacenModel{
                 `INSERT INTO tbl2_almacen_mov_det (${Object.keys(mov_detalle).join(',')}) VALUES (${Object.keys(mov_detalle).map(() => '?').join(',')})`,
                 Object.values(mov_detalle)
               );
-              console.log("Termina proceso de insertado")
+              //console.log("Termina proceso de insertado")
 
               // Actualizar o insertar stock en almacen_det
               if (num_rows > 0) {
-                console.log("Se actualiza el stock existente")
+                //console.log("Se actualiza el stock existente")
                 let [afectados] = await conn.execute(
                   `UPDATE tbl2_almacen_det SET cantidad = ? WHERE id_cabprod = ? AND idx_subproducto = ? AND id_CAB_DET = ? AND lote = ?`,
                   [cantidad + stock, value.id_producto_CAB, value.id_subprod_CAB, almacen_destino, value.lote]
                 );
-                console.log("Registros afectados:",afectados.affectedRows)
+                //console.log("Registros afectados:",afectados.affectedRows)
               } else {
-                console.log("Se inserta un nuevo registro de almacen_det")
+                //console.log("Se inserta un nuevo registro de almacen_det")
                 const data_almacen_det = {
                   id_CAB_DET: almacen_destino,
                   id_cabprod: value.id_producto_CAB,
@@ -959,7 +959,7 @@ export default class AlmacenModel{
                   cantidad: cantidad
                 };
                 let query = `INSERT INTO tbl2_almacen_det (${Object.keys(data_almacen_det).join(',')}) VALUES (${Object.keys(data_almacen_det).map(() => '?').join(',')})`
-                console.log("COmponentes de la consulta mysql:",query,Object.values(data_almacen_det))
+                //console.log("COmponentes de la consulta mysql:",query,Object.values(data_almacen_det))
                 await conn.execute(query,Object.values(data_almacen_det));
               }
 
@@ -974,7 +974,7 @@ export default class AlmacenModel{
           case 'RETR':
 
             for (const value of articulos) {
-              console.log("El articulo a retirar es:",value)
+              //console.log("El articulo a retirar es:",value)
               let almacen_destino = value.almacen_destino ?? data.almacen_destino;
 
               // Consultar stock actual en almaceN
@@ -984,7 +984,7 @@ export default class AlmacenModel{
                 WHERE tad.id_cabprod = ? AND tad.id_CAB_DET = ? AND tad.idx_subproducto = ? AND lote = ? AND tad.estado = 1`,
                 [value.id_producto_CAB, almacen_destino, value.id_subprod_CAB, parseInt(value.lote)]
               );
-              console.log("El resultado de la consulta es:",consulta_deposito)
+              //console.log("El resultado de la consulta es:",consulta_deposito)
               const stockActual = parseFloat(consulta_deposito[0]?.cantidad ?? 0);
 
               if (parseFloat(stockActual.toFixed(2)) < parseFloat(parseFloat(value.despacho).toFixed(2))) {
@@ -992,14 +992,14 @@ export default class AlmacenModel{
               }
 
               // Actualizar stock en almacen_det
-              console.log("Se actualiza el stock existente")
+              //console.log("Se actualiza el stock existente")
               await conn.execute(
                 `UPDATE tbl2_almacen_det SET cantidad = ? WHERE id_cabprod = ? AND idx_subproducto = ? AND id_CAB_DET = ? AND lote = ?`,
                 [stockActual.toFixed(2) - parseFloat(value.despacho).toFixed(2), value.id_producto_CAB, value.id_subprod_CAB, almacen_destino, parseInt(value.lote)]
               );
 
               // Insertar detalle de movimiento
-              console.log("Se inserta un nuevo registro de movimiento")
+              //console.log("Se inserta un nuevo registro de movimiento")
               const mov_detalle = {
                 id_comprobante_CAB: id,
                 cod_producto: '',
@@ -1012,7 +1012,7 @@ export default class AlmacenModel{
                 tipo: 'I',
                 idxsub: value.id_subprod_CAB
               };
-              console.log("El detalle a insertar es:",mov_detalle)
+              //console.log("El detalle a insertar es:",mov_detalle)
               await conn.execute(
                 `INSERT INTO tbl2_almacen_mov_det (${Object.keys(mov_detalle).join(',')}) VALUES (${Object.keys(mov_detalle).map(() => '?').join(',')})`,
                 Object.values(mov_detalle)
@@ -1048,7 +1048,7 @@ export default class AlmacenModel{
       // if(conn) conn.commit()
       return {ok:true,message:'Guardado exitoso'}
     } catch (error) {
-      console.log(error)
+      //console.log(error)
       // if(conn) conn.rollback()
       return {ok:false,message:error.message ?? error}
     }
@@ -1086,7 +1086,7 @@ export default class AlmacenModel{
 
       return {ok:true,info:[cabreq[0], detreq]};
     } catch (err) {
-      console.log(err)
+      //console.log(err)
       return {ok: false, message: err.message ?? err};
     } finally {
       if (conn) await conn.end()
@@ -1121,7 +1121,7 @@ export default class AlmacenModel{
         where tfd.idx = ?
       `, [idorden]);
 
-      console.log("La info de la cabecera es::",cabreq)
+      //console.log("La info de la cabecera es::",cabreq)
 
       const [detreq] = await conn.query(`
         SELECT 
@@ -1141,7 +1141,7 @@ export default class AlmacenModel{
 
       return {ok:true,info:[cabreq[0], detreq]};
     } catch (err) {
-      console.log(err)
+      //console.log(err)
       return {ok: false, message: err.message ?? err};
     } finally {
       if (conn) await conn.end()
@@ -1178,7 +1178,7 @@ export default class AlmacenModel{
       const [result] = await conn.execute(query,[idmov]);
       return result
     } catch (error) {
-      console.log(error)
+      //console.log(error)
     } finally {
       if(conn) await conn.end()
     }
@@ -1188,15 +1188,15 @@ export default class AlmacenModel{
     let conn = undefined
     let cab = info.info
     let det = JSON.parse(info.detalle)
-    console.log("La informacin recibida es:",cab,det)
+    //console.log("La informacin recibida es:",cab,det)
     try {
       conn = await mysql.createConnection(configs[1])
       await conn.connect()
-      conn.beginTransaction()
+      await conn.beginTransaction()
       
       for(let fila of [...det]){
         let [result] = await conn.execute("UPDATE tbl_kard_compras_DET tb1 SET tb1.tizado = COALESCE(?,0), tb1.peso = COALESCE(?,0), tb1.panios = COALESCE(?,0), tb1.liquidacion = COALESCE(?,0), tb1.merma = COALESCE(?,0) WHERE tb1.id_CAB_DET = ? AND tb1.id_subprod = ?",[fila.tizado,fila.peso,fila.panios,fila.liquidacion,fila.merma,id,fila.id_subprod])
-        console.log("Las filas modificadas fueron:",result.affectedRows)
+        //console.log("Las filas modificadas fueron:",result.affectedRows)
       }
 
       // if(conn) conn.rollback()
