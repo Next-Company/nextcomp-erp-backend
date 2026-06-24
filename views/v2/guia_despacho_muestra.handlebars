@@ -1,0 +1,78 @@
+{{!--
+  ════════════════════════════════════════════════════════════════════════════
+  guia_despacho_muestra.handlebars  (DISEÑO v2)
+  [v2 2026-06-24 09:50] Portado a la base `guia-ingreso`, familia "con tallas".
+    La plana homónima imprime la matriz de tallas (Qty/Ingreso) más una tabla
+    de ADICIONALES (prototipos). Esta versión reusa la base y datos normalizados.
+  Plana original NO eliminada; producción la sigue usando hasta el cableado.
+
+  CONTRATO DE DATOS:
+    documentTitle  → 'GUÍA DE DESPACHO - MUESTRAS'
+    documentNumber → idguia
+    tipoDocumento  → 'guia-despacho'
+    proveedor      → { nom, ruc }
+    cabecera       → { orden_ref, modelo, ... }
+    tallas[]       → ['XS/26','S/28',...]  (dinámico)
+    detalle[]      → { articulo, valores:[...alineado a tallas...], um, qty, ingreso }
+    prototipos[]   → { articulo, cantidad }   (adicionales)
+    numproto       → prototipos.length
+    firmas         → ['JEFE DE PRODUCCIÓN', 'ALMACÉN']
+  ════════════════════════════════════════════════════════════════════════════
+--}}
+
+{{#> guia-ingreso}}
+
+  <p class="section-title">MUESTRAS DESPACHADAS</p>
+
+  <table class="table-guia">
+    <thead>
+      <tr>
+        <th style="width:30px;">#</th>
+        <th class="text-left">Artículos de producción</th>
+        {{#each tallas}}
+        <th style="width:42px;">{{this}}</th>
+        {{/each}}
+        <th style="width:42px;">UM</th>
+        <th style="width:45px;">Qty.</th>
+        <th style="width:55px;">Ingreso</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each detalle}}
+      <tr>
+        <td class="text-center">{{plusindex @index}}</td>
+        <td class="text-left">{{articulo}}</td>
+        {{#each valores}}
+        <td class="text-center">{{this}}</td>
+        {{/each}}
+        <td class="text-center">{{um}}</td>
+        <td class="text-center">{{qty}}</td>
+        <td class="text-center">{{ingreso}}</td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+
+  {{#if numproto}}
+  <p class="section-title">ADICIONALES</p>
+  <table class="table-guia">
+    <thead>
+      <tr>
+        <th style="width:30px;">#</th>
+        <th class="text-left">Adicionales</th>
+        <th style="width:80px;">Cantidad</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each prototipos}}
+      <tr>
+        <td class="text-center">{{plusindex @index}}</td>
+        <td class="text-left">{{articulo}}</td>
+        <td class="text-center">{{cantidad}}</td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+  {{/if}}
+
+{{/guia-ingreso}}

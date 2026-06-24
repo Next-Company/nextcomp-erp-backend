@@ -1,0 +1,67 @@
+{{!--
+  ════════════════════════════════════════════════════════════════════════════
+  guia_movimiento_almacen.handlebars  (DISEÑO v2)
+  [v2 2026-06-24 09:45] Portado a la base `guia-ingreso`. La plana
+    views/guia_movimiento_almacen.handlebars arma cabecera, bloque de datos
+    (helper `encabezado`) y filas (helper `foo`, modos avios/telas con relleno
+    a 20 filas) construyendo HTML por string en el controlador. Esta versión
+    reusa la base y consume datos normalizados.
+  Plana original NO eliminada; producción la sigue usando hasta el cableado.
+
+  CONTRATO DE DATOS:
+    documentTitle  → 'GUÍA DE MOVIMIENTO DE ALMACÉN'
+    documentNumber → datos.nro_requerimiento (o correlativo del movimiento)
+    documentDate   → datos.fec_emision
+    tipoDocumento  → 'guia-movimiento'
+    proveedor      → { nom: datos.Raz_social_DOC, ruc: datos.Nro_Doc_Prov }
+    cabecera       → { tipoMov: 'INGRESO'|'RETIRO', giradoPor: datos.usuario }
+    detalle[]      → { descripcion, rollos, metros, cantidad, unidad, salida }
+    totalSalida    → suma de salida
+    firmas         → ['AUXILIAR DE ALMACEN', 'JEFE DE CORTE']
+  ════════════════════════════════════════════════════════════════════════════
+--}}
+
+{{#> guia-ingreso}}
+
+  {{#if cabecera.tipoMov}}
+  <div class="datos-orden-section">
+    <strong>TIPO DE MOVIMIENTO:</strong> {{cabecera.tipoMov}}
+  </div>
+  {{/if}}
+
+  <p class="section-title">DETALLE DEL MOVIMIENTO</p>
+
+  <table class="table-guia">
+    <thead>
+      <tr>
+        <th style="width:35px;">ITEM</th>
+        <th>DESCRIPCIÓN</th>
+        <th style="width:55px;">ROLLOS</th>
+        <th style="width:60px;">METROS</th>
+        <th style="width:80px;">CANTIDAD</th>
+        <th style="width:65px;">UNIDAD</th>
+        <th style="width:70px;">SALIDA</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each detalle}}
+      <tr>
+        <td class="text-center">{{plusindex @index}}</td>
+        <td class="text-left">{{descripcion}}</td>
+        <td class="text-center">{{#if rollos}}{{rollos}}{{else}}-{{/if}}</td>
+        <td class="text-center">{{#if metros}}{{metros}}{{else}}-{{/if}}</td>
+        <td class="text-center">{{cantidad}}</td>
+        <td class="text-center">{{unidad}}</td>
+        <td class="text-center">{{salida}}</td>
+      </tr>
+      {{/each}}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="6" class="text-right"><strong>TOTAL</strong></td>
+        <td class="text-center"><strong>{{totalSalida}}</strong></td>
+      </tr>
+    </tfoot>
+  </table>
+
+{{/guia-ingreso}}

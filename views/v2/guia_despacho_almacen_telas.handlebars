@@ -1,0 +1,59 @@
+{{!--
+  ════════════════════════════════════════════════════════════════════════════
+  guia_despacho_almacen_telas.handlebars  (DISEÑO v2)
+  [v2 2026-06-24 09:47] Portado a la base `guia-ingreso`. La plana homónima
+    arma cabecera (helper `encabezado`) y filas (helper `foo`) por string, con
+    relleno a 20 filas. Esta versión reusa la base y consume datos normalizados.
+  Plana original NO eliminada; producción la sigue usando hasta el cableado.
+
+  CONTRATO DE DATOS:
+    documentTitle  → 'GUÍA DE DESPACHO - TELAS'
+    documentNumber → datos.orden_ref / nro_requerimiento
+    documentDate   → datos.fec_emision
+    tipoDocumento  → 'guia-despacho'
+    proveedor      → { nom, ruc }
+    cabecera       → { orden_ref }
+    detalle[]      → { descripcion, rollos, peso, cantidad, unidad, salida }
+    totalSalida    → suma de salida
+    firmas         → ['ALMACÉN', 'RECIBE']
+  ════════════════════════════════════════════════════════════════════════════
+--}}
+
+{{#> guia-ingreso}}
+
+  <p class="section-title">TELAS A DESPACHAR</p>
+
+  <table class="table-guia">
+    <thead>
+      <tr>
+        <th style="width:35px;">ITEM</th>
+        <th>DESCRIPCIÓN</th>
+        <th style="width:55px;">ROLLOS</th>
+        <th style="width:70px;">PESO (Kg)</th>
+        <th style="width:80px;">CANTIDAD</th>
+        <th style="width:65px;">UNIDAD</th>
+        <th style="width:70px;">SALIDA</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each detalle}}
+      <tr>
+        <td class="text-center">{{plusindex @index}}</td>
+        <td class="text-left">{{descripcion}}</td>
+        <td class="text-center">{{#if rollos}}{{rollos}}{{else}}-{{/if}}</td>
+        <td class="text-center">{{#if peso}}{{peso}}{{else}}-{{/if}}</td>
+        <td class="text-center">{{cantidad}}</td>
+        <td class="text-center">{{unidad}}</td>
+        <td class="text-center">{{salida}}</td>
+      </tr>
+      {{/each}}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="6" class="text-right"><strong>TOTAL</strong></td>
+        <td class="text-center"><strong>{{totalSalida}}</strong></td>
+      </tr>
+    </tfoot>
+  </table>
+
+{{/guia-ingreso}}
