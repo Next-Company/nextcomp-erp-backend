@@ -1,2 +1,8 @@
 node_modules/
 uploads/
+
+# Archivos de entorno — nunca versionar secretos
+.env*
+
+# Fotos de órdenes subidas en runtime (en producción se sirven desde jsjfact.com)
+public/images/op_*.jpg
