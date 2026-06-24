@@ -1,7 +1,10 @@
 // Main/helpers/dates.js
 
 const VERSIONES = {
-  V2: new Date('2026-07-01')
+  // [v2 2026-06-24 11:10] Corte adelantado a 2026-06-01 para activar v2 en producción
+  //   (las guías emitidas desde el 1-jun se imprimen con el diseño v2). Reversible:
+  //   restaurar la fecha y reiniciar pm2. Valor anterior: new Date('2026-07-01').
+  V2: new Date('2026-06-01')
 }
 
 /**
