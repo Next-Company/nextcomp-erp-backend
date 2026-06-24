@@ -1287,7 +1287,9 @@ export class ProduccionModel {
               console.log("Dentro de 1 actualizacion")
               const [results, fields] = await conn.query('UPDATE tbl2_guias_traslado_det SET articulo=NULLIF(?, ""),cantidad=NULLIF(?, ""),isprototipo=NULLIF(?, "") WHERE idx = ? and id_guia_CAB = ?', [fila.articulo, fila.cantidad, fila.isprototipo, fila.idx, parseInt(data.id)]);
               // insert()
-              fracciones = Object.keys(fila).filter(valor => ['xs', 's', 'm', 'l', 'xl', 'xxl'].includes(valor)).reduce((carry, value) => {
+              // fracciones = Object.keys(fila).filter(valor => ['xs', 's', 'm', 'l', 'xl', 'xxl'].includes(valor)).reduce((carry, value) => {
+              const NO_TALLAS = ['idx', 'articulo', 'cantidad', 'isprototipo', 'disponible_total', 'item']
+              fracciones = Object.keys(fila).filter(valor => !NO_TALLAS.includes(valor)).reduce((carry, value) => {
                 carry.push([fila.idx, value, parseInt(fila[value])])
                 return carry
               }, [])
@@ -1557,7 +1559,9 @@ export class ProduccionModel {
               console.log("Dentro de 1 actualizacion")
               const [results, fields] = await conn.query('UPDATE tbl2_guias_traslado_det SET articulo=NULLIF(?, ""),cantidad=NULLIF(?, ""),isprototipo=NULLIF(?, "") WHERE idx = ? and id_guia_CAB = ?', [fila.articulo, fila.cantidad, fila.isprototipo, fila.idx, parseInt(data.id)]);
               // insert()
-              fracciones = Object.keys(fila).filter(valor => ['xs', 's', 'm', 'l', 'xl', 'xxl'].includes(valor)).reduce((carry, value) => {
+              // fracciones = Object.keys(fila).filter(valor => ['xs', 's', 'm', 'l', 'xl', 'xxl'].includes(valor)).reduce((carry, value) => {
+              const NO_TALLAS = ['idx', 'articulo', 'cantidad', 'isprototipo', 'disponible_total', 'item']
+              fracciones = Object.keys(fila).filter(valor => !NO_TALLAS.includes(valor)).reduce((carry, value) => {
                 carry.push([fila.idx, value, parseInt(fila[value])])
                 return carry
               }, [])
@@ -1595,7 +1599,9 @@ export class ProduccionModel {
         for(let fila of [...articulos]){
           const [results] = await conn.query('INSERT INTO tbl2_guias_traslado_det(id_guia_CAB,articulo,cantidad) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [res.insertId, fila.articulo, fila.cantidad]);
 
-          const fracciones = Object.keys(fila).filter(valor => ['xs', 's', 'm', 'l', 'xl', 'xxl'].includes(valor)).reduce((carry, value) => {
+          // const fracciones = Object.keys(fila).filter(valor => ['xs', 's', 'm', 'l', 'xl', 'xxl'].includes(valor)).reduce((carry, value) => {
+          const NO_TALLAS = ['idx', 'articulo', 'cantidad', 'isprototipo', 'disponible_total', 'item']
+          const fracciones = Object.keys(fila).filter(valor => !NO_TALLAS.includes(valor)).reduce((carry, value) => {
             carry.push([results.insertId, value, parseInt(fila[value])])
             return carry
           }, [])
