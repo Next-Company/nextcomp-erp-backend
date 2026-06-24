@@ -1,0 +1,66 @@
+{{!--
+  ════════════════════════════════════════════════════════════════════════════
+  guia_traslado.handlebars  (DISEÑO v2)
+  [v2 2026-06-24 09:30] Portado al diseño componentizado v2 sobre la base
+    `guia-ingreso`. Por qué: la plana views/guia_traslado.handlebars arma la
+    cabecera, el bloque de datos y las filas de la tabla a mano (helper inline
+    `foo` que concatena <tr> por string, con relleno a 20 filas y modos
+    avios/telas). Esta versión reusa document-header / datos-proveedor /
+    footer-firmas de la base y consume datos YA NORMALIZADOS (sin construir
+    HTML en el controlador).
+  La plana original NO se elimina: sigue en views/guia_traslado.handlebars y
+    se seguirá usando hasta que el cableado (getTemplateVersion) active esta.
+
+  CONTRATO DE DATOS que debe pasar el controlador (adaptador a construir en la
+  fase de cableado):
+    documentTitle      → 'GUÍA DE TRASLADO'
+    documentNumber     → datos.nro_requerimiento
+    documentDate       → datos.fec_Emision_DOC
+    tipoDocumento      → 'guia-traslado'  (evita el bloque condiciones-penalidades)
+    proveedor          → { nom: datos.proveedor, ruc: datos.ruc }
+    cabecera           → { orden_ref, nroCorte, giradoPor }   (opcionales; '-' si faltan)
+    detalle[]          → { descripcion, rollos, cantidad, unidad, salida }
+    totalSalida        → suma de salida (number, ya formateada)
+    firmas             → ['AUXILIAR DE ALMACEN', 'JEFE DE CORTE']
+    emisor, date, time → pie de emisión
+  ════════════════════════════════════════════════════════════════════════════
+--}}
+
+{{#> guia-ingreso}}
+
+  <p class="section-title">BIENES A TRASLADAR</p>
+
+  <table class="table-guia">
+    <thead>
+      <tr>
+        <th style="width:35px;">ITEM</th>
+        <th>DESCRIPCIÓN</th>
+        <th style="width:60px;">ROLLOS</th>
+        <th style="width:90px;">CANTIDAD</th>
+        <th style="width:70px;">UNIDAD</th>
+        <th style="width:80px;">SALIDA</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {{#each detalle}}
+      <tr>
+        <td class="text-center">{{plusindex @index}}</td>
+        <td class="text-left">{{descripcion}}</td>
+        <td class="text-center">{{#if rollos}}{{rollos}}{{else}}-{{/if}}</td>
+        <td class="text-center">{{cantidad}}</td>
+        <td class="text-center">{{unidad}}</td>
+        <td class="text-center">{{salida}}</td>
+      </tr>
+      {{/each}}
+    </tbody>
+
+    <tfoot>
+      <tr>
+        <td colspan="5" class="text-right"><strong>TOTAL</strong></td>
+        <td class="text-center"><strong>{{totalSalida}}</strong></td>
+      </tr>
+    </tfoot>
+  </table>
+
+{{/guia-ingreso}}
