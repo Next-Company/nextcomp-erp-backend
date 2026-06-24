@@ -65,6 +65,11 @@ const hbs = create({
             if (!text) return '';
             return String(text).split(/\s+/).slice(0, n).join(' ');
         },
+        // [v2 2026-06-24 09:40] plusindex: numera filas (índice 0-based → 1-based).
+        //   Se registra global porque estaba duplicado inline en ~20 renders y las
+        //   plantillas v2 lo necesitan para ser autosuficientes. Los renders que ya
+        //   lo pasan inline siguen funcionando (el inline tiene prioridad).
+        plusindex(index) { return index + 1; },
     }
 });
 
