@@ -65,13 +65,30 @@ export class ProduccionController {
     
     console.log("La info detalle de la guia es:",data2)
     console.log("La info de las tallas:",data4)
+    // [v2 2026-06-24 11:55] Auto-switch a v2 (guia_back servicios / guia_muestras_v2).
+    //   Las v2 consumen los mismos helpers (header/cuerpo) y datos (tallas/detalle/totales)
+    //   que ya se pasan aquí → drop-in. Solo se selecciona la plantilla por fecha.
+    const _flatGuiaExp = data[0].tipo == 'SERVICIOS' ? 'guia_back' : 'guia_muestras_v2'
+    const _fechaGuiaExpISO = fechaTimestampISO(data[0]?.created_at)
+    const _tplGuiaExpG = seleccionarPlantilla(_fechaGuiaExpISO, _flatGuiaExp, 'v2/' + _flatGuiaExp)
+    const _usaV2GuiaExpG = _tplGuiaExpG.startsWith('v2/')
+    console.log('[v2] guia(back/muestras) → plantilla:', _tplGuiaExpG, '| fechaISO:', _fechaGuiaExpISO)
     resp.render(
-      data[0].tipo == 'SERVICIOS' ? 'guia_back' : 'guia_muestras_v2',
+      _tplGuiaExpG, // [v2 2026-06-24 11:55] antes: ternario guia_back/guia_muestras_v2
       {
         condicion: parseInt(params.modo),
         color: data[0].servicio == 'ACABADOS' ? 'red' : 'black',
         info: params,
-        cabecera: data[0],
+        // [v2 2026-06-24 11:55] cabecera normalizada si v2; cruda si plana.
+        cabecera: _usaV2GuiaExpG
+          ? { orden_ref: data[0]?.id_orden_CAB ?? '', responsable: data[0]?.responsable ?? '', servicio: data[0]?.servicio ?? '', costo: data[0]?.costo, duracion: data[0]?.duracion }
+          : data[0],
+        // [v2 2026-06-24 11:55] contexto v2 header (la plana lo ignora):
+        documentTitle: data[0].tipo == 'SERVICIOS' ? 'GUÍA DE INGRESO - SERVICIO' : 'GUÍA DE INGRESO - MUESTRAS',
+        documentNumber: `${data[0].idx}`.padStart(10, 0),
+        tipoDocumento: 'guia-ingreso',
+        tipoProveedorPartial: data[0].tipo == 'SERVICIOS' ? 'servicio' : '',
+        firmas: ['ENTREGADO POR', 'RECIBIDO POR'],
         detalle: data2.filter(row => !row.isprototipo),
         tallas: data4[0]?.tallas.map(row=>row.desc) ?? ['st','xs','s','m','l','xl','xxl',],
         colspanbody: data4[0]?.tallas?.length + 2 ?? 2,
