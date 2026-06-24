@@ -426,14 +426,28 @@ export class ProduccionController {
       },[])
 
       const data3 = data[0].id_proveedor_CAB ? await ProduccionModel.searchProveedorById(data[0].id_proveedor_CAB) : [{ nom: data[0].responsable, ruc: '', direccion: data[0].destino }]
+      // [v2 2026-06-24 11:30] Auto-switch a v2/guia_despacho (con tallas) por fecha.
+      //   v2/guia_despacho consume el MISMO detalle/tallasbase/totales que la plana
+      //   (drop-in); solo se selecciona por fecha y se agrega contexto de cabecera/header.
+      const _fechaGuiaISO = fechaTimestampISO(data1[0]?.created_at)
+      const _tplGuia = seleccionarPlantilla(_fechaGuiaISO, 'guia_despacho', 'v2/guia_despacho')
+      const _usaV2Guia = _tplGuia.startsWith('v2/')
+      console.log('[v2] despacho-guia → plantilla:', _tplGuia, '| fechaISO:', _fechaGuiaISO, '| created_at:', data1[0]?.created_at)
       resp.render(
-        'guia_despacho',
+        _tplGuia, // [v2 2026-06-24 11:30] antes fijo: 'guia_despacho'
         {
           color: 'black',
           info: params,
-          cabecera: data[0],
+          // [v2 2026-06-24 11:30] cabecera normalizada si v2; cruda si plana.
+          cabecera: _usaV2Guia ? { orden_ref: data[0]?.nro_orden_origen ?? '', responsable: data[0]?.responsable ?? '' } : data[0],
           tallasbase: data2[0].fracciones.map(row=>row.talla.toUpperCase()),
           colspantallas: data2[0].fracciones.map(row=>row.talla).length + 1,
+          // [v2 2026-06-24 11:30] contexto v2 header (la plana lo ignora):
+          documentTitle: 'GUÍA DE DESPACHO',
+          documentNumber: `${params.id}`.padStart(7, 0),
+          documentDate: (new Date(data1[0].created_at)).toLocaleDateString('en-GB'),
+          tipoDocumento: 'guia-despacho',
+          firmas: ['ASISTENTE ALMACÉN', 'CONTROL DE INGRESO'],
           // detalle:data2.filter(row=>!row.isprototipo),
           detalle: data2,
           // relleno:data2.filter(),
