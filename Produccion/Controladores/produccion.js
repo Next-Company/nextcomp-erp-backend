@@ -301,6 +301,7 @@ export class ProduccionController {
       const _tplAcab = seleccionarPlantilla(_fechaAcabISO, 'guia_despacho_acabados', 'v2/guia_despacho_acabados')
       const _acabV2 = adaptDespachoAcabados(data2)
       const _usaV2Acab = _tplAcab.startsWith('v2/')
+      console.log('[v2] acabados → plantilla:', _tplAcab, '| fechaISO:', _fechaAcabISO, '| created_at:', data1[0]?.created_at)
       resp.render(
         _tplAcab, // [v2 2026-06-24 11:00] antes fijo: 'guia_despacho_acabados'
         {
@@ -856,6 +857,7 @@ export class ProduccionController {
       const _tplMuestra = seleccionarPlantilla(_fechaMuestraISO, 'guia_despacho_muestra', 'v2/guia_despacho_muestra')
       const _muestraV2 = adaptDespachoMuestra(data2)
       const _usaV2Muestra = _tplMuestra.startsWith('v2/')
+      console.log('[v2] muestra → plantilla:', _tplMuestra, '| fechaISO:', _fechaMuestraISO, '| created_at:', data1[0]?.created_at)
       resp.render(
         _tplMuestra, // [v2 2026-06-24 11:02] antes fijo: 'guia_despacho_muestra'
         {
