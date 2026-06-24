@@ -1,0 +1,104 @@
+{{!--
+  datos-proveedor-general.handlebars
+--}}
+
+<section class="datos-proveedor-section general">
+
+  <div style="
+    font-size: var(--font-small);
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    padding-bottom: 4px;
+    border-bottom: .5px solid var(--dashed-color);
+    margin-bottom: 6px;
+  ">
+    Datos del proveedor
+  </div>
+
+  <div style="
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px 24px;
+    font-size: var(--font-small);
+  ">
+
+    {{!-- ── FILA 1: RUC · (vacío) · Responsable ── --}}
+
+    {{#if proveedor.ruc}}
+    <div style="display:grid; grid-template-columns:max-content 1fr; gap:0 6px; align-items:baseline;">
+      <strong style="white-space:nowrap;">RUC:</strong>
+      <span>{{proveedor.ruc}}</span>
+    </div>
+    {{else}}
+    <div></div>
+    {{/if}}
+
+    <div></div>
+
+    {{#if cabecera.responsable}}
+    <div style="display:grid; grid-template-columns:max-content 1fr; gap:0 6px; align-items:baseline;">
+      <strong style="white-space:nowrap;">Persona a tratar:</strong>
+      <span>{{cabecera.responsable}}</span>
+    </div>
+    {{else}}
+    <div></div>
+    {{/if}}
+
+    {{!-- ── FILA 2: Razón Social · (vacío) · Contacto ── --}}
+
+    <div style="display:grid; grid-template-columns:max-content 1fr; gap:0 6px; align-items:baseline;">
+      <strong style="white-space:nowrap;">Razón Social:</strong>
+      <span>{{proveedor.nom}}</span>
+    </div>
+
+    <div></div>
+
+    <div style="display:grid; grid-template-columns:max-content 1fr; gap:0 6px; align-items:baseline;">
+      <strong style="white-space:nowrap;">Movil:</strong>
+      <span>{{#if proveedor.telefono}}{{proveedor.telefono}}{{else}}-{{/if}}</span>
+    </div>
+
+    {{!-- ── FILA 3: OC · Modelo (bloque opcional) ── --}}
+
+    {{!-- {{#if oc}}
+    <div style="display:grid; grid-template-columns:max-content 1fr; gap:0 6px; align-items:baseline;">
+      <strong style="white-space:nowrap;">OC:</strong>
+      <span style="font-weight:bold;">{{oc}}</span>
+    </div>
+
+    <div style="display:grid; grid-template-columns:max-content 1fr; gap:0 6px; align-items:baseline;">
+      <strong style="white-space:nowrap;">Modelo:</strong>
+      <span>{{modelo}}</span>
+    </div>
+
+    <div></div>
+    {{/if}} --}}
+
+    {{!-- ── FILA COMPLETA: Dirección ── --}}
+
+    {{!-- {{#if proveedor.direccion}} --}}
+    <div style="
+      grid-column: 1 / -1;
+      display:grid; grid-template-columns:max-content 1fr; gap:0 6px; align-items:baseline;
+    ">
+      <strong style="white-space:nowrap;">Dirección:</strong>
+      <span>{{#if proveedor.direccion}}{{proveedor.direccion}}{{else}}-{{/if}}</span>
+    </div>
+    {{!-- {{/if}} --}}
+
+    {{!-- ── FILA COMPLETA: Motivo de traslado (opcional) ── --}}
+
+    {{#if cabecera.motivo}}
+    <div style="
+      grid-column: 1 / -1;
+      display:grid; grid-template-columns:max-content 1fr; gap:0 6px; align-items:baseline;
+    ">
+      <strong style="white-space:nowrap;">Motivo de traslado:</strong>
+      <span>{{cabecera.motivo}}</span>
+    </div>
+    {{/if}}
+
+  </div>
+
+</section>

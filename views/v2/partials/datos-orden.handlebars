@@ -1,0 +1,110 @@
+{{!--
+  datos-orden.handlebars
+  Sección: DATOS DE LA ORDEN
+--}}
+
+{{#if cabecera.orden_ref}}
+
+<section class="datos-orden-section">
+
+  <div style="
+    font-size: var(--font-small);
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+    border-bottom: .5px solid var(--dashed-color);
+  ">
+    Datos de la orden
+  </div>
+
+  <div style="
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px 24px;
+    font-size: var(--font-small);
+  ">
+
+    {{!-- FILA 1: OP · Descripción --}}
+    <div>
+      <strong>OP:</strong>
+      <span>{{cabecera.orden_ref}}</span>
+    </div>
+
+    {{#if cabecera.producto}}
+    <div>
+      <strong>Descripción:</strong>
+      <span>{{splitAtWord cabecera.producto 3}}</span>
+    </div>
+    {{else}}
+    <div></div>
+    {{/if}}
+
+    {{!-- FILA 2: IGV --}}
+    {{#unless (contains documentTitle 'GUÍA DE INGRESO')}}
+    <div>
+      <strong>IGV (18%):</strong>
+      <span>{{#if igv}}{{igv}}{{else}}-{{/if}}</span>
+    </div>
+    {{else}}
+    <div></div>
+    {{/unless}}
+
+    {{!-- Modelo --}}
+    {{#if cabecera.modelo}}
+    <div>
+      <strong>Modelo:</strong>
+      <span>{{cabecera.modelo}}</span>
+    </div>
+    {{else}}
+    <div></div>
+    {{/if}}
+
+    {{!-- Precio --}}
+    {{#unless (contains documentTitle 'GUÍA DE INGRESO')}}
+    <div>
+      {{#if cabecera.costo}}
+        <strong>Precio:</strong>
+        <span>S/. {{cabecera.costo}}</span>
+      {{/if}}
+    </div>
+    {{else}}
+    <div></div>
+    {{/unless}}
+
+    {{!-- Tipo de moneda --}}
+    {{#unless (contains documentTitle 'GUÍA DE INGRESO')}}
+    <div>
+      <strong>Tipo de moneda:</strong>
+      <span>
+        {{#if (eq cabecera.moneda 'S')}}Soles
+        {{else}}
+          {{#if (eq cabecera.moneda 'D')}}Dólares
+          {{else}}-
+          {{/if}}
+        {{/if}}
+      </span>
+    </div>
+    {{else}}
+    <div></div>
+    {{/unless}}
+
+    {{!-- Condición de pago --}}
+    {{#unless (contains documentTitle 'GUÍA DE INGRESO')}}
+    <div>
+      <strong>Cond. Pago:</strong>
+      <span>{{#if condicion}}{{condicion}}{{else}}-{{/if}}</span>
+    </div>
+    {{else}}
+    <div></div>
+    {{/unless}}
+
+    <div></div>
+    <div></div>
+
+  </div>
+
+</section>
+
+{{/if}}

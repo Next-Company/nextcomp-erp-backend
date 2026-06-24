@@ -1,0 +1,150 @@
+{{!-- guia_despacho.handlebars --}}
+
+{{#> guia-ingreso}}
+
+<p style="font-size:0.75rem;font-weight:bold;margin-bottom:3px;">
+  RESUMEN DETALLE:
+</p>
+
+<section style="padding-bottom:6px;">
+
+  <table style="
+    border-collapse:collapse;
+    width:100%;
+    font-size:0.7rem;
+    line-height:1.4;
+  ">
+
+    <!-- HEADER -->
+    <thead>
+      <tr style="border-bottom:1px solid #000;">
+        <th style="width:3%;text-align:center;">#</th>
+        <th style="text-align:left;padding-left:4px;">Artículos de producción</th>
+        <th style="width:45px;"></th>
+        <th style="text-align:center;width:30px;">Qty</th>
+
+        {{#each tallasbase}}
+          <th style="
+            text-align:center;
+            width:24px;
+            font-weight:bold;
+            padding:3px 2px;
+          ">
+            {{this}}
+          </th>
+        {{/each}}
+
+        <th style="text-align:center;width:30px;padding:3px 2px;">UM</th>
+        <th style="text-align:center;width:30px;padding:3px 2px;">Ing.</th>
+        <th style="text-align:center;width:30px;padding:3px 2px;">Inc.</th>
+        <th style="text-align:center;width:36px;padding:3px 2px;">Caid.</th>
+      </tr>
+    </thead>
+
+    <!-- BODY -->
+    <tbody>
+      {{#each detalle}}
+        <tr style="border-bottom:1px solid #eee;">
+          <td style="text-align:center;padding:3px 2px;">
+            {{plusindex @index}}
+          </td>
+
+          <td style="padding:3px 4px;">
+            {{articulo}}
+          </td>
+
+          <td></td>
+
+          <td style="text-align:center;padding:3px 2px;">
+            {{cantidad}}
+          </td>
+
+          {{#each fracciones_despacho_cantidad}}
+            <td style="
+              text-align:center;
+              padding:3px 2px;
+              font-weight:bold;
+            ">
+              {{this}}
+            </td>
+          {{/each}}
+
+          <td style="text-align:center;padding:3px 2px;">NIU</td>
+          <td style="text-align:center;padding:3px 2px;">{{despacho}}</td>
+          <td style="text-align:center;padding:3px 2px;">{{incompletos}}</td>
+          <td style="text-align:center;padding:3px 2px;">{{caidos}}</td>
+        </tr>
+      {{/each}}
+    </tbody>
+
+    <!-- FOOTER -->
+    <tfoot>
+      <tr style="border-top:1px solid #000;">
+        <td colspan="3"></td>
+
+        <td style="text-align:center;font-weight:bold;padding:3px 2px;">
+          {{totalunid}}
+        </td>
+
+        <td colspan="{{colspantallas}}"></td>
+
+        <td style="text-align:center;font-weight:bold;padding:3px 2px;">
+          {{totaldespacho}}
+        </td>
+
+        <td style="text-align:center;font-weight:bold;padding:3px 2px;">
+          {{totalincompletos}}
+        </td>
+
+        <td style="text-align:center;font-weight:bold;padding:3px 2px;">
+          {{totalcaidos}}
+        </td>
+      </tr>
+    </tfoot>
+
+  </table>
+
+</section>
+
+{{#if numproto}}
+<section style="margin-top:5px;">
+
+  <table style="
+    border-collapse:collapse;
+    width:100%;
+    font-size:0.7rem;
+    line-height:1.4;
+  ">
+
+    <thead>
+      <tr style="border-bottom:1px solid #000;">
+        <th style="width:3%;text-align:center;">#</th>
+        <th style="text-align:left;padding-left:4px;">Adicionales</th>
+        <th style="text-align:center;width:50px;padding:3px 2px;">Cant.</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {{#each prototipos}}
+        <tr style="border-bottom:1px solid #eee;">
+          <td style="text-align:center;padding:3px 2px;">
+            {{plusindex @index}}
+          </td>
+
+          <td style="padding:3px 4px;">
+            {{articulo}}
+          </td>
+
+          <td style="text-align:center;padding:3px 2px;">
+            {{cantidad}}
+          </td>
+        </tr>
+      {{/each}}
+    </tbody>
+
+  </table>
+
+</section>
+{{/if}}
+
+{{/guia-ingreso}}

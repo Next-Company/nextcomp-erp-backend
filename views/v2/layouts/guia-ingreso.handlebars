@@ -1,0 +1,65 @@
+{{!-- guia-ingreso.handlebars --}}
+{{> css-tokens}}
+
+<div class="main_informe">
+
+  {{> document-header
+      documentTitle=documentTitle
+      documentNumberLabel=documentNumberLabel
+      documentNumber=documentNumber
+      documentDate=documentDate
+      documentDeliveryDate=documentDeliveryDate
+      documentDiasProduccion=documentDiasProduccion
+  }}
+
+  {{> datos-proveedor-general}}
+
+  {{#if (eq tipoProveedorPartial 'traslado')}}
+    {{> datos-proveedor-traslado}}
+  {{/if}}
+  {{#if (eq tipoProveedorPartial 'servicio')}}
+    {{> datos-proveedor-servicio}}
+  {{/if}}
+
+  {{> datos-orden}}
+
+  <section class="cuerpo">
+    {{> @partial-block}}
+  </section>
+
+  <div class="last-page-footer">
+    {{> footer-firmas firmas=firmas}}
+    {{#if (eq tipoDocumento 'guia-ingreso')}}
+    {{> condiciones-penalidades}}
+    {{/if}}
+    {{> footer-emision date=date time=time emisor=emisor}}
+  </div>
+</div>
+
+<script>
+  window.addEventListener('load', () => {
+    const footer = document.querySelector('.last-page-footer');
+    const pageHeight = 1040;
+
+    const footerTop = footer.offsetTop;
+    const footerHeight = footer.offsetHeight;
+    const scrollHeight = document.body.scrollHeight;
+
+    console.log('footerTop:', footerTop);
+    console.log('footerHeight:', footerHeight);
+    console.log('scrollHeight:', scrollHeight);
+    console.log('pageHeight usado:', pageHeight);
+
+    const paginaActual = Math.ceil((footerTop + 1) / pageHeight);
+    const fondoPaginaActual = paginaActual * pageHeight;
+    const margen = fondoPaginaActual - footerTop - footerHeight - 10;
+
+    console.log('paginaActual:', paginaActual);
+    console.log('fondoPaginaActual:', fondoPaginaActual);
+    console.log('margen calculado:', margen);
+
+    if (margen > 0) {
+      footer.style.marginTop = margen + 'px';
+    }
+  });
+</script>

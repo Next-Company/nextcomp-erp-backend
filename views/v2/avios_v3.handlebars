@@ -1,0 +1,44 @@
+{{!-- guia_ingreso_requerimiento_avios.handlebars --}}
+{{#> guia-ingreso}}
+
+<p class="section-title" style="margin: 8px 0;">RESUMEN DETALLE:</p>
+
+<section style="padding-bottom:10px;">
+  <table class="table-clean">
+    <thead>
+      <tr>
+        <th style="width:5%;">Item</th>
+        <th style="width:12%; text-align:left;">Corte</th>
+        <th style="width:12%; text-align:left;">Modelo</th>
+        <th style="width:20%; text-align:left;">Producto</th>
+        <th style="width:10%;">Color</th>
+        <th style="width:8%; text-align:right;">Cant.</th>
+        <th style="width:8%;">U.M.</th>
+        <th style="width:10%; text-align:right;">Precio</th>
+        <th style="width:10%; text-align:right;">Importe</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{{cuerpoAvios detalle}}}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="7" style="border:none;"></td>
+        <td style="text-align:right;">SUBTOTAL</td>
+        <td style="text-align:right;">{{subtotal}}</td>
+      </tr>
+      <tr>
+        <td colspan="7" style="border:none;"></td>
+        <td style="text-align:right;">IGV 18%</td>
+        <td style="text-align:right;">{{igv}}</td>
+      </tr>
+      <tr>
+        <td colspan="7" style="border:none;"></td>
+        <td style="text-align:right;">TOTAL FINAL</td>
+        <td style="text-align:right;">{{totalFinal}}</td>
+      </tr>
+    </tfoot>
+  </table>
+</section>
+
+{{/guia-ingreso}}

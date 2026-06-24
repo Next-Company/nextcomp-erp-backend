@@ -1,0 +1,55 @@
+{{!--
+  datos-proveedor-traslado.handlebars
+  Sección ADICIONAL para guías de tipo traslado.
+  Se renderiza DESPUÉS de datos-proveedor-general (orquestado por guia-ingreso).
+  Los campos comerciales (OP, modelo, precio, IGV, condicion) van en datos-orden.
+
+  Campos específicos de traslado:
+    puntoPartida          → Punto de partida
+    puntoLlegada          → Punto de llegada
+    cantidad              → Cantidad de bienes trasladados
+    idref                 → N° guía referenciada
+--}}
+
+{{#if puntoPartida}}
+
+<section class="datos-proveedor-section traslado">
+
+  <div style="
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 24px;
+    font-size: var(--font-small);
+  ">
+
+    <div>
+      <strong>Punto de Partida:</strong>
+      <span>{{puntoPartida}}</span>
+    </div>
+
+    {{#if puntoLlegada}}
+    <div>
+      <strong>Punto de Llegada:</strong>
+      <span>{{puntoLlegada}}</span>
+    </div>
+    {{/if}}
+
+    {{#if cantidad}}
+    <div>
+      <strong>Cantidad:</strong>
+      <span>{{cantidad}}</span>
+    </div>
+    {{/if}}
+
+    {{#if idref}}
+    <div>
+      <strong>Guía Ref:</strong>
+      <span>{{idref}}</span>
+    </div>
+    {{/if}}
+
+  </div>
+
+</section>
+
+{{/if}}

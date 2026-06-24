@@ -1,0 +1,37 @@
+{{#> guia-ingreso}}
+  <section class="main_informe">
+    <table class="table-clean">
+      <thead>
+        <tr>
+          <th style="width:5%;">Item</th>
+          <th style="width:30%; text-align:left;">Descripción</th>
+          <th style="width:8%;">Rollo</th>
+          <th style="width:10%; text-align:right;">Cantidad</th>
+          <th style="width:8%;">U.M.</th>
+          <th style="width:10%; text-align:right;">Precio</th>
+          <th style="width:12%; text-align:right;">Importe</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{{cuerpoTelas detalle}}}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="5" style="border:none;"></td>
+          <td style="text-align:right; border:none; border-top:1.5px solid #000;">SUBTOTAL</td>
+          <td style="text-align:right; border:none; border-top:1.5px solid #000;">{{subtotalStr}}</td>
+        </tr>
+        <tr>
+          <td colspan="5" style="border:none;"></td>
+          <td style="text-align:right; border:none;">IGV 18%</td>
+          <td style="text-align:right; border:none;">{{igv}}</td>
+        </tr>
+        <tr>
+          <td colspan="5" style="border:none;"></td>
+          <td style="text-align:right; border:none; border-top:1.5px solid #000;">TOTAL FINAL</td>
+          <td style="text-align:right; border:none; border-top:1.5px solid #000;">{{totalImporte}}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </section>
+{{/guia-ingreso}}

@@ -1,0 +1,19 @@
+{{!-- footer-firmas.handlebars --}}
+<section style="
+  display: flex;
+  justify-content: space-between;
+  gap: 60px;
+  padding: 40px 20px 30px 20px;
+">
+  {{#each firmas}}
+    <div style="
+      border-top: 1.5px dashed #666;
+      padding-top: 8px;
+      text-align: center;
+      flex: 1;
+      min-width: 0;
+    ">
+      <strong>{{this}}</strong>
+    </div>
+  {{/each}}
+</section>

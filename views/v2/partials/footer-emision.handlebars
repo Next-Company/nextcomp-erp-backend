@@ -1,0 +1,20 @@
+{{!-- footer-emision.handlebars --}}
+<section style="
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  font-size: 0.68rem;
+  color: #555;
+  border-top: 0.5px dashed #ccc;
+  padding-top: 8px;
+">
+  <div>
+    {{#if emisor}}
+      Emitido por: <span style="font-weight: 600;">{{emisor}}</span>
+    {{/if}}
+  </div>
+  <div>
+    Fecha/hora de emisión:
+    <strong>{{date}} {{time}}</strong>
+  </div>
+</section>

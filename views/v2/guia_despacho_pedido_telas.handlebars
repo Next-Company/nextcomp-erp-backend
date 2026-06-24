@@ -1,0 +1,46 @@
+{{!-- guia_despacho_pedido_telas_v2.handlebars --}}
+
+{{#> guia-ingreso}}
+
+<p style="font-size:10px;font-weight:bold;margin:8px 0;">RESUMEN DETALLE:</p>
+
+<section style="padding: 10px 0; margin: 8px 0;">
+
+  <table class="table-clean" style="table-layout:fixed;">
+
+    <!-- HEADER -->
+    <thead>
+      <tr style="height:22px;">
+        <th style="width:4%;">Item</th>
+        <th style="width:32%; text-align:left; padding-left:4px;">Descripción</th>
+        <th style="width:8%;">Color</th>
+        <th style="width:6%;">U.M.</th>
+        <th style="width:8%;">Peso</th>
+        <th style="width:8%;">Prog.</th>
+        <th style="width:8%;">Pend.</th>
+        <th style="width:8%;">Ingreso</th>
+        <th style="width:8%;">Costo</th>
+        <th style="width:10%; text-align:right;">Importe</th>
+      </tr>
+    </thead>
+
+    <!-- BODY -->
+    <tbody>
+      {{{cuerpoDespachoTelas detalle}}}
+    </tbody>
+
+    <!-- FOOTER -->
+    <tfoot>
+      <tr>
+        <td colspan="7"></td>
+        <td class="text-center">Total</td>
+        <td class="text-right">{{totaldespacho}}</td>
+        <td class="text-right">{{totalimporte}}</td>
+      </tr>
+    </tfoot>
+
+  </table>
+
+</section>
+
+{{/guia-ingreso}}

@@ -1,0 +1,37 @@
+{{!--
+  datos-proveedor-servicio.handlebars
+--}}
+
+{{#if cabecera.servicio}}
+
+<section class="datos-proveedor-section servicio">
+
+  <div style="
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px 24px;
+    font-size: var(--font-small);
+  ">
+
+    <div>
+      <strong>Servicio:</strong>
+      <span>{{cabecera.servicio}}</span>
+    </div>
+
+    {{!-- Días de producción alineado a columna 2 (bajo Precio) --}}
+    {{#if cabecera.duracion}}
+    <div>
+      <strong>Días de producción:</strong>
+      <span>{{cabecera.duracion}}</span>
+    </div>
+    {{else}}
+    <div></div>
+    {{/if}}
+
+    <div></div>
+
+  </div>
+
+</section>
+
+{{/if}}

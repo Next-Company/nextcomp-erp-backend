@@ -1,0 +1,55 @@
+{{!-- guia_despacho_pedido_avios.handlebars --}}
+
+{{#> guia-ingreso}}
+
+  <p class="section-title" style="font-size: var(--font-small); margin: 8px 0;">RESUMEN DETALLE:</p>
+
+  <section style="padding: 4px 0; margin: 4px 0;">
+
+    <table class="table-clean" style="table-layout: fixed;">
+
+      {{!-- HEADER --}}
+      <thead>
+        <tr>
+          <th style="width:4%;">#</th>
+          <th style="width:30%; text-align:left; padding-left:4px;">Artículos de producción</th>
+          <th style="width:12%;">Color</th>
+          <th style="width:8%;">U.M.</th>
+          <th style="width:9%;">Costo</th>
+          <th style="width:9%;">C.Unit</th>
+          <th style="width:10%;">Qty.Prog.</th>
+          <th style="width:10%;">Ingreso</th>
+        </tr>
+      </thead>
+
+      {{!-- BODY --}}
+      <tbody>
+        {{#each detalle}}
+          <tr>
+            <td class="text-center">{{plusindex @index}}</td>
+            <td>{{producto}}</td>
+            <td class="text-center">{{color}}</td>
+            <td class="text-center">{{unidad}}</td>
+            <td class="text-right">{{precio}}</td>
+            <td class="text-right">{{costo_unit}}</td>
+            <td class="text-right">{{requerido}}</td>
+            <td class="text-right">{{despacho}}</td>
+          </tr>
+        {{/each}}
+      </tbody>
+
+      {{!-- FOOTER --}}
+      <tfoot>
+        <tr>
+          <td colspan="5"></td>
+          <td class="text-center">Total</td>
+          <td class="text-right">{{totalunid}}</td>
+          <td class="text-right">{{totaldespacho}}</td>
+        </tr>
+      </tfoot>
+
+    </table>
+
+  </section>
+
+{{/guia-ingreso}}

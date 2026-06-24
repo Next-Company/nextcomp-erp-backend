@@ -1,0 +1,197 @@
+{{!-- guia_back.handlebars --}}
+
+{{#> guia-ingreso}}
+
+<style>
+  .main_content {
+  color: {{color}};
+  font-family: Arial, sans-serif;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .table th,
+  .table td {
+    padding: 3px 5px;
+    border-bottom: 1px solid #e5e5e5;
+  }
+
+  .table thead th {
+    font-weight: bold;
+    border-bottom: 1.5px solid #999;
+  }
+
+  .table tfoot td {
+    padding: 4px 5px;
+    border: none;
+    font-weight: bold;
+  }
+
+  .table tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  /* Ocultar filas de guiones (filas vacías del cuerpo) */
+  .table tbody tr.fila-vacia {
+    display: none;
+  }
+
+  /* Si el helper genera filas con solo guiones, ocultarlas via CSS */
+  .table tbody tr td:first-child:empty ~ td {
+    color: transparent;
+  }
+
+  .text-center { text-align: center; }
+  .text-right  { text-align: right; }
+  .text-left   { text-align: left; }
+
+  .section-title {
+    font-size: 0.8rem;
+    font-weight: bold;
+    margin-bottom: 4px;
+  }
+
+  section {
+    margin-top: 10px;
+  }
+
+  /* Formato contable: símbolo izquierda, monto derecha */
+  .money-cell {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .money-cell table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .money-cell table td {
+    padding: 0;
+    border: none;
+  }
+
+  .money-cell .sym {
+    text-align: left;
+    width: 20px;
+    padding-right: 2px;
+  }
+
+  .money-cell .amt {
+    text-align: right;
+  }
+</style>
+
+<div class="main_content">
+
+  {{> datos-proveedor-servicio}}
+
+  <!-- TABLA A TRANSPORTAR -->
+  <section>
+
+    <p class="section-title">BIENES A TRANSFORMAR:</p>
+
+    <table class="table">
+      <thead>
+        <tr>
+          <th class="text-center" style="width:4%;">#</th>
+          <th class="text-left">Artículos de producción</th>
+
+          {{#header tallas}}
+          {{/header}}
+
+          <th class="text-center">UM</th>
+          <th class="text-center">Cant.</th>
+          <th class="text-right" style="width:20px;">Costo</th>
+          <th class="text-right" style="width:30px;">Importe</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {{#cuerpo detalle tallas}}
+        {{/cuerpo}}
+      </tbody>
+
+      <tfoot>
+        <tr>
+          <td colspan="{{colspantotales}}"></td>
+          <td class="text-right">Total</td>
+          <td class="text-center">{{totalunid}}</td>
+          <td class="text-right">Subtotal</td>
+          <td class="money-cell">
+            <table><tr>
+              <td class="sym">S/</td>
+              <td class="amt">{{totalimporte}}</td>
+            </tr></table>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="{{colspantotales}}"></td>
+          <td></td>
+          <td></td>
+          <td class="text-right">IGV</td>
+          <td class="money-cell">
+            <table><tr>
+              <td class="sym">S/</td>
+              <td class="amt">{{valor_igv}}</td>
+            </tr></table>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="{{colspantotales}}"></td>
+          <td></td>
+          <td></td>
+          <td class="text-right">TOTAL</td>
+          <td class="money-cell">
+            <table><tr>
+              <td class="sym">S/</td>
+              <td class="amt">{{importetotal}}</td>
+            </tr></table>
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+
+  </section>
+
+  <!-- ADICIONALES -->
+  {{#if numproto}}
+  <section>
+
+    <p class="section-title">ADICIONALES:</p>
+
+    <table class="table">
+      <thead>
+        <tr>
+          <th style="width:4%;">#</th>
+          <th class="text-left">Descripción</th>
+          <th colspan="8"></th>
+          <th class="text-center">Cant.</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {{#each prototipos}}
+        <tr>
+          <td class="text-center">{{plusindex @index}}</td>
+          <td>{{articulo}}</td>
+          <td colspan="8"></td>
+          <td class="text-center">{{cantidad}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+
+  </section>
+  {{/if}}
+
+</div>
+
+{{/guia-ingreso}}

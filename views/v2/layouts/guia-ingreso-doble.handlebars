@@ -1,0 +1,106 @@
+{{!-- guia-ingreso-doble.handlebars
+     Layout para documentos que se imprimen en dos copias en la misma hoja (A4 portrait).
+     Renderiza el mismo @partial-block dos veces, separado por una línea de corte.
+     Contrato de contexto: idéntico a guia-ingreso. --}}
+
+{{> css-tokens}}
+
+<style>
+  .main_informe--doble {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  .main_informe--doble .copia {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 0.5cm 0.6cm;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+  .main_informe--doble .copia:first-child {
+    border-bottom: 1px dashed #bbb;
+  }
+  .main_informe--doble .copia .cuerpo {
+    flex: 1;
+  }
+</style>
+
+<div class="main_informe--doble">
+
+  {{!-- ==================== COPIA 1 ==================== --}}
+  <div class="copia">
+
+    {{> document-header
+        documentTitle=documentTitle
+        documentNumberLabel=documentNumberLabel
+        documentNumber=documentNumber
+        documentDate=documentDate
+        documentDeliveryDate=documentDeliveryDate
+        documentDiasProduccion=documentDiasProduccion
+    }}
+
+    {{#if tipoProveedorPartial}}
+      {{#if (eq tipoProveedorPartial 'traslado')}}
+        {{> datos-proveedor-traslado}}
+      {{else if (eq tipoProveedorPartial 'servicio')}}
+        {{> datos-proveedor-servicio}}
+      {{else}}
+        {{> datos-proveedor-general}}
+      {{/if}}
+    {{else}}
+      {{> datos-proveedor-general}}
+    {{/if}}
+
+    <section class="cuerpo">
+      {{> @partial-block}}
+    </section>
+
+    {{> footer-firmas
+        firmas=firmas
+        date=date
+        time=time
+        emisor=emisor
+    }}
+
+  </div>
+
+  {{!-- ==================== COPIA 2 ==================== --}}
+  <div class="copia">
+
+    {{> document-header
+        documentTitle=documentTitle
+        documentNumberLabel=documentNumberLabel
+        documentNumber=documentNumber
+        documentDate=documentDate
+        documentDeliveryDate=documentDeliveryDate
+        documentDiasProduccion=documentDiasProduccion
+    }}
+
+    {{#if tipoProveedorPartial}}
+      {{#if (eq tipoProveedorPartial 'traslado')}}
+        {{> datos-proveedor-traslado}}
+      {{else if (eq tipoProveedorPartial 'servicio')}}
+        {{> datos-proveedor-servicio}}
+      {{else}}
+        {{> datos-proveedor-general}}
+      {{/if}}
+    {{else}}
+      {{> datos-proveedor-general}}
+    {{/if}}
+
+    <section class="cuerpo">
+      {{> @partial-block}}
+    </section>
+
+    {{> footer-firmas
+        firmas=firmas
+        date=date
+        time=time
+        emisor=emisor
+    }}
+
+  </div>
+
+</div>
