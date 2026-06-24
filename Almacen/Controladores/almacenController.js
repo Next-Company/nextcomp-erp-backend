@@ -12,6 +12,8 @@ import { configs, numControlBarcode } from "../../Main/utils.js";
 import mysql from 'mysql2/promise'
 import { Console } from "node:console";
 import { ProductosService } from "../../Productos/Servicios/productosService.js";
+// [v2 2026-06-24 10:05] Selección de plantilla flat vs v2 por fecha de emisión.
+import { getTemplateVersion } from "../../Main/helpers/dates.js";
 
 export default class AlmacenController{
   static async getListaAlmacenes(req,reply){
@@ -113,17 +115,64 @@ export default class AlmacenController{
     const BINARY_CHUNKS4 = await fs.readFile('public/images/cuadre_tela.png')
     // const tipo = JSON.parse(data.info).tipo
     console.log("El tipo de pedido es :", tipo)
+
+    // ════════════════════════════════════════════════════════════════════════
+    // [v2 2026-06-24 10:05] ADAPTADOR + AUTO-SWITCH a la guía de traslado v2.
+    //   Por qué: views/v2/guia_traslado.handlebars consume datos NORMALIZADOS.
+    //   Se mapean usando los MISMOS campos que ya lee el helper `foo` del flat
+    //   (producto/color/rollos/cantidad/unidad/despacho) — probados en producción.
+    //   Seguridad: solo conmuta a v2 si NO es avíos (v2/guia_traslado cubre solo
+    //   telas) y la fecha de emisión es >= 2026-07-01 (getTemplateVersion). Para
+    //   fechas previas o modo avíos se mantiene la plana 'guia_traslado'.
+    //   ⚠️ PENDIENTE antes del corte: validar en staging con un documento real;
+    //   falta cubrir el modo avíos en v2.
+    // ════════════════════════════════════════════════════════════════════════
+    const _fmtISO = (ddmmyyyy) => {
+      if (!ddmmyyyy || typeof ddmmyyyy !== 'string') return ''
+      const [d, m, y] = ddmmyyyy.split(' ')[0].split('/')
+      return (y && m && d) ? `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}` : ''
+    }
+    const _fechaEmisionISO = _fmtISO(cabecera.fec_Emision_DOC)
+    const _detalleV2 = (detalle ?? []).map(item => ({
+      descripcion: `${item.producto ?? ''} ${item.color ?? ''}`.trim(),
+      rollos: item.rollos ?? '',
+      cantidad: item.cantidad ?? '',
+      unidad: item.unidad ?? '',
+      salida: item.despacho ?? '',
+    }))
+    const _totalSalidaV2 = _detalleV2
+      .reduce((acc, it) => acc + (parseFloat(it.salida) || 0), 0)
+      .toFixed(2)
+    const _plantillaGuiaTraslado = (tipo !== 'avios')
+      ? getTemplateVersion(_fechaEmisionISO, 'guia_traslado', 'v2/guia_traslado')
+      : 'guia_traslado'
+    const _usaV2 = _plantillaGuiaTraslado.startsWith('v2/')
+    console.log('[v2] guia_traslado → plantilla:', _plantillaGuiaTraslado, '| fechaISO:', _fechaEmisionISO)
+
     res.render(
-      'guia_traslado',
+      // [v2 2026-06-24 10:05] plantilla por fecha/modo (antes fijo: 'guia_traslado')
+      _plantillaGuiaTraslado,
       {
         BINARY_CHUNKS: BINARY_CHUNKS.toString('base64'),
         BINARY_CHUNKS2: BINARY_CHUNKS2.toString('base64'),
         BINARY_CHUNKS3: BINARY_CHUNKS3.toString('base64'),
         BINARY_CHUNKS4: BINARY_CHUNKS4.toString('base64'),
         datos: requerimiento,
-        detalle: detalle,
+        // [v2 2026-06-24 10:05] detalle normalizado si la plantilla es v2; crudo si es plana.
+        detalle: _usaV2 ? _detalleV2 : detalle,
         cuadre: cuadre,
         emisor: cabecera.emisor == 'NEXT' ? 1 : 0,
+        // [v2 2026-06-24 10:05] Contexto adicional para v2/guia_traslado (la plana lo ignora):
+        documentTitle: 'GUÍA DE TRASLADO',
+        documentNumber: requerimiento?.nro_requerimiento ?? '',
+        documentDate: cabecera.fec_Emision_DOC ?? '',
+        tipoDocumento: 'guia-traslado',
+        proveedor: { nom: requerimiento?.proveedor ?? '', ruc: requerimiento?.ruc ?? '' },
+        cabecera: { orden_ref: requerimiento?.nro_requerimiento ?? '' },
+        totalSalida: _totalSalidaV2,
+        firmas: ['AUXILIAR DE ALMACEN', 'JEFE DE CORTE'],
+        date: _fechaEmisionISO,
+        time: '',
         helpers: {
           fechaCorta(fechaStr) {
             let formateo = ''
