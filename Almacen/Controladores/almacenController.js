@@ -1657,7 +1657,7 @@ export default class AlmacenController{
                 <div style="display:flex;flex-direction:column;justify-content:space-between;font-size:12px;">
                   <div style="font-size:6px;">PRECIO VENTA</div>
                   <div>
-                    <h3>${moneda == 'PEN' ? 'S/' : '$'}${moneda == 'PEN' ? orden.precios[0].precio1[0].toFixed(2) : orden.precios[0].precio1[1].toFixed(2)}</h3>
+                    <h3 class="precio-valor">${moneda == 'PEN' ? 'S/' : '$'}${moneda == 'PEN' ? orden.precios[0].precio1[0].toFixed(2) : orden.precios[0].precio1[1].toFixed(2)}</h3>
                   </div>
                 </div>
               </div>
