@@ -590,17 +590,29 @@ export class ProduccionController {
       },[])
 
       const data3 = data[0].id_proveedor_CAB ? await ProduccionModel.searchProveedorById(data[0].id_proveedor_CAB) : [{ nom: data[0].responsable, ruc: '', direccion: data[0].destino }]
+      // [v2 2026-06-24 11:45] Auto-switch a v2/guia_despacho (verInfoDespachoGuiaGLB).
+      const _fechaGuiaGLB = fechaTimestampISO(data1[0]?.created_at)
+      const _tplGuiaGLB = seleccionarPlantilla(_fechaGuiaGLB, 'guia_despacho', 'v2/guia_despacho')
+      const _usaV2GuiaGLB = _tplGuiaGLB.startsWith('v2/')
+      console.log('[v2] despacho-guia-glb → plantilla:', _tplGuiaGLB, '| fechaISO:', _fechaGuiaGLB)
       resp.render(
-        'guia_despacho',
+        _tplGuiaGLB, // [v2 2026-06-24 11:45] antes fijo: 'guia_despacho'
         {
           color: 'black',
           info: params,
-          cabecera: data[0],
+          // [v2 2026-06-24 11:45] cabecera normalizada si v2; cruda si plana.
+          cabecera: _usaV2GuiaGLB ? { orden_ref: data[0]?.nro_orden_origen ?? '', responsable: data[0]?.responsable ?? '' } : data[0],
           // detalle:data2.filter(row=>!row.isprototipo),
           detalle: data2,
           // relleno:data2.filter(),
           prototipos: data2.filter(row => row.isprototipo),
           numproto: data2.filter(row => row.isprototipo).length,
+          // [v2 2026-06-24 11:45] contexto v2 header (la plana lo ignora):
+          documentTitle: 'GUÍA DE DESPACHO',
+          documentNumber: `${params.id}`.padStart(10, 0),
+          documentDate: (new Date(data1[0].created_at)).toLocaleDateString('en-GB'),
+          tipoDocumento: 'guia-despacho',
+          firmas: ['ASISTENTE ALMACÉN', 'CONTROL DE INGRESO'],
           date: (new Date(data1[0].created_at)).toLocaleDateString('en-GB'),
           time: (new Date(data1[0].created_at)).toLocaleTimeString('en-GB'),
           idguia: `${params.id}`.padStart(10, 0),
@@ -952,17 +964,29 @@ export class ProduccionController {
     const data2 = await ProduccionModel.getInfoDespachoDet(params.id)
     console.log(data2)
     const data3 = data[0].id_proveedor_CAB ? await ProduccionModel.searchProveedorById(data[0].id_proveedor_CAB) : [{ nom: data[0].responsable, ruc: '', direccion: data[0].destino }]
+    // [v2 2026-06-24 11:46] Auto-switch a v2/guia_despacho (exportInfoDespacho).
+    const _fechaGuiaExp = fechaTimestampISO(data[0]?.created_at)
+    const _tplGuiaExp = seleccionarPlantilla(_fechaGuiaExp, 'guia_despacho', 'v2/guia_despacho')
+    const _usaV2GuiaExp = _tplGuiaExp.startsWith('v2/')
+    console.log('[v2] despacho-guia-export → plantilla:', _tplGuiaExp, '| fechaISO:', _fechaGuiaExp)
     resp.render(
-      'guia_despacho',
+      _tplGuiaExp, // [v2 2026-06-24 11:46] antes fijo: 'guia_despacho'
       {
         color: 'black',
         info: params,
-        cabecera: data[0],
+        // [v2 2026-06-24 11:46] cabecera normalizada si v2; cruda si plana.
+        cabecera: _usaV2GuiaExp ? { orden_ref: data[0]?.nro_orden_origen ?? '', responsable: data[0]?.responsable ?? '' } : data[0],
         // detalle:data2.filter(row=>!row.isprototipo),
         detalle: data2,
         // relleno:data2.filter(),
         prototipos: data2.filter(row => row.isprototipo),
         numproto: data2.filter(row => row.isprototipo).length,
+        // [v2 2026-06-24 11:46] contexto v2 header (la plana lo ignora):
+        documentTitle: 'GUÍA DE DESPACHO',
+        documentNumber: `${data[0].idx}`.padStart(10, 0),
+        documentDate: (new Date(data[0].created_at)).toLocaleDateString('en-GB'),
+        tipoDocumento: 'guia-despacho',
+        firmas: ['ASISTENTE ALMACÉN', 'CONTROL DE INGRESO'],
         date: (new Date(data[0].created_at)).toLocaleDateString('en-GB'),
         time: (new Date(data[0].created_at)).toLocaleTimeString('en-GB'),
         idguia: `${data[0].idx}`.padStart(10, 0),
