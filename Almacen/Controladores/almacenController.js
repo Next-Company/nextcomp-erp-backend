@@ -14,6 +14,8 @@ import { Console } from "node:console";
 import { ProductosService } from "../../Productos/Servicios/productosService.js";
 // [v2 2026-06-24 10:05] Selección de plantilla flat vs v2 por fecha de emisión.
 import { getTemplateVersion } from "../../Main/helpers/dates.js";
+// [v2 2026-06-24 10:35] Adaptadores centralizados de guías de almacén a v2.
+import { fechaDocISO, adaptMovimiento, adaptDespachoAlmacen, seleccionarPlantilla } from "../../Main/helpers/v2Despacho.js";
 
 export default class AlmacenController{
   static async getListaAlmacenes(req,reply){
@@ -415,18 +417,37 @@ export default class AlmacenController{
     const BINARY_CHUNKS4 = await fs.readFile('public/images/cuadre_tela.png')
     // const tipo = JSON.parse(data.info).tipo
     console.log("El tipo de pedido es :", tipo)
+    // [v2 2026-06-24 10:35] Auto-switch a v2/guia_movimiento_almacen (telas) por fecha.
+    //   Solo telas (tipo != 'avios') con emisión >= 2026-07-01 conmuta a v2.
+    const _fechaMovISO = fechaDocISO(cabecera.fec_Emision_DOC)
+    const _tplMov = seleccionarPlantilla(_fechaMovISO, 'guia_movimiento_almacen', 'v2/guia_movimiento_almacen', tipo !== 'avios')
+    const _movV2 = adaptMovimiento(detalle)
+    const _usaV2Mov = _tplMov.startsWith('v2/')
     res.render(
-      'guia_movimiento_almacen',
+      _tplMov, // [v2 2026-06-24 10:35] antes fijo: 'guia_movimiento_almacen'
       {
         BINARY_CHUNKS: BINARY_CHUNKS.toString('base64'),
         BINARY_CHUNKS2: BINARY_CHUNKS2.toString('base64'),
         BINARY_CHUNKS3: BINARY_CHUNKS3.toString('base64'),
         BINARY_CHUNKS4: BINARY_CHUNKS4.toString('base64'),
-        cabecera: cabecera,
+        // [v2 2026-06-24 10:35] cabecera normalizada si v2; cruda si plana (la plana usa el helper encabezado).
+        cabecera: _usaV2Mov
+          ? { tipoMov: cabecera.cod_comprobante == 'INGR' ? 'INGRESO' : 'RETIRO', orden_ref: requerimiento?.nro_requerimiento ?? '' }
+          : cabecera,
         datos: requerimiento,
-        detalle: detalle,
+        detalle: _usaV2Mov ? _movV2.detalle : detalle,
         cuadre: cuadre,
         emisor: cabecera.emisor == 'NEXT' ? 1 : 0,
+        // [v2 2026-06-24 10:35] contexto v2 (la plana lo ignora):
+        documentTitle: 'GUÍA DE MOVIMIENTO DE ALMACÉN',
+        documentNumber: requerimiento?.nro_requerimiento ?? '',
+        documentDate: cabecera.fec_Emision_DOC ?? '',
+        tipoDocumento: 'guia-movimiento',
+        proveedor: { nom: cabecera.Raz_social_DOC ?? '', ruc: cabecera.Nro_Doc_Prov ?? '' },
+        totalSalida: _movV2.totalSalida,
+        firmas: ['AUXILIAR DE ALMACEN', 'JEFE DE CORTE'],
+        date: _fechaMovISO,
+        time: '',
         helpers: {
           fechaCorta(fechaStr) {
             let formateo = ''
@@ -705,19 +726,39 @@ export default class AlmacenController{
     // const tipo = JSON.parse(data.info).tipo
     console.log("El reporte dei imporesion de desoacho de tellas")
     console.log("El tipo de pedido es :", tipo)
+    // [v2 2026-06-24 10:40] Auto-switch a v2 despacho de almacén (avíos/telas) por fecha.
+    //   avíos/telas se decide por Suc_Tienda==508 (igual que el ternario flat).
+    const _isAviosDesp = cabecera.Suc_Tienda == '508'
+    const _flatDesp = _isAviosDesp ? 'guia_despacho_almacen_avios_v2' : 'guia_despacho_almacen_telas'
+    const _v2Desp = _isAviosDesp ? 'v2/guia_despacho_almacen_avios_v2' : 'v2/guia_despacho_almacen_telas'
+    const _fechaDespISO = fechaDocISO(cabecera.fec_Emision_DOC)
+    const _tplDesp = seleccionarPlantilla(_fechaDespISO, _flatDesp, _v2Desp)
+    const _despV2 = adaptDespachoAlmacen(detalle, _isAviosDesp)
+    const _usaV2Desp = _tplDesp.startsWith('v2/')
     res.render(
-      cabecera.Suc_Tienda == '508' ? 'guia_despacho_almacen_avios_v2' : 'guia_despacho_almacen_telas',
+      _tplDesp, // [v2 2026-06-24 10:40] antes: ternario Suc_Tienda 508 fijo
       {
         BINARY_CHUNKS: BINARY_CHUNKS.toString('base64'),
         BINARY_CHUNKS2: BINARY_CHUNKS2.toString('base64'),
         BINARY_CHUNKS3: BINARY_CHUNKS3.toString('base64'),
         BINARY_CHUNKS4: BINARY_CHUNKS4.toString('base64'),
         BINARY_CHUNKS5: BINARY_CHUNKS5.toString('base64'),
-        cabecera: cabecera,
+        // [v2 2026-06-24 10:40] cabecera normalizada si v2; cruda si plana (helper encabezado).
+        cabecera: _usaV2Desp ? { orden_ref: requerimiento?.nro_requerimiento ?? '' } : cabecera,
         datos: requerimiento,
-        detalle: detalle,
+        detalle: _usaV2Desp ? _despV2.detalle : detalle,
         cuadre: cuadre,
         emisor: cabecera.emisor == 'NEXT' ? 1 : 0,
+        // [v2 2026-06-24 10:40] contexto v2 (la plana lo ignora):
+        documentTitle: _isAviosDesp ? 'GUÍA DE DESPACHO - AVÍOS' : 'GUÍA DE DESPACHO - TELAS',
+        documentNumber: requerimiento?.nro_requerimiento ?? '',
+        documentDate: cabecera.fec_Emision_DOC ?? '',
+        tipoDocumento: 'guia-despacho',
+        proveedor: { nom: cabecera.Raz_social_DOC ?? '', ruc: cabecera.Nro_Doc_Prov ?? '' },
+        totalSalida: _despV2.totalSalida,
+        firmas: ['ALMACÉN', 'RECIBE'],
+        date: _fechaDespISO,
+        time: '',
         helpers: {
           fechaCorta(fechaStr) {
             let formateo = ''
@@ -1020,21 +1061,40 @@ export default class AlmacenController{
     // const tipo = JSON.parse(data.info).tipo
     console.log("El reporte dei imporesion de desoacho de tellas")
     console.log("El tipo de pedido es :", tipo)
+    // [v2 2026-06-24 10:41] Auto-switch a v2 despacho de almacén (avíos/telas) por fecha.
+    const _isAviosDesp = cabecera.Suc_Tienda == '508'
+    const _flatDesp = _isAviosDesp ? 'guia_despacho_almacen_avios_v2' : 'guia_despacho_almacen_telas'
+    const _v2Desp = _isAviosDesp ? 'v2/guia_despacho_almacen_avios_v2' : 'v2/guia_despacho_almacen_telas'
+    const _fechaDespISO = fechaDocISO(cabecera.fec_Emision_DOC)
+    const _tplDesp = seleccionarPlantilla(_fechaDespISO, _flatDesp, _v2Desp)
+    const _despV2 = adaptDespachoAlmacen(detalle, _isAviosDesp)
+    const _usaV2Desp = _tplDesp.startsWith('v2/')
     res.render(
-      cabecera.Suc_Tienda == '508' ? 'guia_despacho_almacen_avios_v2' : 'guia_despacho_almacen_telas',
+      _tplDesp, // [v2 2026-06-24 10:41] antes: ternario Suc_Tienda 508 fijo
       {
         BINARY_CHUNKS: BINARY_CHUNKS.toString('base64'),
         BINARY_CHUNKS2: BINARY_CHUNKS2.toString('base64'),
         BINARY_CHUNKS3: BINARY_CHUNKS3.toString('base64'),
         BINARY_CHUNKS4: BINARY_CHUNKS4.toString('base64'),
         BINARY_CHUNKS5: BINARY_CHUNKS5.toString('base64'),
-        cabecera: cabecera,
+        // [v2 2026-06-24 10:41] cabecera normalizada si v2; cruda si plana (helper encabezado).
+        cabecera: _usaV2Desp ? { orden_ref: requerimiento?.nro_requerimiento ?? '' } : cabecera,
         correlativo: String(cabecera.id_CAB).padStart(8,'0'),
         datos: requerimiento,
-        detalle: detalle,
+        detalle: _usaV2Desp ? _despV2.detalle : detalle,
         cuadre: cuadre,
         motivo: cabecera.motivo == 'prd' ? 'PRODUCCION' : 'AJUSTE',
         emisor: cabecera.emisor == 'NEXT' ? 1 : 0,
+        // [v2 2026-06-24 10:41] contexto v2 (la plana lo ignora):
+        documentTitle: _isAviosDesp ? 'GUÍA DE DESPACHO - AVÍOS' : 'GUÍA DE DESPACHO - TELAS',
+        documentNumber: requerimiento?.nro_requerimiento ?? '',
+        documentDate: cabecera.fec_Emision_DOC ?? '',
+        tipoDocumento: 'guia-despacho',
+        proveedor: { nom: cabecera.Raz_social_DOC ?? '', ruc: cabecera.Nro_Doc_Prov ?? '' },
+        totalSalida: _despV2.totalSalida,
+        firmas: ['ALMACÉN', 'RECIBE'],
+        date: _fechaDespISO,
+        time: '',
         helpers: {
           fechaCorta(fechaStr) {
             let formateo = ''
