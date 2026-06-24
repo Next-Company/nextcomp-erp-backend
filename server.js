@@ -31,12 +31,50 @@ import GPS_ROUTER from "./GpsTracker/Routers/gpstrackerRouter.js";
 import LOCAL_ROUTER from "./Locales/Routers/localesRouter.js";
 const app = express()
 
+// ════════════════════════════════════════════════════════════════════════════
+// [v2 2026-06-24 09:20] Config Handlebars ampliada para habilitar el diseño v2.
+//   Por qué: las plantillas de views/v2/ usan partials (css-tokens, document-header,
+//   datos-*, footer-*) y el layout-partial `guia-ingreso` (vía {{#> guia-ingreso}}),
+//   más los helpers compartidos eq/contains/splitAtWord. Nada de eso estaba
+//   registrado, así que cualquier render de 'v2/...' fallaba con
+//   "could not find partial" / "missing helper". Esto es lo que faltaba para que
+//   la base v2 sea renderizable.
+//   NO se cambia defaultLayout ('main' → views/layouts/main): las plantillas planas
+//   de producción son fragmentos envueltos por ese layout y siguen igual.
+//   Config anterior NO eliminada: queda comentada justo debajo.
+// ════════════════════════════════════════════════════════════════════════════
 const hbs = create({
+    partialsDir: [
+        'views/v2/partials',   // [v2 2026-06-24 09:20] componentes reutilizables v2
+        'views/v2/layouts',    // [v2 2026-06-24 09:20] guia-ingreso / base-documento como partials
+    ],
     helpers: {
         foo() { return 'FOO!'; },
-        bar() { return 'BAR!'; }
+        bar() { return 'BAR!'; },
+        // [v2 2026-06-24 09:20] Helpers compartidos que usan los partials v2.
+        //   Son genéricos de presentación y antes no existían en el proyecto.
+        eq(a, b) { return a === b; },
+        contains(haystack, needle) {
+            return typeof haystack === 'string' && haystack.includes(needle);
+        },
+        // splitAtWord: recorta un texto a las primeras N palabras (descripciones largas).
+        //   NOTA: semántica inferida del uso `{{splitAtWord cabecera.producto 3}}`;
+        //   solo afecta a las plantillas v2 (no a producción). Revisar si el intento
+        //   original era otro (p. ej. cortar por carácter).
+        splitAtWord(text, n) {
+            if (!text) return '';
+            return String(text).split(/\s+/).slice(0, n).join(' ');
+        },
     }
 });
+
+// [v2 2026-06-24 09:20] Config Handlebars ANTERIOR (conservada, no eliminar):
+// const hbs = create({
+//     helpers: {
+//         foo() { return 'FOO!'; },
+//         bar() { return 'BAR!'; }
+//     }
+// });
 
 // app.engine('handlebars', engine());
 app.engine('handlebars', hbs.engine);
