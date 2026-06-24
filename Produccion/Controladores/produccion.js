@@ -3,6 +3,8 @@ import PDFDocument from "pdfkit"
 import fs from "node:fs/promises"
 import puppeteer from 'puppeteer';
 import { OrdenesModel } from "../../Ordenes/Servicios/ordenes.js";
+// [v2 2026-06-24 10:58] Adaptadores + selección de plantilla v2 para guías de Producción.
+import { seleccionarPlantilla, fechaTimestampISO, TALLAS_STD, adaptDespachoAcabados, adaptDespachoMuestra } from "../../Main/helpers/v2Produccion.js";
 // import { width } from "pdfkit/js/page";
 // import { height } from "pdfkit/js/page";
 // import PDFDocument from "pdfkit";
@@ -294,15 +296,30 @@ export class ProduccionController {
       console.log("Data3 proveedor:",data3)
 
 
+      // [v2 2026-06-24 11:00] Auto-switch a v2/guia_despacho_acabados (con tallas) por fecha.
+      const _fechaAcabISO = fechaTimestampISO(data1[0]?.created_at)
+      const _tplAcab = seleccionarPlantilla(_fechaAcabISO, 'guia_despacho_acabados', 'v2/guia_despacho_acabados')
+      const _acabV2 = adaptDespachoAcabados(data2)
+      const _usaV2Acab = _tplAcab.startsWith('v2/')
       resp.render(
-        'guia_despacho_acabados',
+        _tplAcab, // [v2 2026-06-24 11:00] antes fijo: 'guia_despacho_acabados'
         {
           color: 'black',
           info: params,
-          cabecera: data1[0],
-          detalle: data2,
+          // [v2 2026-06-24 11:00] cabecera normalizada si v2; cruda si plana (usa nro_orden_origen/responsable).
+          cabecera: _usaV2Acab
+            ? { orden_ref: data1[0]?.nro_orden_origen ?? '', responsable: data1[0]?.responsable ?? '' }
+            : data1[0],
+          detalle: _usaV2Acab ? _acabV2.detalle : data2,
           prototipos: data2.filter(row => row.isprototipo),
           numproto: data2.filter(row => row.isprototipo).length,
+          // [v2 2026-06-24 11:00] contexto v2 (la plana lo ignora):
+          documentTitle: 'GUÍA DE PREDESPACHO',
+          documentNumber: data1[0]?.nro_orden_origen ?? '',
+          documentDate: (new Date(data1[0].created_at)).toLocaleDateString('en-GB'),
+          tipoDocumento: 'guia-despacho',
+          tallas: TALLAS_STD,
+          firmas: ['ASISTENTE ALMACÉN', 'CONTROL DE INGRESO'],
           date: (new Date(data1[0].created_at)).toLocaleDateString('en-GB'),
           time: (new Date(data1[0].created_at)).toLocaleTimeString('en-GB'),
           idguia: `${params.id}`.padStart(7, 0),
@@ -834,16 +851,28 @@ export class ProduccionController {
     try {
       const data3 = data[0]?.id_proveedor_CAB ? await ProduccionModel.searchProveedorById(data[0].id_proveedor_CAB) : [{ nom: data[0].responsable, ruc: '', direccion: data[0].destino }]
       console.log("Info del proveedor es:",data3)
+      // [v2 2026-06-24 11:02] Auto-switch a v2/guia_despacho_muestra (sin tallas) por fecha.
+      const _fechaMuestraISO = fechaTimestampISO(data1[0]?.created_at)
+      const _tplMuestra = seleccionarPlantilla(_fechaMuestraISO, 'guia_despacho_muestra', 'v2/guia_despacho_muestra')
+      const _muestraV2 = adaptDespachoMuestra(data2)
+      const _usaV2Muestra = _tplMuestra.startsWith('v2/')
       resp.render(
-        'guia_despacho_muestra',
+        _tplMuestra, // [v2 2026-06-24 11:02] antes fijo: 'guia_despacho_muestra'
         {
           color: 'black',
           info: params,
-          cabecera: data[0],
-          detalle: data2,
+          // [v2 2026-06-24 11:02] cabecera normalizada si v2; cruda si plana.
+          cabecera: _usaV2Muestra ? { responsable: data[0]?.responsable ?? '' } : data[0],
+          detalle: _usaV2Muestra ? _muestraV2.detalle : data2,
           condicion:params.condicion,
           prototipos: data2.filter(row => row.isprototipo),
           numproto: data2.filter(row => row.isprototipo).length,
+          // [v2 2026-06-24 11:02] contexto v2 (la plana lo ignora):
+          documentTitle: 'GUÍA DE INGRESO',
+          documentNumber: `${params.id}`.padStart(10, 0),
+          documentDate: (new Date(data1[0].created_at)).toLocaleDateString('en-GB'),
+          tipoDocumento: 'guia-despacho',
+          firmas: ['ASISTENTE ALMACÉN', 'CONTROL DE INGRESO'],
           date: (new Date(data1[0].created_at)).toLocaleDateString('en-GB'),
           time: (new Date(data1[0].created_at)).toLocaleTimeString('en-GB'),
           idguia: `${params.id}`.padStart(10, 0),

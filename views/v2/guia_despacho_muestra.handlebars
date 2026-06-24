@@ -1,40 +1,39 @@
 {{!--
   ════════════════════════════════════════════════════════════════════════════
   guia_despacho_muestra.handlebars  (DISEÑO v2)
-  [v2 2026-06-24 09:50] Portado a la base `guia-ingreso`, familia "con tallas".
-    La plana homónima imprime la matriz de tallas (Qty/Ingreso) más una tabla
-    de ADICIONALES (prototipos). Esta versión reusa la base y datos normalizados.
+  [v2 2026-06-24 10:55] Portado a la base `guia-ingreso`.
+    CORRECCIÓN vs versión inicial: la plana real (views/guia_despacho_muestra.handlebars)
+    tiene las columnas de tallas COMENTADAS — la tabla activa es solo
+    #, Artículos, UM, Qty., Ingreso, más una tabla de ADICIONALES (prototipos).
+    Esta versión replica ese comportamiento real (sin tallas).
   Plana original NO eliminada; producción la sigue usando hasta el cableado.
 
   CONTRATO DE DATOS:
-    documentTitle  → 'GUÍA DE DESPACHO - MUESTRAS'
+    documentTitle  → 'GUÍA DE INGRESO'
     documentNumber → idguia
     tipoDocumento  → 'guia-despacho'
     proveedor      → { nom, ruc }
-    cabecera       → { orden_ref, modelo, ... }
-    tallas[]       → ['XS/26','S/28',...]  (dinámico)
-    detalle[]      → { articulo, valores:[...alineado a tallas...], um, qty, ingreso }
+    cabecera       → { responsable? }
+    detalle[]      → { articulo, um, qty, ingreso }
+    totalunid      → total de ingreso
     prototipos[]   → { articulo, cantidad }   (adicionales)
     numproto       → prototipos.length
-    firmas         → ['JEFE DE PRODUCCIÓN', 'ALMACÉN']
+    firmas         → ['ASISTENTE ALMACÉN', 'CONTROL DE INGRESO']
   ════════════════════════════════════════════════════════════════════════════
 --}}
 
 {{#> guia-ingreso}}
 
-  <p class="section-title">MUESTRAS DESPACHADAS</p>
+  <p class="section-title">RESUMEN DETALLE</p>
 
   <table class="table-guia">
     <thead>
       <tr>
         <th style="width:30px;">#</th>
         <th class="text-left">Artículos de producción</th>
-        {{#each tallas}}
-        <th style="width:42px;">{{this}}</th>
-        {{/each}}
-        <th style="width:42px;">UM</th>
-        <th style="width:45px;">Qty.</th>
-        <th style="width:55px;">Ingreso</th>
+        <th style="width:50px;">UM</th>
+        <th style="width:60px;">Qty.</th>
+        <th style="width:70px;">Ingreso</th>
       </tr>
     </thead>
     <tbody>
@@ -42,15 +41,19 @@
       <tr>
         <td class="text-center">{{plusindex @index}}</td>
         <td class="text-left">{{articulo}}</td>
-        {{#each valores}}
-        <td class="text-center">{{this}}</td>
-        {{/each}}
         <td class="text-center">{{um}}</td>
         <td class="text-center">{{qty}}</td>
         <td class="text-center">{{ingreso}}</td>
       </tr>
       {{/each}}
     </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="3"></td>
+        <td class="text-center"><strong>Total</strong></td>
+        <td class="text-center"><strong>{{totalunid}}</strong></td>
+      </tr>
+    </tfoot>
   </table>
 
   {{#if numproto}}
