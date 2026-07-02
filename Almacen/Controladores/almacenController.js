@@ -23,6 +23,15 @@ export default class AlmacenController{
     const data = await AlmacenModel.getListaAlmacenes(search)
     reply.send(data)
   }
+  /**
+   * [feat 2026-06-26] Endpoint de la pestaña "Almacenes": devuelve TODOS los almacenes
+   * de la empresa (todos los tipos). El filtrado y la paginación se resuelven en el cliente.
+   * Solo lectura. Ruta: GET /almacen/listaralmacenesall
+   */
+  static async getListaAlmacenesAll(req,reply){
+    const data = await AlmacenModel.getListaAlmacenesAll()
+    reply.send(data)
+  }
   static async getMovimientosAlmacen(req,reply){
     const search = req.params.search ?? ''
     const data = await AlmacenModel.getMovimientosAlmacen(search)
@@ -420,7 +429,10 @@ export default class AlmacenController{
     // [v2 2026-06-24 10:35] Auto-switch a v2/guia_movimiento_almacen (telas) por fecha.
     //   Solo telas (tipo != 'avios') con emisión >= 2026-07-01 conmuta a v2.
     const _fechaMovISO = fechaDocISO(cabecera.fec_Emision_DOC)
-    const _tplMov = seleccionarPlantilla(_fechaMovISO, 'guia_movimiento_almacen', 'v2/guia_movimiento_almacen', tipo !== 'avios')
+    // [fix 2026-06-26] V2 consistente en el preview: si no hay fecha de emisión (documento aún no
+    //   emitido), se selecciona la plantilla con la fecha de HOY -> v2. Igual criterio que avíos.
+    const _fechaTplMovISO = _fechaMovISO || new Date().toLocaleDateString('en-CA')
+    const _tplMov = seleccionarPlantilla(_fechaTplMovISO, 'guia_movimiento_almacen', 'v2/guia_movimiento_almacen', tipo !== 'avios')
     const _movV2 = adaptMovimiento(detalle)
     const _usaV2Mov = _tplMov.startsWith('v2/')
     res.render(
@@ -444,6 +456,22 @@ export default class AlmacenController{
         documentDate: cabecera.fec_Emision_DOC ?? '',
         tipoDocumento: 'guia-movimiento',
         proveedor: { nom: cabecera.Raz_social_DOC ?? '', ruc: cabecera.Nro_Doc_Prov ?? '' },
+        // [feat 2026-06-26] Bloque UNIFICADO compacto para el formato DOBLE de la guía de
+        //   movimiento (telas): además de lo que ya trae el partial compacto, incluye fecha de
+        //   pedido/entrega, producción, número de contacto y forma de pago (del requerimiento).
+        despachoInfo: _usaV2Mov ? {
+          tipoMov: cabecera.cod_comprobante == 'INGR' ? 'INGRESO' : 'RETIRO',
+          nroOrden: cabecera.oc ?? '',
+          modelo: cabecera.modelo ?? '',
+          articulo: cabecera.articulo ?? '',
+          giradoPor: cabecera.usuario ?? '',
+          fechaPedido: requerimiento?.fec_emision ?? '',
+          fechaEntrega: requerimiento?.fec_retorno ?? '',
+          produccion: requerimiento?.produccion ?? '',
+          contacto: requerimiento?.nro_contacto ?? '',
+          formaPago: requerimiento?.forma_pago ?? '',
+        } : null,
+        datosUnificados: _usaV2Mov,
         totalSalida: _movV2.totalSalida,
         firmas: ['AUXILIAR DE ALMACEN', 'JEFE DE CORTE'],
         date: _fechaMovISO,
@@ -666,18 +694,29 @@ export default class AlmacenController{
           const page = await browser.newPage();
           await page.setContent(html);
 
-          const pdfOptions = {
-            // format: 'A4',
-            width: '20cm',
-            height: '27.94cm',
-            landscape: false,
-            printBackground: true,
-            margin: {
-              left: 0,
-              right: 0
-            }
-            , scale: 1
-          };
+          // [feat 2026-06-26] En v2 (formato DOBLE) la hoja va HORIZONTAL (apaisada), igual que el
+          //   despacho de avíos; la plana (fallback) se mantiene vertical.
+          const pdfOptions = _usaV2Mov
+            ? {
+                width: '27.94cm',
+                height: '20cm',
+                landscape: true,
+                printBackground: true,
+                margin: { left: 0, right: 0 },
+                scale: 1
+              }
+            : {
+                // format: 'A4',
+                width: '20cm',
+                height: '27.94cm',
+                landscape: false,
+                printBackground: true,
+                margin: {
+                  left: 0,
+                  right: 0
+                }
+                , scale: 1
+              };
 
           const pdfBuffer = await page.pdf(pdfOptions);
           await browser.close();
@@ -1066,7 +1105,18 @@ export default class AlmacenController{
     const _flatDesp = _isAviosDesp ? 'guia_despacho_almacen_avios_v2' : 'guia_despacho_almacen_telas'
     const _v2Desp = _isAviosDesp ? 'v2/guia_despacho_almacen_avios_v2' : 'v2/guia_despacho_almacen_telas'
     const _fechaDespISO = fechaDocISO(cabecera.fec_Emision_DOC)
-    const _tplDesp = seleccionarPlantilla(_fechaDespISO, _flatDesp, _v2Desp)
+    // [fix 2026-06-26] V2 CONSISTENTE en el preview de despacho de corte AVÍOS.
+    //   Problema: en la vista previa el documento aún NO está emitido, por lo que
+    //   cabecera.fec_Emision_DOC suele venir vacío -> fechaDocISO('') => '' ->
+    //   getTemplateVersion(new Date('T00:00:00') = Invalid Date) cae SIEMPRE a la
+    //   plantilla PLANA (diseño viejo), aunque el documento guardado/exportado sí usa v2.
+    //   Solución acotada a ESTA ruta: si no hay fecha de emisión, se elige la plantilla
+    //   usando la fecha de HOY (que está por encima del corte 2026-01-01) -> v2.
+    //   No se altera ningún dato mostrado: `date` sigue usando _fechaDespISO original;
+    //   solo cambia la fecha usada para SELECCIONAR la plantilla. Si la fecha SÍ existe,
+    //   el gate por fecha se respeta igual que antes.
+    const _fechaTplISO = _fechaDespISO || new Date().toLocaleDateString('en-CA') // 'YYYY-MM-DD' local
+    const _tplDesp = seleccionarPlantilla(_fechaTplISO, _flatDesp, _v2Desp)
     const _despV2 = adaptDespachoAlmacen(detalle, _isAviosDesp)
     const _usaV2Desp = _tplDesp.startsWith('v2/')
     res.render(
@@ -1087,10 +1137,37 @@ export default class AlmacenController{
         emisor: cabecera.emisor == 'NEXT' ? 1 : 0,
         // [v2 2026-06-24 10:41] contexto v2 (la plana lo ignora):
         documentTitle: _isAviosDesp ? 'GUÍA DE DESPACHO - AVÍOS' : 'GUÍA DE DESPACHO - TELAS',
-        documentNumber: requerimiento?.nro_requerimiento ?? '',
+        // [fix 2026-06-26] N° de guía en la cabecera v2. La guía plana de avíos mostraba el
+        //   correlativo (#{{correlativo}}) como número del documento, pero v2 estaba poniendo
+        //   nro_requerimiento, por lo que el "número de guía" no aparecía. Para avíos usamos el
+        //   correlativo (mismo valor que el contexto `correlativo`); telas queda igual que antes.
+        //   ANTERIOR (comentado, no eliminar):
+        //   documentNumber: requerimiento?.nro_requerimiento ?? '',
+        documentNumber: _isAviosDesp ? String(cabecera.id_CAB ?? '').padStart(8, '0') : (requerimiento?.nro_requerimiento ?? ''),
         documentDate: cabecera.fec_Emision_DOC ?? '',
         tipoDocumento: 'guia-despacho',
         proveedor: { nom: cabecera.Raz_social_DOC ?? '', ruc: cabecera.Nro_Doc_Prov ?? '' },
+        // [fix 2026-06-26] Misma información de cabecera que tenía la guía PLANA de avíos y que v2
+        //   no estaba pasando: N° de orden, fecha de pedido, fecha de entrega, modelo, artículo,
+        //   girado por y motivo. Se arma desde la cabecera cruda del movimiento (el objeto local
+        //   `cabecera`, que aquí conserva todos los campos aunque la clave `cabecera` del contexto
+        //   se reescriba para v2). El partial lo pinta en la sección "Datos de la guía".
+        //   Nota: la plana rotulaba el único dato de fecha como "FECHA ENTREGA" (= fec_Emision_DOC)
+        //   y "FECHA PEDIDO" salía "-"; se respeta ese criterio.
+        despachoInfo: _usaV2Desp && _isAviosDesp ? {
+          nroOrden: cabecera.oc ?? '',
+          fechaPedido: '',
+          fechaEntrega: cabecera.fec_Emision_DOC ?? '',
+          modelo: cabecera.modelo ?? '',
+          articulo: cabecera.articulo ?? '',
+          giradoPor: cabecera.usuario ?? '',
+          motivo: cabecera.motivo == 'prd' ? 'PRODUCCION' : 'AJUSTE',
+          responsable: cabecera.responsable ?? '',
+        } : null,
+        // [feat 2026-06-26] Activa el bloque UNIFICADO (proveedor + datos de la guía) en el
+        //   formato doble: el layout `guia-ingreso-doble` omite su `datos-proveedor-general`
+        //   y el cuerpo de la plantilla de avíos pinta un único bloque compacto con ambos.
+        datosUnificados: _usaV2Desp && _isAviosDesp,
         totalSalida: _despV2.totalSalida,
         firmas: ['ALMACÉN', 'RECIBE'],
         date: _fechaDespISO,
@@ -1349,8 +1426,12 @@ export default class AlmacenController{
           ? 
             {
               // format: 'A4',
-              width: '20cm',
-              height: '27.94cm',
+              // [fix 2026-06-26] Hoja HORIZONTAL (apaisada) para el despacho de avíos en formato
+              //   doble: dos copias verticales una al lado de la otra. Se intercambian las
+              //   dimensiones (antes 20 x 27.94 vertical -> ahora 27.94 x 20 horizontal).
+              //   ANTERIOR (comentado, no eliminar): width: '20cm', height: '27.94cm',
+              width: '27.94cm',
+              height: '20cm',
               landscape: true,
               printBackground: true,
               margin: {

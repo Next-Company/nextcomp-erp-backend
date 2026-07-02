@@ -25,6 +25,42 @@ export default class AlmacenModel{
       if(conn) await conn.end()
     }
   }
+  /**
+   * [feat 2026-06-26] Lista COMPLETA de almacenes/tiendas de la empresa (todos los tipos).
+   *
+   * A diferencia de getListaAlmacenes() —que filtra tipo='C' y limita a 50 para alimentar
+   * los selects de movimientos—, este método devuelve TODOS los registros de tbl2_almacen
+   * del RUC de la empresa. Es la fuente de la pestaña "Almacenes" (lista paginada + filtros),
+   * donde el filtrado y la paginación se resuelven en el cliente por ser pocas decenas de filas.
+   *
+   * Campos `tipo`: T=Tienda, A=Almacén, O=Local/Oficina, C=Almacén de proceso.
+   * Operación de SOLO LECTURA.
+   *
+   * @returns {Promise<Array>} filas de tbl2_almacen (idx, tipo, serie, nom, dir, dis, tel, estado, ...)
+   */
+  static async getListaAlmacenesAll(){
+    let conn = undefined
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect()
+
+      // Solo el RUC de la empresa (esquema multi-tenant; esta instancia es mono-empresa).
+      const query = `
+        SELECT idx, tipo, serie, nom, dir, urb, dis, pro, dep, tel, estado
+        FROM tbl2_almacen
+        WHERE ruc_ = '20522094120'
+        ORDER BY tipo, nom
+      `;
+
+      const [result] = await conn.execute(query);
+      return result
+    } catch (error) {
+      console.log(error)
+      return []
+    } finally {
+      if(conn) await conn.end()
+    }
+  }
   static async getMovimientosAlmacen(search){
     // Suponiendo que tienes una conexión global o la recibes como parámetro
     let conn = undefined
@@ -80,9 +116,12 @@ export default class AlmacenModel{
       `,[id]);
 
       const [inforeq] = await conn.execute(`
-        SELECT tpic.orden_ref as nro_requerimiento,tpic.id_proveedor_CAB, tp.ruc as ruc, tp.nom as proveedor
-        FROM tbl2_pedidos_insumos_cab tpic 
-        JOIN tbl2_proveedor tp ON tpic.id_proveedor_CAB = tp.idx 
+        SELECT tpic.orden_ref as nro_requerimiento,tpic.id_proveedor_CAB, tp.ruc as ruc, tp.nom as proveedor,
+          -- [feat 2026-06-26] Campos del requerimiento (pedido) para la guía v2 doble de TELAS:
+          --   fecha de pedido/entrega, producción, número de contacto y forma de pago.
+          tpic.fec_emision, tpic.fec_retorno, tpic.produccion, tpic.nro_contacto, tpic.forma_pago
+        FROM tbl2_pedidos_insumos_cab tpic
+        JOIN tbl2_proveedor tp ON tpic.id_proveedor_CAB = tp.idx
         WHERE tpic.idx = ?
       `,[cabmov[0].id_requerimiento]);
 

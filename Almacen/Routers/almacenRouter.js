@@ -13,6 +13,10 @@ ALMACEN_ROUTER.get('/listarinventario/:search',AlmacenController.getInventarioPr
 ALMACEN_ROUTER.get('/listaralmacenes',AlmacenController.getListaAlmacenes)
 ALMACEN_ROUTER.get('/listaralmacenes/:search',AlmacenController.getListaAlmacenes)
 
+// [feat 2026-06-26] Lista completa de almacenes (todos los tipos) para la pestaña "Almacenes".
+//   Distinta de /listaralmacenes (que filtra tipo='C'). El filtro y la paginación van en el cliente.
+ALMACEN_ROUTER.get('/listaralmacenesall',AlmacenController.getListaAlmacenesAll)
+
 ALMACEN_ROUTER.get('/getguiamovimiento/:idmov',AlmacenController.getGuia)
 ALMACEN_ROUTER.put('/saveguia',AlmacenController.saveGuia)
 ALMACEN_ROUTER.delete('/deleteguiamov/:idguia',AlmacenController.deleteGuia)
