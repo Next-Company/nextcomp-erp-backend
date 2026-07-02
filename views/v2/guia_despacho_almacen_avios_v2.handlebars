@@ -19,37 +19,82 @@
   ════════════════════════════════════════════════════════════════════════════
 --}}
 
-{{#> guia-ingreso}}
+{{!-- [fix 2026-06-26] FORMATO DOBLE: dos copias apiladas en la misma hoja (como la v1 plana,
+     que imprimía dos bloques separados por línea de corte). Se usa el layout `guia-ingreso-doble`,
+     que renderiza este mismo cuerpo dos veces. Antes: {{#> guia-ingreso}} (una sola copia). --}}
+{{#> guia-ingreso-doble}}
 
-  <p class="section-title">AVÍOS A DESPACHAR</p>
+  {{!--
+    [feat 2026-06-26] Bloque UNIFICADO y compacto: combina "Datos del proveedor" + "Datos de la
+    guía" en UNA sola sección, pensado para el FORMATO DOBLE (columna angosta donde no caben dos
+    bloques separados). El layout `guia-ingreso-doble` OMITE su `datos-proveedor-general` cuando
+    `datosUnificados` está activo (lo pasa el controlador para avíos). El proveedor sale de
+    `proveedor` {nom,ruc}; el resto de `despachoInfo` (incluye responsable).
+    Antes: dos bloques separados (Datos del proveedor del layout + Datos de la guía aquí).
+  --}}
+  {{#if despachoInfo}}
+  {{!-- [fix 2026-06-26] Bloque más compacto y mejor distribuido: 3 columnas (menos filas),
+       fuente 0.72rem, gaps/padding reducidos y etiquetas de fecha abreviadas, para que ocupe
+       menos espacio y la tabla del cuerpo domine. --}}
+  <section class="datos-orden-section" style="margin: 2px 0 4px 0; padding: 4px 8px;">
+    <div style="font-size: 0.72rem; font-weight: bold; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 3px; padding-bottom: 2px; border-bottom: .5px solid var(--dashed-color);">
+      Datos de la guía
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px 12px; font-size: 0.72rem; line-height: 1.2;">
+      <div style="grid-column:1 / -1;"><strong>Proveedor:</strong> <span style="overflow-wrap:anywhere;">{{#if proveedor.nom}}{{proveedor.nom}}{{else}}-{{/if}}</span></div>
+      <div style="white-space:nowrap;"><strong>RUC:</strong> <span>{{#if proveedor.ruc}}{{proveedor.ruc}}{{else}}-{{/if}}</span></div>
+      <div><strong>Persona:</strong> <span>{{#if despachoInfo.responsable}}{{despachoInfo.responsable}}{{else}}-{{/if}}</span></div>
+      <div style="white-space:nowrap;"><strong>N° Orden:</strong> <span>{{#if despachoInfo.nroOrden}}{{despachoInfo.nroOrden}}{{else}}-{{/if}}</span></div>
+      <div><strong>Motivo:</strong> <span>{{#if despachoInfo.motivo}}{{despachoInfo.motivo}}{{else}}-{{/if}}</span></div>
+      <div><strong>Modelo:</strong> <span>{{#if despachoInfo.modelo}}{{despachoInfo.modelo}}{{else}}-{{/if}}</span></div>
+      <div><strong>Artículo:</strong> <span>{{#if despachoInfo.articulo}}{{despachoInfo.articulo}}{{else}}-{{/if}}</span></div>
+      {{!-- white-space:nowrap para que las fechas no salten de línea en columna angosta --}}
+      <div style="white-space:nowrap;"><strong>F. pedido:</strong> <span>{{#if despachoInfo.fechaPedido}}{{despachoInfo.fechaPedido}}{{else}}-{{/if}}</span></div>
+      <div style="white-space:nowrap;"><strong>F. entrega:</strong> <span>{{#if despachoInfo.fechaEntrega}}{{despachoInfo.fechaEntrega}}{{else}}-{{/if}}</span></div>
+      <div style="grid-column:1 / -1;"><strong>Girado por:</strong> <span>{{#if despachoInfo.giradoPor}}{{despachoInfo.giradoPor}}{{else}}-{{/if}}</span></div>
+    </div>
+  </section>
+  {{/if}}
 
-  <table class="table-guia">
+  {{!-- [fix 2026-06-26] Título del cuerpo alineado al de los títulos de los partials
+       (Datos del proveedor / Datos de la guía): mismo estilo y tamaño var(--font-small),
+       en lugar de la clase .section-title (var(--font-title)), que se veía muy grande. --}}
+  <div style="font-size: var(--font-small); font-weight: bold; text-transform: uppercase; letter-spacing: .4px; margin: 12px 0 6px 0; padding-bottom: 4px; border-bottom: .5px solid var(--dashed-color);">AVÍOS A DESPACHAR</div>
+
+  {{!-- [fix 2026-06-26] Tabla con formato "solo líneas" (clase table-clean, igual que las
+       demás guías v2) y SIN la columna "CANT. SOLIC." (se quitó th + td y se ajustó el colspan
+       del TOTAL de 4 a 3). --}}
+  {{!-- [feat 2026-06-26] La tabla crece (flex:1) para ser la sección protagonista del cuerpo.
+       La fila flexible al final del tbody absorbe el alto sobrante, así las filas de datos
+       quedan compactas arriba y la tabla ocupa el resto de la columna. --}}
+  {{!-- [fix 2026-06-26] font-size reducido solo en esta tabla (override inline, no toca el
+       .table-clean compartido); las celdas heredan este tamaño. --}}
+  <table class="table-clean" style="flex:1 1 auto; width:100%; font-size:0.68rem;">
     <thead>
       <tr>
         <th style="width:35px;">ITEM</th>
         <th>DESCRIPCIÓN</th>
-        <th style="width:90px;">CANT. SOLIC.</th>
         <th style="width:70px;">UND</th>
         <th style="width:80px;">SALIDA</th>
       </tr>
     </thead>
-    <tbody>
+    <tbody style="vertical-align:top;">
       {{#each detalle}}
       <tr>
         <td class="text-center">{{plusindex @index}}</td>
         <td class="text-left">{{descripcion}}</td>
-        <td class="text-center">{{cantSolicitada}}</td>
         <td class="text-center">{{unidad}}</td>
         <td class="text-center">{{salida}}</td>
       </tr>
       {{/each}}
+      <tr style="height:100%;"><td colspan="4" style="border:none;"></td></tr>
     </tbody>
     <tfoot>
       <tr>
-        <td colspan="4" class="text-right"><strong>TOTAL</strong></td>
+        <td colspan="3" class="text-right"><strong>TOTAL</strong></td>
         <td class="text-center"><strong>{{totalSalida}}</strong></td>
       </tr>
     </tfoot>
   </table>
 
-{{/guia-ingreso}}
+{{/guia-ingreso-doble}}

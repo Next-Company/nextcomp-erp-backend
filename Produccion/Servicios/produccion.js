@@ -812,8 +812,13 @@ export class ProduccionModel {
       conn = await mysql.createConnection(configs[1])
       await conn.connect();
       const [results, fields] = await conn.query(`
-        SELECT tgtc.idx,tgtc.id_orden_CAB,tgtc.orden_ref,tgtc.destino,tgtc.tipo,tgtc.motivo_traslado,tgtc.id_proveedor_CAB,tgtc.proveedor,tgtc.servicio,tgtc.responsable,tgtc.modelo,tgtc.marca,tgtc.producto,DATE_FORMAT(tgtc.fec_emision,"%d/%m/%Y") as fec_emision_guia,tgtc.fec_emision,tgtc.fec_recepcion,tgtc.fec_retorno,DATE_FORMAT(tgtc.fec_retorno,"%d/%m/%Y") as fec_retorno_guia, date_format(tgtc.fec_recepcion,"%d/%m/%Y") as fec_recepcion_guia,tgtc.costo,tgtc.observaciones,tgtc.estado,tgtc.created_at, DATEDIFF(STR_TO_DATE(tgtc.fec_retorno,"%Y-%m-%d"), STR_TO_DATE(tgtc.fec_emision,"%Y-%m-%d")) as duracion,tgtc.distribucion,tgtc.igv,tgtc.porcentaje_adelanto,tgtc.programacion,tgtc.condicion_pago
-        FROM tbl2_guias_traslado_cab tgtc 
+        SELECT tgtc.idx,tgtc.id_orden_CAB,tgtc.orden_ref,tgtc.destino,tgtc.tipo,tgtc.motivo_traslado,tgtc.id_proveedor_CAB,tgtc.proveedor,tgtc.servicio,tgtc.responsable,tgtc.modelo,tgtc.marca,tgtc.producto,DATE_FORMAT(tgtc.fec_emision,"%d/%m/%Y") as fec_emision_guia,tgtc.fec_emision,tgtc.fec_recepcion,tgtc.fec_retorno,DATE_FORMAT(tgtc.fec_retorno,"%d/%m/%Y") as fec_retorno_guia, date_format(tgtc.fec_recepcion,"%d/%m/%Y") as fec_recepcion_guia,tgtc.costo,tgtc.observaciones,tgtc.estado,tgtc.created_at, DATEDIFF(STR_TO_DATE(tgtc.fec_retorno,"%Y-%m-%d"), STR_TO_DATE(tgtc.fec_emision,"%Y-%m-%d")) as duracion,tgtc.distribucion,tgtc.igv,tgtc.porcentaje_adelanto,tgtc.programacion,tgtc.condicion_pago,
+        -- [fix 2026-06-26] Modelo de la ORDEN (tfpo.modelos) además del guardado en la guía.
+        --   La guía a veces conserva un modelo obsoleto; el export usa este para reflejar el
+        --   modelo actual de la OP. Fallback al modelo de la guía si la orden no tiene.
+        COALESCE(NULLIF(TRIM(tfpo.modelos),''), tgtc.modelo) as modelo_orden
+        FROM tbl2_guias_traslado_cab tgtc
+        LEFT JOIN tbl2_fases_prod_ordenes tfpo ON tfpo.idx = tgtc.id_orden_CAB
         WHERE tgtc.idx = ?
       `, [id]);
       await conn.end();
@@ -1663,21 +1668,51 @@ export class ProduccionModel {
     const [infotallas] = await conn.execute('select t2.* from tbl2_fases_prod_ordenes t1 join tbl2_tallas_template t2 on case when t1.fraccionado = 1 then t1.tallasfracciones else t1.tallasbase end = t2.idx where t1.idx = ?',[parseInt(orden)])
     try {
 
+      // ============================================================================
+      // [fix 2026-06-26] BUG: "Cannot read properties of undefined (reading '0')"
+      // ----------------------------------------------------------------------------
+      // Sintoma: al actualizar/guardar una guia de SERVICIOS de una orden FRACCIONADA
+      //          (p.ej. orden 2600072), el guardado fallaba con el error de arriba,
+      //          mostrado en el frontend via toast.error(resp.message) en NewGuia.tsx.
+      //
+      // Causa:   mas abajo se recorren TODAS las tallas del template de la orden
+      //          (infotallas[0].tallas) y por cada talla `v` se accede a combo[v][0],
+      //          combo[v][1] y combo[v][2]. Pero el objeto `combo` (armado en
+      //          saveInfoGuias a partir de v.fracciones) SOLO contiene las tallas que
+      //          tienen fraccion registrada. Si el template tiene una talla que ese
+      //          combo no registro, combo[v] es `undefined` y combo[v][0] revienta.
+      //
+      // Fix:     usar optional chaining + valor por defecto -> combo[v]?.[0] ?? 0,
+      //          exactamente como ya estaba corregido en la funcion hermana
+      //          UpdateDisponibleSinFraccionado. El codigo original se deja COMENTADO
+      //          (no eliminado) justo encima de cada linea corregida para trazabilidad.
+      // ============================================================================
+
       if(backup_articulos.length > 0){
         p1 = ''
         p2 = ''
         p3 = ''
         for(let combo of [...backup_articulos]){
           p1 = infotallas[0].tallas.map(row=>row.desc).reduce((c,v)=>{
-            c += " WHEN id_modelo_CAB = " + combo.idcombo +" and talla = '" + v + "' THEN " + (tipo ? parseInt(combo[v][0]) : -1*parseInt(combo[v][0]))
+            // [fix 2026-06-26] combo[v] puede ser undefined si la talla `v` del template
+            // no tiene fraccion registrada en este combo -> protegemos con `?.[0] ?? 0`.
+            // ORIGINAL (comentado, NO eliminar):
+            // c += " WHEN id_modelo_CAB = " + combo.idcombo +" and talla = '" + v + "' THEN " + (tipo ? parseInt(combo[v][0]) : -1*parseInt(combo[v][0]))
+            c += " WHEN id_modelo_CAB = " + combo.idcombo +" and talla = '" + v + "' THEN " + (tipo ? parseInt(combo[v]?.[0] ?? 0) : -1*parseInt(combo[v]?.[0] ?? 0))
             return c
           },p1);
           p2 = infotallas[0].tallas.map(row=>row.desc).reduce((c,v)=>{
-            c += " WHEN id_modelo_CAB = " + combo.idcombo + " and talla = '" + v + "' THEN " + (tipo ? parseInt(combo[v][1]) : -1*parseInt(combo[v][1]))
+            // [fix 2026-06-26] mismo blindaje que p1 para el indice [1] (ver bloque de documentacion arriba).
+            // ORIGINAL (comentado, NO eliminar):
+            // c += " WHEN id_modelo_CAB = " + combo.idcombo + " and talla = '" + v + "' THEN " + (tipo ? parseInt(combo[v][1]) : -1*parseInt(combo[v][1]))
+            c += " WHEN id_modelo_CAB = " + combo.idcombo + " and talla = '" + v + "' THEN " + (tipo ? parseInt(combo[v]?.[1] ?? 0) : -1*parseInt(combo[v]?.[1] ?? 0))
             return c
           },p2);
           p3 = infotallas[0].tallas.map(row=>row.desc).reduce((c,v)=>{
-            c += " WHEN id_modelo_CAB = " + combo.idcombo + " and talla = '" + v + "' THEN " + (tipo ? parseInt(combo[v][2]) : -1*parseInt(combo[v][2]))
+            // [fix 2026-06-26] mismo blindaje que p1 para el indice [2] (ver bloque de documentacion arriba).
+            // ORIGINAL (comentado, NO eliminar):
+            // c += " WHEN id_modelo_CAB = " + combo.idcombo + " and talla = '" + v + "' THEN " + (tipo ? parseInt(combo[v][2]) : -1*parseInt(combo[v][2]))
+            c += " WHEN id_modelo_CAB = " + combo.idcombo + " and talla = '" + v + "' THEN " + (tipo ? parseInt(combo[v]?.[2] ?? 0) : -1*parseInt(combo[v]?.[2] ?? 0))
             return c
           },p3);
         }
@@ -1696,15 +1731,25 @@ export class ProduccionModel {
         p3 = ''
         for(let combo of [...articulos]){
           p1 = infotallas[0].tallas.map(row=>row.desc).reduce((c,v)=>{
-            c += " WHEN id_modelo_CAB = " + combo.idcombo +" and talla = '" + v + "' THEN " + (tipo ? -1*parseInt(combo[v][0]) : parseInt(combo[v][0]))
+            // [fix 2026-06-26] mismo blindaje contra combo[v] undefined, indice [0]
+            // (ver bloque de documentacion al inicio del try).
+            // ORIGINAL (comentado, NO eliminar):
+            // c += " WHEN id_modelo_CAB = " + combo.idcombo +" and talla = '" + v + "' THEN " + (tipo ? -1*parseInt(combo[v][0]) : parseInt(combo[v][0]))
+            c += " WHEN id_modelo_CAB = " + combo.idcombo +" and talla = '" + v + "' THEN " + (tipo ? -1*parseInt(combo[v]?.[0] ?? 0) : parseInt(combo[v]?.[0] ?? 0))
             return c
           },p1);
           p2 = infotallas[0].tallas.map(row=>row.desc).reduce((c,v)=>{
-            c += " WHEN id_modelo_CAB = " + combo.idcombo + " and talla = '" + v + "' THEN " + (tipo ? -1*parseInt(combo[v][1]) : parseInt(combo[v][1]))
+            // [fix 2026-06-26] mismo blindaje contra combo[v] undefined, indice [1].
+            // ORIGINAL (comentado, NO eliminar):
+            // c += " WHEN id_modelo_CAB = " + combo.idcombo + " and talla = '" + v + "' THEN " + (tipo ? -1*parseInt(combo[v][1]) : parseInt(combo[v][1]))
+            c += " WHEN id_modelo_CAB = " + combo.idcombo + " and talla = '" + v + "' THEN " + (tipo ? -1*parseInt(combo[v]?.[1] ?? 0) : parseInt(combo[v]?.[1] ?? 0))
             return c
           },p2)
           p3 = infotallas[0].tallas.map(row=>row.desc).reduce((c,v)=>{
-            c += " WHEN id_modelo_CAB = " + combo.idcombo + " and talla = '" + v + "' THEN " + (tipo ? -1*parseInt(combo[v][2]) : parseInt(combo[v][2]))
+            // [fix 2026-06-26] mismo blindaje contra combo[v] undefined, indice [2].
+            // ORIGINAL (comentado, NO eliminar):
+            // c += " WHEN id_modelo_CAB = " + combo.idcombo + " and talla = '" + v + "' THEN " + (tipo ? -1*parseInt(combo[v][2]) : parseInt(combo[v][2]))
+            c += " WHEN id_modelo_CAB = " + combo.idcombo + " and talla = '" + v + "' THEN " + (tipo ? -1*parseInt(combo[v]?.[2] ?? 0) : parseInt(combo[v]?.[2] ?? 0))
             return c
           },p3)
         }
@@ -2364,7 +2409,15 @@ export class ProduccionModel {
 
           } else {
             console.log("Dentro de 2 insertado")
-            const [results, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_det(id_pedido_CAB,id_producto_CAB,producto,color,rollos,cantidad,unidad,precio,anulado,modelo,corte) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [parseInt(data.id), fila.id_producto_CAB, fila.producto, fila.color, fila.rollos, fila.cantidad, fila.unidad, fila.precio, fila.anulado, fila.modelo, fila.corte]);
+            // [fix 2026-06-26] BUG: al AGREGAR articulos nuevos a una OC existente (modo edicion),
+            //   este INSERT NO guardaba id_subprod_CAB -> la fila quedaba con id_subprod_CAB = NULL.
+            //   Al recargar, getInfoPedidoDet (tipo AVIOS) usa INNER JOIN sobre subproductos
+            //   (join tbl2_subproductos t2 on t2.idx = t1.id_subprod_CAB), por lo que esas filas
+            //   se filtraban y "desaparecian" pese a estar en la BD ("dice que guardo pero no aparece").
+            //   Fix: incluir id_subprod_CAB y conversion, replicando el INSERT del alta (rama create).
+            //   ANTERIOR (comentado, no eliminar):
+            //   const [results, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_det(id_pedido_CAB,id_producto_CAB,producto,color,rollos,cantidad,unidad,precio,anulado,modelo,corte) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [parseInt(data.id), fila.id_producto_CAB, fila.producto, fila.color, fila.rollos, fila.cantidad, fila.unidad, fila.precio, fila.anulado, fila.modelo, fila.corte]);
+            const [results, fields] = await conn.query('INSERT INTO tbl2_pedidos_insumos_det(id_pedido_CAB,id_subprod_CAB,id_producto_CAB,producto,color,rollos,cantidad,unidad,precio,anulado,modelo,corte,conversion) VALUES(NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""),NULLIF(?, ""))', [parseInt(data.id), fila.id_subprod_CAB ?? fila.idxsub ?? null, fila.id_producto_CAB ?? fila.idx_producto ?? null, fila.producto, fila.color, fila.rollos, fila.cantidad, fila.unidad, fila.precio, fila.anulado, fila.modelo, fila.corte, fila.conversion ?? 1]);
 
           }
         }

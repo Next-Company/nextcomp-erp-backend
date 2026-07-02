@@ -59,7 +59,24 @@ export class ProduccionController {
     const params = req.params
     const data = await ProduccionModel.getInfoGuiaCab(params.id)
     console.log("La informacion de la guia es:",data)
-    const data2 = await ProduccionModel.getInfoGuiaDet(params.id)
+    let data2 = await ProduccionModel.getInfoGuiaDet(params.id)
+    // [fix 2026-06-26] Los nombres de los artículos del detalle son un snapshot guardado en la
+    //   guía que puede contener el modelo OBSOLETO (ej. "louis"). Si la orden tiene otro modelo
+    //   (modelo_orden, ej. "abel"), se reemplaza esa palabra dentro del artículo para reflejar el
+    //   modelo actual de la OP. Acotado al export; no toca getInfoGuiaDet (compartido). Si el
+    //   artículo no contiene el modelo viejo, queda igual.
+    {
+      const _modeloGuia = (data[0].modelo ?? '').toString().trim()
+      const _modeloOrden = (data[0].modelo_orden ?? '').toString().trim()
+      if (_modeloGuia && _modeloOrden && _modeloGuia.toLowerCase() !== _modeloOrden.toLowerCase()) {
+        const _re = new RegExp(_modeloGuia.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')
+        data2 = data2.map(row => ({
+          ...row,
+          articulo: typeof row.articulo === 'string' ? row.articulo.replace(_re, _modeloOrden) : row.articulo,
+          modelo: _modeloOrden,
+        }))
+      }
+    }
     const data3 = data[0].id_proveedor_CAB ? await ProduccionModel.searchProveedorById(data[0].id_proveedor_CAB) : [{ nom: data[0].responsable, ruc: '', direccion: data[0].destino }]
     const data4 = await ProduccionModel.getPlantillasTallasByOrden(data[0].id_orden_CAB ?? '0')
     
@@ -79,13 +96,26 @@ export class ProduccionController {
         condicion: parseInt(params.modo),
         color: data[0].servicio == 'ACABADOS' ? 'red' : 'black',
         info: params,
-        // [v2 2026-06-24 11:55] cabecera normalizada si v2; cruda si plana.
-        cabecera: _usaV2GuiaExpG
-          ? { orden_ref: data[0]?.id_orden_CAB ?? '', responsable: data[0]?.responsable ?? '', servicio: data[0]?.servicio ?? '', costo: data[0]?.costo, duracion: data[0]?.duracion }
-          : data[0],
+        // [v2 2026-06-24 12:15] FIX: pasar cabecera COMPLETA. data[0] (getInfoGuiaCab) ya
+        //   trae orden_ref/producto/modelo/costo/responsable/servicio/duracion. Antes se
+        //   reemplazaba por un objeto parcial y se vaciaban campos en el diseño v2.
+        // [fix 2026-06-26] Modelo: usar el de la ORDEN (modelo_orden) en vez del guardado en la
+        //   guía, que puede estar obsoleto (ej. guía mostraba "louis" pero la OP es "abel").
+        //   modelo_orden viene de getInfoGuiaCab (COALESCE de tfpo.modelos con tgtc.modelo).
+        cabecera: { ...data[0], modelo: data[0].modelo_orden || data[0].modelo },
         // [v2 2026-06-24 11:55] contexto v2 header (la plana lo ignora):
-        documentTitle: data[0].tipo == 'SERVICIOS' ? 'GUÍA DE INGRESO - SERVICIO' : 'GUÍA DE INGRESO - MUESTRAS',
+        // [fix 2026-06-26] La cabecera de órdenes de SERVICIOS debe decir
+        //   "ORDEN DE SERVICIO - {servicio}" (ej. ORDEN DE SERVICIO - CONFECCION),
+        //   no "GUÍA DE INGRESO - SERVICIO". El caso MUESTRAS se mantiene igual.
+        //   ANTERIOR (comentado, no eliminar):
+        //   documentTitle: data[0].tipo == 'SERVICIOS' ? 'GUÍA DE INGRESO - SERVICIO' : 'GUÍA DE INGRESO - MUESTRAS',
+        documentTitle: data[0].tipo == 'SERVICIOS' ? ('ORDEN DE SERVICIO - ' + (data[0].servicio ?? '')) : 'GUÍA DE INGRESO - MUESTRAS',
         documentNumber: `${data[0].idx}`.padStart(10, 0),
+        // [v2 2026-06-25] FIX: el header v2 (document-header) no recibía fechas en esta ruta
+        //   (exportguia) → "Fecha de emisión"/"Fecha de retorno" salían vacías. Se toman de la
+        //   cabecera de la guía (getInfoGuiaCab), ya formateadas dd/mm/yyyy.
+        documentDate: data[0].fec_emision_guia,
+        documentDeliveryDate: data[0].fec_retorno_guia,
         tipoDocumento: 'guia-ingreso',
         tipoProveedorPartial: data[0].tipo == 'SERVICIOS' ? 'servicio' : '',
         firmas: ['ENTREGADO POR', 'RECIBIDO POR'],
@@ -93,16 +123,25 @@ export class ProduccionController {
         tallas: data4[0]?.tallas.map(row=>row.desc) ?? ['st','xs','s','m','l','xl','xxl',],
         colspanbody: data4[0]?.tallas?.length + 2 ?? 2,
         colspantotales: data4[0]?.tallas.length + 2,
-        igv:data[0].igv ? 'No Aplica' : 'Aplica',
+        // [fix 2026-06-26] BUG IGV: la columna igv es enum('0','1') -> mysql2 la devuelve como
+        //   STRING. El check truthy crudo `data[0].igv ?` trata el string '0' como verdadero
+        //   (en JS '0' es truthy), por lo que una guía con IGV APLICA (igv='0') imprimía
+        //   "No Aplica" y calculaba 0 de IGV, contradiciendo el formulario. Se usa parseInt()
+        //   (igual que el resto del sistema): parseInt('0')=0 -> Aplica; parseInt('1')=1 -> No Aplica.
+        //   ANTERIOR (comentado, no eliminar):
+        //   igv:data[0].igv ? 'No Aplica' : 'Aplica',
+        igv: parseInt(data[0].igv) ? 'No Aplica' : 'Aplica',
         condicion: ['','Pago contra entrega','Pago programado','Pago semanal','Pago con adelanto + prog.'][data[0].condicion_pago],
         valor_igv:(data2.reduce((carry, valor) => {
           carry += valor.isprototipo ? 0 : parseFloat(valor.cantidad)
           return carry;
-        }, 0)*data[0].costo*(data[0].igv ? 0 : 0.18)).toFixed(2),
+        // [fix 2026-06-26] parseInt(igv): '0' (APLICA) -> 0.18; '1' (NO APLICA) -> 0. Antes: (data[0].igv ? 0 : 0.18)
+        }, 0)*data[0].costo*(parseInt(data[0].igv) ? 0 : 0.18)).toFixed(2),
         importetotal:(data2.reduce((carry, valor) => {
           carry += valor.isprototipo ? 0 : parseFloat(valor.cantidad)
           return carry;
-        }, 0)*data[0].costo*(data[0].igv ? 1 : 1.18)).toFixed(2),
+        // [fix 2026-06-26] parseInt(igv): '0' (APLICA) -> 1.18; '1' (NO APLICA) -> 1. Antes: (data[0].igv ? 1 : 1.18)
+        }, 0)*data[0].costo*(parseInt(data[0].igv) ? 1 : 1.18)).toFixed(2),
         // relleno:data2.filter(),
         prototipos: data2.filter(row => row.isprototipo),
         numproto: data2.filter(row => row.isprototipo).length,
@@ -460,9 +499,22 @@ export class ProduccionController {
           tallasbase: data2[0].fracciones.map(row=>row.talla.toUpperCase()),
           colspantallas: data2[0].fracciones.map(row=>row.talla).length + 1,
           // [v2 2026-06-24 11:30] contexto v2 header (la plana lo ignora):
-          documentTitle: 'GUÍA DE DESPACHO',
+          // [v2 2026-06-25] FIX cabecera ingreso: antes fijo 'GUÍA DE DESPACHO'.
+          //   Replica el patrón de la guía de ingreso (data[0].tipo) → SERVICIO/MUESTRAS.
+          // [fix 2026-06-26] El título de SERVICIOS debe mostrar el servicio real
+          //   ("GUÍA DE INGRESO - {servicio}", ej. GUÍA DE INGRESO - CONFECCION) en vez del
+          //   literal "SERVICIO". MUESTRAS se mantiene igual.
+          //   ANTERIOR (comentado, no eliminar):
+          //   documentTitle: data[0].tipo == 'SERVICIOS' ? 'GUÍA DE INGRESO - SERVICIO' : 'GUÍA DE INGRESO - MUESTRAS',
+          documentTitle: data[0].tipo == 'SERVICIOS' ? ('GUÍA DE INGRESO - ' + (data[0].servicio ?? '')) : 'GUÍA DE INGRESO - MUESTRAS',
           documentNumber: `${params.id}`.padStart(7, 0),
           documentDate: (new Date(data1[0].created_at)).toLocaleDateString('en-GB'),
+          // [v2 2026-06-25] FIX: faltaba la fecha de retorno (= fecha de ingreso) en el
+          //   header v2. document-header la pinta como "Fecha de retorno" vía documentDeliveryDate.
+          //   Fuente: fec_despacho del propio registro de ingreso (getInfoDespachoCab/data1).
+          //   Existe para todo ingreso (servicios y muestras); la guía de traslado fec_retorno
+          //   quedaba vacía en órdenes de servicio. Guarda por null para no pintar 01/01/1970.
+          documentDeliveryDate: data1[0].fec_despacho ? (new Date(data1[0].fec_despacho)).toLocaleDateString('en-GB') : '',
           tipoDocumento: 'guia-despacho',
           firmas: ['ASISTENTE ALMACÉN', 'CONTROL DE INGRESO'],
           // detalle:data2.filter(row=>!row.isprototipo),
@@ -716,14 +768,35 @@ export class ProduccionController {
     // return 0
     try {
       const data3 = data[0].id_proveedor_CAB ? await ProduccionModel.searchProveedorById(data[0].id_proveedor_CAB) : [{ nom: data[0].responsable, ruc: '', direccion: data[0].destino }]
+      // [v2 2026-06-25] Auto-switch a v2 para INGRESO DE TELAS y AVÍOS. Mismo detalle/totales
+      //   (drop-in); la v2 consume además el contexto de header (documentTitle/fechas). Telas usa
+      //   el helper cuerpoDespachoTelas (rollos); avíos itera detalle directo en la plantilla.
+      const _esTelasPedido = data[0].tipo == 'TELAS'
+      const _flatPedido = _esTelasPedido ? 'guia_despacho_pedido_telas' : 'guia_despacho_pedido_avios'
+      const _fechaPedidoISO = fechaTimestampISO(data1[0]?.created_at)
+      const _tplPedido = seleccionarPlantilla(_fechaPedidoISO, _flatPedido, 'v2/' + _flatPedido)
+      console.log('[v2] despacho-pedido(telas) → plantilla:', _tplPedido, '| fechaISO:', _fechaPedidoISO, '| created_at:', data1[0]?.created_at)
       resp.render(
-        data[0].tipo == 'TELAS' ? 'guia_despacho_pedido_telas' : 'guia_despacho_pedido_avios',
+        _tplPedido, // [v2 2026-06-25] antes: ternario fijo telas/avios
         {
           BINARY_CHUNKS3: BINARY_CHUNKS3.toString('base64'),
           color: 'black',
           info: params,
           cabecera_ingreso: data1[0],
           cabecera: data[0],
+          // [v2 2026-06-25] contexto v2 header/cuerpo (la plana lo ignora):
+          //   Título por tipo real (TELAS/AVIOS/ADICIONALES/…); antes el ternario binario
+          //   etiquetaba como AVIOS todo lo que no fuera TELAS (p.ej. ADICIONALES).
+          documentTitle: 'GUÍA DE INGRESO - ' + (data[0].tipo ?? ''),
+          documentNumber: `${params.id}`.padStart(10, 0),
+          documentDate: (new Date(data1[0].created_at)).toLocaleDateString('en-GB'),
+          // Fecha de retorno (= fecha de ingreso): fec_despacho del propio registro de ingreso.
+          documentDeliveryDate: data1[0].fec_despacho ? (new Date(data1[0].fec_despacho)).toLocaleDateString('en-GB') : '',
+          // [v2 2026-06-25] 'guia-ingreso' habilita el bloque condiciones-penalidades
+          //   (CONDICIONES DE PAGO + PENALIDADES) del layout, para telas y avíos.
+          tipoDocumento: 'guia-ingreso',
+          firmas: ['AUXILIAR DE ALMACEN', 'CONTROL DE INGRESO'],
+          totalimporte: data2.reduce((carry, valor) => carry + (parseFloat(valor.despacho ?? 0) * parseFloat(valor.costo_unit ?? 0)), 0).toFixed(2),
           detalle: data2,
           date: (new Date(data[0].created_at)).toLocaleDateString('en-GB'),
           time: (new Date(data[0].created_at)).toLocaleTimeString('en-GB'),
@@ -748,6 +821,41 @@ export class ProduccionController {
           helpers: {
             plusindex(index) {
               return index + 1
+            },
+            // [v2 2026-06-25] Cuerpo de la tabla para v2/guia_despacho_pedido_telas.
+            //   Mismas columnas y semántica que el helper `cuerpo` plano (incluye filas de
+            //   rollos y la col. Pend. = requerido - pendiente), sin el relleno a 28 filas.
+            cuerpoDespachoTelas(items) {
+              return items.map((item, key) => {
+                const importe = (item['despacho'] ?? 0) * (item['costo_unit'] ?? 0)
+                const filaPrincipal = `
+                  <tr style="height:22px;font-size:10px;">
+                    <td style="text-align:center;">${key + 1}</td>
+                    <td style="text-align:left;padding-left:4px;">${item['producto']}</td>
+                    <td style="text-align:center;">${item['color']}</td>
+                    <td style="text-align:center;">${item['unidad']}</td>
+                    <td style="text-align:center;">${item['peso'] ? item['peso'] : '-'}</td>
+                    <td style="text-align:center;">${item['requerido']}</td>
+                    <td style="text-align:center;">${(item['requerido'] ?? 0) - (item['pendiente'] ?? 0)}</td>
+                    <td style="text-align:center;">${item['despacho']}</td>
+                    <td style="text-align:center;">${item['costo_unit']}</td>
+                    <td style="text-align:right;">${importe}</td>
+                  </tr>`
+                const filasRollos = (item.info_rollos ?? []).map((row, k) => `
+                  <tr style="font-size:9px;color:#555;">
+                    <td></td>
+                    <td style="text-align:left;padding-left:20px;">${item['producto']}(${row.partida ?? '-'}) Rollo # ${k + 1}</td>
+                    <td style="text-align:center;">-</td>
+                    <td style="text-align:center;">-</td>
+                    <td style="text-align:center;">${row.peso}</td>
+                    <td style="text-align:center;">-</td>
+                    <td style="text-align:center;">-</td>
+                    <td style="text-align:center;">${row.cantidad}</td>
+                    <td style="text-align:center;">-</td>
+                    <td style="text-align:right;">-</td>
+                  </tr>`).join("")
+                return filaPrincipal + filasRollos
+              }).join("")
             },
             encabezado(datos){
               const info = `
@@ -913,9 +1021,11 @@ export class ProduccionController {
           prototipos: data2.filter(row => row.isprototipo),
           numproto: data2.filter(row => row.isprototipo).length,
           // [v2 2026-06-24 11:02] contexto v2 (la plana lo ignora):
-          documentTitle: 'GUÍA DE INGRESO',
+          documentTitle: 'GUÍA DE INGRESO - MUESTRAS', // [v2 2026-06-25] antes fijo 'GUÍA DE INGRESO'
           documentNumber: `${params.id}`.padStart(10, 0),
           documentDate: (new Date(data1[0].created_at)).toLocaleDateString('en-GB'),
+          // [v2 2026-06-25] Fecha de retorno (= fecha de ingreso): fec_despacho del registro de ingreso.
+          documentDeliveryDate: data1[0].fec_despacho ? (new Date(data1[0].fec_despacho)).toLocaleDateString('en-GB') : '',
           tipoDocumento: 'guia-despacho',
           firmas: ['ASISTENTE ALMACÉN', 'CONTROL DE INGRESO'],
           date: (new Date(data1[0].created_at)).toLocaleDateString('en-GB'),

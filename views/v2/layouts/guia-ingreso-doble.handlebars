@@ -1,18 +1,27 @@
 {{!-- guia-ingreso-doble.handlebars
-     Layout para documentos que se imprimen en dos copias en la misma hoja (A4 portrait).
-     Renderiza el mismo @partial-block dos veces, separado por una línea de corte.
-     Contrato de contexto: idéntico a guia-ingreso. --}}
+     Layout para documentos que se imprimen en DOS copias en la misma hoja.
+     [fix 2026-06-26] Hoja HORIZONTAL (landscape) con las dos copias VERTICALES lado a lado
+       (izquierda/derecha), separadas por una línea de corte vertical. Antes era hoja vertical
+       con las copias apiladas. Renderiza el mismo @partial-block dos veces.
+       Contrato de contexto: idéntico a guia-ingreso. Nota: hoy lo usa solo el despacho de avíos. --}}
 
 {{> css-tokens}}
 
 <style>
+  /* [fix 2026-06-26] FORMATO DOBLE HORIZONTAL: hoja apaisada con las dos copias una al lado
+     de la otra (cada copia vertical), separadas por una línea de corte VERTICAL. Antes:
+     columna (copias apiladas) en hoja vertical. La orientación de la hoja la fija el
+     pdfOptions de puppeteer (27.94 x 20); este @page acompaña para el print del navegador. */
+  @page { size: A4 landscape; }
   .main_informe--doble {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;        /* copias lado a lado */
     min-height: 100vh;
+    width: 100%;
   }
   .main_informe--doble .copia {
-    flex: 1;
+    flex: 1;                    /* cada copia ocupa la mitad del ancho */
+    width: 50%;
     display: flex;
     flex-direction: column;
     padding: 0.5cm 0.6cm;
@@ -20,10 +29,15 @@
     overflow: hidden;
   }
   .main_informe--doble .copia:first-child {
-    border-bottom: 1px dashed #bbb;
+    border-right: 1px dashed #bbb;   /* línea de corte vertical entre copias */
   }
+  /* [feat 2026-06-26] cuerpo como columna flex: el bloque de datos queda arriba con su alto
+     natural y la TABLA crece para ocupar el resto (protagonismo de la sección del cuerpo). */
   .main_informe--doble .copia .cuerpo {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
   }
 </style>
 
@@ -32,7 +46,8 @@
   {{!-- ==================== COPIA 1 ==================== --}}
   <div class="copia">
 
-    {{> document-header
+    {{!-- [feat 2026-06-26] Encabezado COMPACTO para el formato doble (columna angosta). --}}
+    {{> document-header-compact
         documentTitle=documentTitle
         documentNumberLabel=documentNumberLabel
         documentNumber=documentNumber
@@ -41,6 +56,10 @@
         documentDiasProduccion=documentDiasProduccion
     }}
 
+    {{!-- [feat 2026-06-26] Si `datosUnificados` está activo, el cuerpo (@partial-block) trae un
+         bloque ÚNICO con proveedor + datos de la guía (compacto para columna angosta), así que
+         aquí NO se renderiza el bloque de proveedor por separado. --}}
+    {{#unless datosUnificados}}
     {{#if tipoProveedorPartial}}
       {{#if (eq tipoProveedorPartial 'traslado')}}
         {{> datos-proveedor-traslado}}
@@ -52,6 +71,7 @@
     {{else}}
       {{> datos-proveedor-general}}
     {{/if}}
+    {{/unless}}
 
     <section class="cuerpo">
       {{> @partial-block}}
@@ -63,13 +83,17 @@
         time=time
         emisor=emisor
     }}
+
+    {{!-- [feat 2026-06-26] Penalidades en versión pequeña como pie de página (ambas copias). --}}
+    {{> condiciones-penalidades-compact}}
 
   </div>
 
   {{!-- ==================== COPIA 2 ==================== --}}
   <div class="copia">
 
-    {{> document-header
+    {{!-- [feat 2026-06-26] Encabezado COMPACTO para el formato doble (columna angosta). --}}
+    {{> document-header-compact
         documentTitle=documentTitle
         documentNumberLabel=documentNumberLabel
         documentNumber=documentNumber
@@ -78,6 +102,10 @@
         documentDiasProduccion=documentDiasProduccion
     }}
 
+    {{!-- [feat 2026-06-26] Si `datosUnificados` está activo, el cuerpo (@partial-block) trae un
+         bloque ÚNICO con proveedor + datos de la guía (compacto para columna angosta), así que
+         aquí NO se renderiza el bloque de proveedor por separado. --}}
+    {{#unless datosUnificados}}
     {{#if tipoProveedorPartial}}
       {{#if (eq tipoProveedorPartial 'traslado')}}
         {{> datos-proveedor-traslado}}
@@ -89,6 +117,7 @@
     {{else}}
       {{> datos-proveedor-general}}
     {{/if}}
+    {{/unless}}
 
     <section class="cuerpo">
       {{> @partial-block}}
@@ -100,6 +129,9 @@
         time=time
         emisor=emisor
     }}
+
+    {{!-- [feat 2026-06-26] Penalidades en versión pequeña como pie de página (ambas copias). --}}
+    {{> condiciones-penalidades-compact}}
 
   </div>
 

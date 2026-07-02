@@ -1,49 +1,70 @@
 {{!--
   ════════════════════════════════════════════════════════════════════════════
   guia_movimiento_almacen.handlebars  (DISEÑO v2)
-  [v2 2026-06-24 09:45] Portado a la base `guia-ingreso`. La plana
-    views/guia_movimiento_almacen.handlebars arma cabecera, bloque de datos
-    (helper `encabezado`) y filas (helper `foo`, modos avios/telas con relleno
-    a 20 filas) construyendo HTML por string en el controlador. Esta versión
-    reusa la base y consume datos normalizados.
-  Plana original NO eliminada; producción la sigue usando hasta el cableado.
+  [v2 2026-06-24 09:45] Portado a la base `guia-ingreso`.
+  [feat 2026-06-26] Reusa el FORMATO DOBLE compacto del despacho de avíos:
+    layout `guia-ingreso-doble` (hoja horizontal, dos copias verticales lado a lado),
+    encabezado compacto, bloque UNIFICADO (proveedor + datos de la guía) y tabla
+    `table-clean`. El bloque incluye, además de lo del partial compacto, fecha de
+    pedido/entrega, producción, número de contacto y forma de pago (de `despachoInfo`).
 
   CONTRATO DE DATOS:
     documentTitle  → 'GUÍA DE MOVIMIENTO DE ALMACÉN'
-    documentNumber → datos.nro_requerimiento (o correlativo del movimiento)
+    documentNumber → datos.nro_requerimiento
     documentDate   → datos.fec_emision
     tipoDocumento  → 'guia-movimiento'
-    proveedor      → { nom: datos.Raz_social_DOC, ruc: datos.Nro_Doc_Prov }
-    cabecera       → { tipoMov: 'INGRESO'|'RETIRO', giradoPor: datos.usuario }
+    proveedor      → { nom, ruc }
+    despachoInfo   → { tipoMov, nroOrden, modelo, articulo, giradoPor,
+                       fechaPedido, fechaEntrega, produccion, contacto, formaPago }
+    datosUnificados→ true (el layout doble omite su datos-proveedor-general)
     detalle[]      → { descripcion, rollos, metros, cantidad, unidad, salida }
     totalSalida    → suma de salida
     firmas         → ['AUXILIAR DE ALMACEN', 'JEFE DE CORTE']
   ════════════════════════════════════════════════════════════════════════════
 --}}
 
-{{#> guia-ingreso}}
+{{#> guia-ingreso-doble}}
 
-  {{#if cabecera.tipoMov}}
-  <div class="datos-orden-section">
-    <strong>TIPO DE MOVIMIENTO:</strong> {{cabecera.tipoMov}}
-  </div>
+  {{!-- Bloque UNIFICADO y compacto (proveedor + datos de la guía + campos extra). --}}
+  {{#if despachoInfo}}
+  <section class="datos-orden-section" style="margin: 2px 0 4px 0; padding: 4px 8px;">
+    <div style="font-size: 0.72rem; font-weight: bold; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 3px; padding-bottom: 2px; border-bottom: .5px solid var(--dashed-color);">
+      Datos de la guía
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px 12px; font-size: 0.72rem; line-height: 1.2;">
+      <div style="grid-column:1 / -1;"><strong>Proveedor:</strong> <span style="overflow-wrap:anywhere;">{{#if proveedor.nom}}{{proveedor.nom}}{{else}}-{{/if}}</span></div>
+      <div style="white-space:nowrap;"><strong>RUC:</strong> <span>{{#if proveedor.ruc}}{{proveedor.ruc}}{{else}}-{{/if}}</span></div>
+      <div><strong>Tipo mov.:</strong> <span>{{#if despachoInfo.tipoMov}}{{despachoInfo.tipoMov}}{{else}}-{{/if}}</span></div>
+      <div style="white-space:nowrap;"><strong>N° Orden:</strong> <span>{{#if despachoInfo.nroOrden}}{{despachoInfo.nroOrden}}{{else}}-{{/if}}</span></div>
+      <div><strong>Modelo:</strong> <span>{{#if despachoInfo.modelo}}{{despachoInfo.modelo}}{{else}}-{{/if}}</span></div>
+      <div><strong>Artículo:</strong> <span>{{#if despachoInfo.articulo}}{{despachoInfo.articulo}}{{else}}-{{/if}}</span></div>
+      <div><strong>Producción:</strong> <span>{{#if despachoInfo.produccion}}{{despachoInfo.produccion}}{{else}}-{{/if}}</span></div>
+      <div style="white-space:nowrap;"><strong>F. pedido:</strong> <span>{{#if despachoInfo.fechaPedido}}{{despachoInfo.fechaPedido}}{{else}}-{{/if}}</span></div>
+      <div style="white-space:nowrap;"><strong>F. entrega:</strong> <span>{{#if despachoInfo.fechaEntrega}}{{despachoInfo.fechaEntrega}}{{else}}-{{/if}}</span></div>
+      <div style="white-space:nowrap;"><strong>N° contacto:</strong> <span>{{#if despachoInfo.contacto}}{{despachoInfo.contacto}}{{else}}-{{/if}}</span></div>
+      <div><strong>Forma pago:</strong> <span>{{#if despachoInfo.formaPago}}{{despachoInfo.formaPago}}{{else}}-{{/if}}</span></div>
+      <div><strong>Girado por:</strong> <span>{{#if despachoInfo.giradoPor}}{{despachoInfo.giradoPor}}{{else}}-{{/if}}</span></div>
+    </div>
+  </section>
   {{/if}}
 
-  <p class="section-title">DETALLE DEL MOVIMIENTO</p>
+  <div style="font-size: var(--font-small); font-weight: bold; text-transform: uppercase; letter-spacing: .4px; margin: 8px 0 4px 0; padding-bottom: 4px; border-bottom: .5px solid var(--dashed-color);">DETALLE DEL MOVIMIENTO</div>
 
-  <table class="table-guia">
+  {{!-- Tabla "solo líneas" compacta; crece para ser la sección protagonista (fila flexible
+       al final del tbody absorbe el alto sobrante). --}}
+  <table class="table-clean" style="flex:1 1 auto; width:100%; font-size:0.68rem;">
     <thead>
       <tr>
-        <th style="width:35px;">ITEM</th>
+        <th style="width:30px;">ITEM</th>
         <th>DESCRIPCIÓN</th>
-        <th style="width:55px;">ROLLOS</th>
-        <th style="width:60px;">METROS</th>
-        <th style="width:80px;">CANTIDAD</th>
-        <th style="width:65px;">UNIDAD</th>
-        <th style="width:70px;">SALIDA</th>
+        <th style="width:45px;">ROLLOS</th>
+        <th style="width:50px;">METROS</th>
+        <th style="width:55px;">CANT.</th>
+        <th style="width:50px;">UND</th>
+        <th style="width:55px;">SALIDA</th>
       </tr>
     </thead>
-    <tbody>
+    <tbody style="vertical-align:top;">
       {{#each detalle}}
       <tr>
         <td class="text-center">{{plusindex @index}}</td>
@@ -55,6 +76,7 @@
         <td class="text-center">{{salida}}</td>
       </tr>
       {{/each}}
+      <tr style="height:100%;"><td colspan="7" style="border:none;"></td></tr>
     </tbody>
     <tfoot>
       <tr>
@@ -64,4 +86,4 @@
     </tfoot>
   </table>
 
-{{/guia-ingreso}}
+{{/guia-ingreso-doble}}

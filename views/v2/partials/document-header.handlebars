@@ -23,6 +23,27 @@
               </td>
             </tr>
 
+            {{!-- [fix 2026-06-26] Las GUÍAS DE INGRESO (tipoDocumento 'guia-despacho') muestran
+                  SOLO la "Fecha de emisión", centrada (no llevan fecha de retorno). El resto de
+                  documentos (p. ej. ORDEN DE SERVICIO, tipoDocumento 'guia-ingreso') conserva
+                  emisión + retorno. Los despachos de almacén (avíos/telas) usan
+                  document-header-compact, que tiene su propia versión. --}}
+            {{#if (eq tipoDocumento 'guia-despacho')}}
+            <tr>
+              <td colspan="2" style="text-align:center; padding:0;">
+                <table style="border-collapse:separate; border-spacing:0; margin:0 auto; border:1px solid black; border-radius:6px; overflow:hidden;">
+                  <tbody>
+                    <tr>
+                      <td style="padding:6px 16px; white-space:nowrap; text-align:center;">
+                        <span style="font-size:8px; color:#555;">Fecha de emisión: </span>
+                        <span style="font-size:12px; font-weight:bold;">{{documentDate}}</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+            {{else}}
             {{#if documentDeliveryDate}}
             <tr>
               <td style="padding:0 3px 0 0; width:50%;">
@@ -85,6 +106,7 @@
             
             
             {{/if}}
+            {{/if}}{{!-- cierra el gate tipoDocumento == 'guia-despacho' (guías de ingreso: solo emisión) --}}
 
           </tbody>
         </table>

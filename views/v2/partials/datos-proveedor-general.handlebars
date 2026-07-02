@@ -45,14 +45,16 @@
     <div></div>
     {{/if}}
 
-    {{!-- ── FILA 2: Razón Social · (vacío) · Contacto ── --}}
+    {{!-- ── FILA 2: Razón Social (2 columnas) · Movil ── --}}
 
-    <div style="display:grid; grid-template-columns:max-content 1fr; gap:0 6px; align-items:baseline;">
+    {{!-- [fix 2026-06-26] Razón Social ocupa 2 columnas (col 1-2, antes la del medio quedaba
+         vacía) y con quiebre limpio (overflow-wrap), para darle más espacio y evitar saltos de
+         línea complicados en columnas angostas (p. ej. despacho de avíos doble horizontal).
+         Movil queda en la columna 3 (su lugar original) y Dirección no cambia. --}}
+    <div style="grid-column: span 2; display:grid; grid-template-columns:max-content 1fr; gap:0 6px; align-items:baseline;">
       <strong style="white-space:nowrap;">Razón Social:</strong>
-      <span>{{proveedor.nom}}</span>
+      <span style="overflow-wrap:anywhere;">{{proveedor.nom}}</span>
     </div>
-
-    <div></div>
 
     <div style="display:grid; grid-template-columns:max-content 1fr; gap:0 6px; align-items:baseline;">
       <strong style="white-space:nowrap;">Movil:</strong>

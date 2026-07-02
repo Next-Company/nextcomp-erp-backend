@@ -1,0 +1,125 @@
+{{!-- document-header-compact.handlebars
+     [feat 2026-06-26] Variante COMPACTA de document-header para las guías en formato DOBLE,
+     donde cada copia va en una columna angosta (media hoja apaisada). Es fiel al diseño de
+     document-header pero con logo, fuentes, recuadros y alturas reducidos. Mantiene la misma
+     lógica condicional de fechas, incluido el gate tipoDocumento == 'guia-despacho'
+     (solo "Fecha de emisión", centrada).
+     [fix 2026-06-26] Segundo pase: tamaños aún más compactos (logo 110px, fuentes 6-12px,
+     bloque derecho min-height 68px). --}}
+<table style="width:100%; border-collapse:collapse; border:none;">
+  <tbody>
+    <tr style="vertical-align:top;">
+
+      <!-- BLOQUE IZQUIERDO: LOGO + DATOS EMPRESA + FECHAS (compacto) -->
+      <td style="width:55%; padding:3px 3px;">
+        <table style="width:100%; font-size:7px; border-collapse:collapse;">
+          <tbody>
+            <tr>
+              <td colspan="2" style="text-align:center; padding-bottom:3px;">
+                <img src="http://192.168.18.20:5173/images/logo_next-02.jpg"
+                     style="width:110px; max-width:100%; height:auto;"
+                     alt="NEXT COMPANY S.A.C" />
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2" style="line-height:1.15; padding-bottom:4px; text-align:center;">
+                Calle Felipe Santiago Crespo Nro 581 - San Luis - Lima<br/>
+                Telf: 3233128<br/>
+                <strong>next.company.sac@gmail.com</strong>
+              </td>
+            </tr>
+
+            {{!-- En GUÍAS DE DESPACHO: solo "Fecha de emisión", centrada (igual que document-header). --}}
+            {{#if (eq tipoDocumento 'guia-despacho')}}
+            <tr>
+              <td colspan="2" style="text-align:center; padding:0;">
+                <table style="border-collapse:separate; border-spacing:0; margin:0 auto; border:1px solid black; border-radius:4px; overflow:hidden;">
+                  <tbody><tr>
+                    <td style="padding:2px 10px; white-space:nowrap; text-align:center;">
+                      <span style="font-size:6px; color:#555;">Fecha de emisión: </span>
+                      <span style="font-size:9px; font-weight:bold;">{{documentDate}}</span>
+                    </td>
+                  </tr></tbody>
+                </table>
+              </td>
+            </tr>
+            {{else}}
+            {{#if documentDeliveryDate}}
+            <tr>
+              <td style="padding:0 3px 0 0; width:50%;">
+                <table style="border-collapse:separate; border-spacing:0; width:100%; border:1px solid black; border-radius:4px; overflow:hidden;">
+                  <tbody><tr>
+                    <td style="padding:2px 5px; white-space:nowrap;">
+                      <span style="font-size:6px; color:#555;">Fecha de emisión: </span>
+                      <span style="font-size:9px; font-weight:bold;">{{documentDate}}</span>
+                    </td>
+                  </tr></tbody>
+                </table>
+              </td>
+              <td style="padding:0 0 0 3px; width:50%;">
+                <table style="border-collapse:separate; border-spacing:0; width:100%; border:1px solid black; border-radius:4px; overflow:hidden;">
+                  <tbody><tr>
+                    <td style="padding:2px 5px; white-space:nowrap;">
+                      <span style="font-size:6px; color:#555;">Fecha de retorno: </span>
+                      <span style="font-size:9px; font-weight:bold;">{{documentDeliveryDate}}</span>
+                    </td>
+                  </tr></tbody>
+                </table>
+              </td>
+            </tr>
+            {{else}}
+            <tr>
+              <td style="padding:0 3px 0 0; width:50%;">
+                <table style="border-collapse:separate; border-spacing:0; width:80%; border:1px solid black; border-radius:4px; overflow:hidden;">
+                  <tbody><tr>
+                    <td style="padding:2px 5px; white-space:nowrap;">
+                      {{#if documentDeliveryDate}}
+                        <span style="font-size:6px; color:#555;">Fecha de entrega: </span>
+                        <span style="font-size:9px; font-weight:bold;">{{documentDeliveryDate}}</span>
+                      {{else}}
+                        <span style="font-size:6px; color:#555;">Fecha de retorno: </span>
+                        <span style="font-size:9px; font-weight:bold;">{{documentReturnDate}}</span>
+                      {{/if}}
+                    </td>
+                  </tr></tbody>
+                </table>
+              </td>
+              <td style="padding:0 3px 0 0; width:50%;">
+                <table style="border-collapse:separate; border-spacing:0; width:80%; border:1px solid black; border-radius:4px; overflow:hidden;">
+                  <tbody><tr>
+                    <td style="padding:2px 5px; white-space:nowrap;">
+                      <span style="font-size:6px; color:#555;">Fecha de emisión: </span>
+                      <span style="font-size:9px; font-weight:bold;">{{documentDate}}</span>
+                    </td>
+                  </tr></tbody>
+                </table>
+              </td>
+            </tr>
+            {{/if}}
+            {{/if}}
+
+          </tbody>
+        </table>
+      </td>
+
+      <!-- BLOQUE DERECHO: RUC + TÍTULO + NÚMERO (compacto) -->
+      <td style="width:45%; padding:3px 3px;">
+        <div style="border:1px solid black; border-radius:5px; overflow:hidden; display:flex; flex-direction:column; min-height:68px; height:100%;">
+          <!-- RUC -->
+          <div style="font-size:8px; text-align:center; padding:2px 5px; border-bottom:1px solid black; color:#555;">
+            R.U.C. 20522094120
+          </div>
+          <!-- TÍTULO -->
+          <div style="font-weight:bold; font-size:10px; text-align:center; padding:0 5px; background-color:#eef0f3; border-bottom:1px solid black; flex:1; display:flex; align-items:center; justify-content:center;">
+            {{documentTitle}}
+          </div>
+          <!-- NÚMERO -->
+          <div style="font-size:8px; text-align:center; padding:0 5px; flex:1; display:flex; align-items:center; justify-content:center;">
+            <strong style="font-size:12px; margin-left:3px;">{{documentNumber}}</strong>
+          </div>
+        </div>
+      </td>
+
+    </tr>
+  </tbody>
+</table>
