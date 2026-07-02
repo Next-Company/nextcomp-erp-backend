@@ -1,7 +1,23 @@
 import mysql from "mysql2/promise";
 import jwt_ from 'jsonwebtoken';
 
-export const configs = [
+// [staging 2026-07-02] Configuración de base de datos por entorno.
+//   - Producción / desarrollo: se conserva EXACTAMENTE la config hardcodeada de siempre
+//     (rama `else` de abajo). La ruta de producción NO cambia en absoluto.
+//   - Staging (NODE_ENV==='staging'): ambas entradas apuntan a la DB aislada definida en
+//     .env.staging (docker-compose.staging.yml, puerto 3307), para no tocar nunca la base
+//     de producción. Este switch es la única forma de que `dev:staging` quede aislado.
+const STAGING_DB = {
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASS,
+  database: process.env.DB_NAME,
+}
+
+export const configs = process.env.NODE_ENV === 'staging'
+  ? [STAGING_DB, STAGING_DB]
+  : [
   {
     host: '192.168.18.20',
     // host: '192.168.0.171',
