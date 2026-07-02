@@ -32,6 +32,15 @@ export default class AlmacenController{
     const data = await AlmacenModel.getListaAlmacenesAll()
     reply.send(data)
   }
+  /**
+   * [feat 2026-07-02] Endpoint de la pestaña "Productos": stock de cada variante
+   * (producto+color+talla) desglosado por almacén. El cliente agrupa por variante y
+   * despliega el detalle almacén→stock. Solo lectura. Ruta: GET /almacen/stockporalmacen
+   */
+  static async getStockPorAlmacen(req,reply){
+    const data = await AlmacenModel.getStockPorAlmacen()
+    reply.send(data)
+  }
   static async getMovimientosAlmacen(req,reply){
     const search = req.params.search ?? ''
     const data = await AlmacenModel.getMovimientosAlmacen(search)

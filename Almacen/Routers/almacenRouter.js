@@ -17,6 +17,10 @@ ALMACEN_ROUTER.get('/listaralmacenes/:search',AlmacenController.getListaAlmacene
 //   Distinta de /listaralmacenes (que filtra tipo='C'). El filtro y la paginación van en el cliente.
 ALMACEN_ROUTER.get('/listaralmacenesall',AlmacenController.getListaAlmacenesAll)
 
+// [feat 2026-07-02] Stock por variante desglosado por almacén (pestaña "Productos").
+//   Devuelve una fila por (variante, almacén) con existencias; el cliente agrupa y pagina.
+ALMACEN_ROUTER.get('/stockporalmacen',AlmacenController.getStockPorAlmacen)
+
 ALMACEN_ROUTER.get('/getguiamovimiento/:idmov',AlmacenController.getGuia)
 ALMACEN_ROUTER.put('/saveguia',AlmacenController.saveGuia)
 ALMACEN_ROUTER.delete('/deleteguiamov/:idguia',AlmacenController.deleteGuia)

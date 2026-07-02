@@ -230,6 +230,63 @@ export default class AlmacenModel{
       if(conn) await conn.end()
     }
   }
+  /**
+   * [feat 2026-07-02] Stock por variante desglosado por almacén (pestaña "Productos").
+   *
+   * Devuelve UNA fila por cada combinación (variante, almacén) con existencias, uniendo:
+   *   tbl2_almacen_det (stock) → tbl2_subproductos (variante: producto+color+talla)
+   *   → tbl2_colores (color) → tbl2_almacen (nombre/tipo del almacén).
+   *
+   * La "variante" (id_subprod_CAB) se repite tantas veces como almacenes tengan stock de
+   * ella; el cliente agrupa por id_subprod_CAB para pintar la lista maestra y, al desplegar,
+   * el desglose almacén→stock. El stock se agrega (SUM) sobre los lotes del mismo almacén.
+   *
+   * A diferencia de getInventarioProductos() —que fija id_CAB_DET IN (509,508)—, aquí se
+   * incluyen TODOS los almacenes de la empresa (join a tbl2_almacen por RUC). Solo lectura.
+   * El filtrado y la paginación se resuelven en el cliente (pocas decenas de miles de filas
+   * como mucho), igual que en la pestaña "Almacenes".
+   *
+   * @returns {Promise<Array>} filas { id_subprod_CAB, id_producto_CAB, producto, color, talla,
+   *                                   tipo, unidad, id_almacen, almacen, almacen_tipo, stock }
+   */
+  static async getStockPorAlmacen(){
+    let conn = undefined
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect()
+
+      const query = `
+        SELECT
+          t2.idx            AS id_subprod_CAB,
+          t2.idx_CAB_PROD   AS id_producto_CAB,
+          t2.nom            AS producto,
+          t3.nom            AS color,
+          (SELECT tt.detalle FROM tbl2_tallas tt WHERE tt.idx = t2.idx_talla) AS talla,
+          (SELECT tp.tipo FROM tbl2_productos tp WHERE tp.idx = t2.idx_CAB_PROD) AS tipo,
+          (SELECT COALESCE(tp.codUnidadMedida,'') FROM tbl2_productos tp WHERE tp.idx = t2.idx_CAB_PROD) AS unidad,
+          t1.id_CAB_DET     AS id_almacen,
+          ta.nom            AS almacen,
+          ta.tipo           AS almacen_tipo,
+          SUM(t1.cantidad)  AS stock
+        FROM tbl2_almacen_det t1
+        JOIN tbl2_subproductos t2 ON t2.idx = t1.idx_subproducto
+        JOIN tbl2_colores t3 ON t3.idx = t2.idx_CAB_COLOR
+        JOIN tbl2_almacen ta ON ta.idx = t1.id_CAB_DET AND ta.ruc_ = '20522094120'
+        WHERE t1.estado = 1
+        GROUP BY t2.idx, t1.id_CAB_DET
+        HAVING stock <> 0
+        ORDER BY producto, color, talla, almacen
+      `;
+
+      const [result] = await conn.execute(query);
+      return result
+    } catch (error) {
+      console.log(error)
+      return []
+    } finally {
+      if(conn) await conn.end()
+    }
+  }
   static async getGuia(idmov){
     let conn = undefined
     try {
