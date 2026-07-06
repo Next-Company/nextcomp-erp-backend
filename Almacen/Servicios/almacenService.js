@@ -246,8 +246,38 @@ export default class AlmacenModel{
    * El filtrado y la paginación se resuelven en el cliente (pocas decenas de miles de filas
    * como mucho), igual que en la pestaña "Almacenes".
    *
+   * [fix 2026-07-03] La pestaña "Productos" es un listado de PRENDAS (productos terminados).
+   *   Se intentó acotar a tprod.tipo='P' sobre tbl2_almacen_det (ver query v2 comentada abajo),
+   *   pero se comprobó que EN PRODUCCIÓN tbl2_almacen_det solo contiene MATERIALES (insumos 'I'
+   *   y avíos 'A'): las prendas NO están ahí, por lo que ese filtro devolvía []. "TELAS"(509)/
+   *   "AVIOS"(508) son NOMBRES de almacén de proceso, no tipos de producto.
+   *
+   * [reenfoque 2026-07-03] FUENTE REAL del stock de prendas por almacén: los INVENTARIOS FÍSICOS
+   *   de tienda (tbl2_inventario_cab.idx_alm + tbl2_inventario_det con tipo='P'), generados por
+   *   otro sistema (aquí solo se LEEN). Regla de "stock actual" por almacén: la ÚLTIMA toma con
+   *   modalidad='total' y estado='PROSC' (último recuento completo procesado; se ignoran
+   *   borradores 'EMIT' y anuladas 'ANUL'). OJO: es stock "según último inventario", NO en tiempo
+   *   real — cada tienda trae su propia `fecha_inventario` (algunas pueden ser antiguas), y las
+   *   tiendas sin ninguna toma total+PROSC no aparecen. El cliente muestra la fecha para dar
+   *   contexto. La cantidad física es `tid.cantidad`. Solo lectura.
+   *
+   * [feat 2026-07-03] Se agregan: `marca` y `precio` (venta = costo + utilidad1%) desde
+   *   tbl2_productos, y `condicion` (primera/segunda) desde tbl2_inventario_det; el stock queda
+   *   dividido por condición (una variante puede salir en 'primera' y en 'segunda').
+   *
+   * [feat 2026-07-06] Se agregan `fecha_ultimo_ingreso` y `cantidad_ultimo_ingreso`: la fecha y
+   *   cantidad del ÚLTIMO ingreso de esa variante a ese almacén. "Ingreso" = movimiento de
+   *   tbl2_almacen_mov_det que SUBE stock (saldo > stock), sin importar el comprobante: cubre
+   *   INGR ("INGRESO DE PRODUCTOS") y la recepción de ENVI (mercadería enviada desde central, la
+   *   vía principal de entrada a tienda) y TRNS; se descartan RETR (ventas) por ser saldo < stock.
+   *   OJO: el stock viene del inventario físico (arriba) y esto de la bitácora de movimientos —son
+   *   fuentes distintas—; por eso `fecha_ultimo_ingreso` suele ser ANTERIOR a `fecha_inventario`, y
+   *   puede venir NULL si la variante no tiene ningún ingreso registrado en ese almacén. Solo lectura.
+   *
    * @returns {Promise<Array>} filas { id_subprod_CAB, id_producto_CAB, producto, color, talla,
-   *                                   tipo, unidad, id_almacen, almacen, almacen_tipo, stock }
+   *                                   tipo, unidad, marca, precio, condicion, id_almacen, almacen,
+   *                                   almacen_tipo, stock, fecha_inventario, fecha_ultimo_ingreso,
+   *                                   cantidad_ultimo_ingreso }
    */
   static async getStockPorAlmacen(){
     let conn = undefined
@@ -255,30 +285,176 @@ export default class AlmacenModel{
       conn = await mysql.createConnection(configs[1])
       await conn.connect()
 
+      // [fix 2026-07-03] Query ORIGINAL (sin filtro de tipo — traía telas/avíos/insumos):
+      // const query = `
+      //   SELECT
+      //     t2.idx            AS id_subprod_CAB,
+      //     t2.idx_CAB_PROD   AS id_producto_CAB,
+      //     t2.nom            AS producto,
+      //     t3.nom            AS color,
+      //     (SELECT tt.detalle FROM tbl2_tallas tt WHERE tt.idx = t2.idx_talla) AS talla,
+      //     (SELECT tp.tipo FROM tbl2_productos tp WHERE tp.idx = t2.idx_CAB_PROD) AS tipo,
+      //     (SELECT COALESCE(tp.codUnidadMedida,'') FROM tbl2_productos tp WHERE tp.idx = t2.idx_CAB_PROD) AS unidad,
+      //     t1.id_CAB_DET     AS id_almacen,
+      //     ta.nom            AS almacen,
+      //     ta.tipo           AS almacen_tipo,
+      //     SUM(t1.cantidad)  AS stock
+      //   FROM tbl2_almacen_det t1
+      //   JOIN tbl2_subproductos t2 ON t2.idx = t1.idx_subproducto
+      //   JOIN tbl2_colores t3 ON t3.idx = t2.idx_CAB_COLOR
+      //   JOIN tbl2_almacen ta ON ta.idx = t1.id_CAB_DET AND ta.ruc_ = '20522094120'
+      //   WHERE t1.estado = 1
+      //   GROUP BY t2.idx, t1.id_CAB_DET
+      //   HAVING stock <> 0
+      //   ORDER BY producto, color, talla, almacen
+      // `;
+      // [fix 2026-07-03] Query v2 (sobre tbl2_almacen_det acotada a prendas 'P') — DESCARTADA:
+      //   devuelve [] en producción porque las prendas NO viven en tbl2_almacen_det (solo materiales).
+      // const query = `
+      //   SELECT
+      //     t2.idx            AS id_subprod_CAB,
+      //     t2.idx_CAB_PROD   AS id_producto_CAB,
+      //     t2.nom            AS producto,
+      //     t3.nom            AS color,
+      //     (SELECT tt.detalle FROM tbl2_tallas tt WHERE tt.idx = t2.idx_talla) AS talla,
+      //     tprod.tipo        AS tipo,
+      //     COALESCE(tprod.codUnidadMedida,'') AS unidad,
+      //     t1.id_CAB_DET     AS id_almacen,
+      //     ta.nom            AS almacen,
+      //     ta.tipo           AS almacen_tipo,
+      //     SUM(t1.cantidad)  AS stock
+      //   FROM tbl2_almacen_det t1
+      //   JOIN tbl2_subproductos t2 ON t2.idx = t1.idx_subproducto
+      //   JOIN tbl2_colores t3 ON t3.idx = t2.idx_CAB_COLOR
+      //   JOIN tbl2_almacen ta ON ta.idx = t1.id_CAB_DET AND ta.ruc_ = '20522094120'
+      //   JOIN tbl2_productos tprod ON tprod.idx = t2.idx_CAB_PROD AND tprod.tipo = 'P'
+      //   WHERE t1.estado = 1
+      //   GROUP BY t2.idx, t1.id_CAB_DET
+      //   HAVING stock <> 0
+      //   ORDER BY producto, color, talla, almacen
+      // `;
+
+      // [reenfoque 2026-07-03] Stock de prendas por almacén desde el INVENTARIO FÍSICO de tienda.
+      //   Por cada almacén se toma su ÚLTIMO inventario modalidad='total' + estado='PROSC' y se
+      //   agrega la cantidad física (tid.cantidad) por variante (idxsub). Devuelve fecha_inventario.
+      //
+      // [perf 2026-07-03] Versión PREVIA usaba un subquery correlacionado que elegía la última
+      //   sesión POR CADA fila de detalle (lento sobre decenas de miles de filas). Ahora la última
+      //   sesión total+PROSC de cada almacén se calcula UNA sola vez en la derivada `ult` (una fila
+      //   por almacén) y se une; y `unidad` sale de un JOIN a tbl2_productos en vez de subquery.
+      //   Versión previa (correlacionada), conservada por referencia:
+      // const query = `
+      //   SELECT * FROM (
+      //     SELECT MAX(tid.id_producto_CAB) AS id_producto_CAB, tid.idxsub AS id_subprod_CAB,
+      //            MAX(tid.producto) AS producto, MAX(tid.color) AS color, MAX(tid.talla) AS talla,
+      //            'P' AS tipo,
+      //            MAX((SELECT tp.codUnidadMedida FROM tbl2_productos tp WHERE tp.idx = tid.id_producto_CAB)) AS unidad,
+      //            tic.idx_alm AS id_almacen, MAX(ta.nom) AS almacen, MAX(ta.tipo) AS almacen_tipo,
+      //            SUM(tid.cantidad) AS stock, MAX(tic.created_at) AS fecha_inventario
+      //     FROM tbl2_inventario_cab tic
+      //     JOIN tbl2_inventario_det tid ON tid.id_inventario_CAB = tic.idx AND tid.tipo = 'P'
+      //     LEFT JOIN tbl2_almacen ta ON ta.idx = tic.idx_alm
+      //     WHERE tic.ruc_ = '20522094120' AND tic.modalidad = 'total' AND tic.estado = 'PROSC'
+      //       AND tic.idx = (SELECT c2.idx FROM tbl2_inventario_cab c2
+      //                      WHERE c2.idx_alm = tic.idx_alm AND c2.ruc_ = '20522094120'
+      //                        AND c2.modalidad = 'total' AND c2.estado = 'PROSC'
+      //                      ORDER BY c2.created_at DESC, c2.idx DESC LIMIT 1)
+      //     GROUP BY tic.idx_alm, tid.idxsub HAVING stock <> 0
+      //   ) x ORDER BY producto, color, talla, almacen`;
       const query = `
-        SELECT
-          t2.idx            AS id_subprod_CAB,
-          t2.idx_CAB_PROD   AS id_producto_CAB,
-          t2.nom            AS producto,
-          t3.nom            AS color,
-          (SELECT tt.detalle FROM tbl2_tallas tt WHERE tt.idx = t2.idx_talla) AS talla,
-          (SELECT tp.tipo FROM tbl2_productos tp WHERE tp.idx = t2.idx_CAB_PROD) AS tipo,
-          (SELECT COALESCE(tp.codUnidadMedida,'') FROM tbl2_productos tp WHERE tp.idx = t2.idx_CAB_PROD) AS unidad,
-          t1.id_CAB_DET     AS id_almacen,
-          ta.nom            AS almacen,
-          ta.tipo           AS almacen_tipo,
-          SUM(t1.cantidad)  AS stock
-        FROM tbl2_almacen_det t1
-        JOIN tbl2_subproductos t2 ON t2.idx = t1.idx_subproducto
-        JOIN tbl2_colores t3 ON t3.idx = t2.idx_CAB_COLOR
-        JOIN tbl2_almacen ta ON ta.idx = t1.id_CAB_DET AND ta.ruc_ = '20522094120'
-        WHERE t1.estado = 1
-        GROUP BY t2.idx, t1.id_CAB_DET
-        HAVING stock <> 0
+        SELECT * FROM (
+          SELECT
+            MAX(tid.id_producto_CAB) AS id_producto_CAB,
+            tid.idxsub               AS id_subprod_CAB,
+            MAX(tid.producto)        AS producto,
+            MAX(tid.color)           AS color,
+            MAX(tid.talla)           AS talla,
+            'P'                      AS tipo,
+            MAX(tp.codUnidadMedida)  AS unidad,
+            -- [feat 2026-07-03] marca y precio de venta (= costo + utilidad1%) de tbl2_productos.
+            MAX(tp.marca)            AS marca,
+            MAX(ROUND(tp.costo + (tp.utilidad1 * tp.costo / 100), 1)) AS precio,
+            -- [feat 2026-07-03] condición (primera/segunda) para dividir el stock.
+            tid.condicion            AS condicion,
+            tic.idx_alm              AS id_almacen,
+            MAX(ta.nom)              AS almacen,
+            MAX(ta.tipo)             AS almacen_tipo,
+            SUM(tid.cantidad)        AS stock,
+            MAX(tic.created_at)      AS fecha_inventario
+          FROM (
+            -- última sesión total+PROSC por almacén (una fila por idx_alm)
+            SELECT c.idx_alm, MAX(c.idx) AS sesion
+            FROM tbl2_inventario_cab c
+            JOIN (
+              SELECT idx_alm, MAX(created_at) AS mx
+              FROM tbl2_inventario_cab
+              WHERE ruc_ = '20522094120' AND modalidad = 'total' AND estado = 'PROSC'
+              GROUP BY idx_alm
+            ) m ON m.idx_alm = c.idx_alm AND m.mx = c.created_at
+            WHERE c.ruc_ = '20522094120' AND c.modalidad = 'total' AND c.estado = 'PROSC'
+            GROUP BY c.idx_alm
+          ) ult
+          JOIN tbl2_inventario_cab tic ON tic.idx = ult.sesion
+          JOIN tbl2_inventario_det tid ON tid.id_inventario_CAB = tic.idx AND tid.tipo = 'P'
+          LEFT JOIN tbl2_almacen   ta  ON ta.idx = tic.idx_alm
+          LEFT JOIN tbl2_productos tp  ON tp.idx = tid.id_producto_CAB
+          -- [feat 2026-07-03] +condicion en el GROUP BY: el stock queda dividido por (almacén,
+          --   variante, condición); una misma variante puede aparecer en 'primera' y 'segunda'.
+          GROUP BY tic.idx_alm, tid.idxsub, tid.condicion
+          HAVING stock <> 0
+        ) x
         ORDER BY producto, color, talla, almacen
       `;
 
       const [result] = await conn.execute(query);
+
+      // [feat 2026-07-06] El enriquecimiento de "último ingreso" va en su PROPIO try/catch: es un
+      //   dato secundario y su consulta es pesada (escanea el ledger). Si fallara o hiciera timeout,
+      //   NO debe tumbar el listado de stock —que ya funciona—; en ese caso se devuelve el stock tal
+      //   cual (sin los campos de ingreso) en vez de caer al catch general y retornar [].
+      try {
+      // [feat 2026-07-06] Último INGRESO de stock por (almacén, variante, condición).
+      //   Se resuelve en una 2.ª consulta + merge en JS (NO como JOIN dentro de `query`) porque
+      //   MySQL 5.7 (producción) no genera auto-key para el derived del mapa de ingresos: el join
+      //   top-level caía en block-nested-loop (15k×84k filas) y hacía timeout. Así quedan dos
+      //   SELECT simples e independientes (stock ~1.5s; ingresos ~5s de ejecución + transferir
+      //   ~85k filas del ledger desde el servidor remoto ⇒ el segundo domina el tiempo de carga).
+      //   Ningún filtro grueso (por almacén o por producto) acota esas 85k a las ~15k realmente
+      //   usadas, así que se traen todas y se filtran en el merge. La fila del ÚLTIMO ingreso se identifica
+      //   por MAX(idx) (autoincrement ≈ orden cronológico real) y el join a la PK recupera su
+      //   `created_at` y `cantidad` (que coincide 100% con saldo-stock en los ingresos). Solo lectura.
+      const [ingresos] = await conn.execute(`
+        SELECT m.id_almacen_CAB, m.idxsub, m.condicion,
+               m.created_at AS fecha_ultimo_ingreso,
+               m.cantidad   AS cantidad_ultimo_ingreso
+        FROM (
+          SELECT id_almacen_CAB, idxsub, condicion, MAX(idx) AS idx_last
+          FROM tbl2_almacen_mov_det
+          WHERE saldo > stock AND idxsub IS NOT NULL AND idxsub <> ''
+          GROUP BY id_almacen_CAB, idxsub, condicion
+        ) last
+        JOIN tbl2_almacen_mov_det m ON m.idx = last.idx_last
+      `);
+
+      // Índice en memoria por "almacén|variante|condición" para fusionar en O(n).
+      //   [importante] `idxsub` (id de subproducto) se guarda con FORMATO DISTINTO en cada tabla:
+      //   en tbl2_inventario_det viene sin relleno ("2159") y en tbl2_almacen_mov_det con ceros a la
+      //   izquierda ("0000002159"). Por eso se normaliza a NÚMERO en ambos lados (Number()); comparar
+      //   como texto sin normalizar cruzaba <5% de las filas. id de almacén también a número (zerofill)
+      //   y condicion como texto. Variantes sin ingreso en ese almacén quedan con ambos campos null.
+      const mapaIngresos = new Map(
+        ingresos.map(r => [`${Number(r.id_almacen_CAB)}|${Number(r.idxsub)}|${r.condicion}`, r])
+      );
+      for (const row of result) {
+        const ing = mapaIngresos.get(`${Number(row.id_almacen)}|${Number(row.id_subprod_CAB)}|${row.condicion}`);
+        row.fecha_ultimo_ingreso    = ing ? ing.fecha_ultimo_ingreso    : null;
+        row.cantidad_ultimo_ingreso = ing ? ing.cantidad_ultimo_ingreso : null;
+      }
+      } catch (errIngreso) {
+        // El listado de stock se conserva; solo se pierden los campos de último ingreso.
+        console.log('[stockporalmacen] enriquecimiento de último ingreso omitido:', errIngreso?.message ?? errIngreso)
+      }
+
       return result
     } catch (error) {
       console.log(error)
