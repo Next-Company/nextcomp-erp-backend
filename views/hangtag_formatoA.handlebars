@@ -57,8 +57,11 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%) rotate(90deg);
+    /* ORIGINAL (36mm rotado = ~18mm de ancho visual, invadía la columna de texto y tapaba el modelo):
     height: auto;
-    width: 36mm;
+    width: 36mm; */
+    width: 34mm;   /* largo del barcode: queda vertical tras rotar (buena longitud de escaneo) */
+    height: 9mm;   /* ancho visual tras rotar: cabe dentro de su columna, ya no tapa el nombre */
   }
 
   h2 { font-size: .5rem; }

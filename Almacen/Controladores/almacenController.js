@@ -1836,13 +1836,15 @@ export default class AlmacenController{
               <div>
                 <div style="font-size:.3rem;">.</div>
                 <div style="font-size:.3rem;">MODELO</div>
-                <div style="font-size:11px;font-weight:bold;">${row.model.articulo}</div>
+                <!-- ORIGINAL (se solapaba/cortaba con el barcode): <div style="font-size:11px;font-weight:bold;">\${row.model.articulo}</div> -->
+                <div style="font-size:7px;font-weight:bold;line-height:1.05;overflow-wrap:anywhere;">${row.model.articulo}</div>
               </div>
               <div>
                 <h3>${info.rubro}</h3>
                 <h3>${info.base}</h3>
                 <h3>${INFO[0].modelo}</h3>
-                <h3>${row.color.length > 8 ? row.color.substr(0, 8) + '.' : row.color}</h3>
+                <!-- ORIGINAL (abreviaba color a 8 chars): \${row.color.length > 8 ? row.color.substr(0, 8) + '.' : row.color} -->
+                <h3>${row.color}</h3>
                 <h3>${info.presentacion}</h3>
               </div>
               <div>
@@ -1860,7 +1862,7 @@ export default class AlmacenController{
                   </div>
                 </div>
               </div>
-              <div id="footer-circles">
+              <div id=" ">
                 <div></div><div></div><div></div><div></div><div></div>
                 <div></div><div></div><div></div><div></div><div></div>
               </div>

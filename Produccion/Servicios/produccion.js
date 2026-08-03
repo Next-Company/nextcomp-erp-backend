@@ -1873,6 +1873,13 @@ export class ProduccionModel {
     ///////////////////////////////////////
     let result = null
     const [data_orden] = await conn.execute("select *from tbl2_fases_prod_ordenes where idx = ?",[orden])
+    // FIX 2026-08-03: la guía origen (ej. MUESTRA_PROTOTIPO) puede no estar ligada a una orden de
+    // producción real (id_orden_CAB queda en el valor por defecto), lo que dejaba data_orden vacío y
+    // reventaba en data_orden[0].fraccionado (TypeError) provocando rollback silencioso sin mensaje.
+    // Requerimiento 2026-08-03: quitar la restricción por OP y permitir crear el ingreso
+    // independientemente de la fase. Si la guía no tiene una orden de producción válida, se OMITE
+    // la actualización del master (no aplica) y se continúa con ok:true para que el ingreso se guarde.
+    if(!data_orden[0]) return {ok:true, sinOrden:true, message:'Sin orden de producción asociada: se omite la actualización del master de producción.'}
     if(data_orden[0].fraccionado) {
       result = await ProduccionModel.UpdateDisponibleFraccionado(backup_articulos,articulos,orden,tipo,acabados,conn)
     } else {
@@ -3952,6 +3959,11 @@ export class ProduccionModel {
           WHERE tdd.id_despacho_CAB = ?
         `, [id]);
         console.log("Informacion del despacho :",results)
+        // FIX 2026-08-03: un despacho puede no tener detalle (ej. ingreso de muestra sin artículos,
+        // ahora permitido). Antes results[0].id_guia_CAB (más abajo) reventaba con TypeError y el
+        // frontend fallaba al mapear ("Cannot read properties of undefined (reading 'map')").
+        // Si no hay detalle, se devuelve arreglo vacío para que la edición cargue sin líneas.
+        if (results.length === 0) return []
         const ids = results.map(row => row.id_item)
 
 
