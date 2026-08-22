@@ -912,10 +912,14 @@ export class ProduccionModel {
 
       console.log("La info completa es:",pp)
       
-      const [results2] = await conn.query("select id_guia_DET,concat('({',GROUP_CONCAT(concat(talla,':',CAST(cantidad as unsigned))),'})') as fracciones from tbl2_guias_traslado_det_fracciones where id_guia_DET in (?) group by id_guia_DET", [ids])
+      // [fix 2026-08-05] Se comillan las claves ("talla":cant) para que JSON.parse tolere tallas con "/" (ej. S/M, L/XL). ORIGINAL abajo comentado, NO eliminar.
+      // const [results2] = await conn.query("select id_guia_DET,concat('({',GROUP_CONCAT(concat(talla,':',CAST(cantidad as unsigned))),'})') as fracciones from tbl2_guias_traslado_det_fracciones where id_guia_DET in (?) group by id_guia_DET", [ids])
+      const [results2] = await conn.query("select id_guia_DET,concat('{',GROUP_CONCAT(concat('\"',talla,'\":',CAST(cantidad as unsigned))),'}') as fracciones from tbl2_guias_traslado_det_fracciones where id_guia_DET in (?) group by id_guia_DET", [ids])
 
       let new_articulos = pp.map(row => {
-        let add = eval(results2.filter(row2 => row2.id_guia_DET == row.idx)[0].fracciones)
+        // [fix 2026-08-05] eval() reventaba con tallas que llevan "/" (S/M, L/XL) -> SyntaxError, tumbando toda la grilla. Se usa JSON.parse + guard (?? '{}') contra artículos sin fracciones. ORIGINAL abajo comentado, NO eliminar.
+        // let add = eval(results2.filter(row2 => row2.id_guia_DET == row.idx)[0].fracciones)
+        let add = JSON.parse(results2.filter(row2 => row2.id_guia_DET == row.idx)[0]?.fracciones ?? '{}')
         return { ...row, ...add }
       })
 
@@ -984,10 +988,14 @@ export class ProduccionModel {
 
       console.log("La info completa es:",pp)
       
-      const [results2] = await conn.query("select id_guia_DET,concat('({',GROUP_CONCAT(concat(talla,':',CAST(cantidad as unsigned))),'})') as fracciones from tbl2_guias_traslado_det_fracciones where id_guia_DET in (?) group by id_guia_DET", [ids])
+      // [fix 2026-08-05] Se comillan las claves ("talla":cant) para que JSON.parse tolere tallas con "/" (ej. S/M, L/XL). ORIGINAL abajo comentado, NO eliminar.
+      // const [results2] = await conn.query("select id_guia_DET,concat('({',GROUP_CONCAT(concat(talla,':',CAST(cantidad as unsigned))),'})') as fracciones from tbl2_guias_traslado_det_fracciones where id_guia_DET in (?) group by id_guia_DET", [ids])
+      const [results2] = await conn.query("select id_guia_DET,concat('{',GROUP_CONCAT(concat('\"',talla,'\":',CAST(cantidad as unsigned))),'}') as fracciones from tbl2_guias_traslado_det_fracciones where id_guia_DET in (?) group by id_guia_DET", [ids])
 
       let new_articulos = pp.map(row => {
-        let add = eval(results2.filter(row2 => row2.id_guia_DET == row.idx)[0].fracciones)
+        // [fix 2026-08-05] eval() reventaba con tallas que llevan "/" (S/M, L/XL) -> SyntaxError, tumbando toda la grilla. Se usa JSON.parse + guard (?? '{}') contra artículos sin fracciones. ORIGINAL abajo comentado, NO eliminar.
+        // let add = eval(results2.filter(row2 => row2.id_guia_DET == row.idx)[0].fracciones)
+        let add = JSON.parse(results2.filter(row2 => row2.id_guia_DET == row.idx)[0]?.fracciones ?? '{}')
         return { ...row, ...add }
       })
 
@@ -4004,11 +4012,15 @@ export class ProduccionModel {
 
 
 
-        const [results2] = await conn.query("select id_guia_DET,concat('({',GROUP_CONCAT(concat(talla,':',CAST(cantidad as unsigned))),'})') as fracciones from tbl2_guias_traslado_det_fracciones where id_guia_DET in (?) group by id_guia_DET", [ids])
+        // [fix 2026-08-05] Se comillan las claves ("talla":cant) para que JSON.parse tolere tallas con "/" (ej. S/M, L/XL). ORIGINAL abajo comentado, NO eliminar.
+        // const [results2] = await conn.query("select id_guia_DET,concat('({',GROUP_CONCAT(concat(talla,':',CAST(cantidad as unsigned))),'})') as fracciones from tbl2_guias_traslado_det_fracciones where id_guia_DET in (?) group by id_guia_DET", [ids])
+        const [results2] = await conn.query("select id_guia_DET,concat('{',GROUP_CONCAT(concat('\"',talla,'\":',CAST(cantidad as unsigned))),'}') as fracciones from tbl2_guias_traslado_det_fracciones where id_guia_DET in (?) group by id_guia_DET", [ids])
 
         console.log(results2)
         new_articulos = pp.map(row => {
-          let add = eval(results2.filter(row2 => row2.id_guia_DET == row.id_item)[0].fracciones)
+          // [fix 2026-08-05] eval() reventaba con tallas que llevan "/" (S/M, L/XL) -> SyntaxError. Se usa JSON.parse + guard (?? '{}'). ORIGINAL abajo comentado, NO eliminar.
+          // let add = eval(results2.filter(row2 => row2.id_guia_DET == row.id_item)[0].fracciones)
+          let add = JSON.parse(results2.filter(row2 => row2.id_guia_DET == row.id_item)[0]?.fracciones ?? '{}')
           return { ...row, ...add }
         })
 

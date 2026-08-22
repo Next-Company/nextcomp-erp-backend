@@ -33,12 +33,93 @@ export default class AlmacenController{
     reply.send(data)
   }
   /**
+   * [feat 2026-08-14] Endpoint de la columna "Stock global" de la pestaña "Almacenes":
+   * total de unidades de prenda en vivo por almacén (tbl2_almacen_det tipo='P', estado=1).
+   * Se consume en paralelo a /listaralmacenesall y se fusiona por id en el cliente.
+   * Solo lectura. Ruta: GET /almacen/stockglobalalmacen
+   */
+  static async getStockGlobalPorAlmacen(req,reply){
+    const data = await AlmacenModel.getStockGlobalPorAlmacen()
+    reply.send(data)
+  }
+  /**
    * [feat 2026-07-02] Endpoint de la pestaña "Productos": stock de cada variante
    * (producto+color+talla) desglosado por almacén. El cliente agrupa por variante y
    * despliega el detalle almacén→stock. Solo lectura. Ruta: GET /almacen/stockporalmacen
    */
   static async getStockPorAlmacen(req,reply){
     const data = await AlmacenModel.getStockPorAlmacen()
+    reply.send(data)
+  }
+  /**
+   * [feat 2026-08-07] Stock EN VIVO de prendas (tbl2_almacen_det), fuente de la UI de escritura.
+   * Solo lectura. Ruta: GET /almacen/stockprendalive
+   */
+  static async getStockPrendaLive(req,reply){
+    const data = await AlmacenModel.getStockPrendaLive()
+    reply.send(data)
+  }
+  /**
+   * [feat 2026-08-08] Stock en vivo LIVIANO (con precio, sin id_subprod_CAB) para la matriz de
+   * la pestaña "Productos". Solo lectura. Ruta: GET /almacen/stockprendamatriz
+   */
+  static async getStockPrendaMatriz(req,reply){
+    const data = await AlmacenModel.getStockPrendaMatriz()
+    reply.send(data)
+  }
+  /**
+   * [feat 2026-08-14] Stock en vivo PAGINADO EN SERVIDOR (pestaña "Productos"). Query params:
+   *   page, size, search, orden (stock|nombre). Devuelve { items, total }. Solo lectura.
+   *   Ruta: GET /almacen/stockprendapaginado
+   */
+  static async getStockPrendaPaginado(req,reply){
+    const { page, size, search, orden } = req.query ?? {}
+    const data = await AlmacenModel.getStockPrendaPaginado({ page, size, search, orden })
+    reply.send(data)
+  }
+  /**
+   * [feat 2026-08-14] Stock en vivo PAGINADO EN SERVIDOR (pestaña "Movimientos"). Query: page, size,
+   *   search. Devuelve { items, total }. Solo lectura. Ruta: GET /almacen/stockprendalivepaginado
+   */
+  static async getStockPrendaLivePaginado(req,reply){
+    const { page, size, search } = req.query ?? {}
+    const data = await AlmacenModel.getStockPrendaLivePaginado({ page, size, search })
+    reply.send(data)
+  }
+  /**
+   * [feat 2026-08-14] Stock en vivo de UNA variante en UN almacén (bajo demanda para "Movimientos").
+   *   Query: prod, color, talla, cond, almacen. Devuelve { stock }. Ruta: GET /almacen/stockvariante
+   */
+  static async getStockVarianteEnAlmacen(req,reply){
+    const { prod, color, talla, cond, almacen } = req.query ?? {}
+    const data = await AlmacenModel.getStockVarianteEnAlmacen({ prod, color, talla, cond, almacen })
+    reply.send(data)
+  }
+  /**
+   * [feat 2026-08-14] Resuelve un EAN-13 escaneado a su variante (subproducto) por match de `sku`,
+   *   para el "Ingreso por lector". Query: sku. Devuelve { ok, variante }. Ruta: GET /almacen/resolvercodigo
+   */
+  static async getSubproductoPorSku(req,reply){
+    const { sku } = req.query ?? {}
+    const data = await AlmacenModel.getSubproductoPorSku(sku)
+    reply.send(data)
+  }
+  /**
+   * [feat 2026-08-14] PREVIEW del "cargar fraccionamiento a acabados" (A2): cantidades fraccionadas por
+   *   variante + si ya fue cargada. Solo lectura. Ruta: GET /almacen/fraccionamientoacabados/:idorden
+   */
+  static async getFraccionamientoAcabados(req,reply){
+    const { idorden } = req.params ?? {}
+    const data = await AlmacenModel.getFraccionamientoParaAcabados(idorden)
+    reply.send(data)
+  }
+  /**
+   * [feat 2026-08-14] EJECUTA el "cargar fraccionamiento a acabados" (A2): INGR de lo fraccionado a
+   *   ACABADOS (idempotente). Ruta: POST /almacen/cargarfraccionamiento/:idorden
+   */
+  static async cargarFraccionamientoAcabados(req,reply){
+    const { idorden } = req.params ?? {}
+    const data = await AlmacenModel.cargarFraccionamientoAcabados(idorden)
     reply.send(data)
   }
   static async getMovimientosAlmacen(req,reply){
@@ -82,6 +163,18 @@ export default class AlmacenController{
     let idguia = req.params.idguia
     let session = req.session ?? {id:0}
     const data = await AlmacenModel.updateDespacho(info,session,idguia)
+    reply.send(data)
+  }
+  /**
+   * [feat 2026-08-07] Escritura DIRECTA de stock de PRENDAS terminadas (tipo='P') replicando el POS:
+   * Ingreso (INGR) / Retiro (RETR) / Traslado (ENVI) en modelo 1 fila = 1 unidad.
+   * Ruta: POST /almacen/movimientoprenda
+   * Body: { operacion:'INGR'|'RETR'|'ENVI', almacen_origen?, almacen_destino?, observaciones?,
+   *         articulos:[{ id_subprod_CAB, cantidad }] }
+   */
+  static async saveMovimientoPrenda(req,reply){
+    let info = req.body
+    const data = await AlmacenModel.saveMovimientoPrenda(info)
     reply.send(data)
   }
   static async deleteGuia(req,reply){

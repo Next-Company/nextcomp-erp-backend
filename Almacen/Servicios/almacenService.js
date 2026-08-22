@@ -61,6 +61,43 @@ export default class AlmacenModel{
       if(conn) await conn.end()
     }
   }
+  /**
+   * [feat 2026-08-14] "Stock global" por almacén para la columna nueva de la pestaña "Almacenes".
+   *
+   * Total de unidades de PRENDA en vivo por almacén: COUNT sobre tbl2_almacen_det (tipo='P',
+   * estado=1), la MISMA fuente que alimentan las pestañas "Productos" (getStockPrendaMatriz) y la
+   * escritura de "Movimientos" (saveMovimientoPrenda). Modelo POS: 1 fila = 1 unidad, por eso el
+   * total es un COUNT(*), no un SUM(cantidad). id_CAB_DET es el id del almacén (= tbl2_almacen.idx).
+   *
+   * Se expone como endpoint APARTE (no se toca getListaAlmacenesAll, que además usa TabMovimientos
+   * para sus selects) para no meterle el costo de esta agregación al listado/selects compartidos.
+   * El cliente lo trae en paralelo y lo fusiona por id; si falla, la lista de almacenes se muestra
+   * igual (sin la columna). Solo lectura. Ruta: GET /almacen/stockglobalalmacen
+   *
+   * @returns {Promise<Array>} filas { id_almacen, stock_global } (solo almacenes con stock > 0)
+   */
+  static async getStockGlobalPorAlmacen(){
+    let conn = undefined
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect()
+      const query = `
+        SELECT
+          id_CAB_DET  AS id_almacen,
+          COUNT(*)    AS stock_global
+        FROM tbl2_almacen_det
+        WHERE estado = 1 AND tipo = 'P'
+        GROUP BY id_CAB_DET
+      `;
+      const [result] = await conn.execute(query);
+      return result
+    } catch (error) {
+      console.log(error)
+      return []
+    } finally {
+      if(conn) await conn.end()
+    }
+  }
   static async getMovimientosAlmacen(search){
     // Suponiendo que tienes una conexión global o la recibes como parámetro
     let conn = undefined
@@ -279,6 +316,455 @@ export default class AlmacenModel{
    *                                   almacen_tipo, stock, fecha_inventario, fecha_ultimo_ingreso,
    *                                   cantidad_ultimo_ingreso }
    */
+  /**
+   * [feat 2026-08-07] Stock EN VIVO de prendas desde tbl2_almacen_det (la misma fuente que escribe el
+   * POS y que escribe saveMovimientoPrenda), NO desde el inventario físico periódico. Una fila por
+   * (variante, almacén) con el conteo de unidades estado=1 (modelo 1 fila = 1 unidad). Incluye las
+   * claves desglosadas + el id_subprod_CAB (si la variante mapea a un subproducto) para poder escribir.
+   * Es la lectura que respalda la UI de Ingreso/Retiro/Traslado (que muestra y valida contra este número).
+   * Solo lectura. Ruta: GET /almacen/stockprendalive
+   */
+  static async getStockPrendaLive(){
+    let conn = undefined
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect()
+      const query = `
+        SELECT
+          tad.id_cabprod             AS id_producto_CAB,
+          tad.id_color, tad.id_talla, tad.condicion,
+          MAX(tad.talla)             AS talla,
+          MAX(p.nom)                 AS producto,
+          MAX(COALESCE(p.codigo,'')) AS codigo,
+          MAX(COALESCE(p.marca,''))  AS marca,
+          MAX(COALESCE(c.nom,''))    AS color,
+          tad.id_CAB_DET             AS id_almacen,
+          MAX(ta.nom)                AS almacen,
+          MAX(ta.tipo)               AS almacen_tipo,
+          MAX((SELECT sp.idx FROM tbl2_subproductos sp
+             WHERE sp.idx_CAB_PROD = tad.id_cabprod AND sp.idx_CAB_COLOR = tad.id_color
+               AND sp.idx_talla = tad.id_talla AND sp.estado = tad.condicion LIMIT 1)) AS id_subprod_CAB,
+          COUNT(*)                   AS stock
+        FROM tbl2_almacen_det tad
+        JOIN tbl2_almacen ta ON ta.idx = tad.id_CAB_DET AND ta.ruc_ = '20522094120'
+        JOIN tbl2_productos p ON p.idx = tad.id_cabprod
+        LEFT JOIN tbl2_colores c ON c.idx = tad.id_color
+        WHERE tad.estado = 1 AND tad.tipo = 'P'
+        GROUP BY tad.id_CAB_DET, tad.id_cabprod, tad.id_color, tad.id_talla, tad.condicion
+        HAVING stock > 0
+        ORDER BY producto, color, talla, almacen
+      `
+      const [result] = await conn.execute(query)
+      return result
+    } catch (error) {
+      console.log(error)
+      return []
+    } finally {
+      if (conn) await conn.end()
+    }
+  }
+  /**
+   * [feat 2026-08-08] Stock EN VIVO para la MATRIZ Variante × Almacén de la pestaña "Productos"
+   * (TabProductosV2). Variante LIVIANA de getStockPrendaLive: agrega `precio` de venta y OMITE el
+   * subquery de id_subprod_CAB (que la vista de solo-lectura no necesita y que —al ejecutarse una vez
+   * por grupo, ~24k veces en prod— dominaba el tiempo de respuesta ~6s). Una fila por (variante,
+   * almacén) con el conteo de unidades estado=1. Solo lectura. Ruta: GET /almacen/stockprendamatriz
+   */
+  static async getStockPrendaMatriz(){
+    let conn = undefined
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect()
+      const query = `
+        SELECT
+          tad.id_cabprod             AS id_producto_CAB,
+          tad.id_color, tad.id_talla, tad.condicion,
+          MAX(tad.talla)             AS talla,
+          MAX(p.nom)                 AS producto,
+          MAX(COALESCE(p.marca,''))  AS marca,
+          MAX(ROUND(p.costo + (p.utilidad1 * p.costo / 100), 1)) AS precio,
+          MAX(COALESCE(c.nom,''))    AS color,
+          tad.id_CAB_DET             AS id_almacen,
+          MAX(ta.nom)                AS almacen,
+          MAX(ta.tipo)               AS almacen_tipo,
+          COUNT(*)                   AS stock
+        FROM tbl2_almacen_det tad
+        JOIN tbl2_almacen ta ON ta.idx = tad.id_CAB_DET AND ta.ruc_ = '20522094120'
+        JOIN tbl2_productos p ON p.idx = tad.id_cabprod
+        LEFT JOIN tbl2_colores c ON c.idx = tad.id_color
+        WHERE tad.estado = 1 AND tad.tipo = 'P'
+        GROUP BY tad.id_CAB_DET, tad.id_cabprod, tad.id_color, tad.id_talla, tad.condicion
+        HAVING stock > 0
+        ORDER BY producto, color, talla, almacen
+      `
+      const [result] = await conn.execute(query)
+      return result
+    } catch (error) {
+      console.log(error)
+      return []
+    } finally {
+      if (conn) await conn.end()
+    }
+  }
+  /**
+   * [feat 2026-08-14] Stock EN VIVO de prendas PAGINADO EN SERVIDOR para la pestaña "Productos".
+   *
+   * A diferencia de getStockPrendaMatriz (que devuelve TODAS las filas y el cliente agrupa/pagina),
+   * aquí la paginación es por PRODUCTO (LIMIT/OFFSET) y se resuelve en la BD:
+   *   1) Se agrega el stock por producto (COUNT(*) = unidades; modelo 1 fila = 1 unidad) para poder
+   *      ordenar (mayor stock / nombre), filtrar (producto, marca o nombre de almacén vía EXISTS) y
+   *      elegir la página de IDs de producto + el total de productos.
+   *   2) Para los productos de esa página se devuelve el DETALLE completo (una fila por variante×almacén),
+   *      con la misma forma que getStockPrendaMatriz, para que el cliente arme la lista de tiendas y la
+   *      matriz color×talla sin más consultas.
+   *
+   * LIMIT/OFFSET van inlineados como enteros ya saneados (parseInt + acotado) porque mysql2 no admite
+   * placeholders en LIMIT. La búsqueda y el IN de ids sí van parametrizados. Solo lectura.
+   * Ruta: GET /almacen/stockprendapaginado?page=&size=&search=&orden=(stock|nombre)
+   *
+   * @returns {Promise<{items: Array, total: number}>} items = filas de detalle de la página; total = nro
+   *          total de productos que cumplen el filtro (para calcular si hay más páginas).
+   */
+  static async getStockPrendaPaginado({ page = 1, size = 20, search = '', orden = 'stock' } = {}){
+    let conn = undefined
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect()
+
+      const pageN = Math.max(1, parseInt(page) || 1)
+      const sizeN = Math.min(100, Math.max(1, parseInt(size) || 20))
+      const offset = (pageN - 1) * sizeN
+      const term = (search || '').trim()
+      const hasSearch = term !== ''
+      const like = `%${term}%`
+      // Orden de selección de la página (debe coincidir con el orden que aplica el cliente).
+      const orderBy = orden === 'nombre' ? 'producto ASC' : 'total_stock DESC, producto ASC'
+
+      // Agregado por producto (subconsulta reutilizada por el COUNT y por la selección de página).
+      const prodAgg = `
+        SELECT tad.id_cabprod              AS id,
+               MAX(p.nom)                  AS producto,
+               MAX(COALESCE(p.marca,''))   AS marca,
+               COUNT(*)                    AS total_stock
+        FROM tbl2_almacen_det tad
+        JOIN tbl2_productos p ON p.idx = tad.id_cabprod
+        WHERE tad.estado = 1 AND tad.tipo = 'P'
+        GROUP BY tad.id_cabprod
+      `
+      // Filtro: por nombre de producto/marca, o por nombre de almacén donde el producto tenga stock.
+      const searchCond = hasSearch ? `
+        WHERE (prod.producto LIKE ? OR prod.marca LIKE ? OR EXISTS (
+          SELECT 1 FROM tbl2_almacen_det d2
+          JOIN tbl2_almacen a2 ON a2.idx = d2.id_CAB_DET AND a2.ruc_ = '20522094120'
+          WHERE d2.id_cabprod = prod.id AND d2.estado = 1 AND d2.tipo = 'P' AND a2.nom LIKE ?
+        ))
+      ` : ''
+
+      // 1a) Total de productos que cumplen el filtro (para saber si hay más páginas). El total NO
+      //     cambia entre páginas del mismo filtro, así que solo se calcula en la PRIMERA página; en
+      //     las siguientes se devuelve total = -1 ("sin cambios") y el cliente conserva el que ya tenía.
+      //     Así cada "cargar más" ejecuta la agregación pesada UNA sola vez (selección de página) en
+      //     vez de dos (selección + count).
+      let total = -1
+      if (pageN === 1) {
+        const [countRows] = await conn.execute(
+          `SELECT COUNT(*) AS total FROM ( ${prodAgg} ) prod ${searchCond}`,
+          hasSearch ? [like, like, like] : []
+        )
+        total = Number(countRows?.[0]?.total ?? 0)
+      }
+
+      // 1b) IDs de producto de esta página, en el orden pedido.
+      const [pageRows] = await conn.execute(
+        `SELECT prod.id FROM ( ${prodAgg} ) prod ${searchCond} ORDER BY ${orderBy} LIMIT ${sizeN} OFFSET ${offset}`,
+        hasSearch ? [like, like, like] : []
+      )
+      const ids = pageRows.map(r => r.id)
+      if (ids.length === 0) return { items: [], total }
+
+      // 2) Detalle completo (variante × almacén) de los productos de la página. Misma forma que
+      //    getStockPrendaMatriz para que el cliente reutilice su lógica de agrupado y matriz.
+      const placeholders = ids.map(() => '?').join(',')
+      const [items] = await conn.execute(`
+        SELECT
+          tad.id_cabprod             AS id_producto_CAB,
+          tad.id_color, tad.id_talla, tad.condicion,
+          MAX(tad.talla)             AS talla,
+          MAX(p.nom)                 AS producto,
+          MAX(COALESCE(p.marca,''))  AS marca,
+          MAX(ROUND(p.costo + (p.utilidad1 * p.costo / 100), 1)) AS precio,
+          MAX(COALESCE(c.nom,''))    AS color,
+          tad.id_CAB_DET             AS id_almacen,
+          MAX(ta.nom)                AS almacen,
+          MAX(ta.tipo)               AS almacen_tipo,
+          COUNT(*)                   AS stock
+        FROM tbl2_almacen_det tad
+        JOIN tbl2_almacen ta ON ta.idx = tad.id_CAB_DET AND ta.ruc_ = '20522094120'
+        JOIN tbl2_productos p ON p.idx = tad.id_cabprod
+        LEFT JOIN tbl2_colores c ON c.idx = tad.id_color
+        WHERE tad.estado = 1 AND tad.tipo = 'P' AND tad.id_cabprod IN (${placeholders})
+        GROUP BY tad.id_CAB_DET, tad.id_cabprod, tad.id_color, tad.id_talla, tad.condicion
+        HAVING stock > 0
+        ORDER BY producto, color, talla, almacen
+      `, ids)
+
+      return { items, total }
+    } catch (error) {
+      console.log(error)
+      return { items: [], total: 0 }
+    } finally {
+      if (conn) await conn.end()
+    }
+  }
+  /**
+   * [feat 2026-08-14] Stock EN VIVO de prendas PAGINADO EN SERVIDOR para el selector de la pestaña
+   * "Movimientos". Variante paginada + con búsqueda de getStockPrendaLive: cada fila es (variante,
+   * almacén) con su id_subprod_CAB (para poder escribir). La paginación es por FILA (grupo), con
+   * búsqueda por producto/marca/color/almacén/talla/condición. El subquery de id_subprod_CAB solo se
+   * ejecuta para las filas de la página (LIMIT), no para todo el universo. Solo lectura.
+   * Ruta: GET /almacen/stockprendalivepaginado?page=&size=&search=
+   *
+   * @returns {Promise<{items: Array, total: number}>} items = filas (variante×almacén) de la página;
+   *          total = nro total de filas que cumplen el filtro (para calcular páginas).
+   */
+  static async getStockPrendaLivePaginado({ page = 1, size = 20, search = '' } = {}){
+    let conn = undefined
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect()
+
+      const pageN = Math.max(1, parseInt(page) || 1)
+      const sizeN = Math.min(100, Math.max(1, parseInt(size) || 20))
+      const offset = (pageN - 1) * sizeN
+      const term = (search || '').trim()
+      const hasSearch = term !== ''
+      const like = `%${term}%`
+
+      // Filtro de búsqueda sobre columnas constantes por grupo (producto/marca/color/almacén) más
+      //   talla/condición (que son claves del grupo). Se aplica en el WHERE antes de agrupar.
+      const searchCond = hasSearch ? `
+        AND (p.nom LIKE ? OR COALESCE(p.marca,'') LIKE ? OR COALESCE(c.nom,'') LIKE ?
+             OR ta.nom LIKE ? OR tad.talla LIKE ? OR tad.condicion LIKE ?)
+      ` : ''
+      const searchParams = hasSearch ? [like, like, like, like, like, like] : []
+
+      // Total de filas (grupos) que cumplen el filtro (para saber si hay más páginas). El total NO
+      //   cambia entre páginas del mismo filtro, así que solo se calcula en la PRIMERA página.
+      let total = -1
+      if (pageN === 1) {
+        const [countRows] = await conn.execute(`
+          SELECT COUNT(*) AS total FROM (
+            SELECT 1
+            FROM tbl2_almacen_det tad
+            JOIN tbl2_almacen ta ON ta.idx = tad.id_CAB_DET AND ta.ruc_ = '20522094120'
+            JOIN tbl2_productos p ON p.idx = tad.id_cabprod
+            LEFT JOIN tbl2_colores c ON c.idx = tad.id_color
+            WHERE tad.estado = 1 AND tad.tipo = 'P' ${searchCond}
+            GROUP BY tad.id_CAB_DET, tad.id_cabprod, tad.id_color, tad.id_talla, tad.condicion
+            HAVING COUNT(*) > 0
+          ) g
+        `, searchParams)
+        total = Number(countRows?.[0]?.total ?? 0)
+      }
+
+      // Página de filas con la MISMA forma que getStockPrendaLive (incluye id_subprod_CAB). El
+      //   subquery de subproducto solo corre para las `size` filas de la página (tras el LIMIT).
+      const [items] = await conn.execute(`
+        SELECT
+          tad.id_cabprod             AS id_producto_CAB,
+          tad.id_color, tad.id_talla, tad.condicion,
+          MAX(tad.talla)             AS talla,
+          MAX(p.nom)                 AS producto,
+          MAX(COALESCE(p.codigo,'')) AS codigo,
+          MAX(COALESCE(p.marca,''))  AS marca,
+          MAX(COALESCE(c.nom,''))    AS color,
+          tad.id_CAB_DET             AS id_almacen,
+          MAX(ta.nom)                AS almacen,
+          MAX(ta.tipo)               AS almacen_tipo,
+          MAX((SELECT sp.idx FROM tbl2_subproductos sp
+             WHERE sp.idx_CAB_PROD = tad.id_cabprod AND sp.idx_CAB_COLOR = tad.id_color
+               AND sp.idx_talla = tad.id_talla AND sp.estado = tad.condicion LIMIT 1)) AS id_subprod_CAB,
+          COUNT(*)                   AS stock
+        FROM tbl2_almacen_det tad
+        JOIN tbl2_almacen ta ON ta.idx = tad.id_CAB_DET AND ta.ruc_ = '20522094120'
+        JOIN tbl2_productos p ON p.idx = tad.id_cabprod
+        LEFT JOIN tbl2_colores c ON c.idx = tad.id_color
+        WHERE tad.estado = 1 AND tad.tipo = 'P' ${searchCond}
+        GROUP BY tad.id_CAB_DET, tad.id_cabprod, tad.id_color, tad.id_talla, tad.condicion
+        HAVING stock > 0
+        ORDER BY producto, color, talla, almacen
+        LIMIT ${sizeN} OFFSET ${offset}
+      `, searchParams)
+
+      return { items, total }
+    } catch (error) {
+      console.log(error)
+      return { items: [], total: 0 }
+    } finally {
+      if (conn) await conn.end()
+    }
+  }
+  /**
+   * [feat 2026-08-14] Stock EN VIVO de UNA variante en UN almacén (COUNT de unidades estado=1, tipo=P).
+   * Consulta puntual para la pestaña "Movimientos": como el listado ahora está paginado, el "stock en
+   * destino" ya no se puede leer del arreglo cargado y se pide bajo demanda. Solo lectura.
+   * Ruta: GET /almacen/stockvariante?prod=&color=&talla=&cond=&almacen=
+   *
+   * @returns {Promise<{stock: number}>}
+   */
+  static async getStockVarianteEnAlmacen({ prod, color, talla, cond, almacen } = {}){
+    let conn = undefined
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect()
+      const [rows] = await conn.execute(`
+        SELECT COUNT(*) AS stock
+        FROM tbl2_almacen_det
+        WHERE estado = 1 AND tipo = 'P'
+          AND id_cabprod = ? AND id_color = ? AND id_talla = ? AND condicion = ? AND id_CAB_DET = ?
+      `, [prod, color, talla, cond, almacen])
+      return { stock: Number(rows?.[0]?.stock ?? 0) }
+    } catch (error) {
+      console.log(error)
+      return { stock: 0 }
+    } finally {
+      if (conn) await conn.end()
+    }
+  }
+  /**
+   * [feat 2026-08-14] Resuelve un código de barras ESCANEADO (EAN-13) a su variante (subproducto),
+   * para el "Ingreso por lector". El EAN se genera como 775 + 0062 + últimos 5 dígitos del idx del
+   * subproducto + dígito de control, y SE GUARDA en tbl2_subproductos.sku (ver Ordenes/ordenes.js).
+   * Por eso la resolución es un match DIRECTO por `sku` (no hay que decodificar). Acotado al RUC vía
+   * el join a tbl2_productos. Solo lectura. Ruta: GET /almacen/resolvercodigo?sku=
+   *
+   * @returns {Promise<{ok:boolean, variante?:Object, message?:string}>} variante = { id_subprod_CAB,
+   *          id_cabprod, id_color, id_talla, talla, condicion, producto, marca, color, codigo, sku }
+   */
+  static async getSubproductoPorSku(sku){
+    let conn = undefined
+    try {
+      const code = (sku ?? '').toString().trim()
+      if (!code) return { ok: false, message: 'Código vacío' }
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect()
+      const [rows] = await conn.execute(`
+        SELECT sp.idx            AS id_subprod_CAB,
+               sp.idx_CAB_PROD   AS id_cabprod,
+               sp.idx_CAB_COLOR  AS id_color,
+               sp.idx_talla      AS id_talla,
+               sp.talla          AS talla,
+               sp.estado         AS condicion,
+               sp.sku            AS sku,
+               p.nom             AS producto,
+               COALESCE(p.marca,'')  AS marca,
+               COALESCE(p.codigo,'') AS codigo,
+               COALESCE(c.nom,'')    AS color
+        FROM tbl2_subproductos sp
+        JOIN tbl2_productos p ON p.idx = sp.idx_CAB_PROD AND p.ruc_ = '20522094120'
+        LEFT JOIN tbl2_colores c ON c.idx = sp.idx_CAB_COLOR
+        WHERE sp.sku = ?
+        LIMIT 1
+      `, [code])
+      if (rows.length === 0) return { ok: false, message: 'Código no encontrado' }
+      return { ok: true, variante: rows[0] }
+    } catch (error) {
+      console.log(error)
+      return { ok: false, message: error.message ?? 'Error al resolver el código' }
+    } finally {
+      if (conn) await conn.end()
+    }
+  }
+  /**
+   * [feat 2026-08-14] PREVIEW de "cargar fraccionamiento a acabados" (A2). Solo lectura: devuelve las
+   * cantidades FRACCIONADAS por variante de una orden (lado MODELOS: color por FK), su subproducto/sku,
+   * y cuánto de esa variante ya hay en el almacén ACABADOS, además de si la orden YA fue cargada.
+   *
+   * El "stock inicial" = `tbl2_fases_prod_modelos_fracciones.cantidad` (el plan del fraccionamiento).
+   * El almacén ACABADOS se resuelve por nombre (no se hardcodea el idx, que varía entre entornos).
+   * Ruta: GET /almacen/fraccionamientoacabados/:idorden
+   *
+   * @returns {Promise<{ok, orden, almacen_acabados, yaCargado, items}>}
+   */
+  static async getFraccionamientoParaAcabados(idOrden){
+    let conn = undefined
+    try {
+      const id = parseInt(idOrden)
+      if (!(id > 0)) return { ok: false, message: 'Orden inválida' }
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect()
+
+      const [alm] = await conn.execute(
+        `SELECT idx, nom FROM tbl2_almacen WHERE ruc_ = '20522094120' AND nom = 'ACABADOS' LIMIT 1`)
+      const idAcabados = alm.length ? alm[0].idx : null
+
+      const [orden] = await conn.execute(
+        `SELECT idx, oc, producto, fraccionado FROM tbl2_fases_prod_ordenes WHERE idx = ?`, [id])
+
+      // Marcador idempotente: se guarda en observaciones del INGR para no cargar dos veces la orden.
+      const marker = `Carga fraccionamiento a acabados - orden ${id}`
+      const [prev] = await conn.execute(
+        `SELECT idx, num_comprobante FROM tbl2_almacen_mov_cab WHERE cod_comprobante = 'INGR' AND observaciones = ? LIMIT 1`, [marker])
+      const yaCargado = prev.length > 0
+
+      const [items] = await conn.execute(`
+        SELECT m.id_receta_CAB      AS id_cabprod,
+               m.idx_color          AS id_color,
+               m.color_modelo       AS color,
+               f.id_talla_CAB       AS id_talla,
+               f.talla              AS talla,
+               CAST(f.cantidad AS SIGNED) AS cantidad,
+               sp.idx               AS id_subprod_CAB,
+               sp.sku               AS sku,
+               (SELECT COUNT(*) FROM tbl2_almacen_det ad
+                 WHERE ad.id_cabprod = m.id_receta_CAB AND ad.id_color = m.idx_color
+                   AND ad.id_talla = f.id_talla_CAB AND ad.condicion = 'primera'
+                   AND ad.estado = 1 AND ad.tipo = 'P' AND ad.id_CAB_DET = ?) AS en_acabados
+        FROM tbl2_fases_prod_modelos m
+        JOIN tbl2_fases_prod_modelos_fracciones f ON f.id_modelo_CAB = m.idx
+        LEFT JOIN tbl2_subproductos sp
+               ON sp.idx_CAB_PROD = m.id_receta_CAB AND sp.idx_CAB_COLOR = m.idx_color
+              AND sp.idx_talla = f.id_talla_CAB AND sp.estado = 'primera'
+        WHERE m.id_orden_CAB = ? AND f.cantidad > 0
+        ORDER BY m.color_modelo, f.talla
+      `, [idAcabados, id])
+
+      return { ok: true, orden: orden[0] ?? null, almacen_acabados: idAcabados, yaCargado, items }
+    } catch (error) {
+      console.log(error)
+      return { ok: false, message: error.message ?? 'Error al leer el fraccionamiento' }
+    } finally {
+      if (conn) await conn.end()
+    }
+  }
+  /**
+   * [feat 2026-08-14] EJECUTA "cargar fraccionamiento a acabados" (A2). Toma las cantidades fraccionadas
+   * de la orden y hace UN INGR a ACABADOS reusando saveMovimientoPrenda (kardex + unidades + FOR UPDATE).
+   * Idempotente: si la orden ya fue cargada (marcador en observaciones), no vuelve a cargar. Solo hacia
+   * adelante — no reconcilia el histórico. Ruta: POST /almacen/cargarfraccionamiento/:idorden
+   *
+   * @returns {Promise<{ok, message, id_movimiento?, num_comprobante?}>}
+   */
+  static async cargarFraccionamientoAcabados(idOrden){
+    const id = parseInt(idOrden)
+    const prev = await AlmacenModel.getFraccionamientoParaAcabados(id)
+    if (!prev.ok) return { ok: false, message: prev.message ?? 'No se pudo leer el fraccionamiento' }
+    if (!prev.almacen_acabados) return { ok: false, message: 'No existe el almacén ACABADOS.' }
+    if (prev.yaCargado) return { ok: false, message: 'Esta orden ya fue cargada a acabados.' }
+    const articulos = (prev.items || [])
+      .filter((it) => parseInt(it.cantidad) > 0)
+      .map((it) => ({
+        id_subprod_CAB: it.id_subprod_CAB ?? undefined,
+        id_cabprod: it.id_cabprod, id_color: it.id_color, id_talla: it.id_talla,
+        talla: it.talla, condicion: 'primera', cantidad: parseInt(it.cantidad),
+      }))
+    if (articulos.length === 0) return { ok: false, message: 'La orden no tiene cantidades fraccionadas para cargar.' }
+    const marker = `Carga fraccionamiento a acabados - orden ${id}`
+    // Reusa el motor de escritura (transacción propia): INGR a ACABADOS con el marcador idempotente.
+    return await AlmacenModel.saveMovimientoPrenda({
+      operacion: 'INGR', almacen_destino: prev.almacen_acabados, observaciones: marker, articulos,
+    })
+  }
   static async getStockPorAlmacen(){
     let conn = undefined
     try {
@@ -1324,6 +1810,230 @@ export default class AlmacenModel{
       // if(conn) conn.rollback()
       return {ok:false,message:error.message ?? error}
     }
+  }
+  /**
+   * [feat 2026-08-07] ESCRITURA de stock de PRENDAS terminadas (tipo='P') replicando EXACTAMENTE
+   * el modelo del POS/facturador. Camino NUEVO e independiente de saveMovimiento() (que es modelo
+   * de materiales: 1 fila en tbl2_almacen_det con cantidad=N clavada por idx_subproducto).
+   *
+   * En prendas el stock del POS vive como **1 FILA = 1 UNIDAD** (cantidad=1) en tbl2_almacen_det,
+   * con idx_subproducto VACÍO y clave id_cabprod+id_color+id_talla+condicion. Un ingreso de N
+   * prendas inserta N filas; un retiro marca estado=0 en N filas (soft-delete: el POS NO borra);
+   * un traslado mueve N filas (UPDATE id_CAB_DET) del almacén origen al destino.
+   *
+   * Moldes verificados contra producción (2026-08-07, dump completo + consultas guiadas):
+   *   • tbl2_almacen_det (snapshot, 1 fila/unidad): idx_subproducto=NULL, cantidad=1, estado=1,
+   *     id_kardcomp = idx de la cabecera de movimiento, codigo_cabprod = barcode del producto,
+   *     sku = CONCAT(<idx de la propia fila, sin zerofill>,'-',LPAD(id_cabprod,10,'0')) → se setea
+   *     con un UPDATE posterior al INSERT (depende del auto-increment de la fila).
+   *   • tbl2_almacen_mov_det (kardex, 1 fila AGREGADA por artículo): cantidad=±N, stock=conteo actual,
+   *     saldo=stock±N. Ojo: stock/saldo son float UNSIGNED → nunca negativos; la dirección la marca
+   *     cod_comprobante, no el signo (INGR y RETR guardan cantidad positiva; ENVI usa 2 filas con signo).
+   *   • Todo se deriva del subproducto (id_subprod_CAB) que entrega la UI: id_cabprod=sp.idx_CAB_PROD,
+   *     id_color=sp.idx_CAB_COLOR, id_talla=sp.idx_talla, talla=sp.talla, condicion=sp.estado.
+   *
+   * Opera en su PROPIA transacción con commit/rollback reales y bloquea las filas a retirar/trasladar
+   * con SELECT ... FOR UPDATE para mitigar las carreras conocidas (SELECT→UPDATE sin lock del código viejo).
+   *
+   * @param {Object} data
+   *   { operacion:'INGR'|'RETR'|'ENVI', almacen_origen?, almacen_destino?, observaciones?,
+   *     articulos:[{ id_subprod_CAB, cantidad, almacen_origen?, almacen_destino? }] }
+   * @returns {Promise<{ok:boolean, message:string, id_movimiento?:number, num_comprobante?:number}>}
+   */
+  static async saveMovimientoPrenda(data){
+    let conn = undefined
+    try {
+      conn = await mysql.createConnection(configs[1])
+      await conn.connect()
+      await conn.beginTransaction()
+
+      const operacion = data.operacion
+      if (!['INGR','RETR','ENVI'].includes(operacion)) throw new Error('Operación no soportada: ' + operacion)
+      let articulos = typeof data.articulos === 'string' ? JSON.parse(data.articulos) : (data.articulos || [])
+      if (!Array.isArray(articulos) || articulos.length === 0) throw new Error('No hay artículos en el movimiento.')
+
+      // Comprobante + correlativo (INGR / RETR / ENVI viven en tbl2_cptes_ordenes_tipo).
+      const [cpte] = await conn.execute(
+        `SELECT idx, codigo, correlativo FROM tbl2_cptes_ordenes_tipo WHERE codigo = ? LIMIT 1`, [operacion])
+      if (cpte.length === 0) throw new Error('Comprobante no encontrado: ' + operacion)
+      const num_comprobante = parseInt(cpte[0].correlativo) + 1
+
+      // Cabecera de movimiento — UNA por operación. origen='KARD' (no interfiere con el trigger
+      // upd_DocumentoInfoMOv, que solo actúa con origen CDP/NCD).
+      const [resCab] = await conn.execute(
+        `INSERT INTO tbl2_almacen_mov_cab (id_comprobante_CAB, cod_comprobante, num_comprobante, origen, observaciones)
+         VALUES (?,?,?,?,?)`,
+        [cpte[0].idx, operacion, num_comprobante, 'KARD', data.observaciones ?? null])
+      const movId = resCab.insertId
+
+      for (const art of articulos) {
+        const cantidad = parseInt(art.cantidad)
+        if (!(cantidad > 0)) throw new Error('Cantidad inválida en artículo (id_subprod_CAB=' + art.id_subprod_CAB + ').')
+
+        // Derivar la prenda (id_cabprod/color/talla/condicion + nombres, barcode y subproducto).
+        const P = await AlmacenModel._resolverPrenda(conn, art)
+
+        if (operacion === 'INGR') {
+          const alm = art.almacen_destino ?? data.almacen_destino
+          if (!alm) throw new Error('Falta almacén destino para el ingreso.')
+          const stock = await AlmacenModel._contarStockPrenda(conn, alm, P.id_cabprod, P.id_color, P.id_talla, P.condicion)
+          await AlmacenModel._insertMovDetPrenda(conn, movId, P.id_subprod_CAB, P, alm, cantidad, stock, stock + cantidad)
+          // Inserta N unidades (1 fila = 1 unidad).
+          for (let i = 0; i < cantidad; i++) {
+            await AlmacenModel._insertUnidadPrenda(conn, alm, movId, P)
+          }
+
+        } else if (operacion === 'RETR') {
+          const alm = art.almacen_origen ?? data.almacen_origen
+          if (!alm) throw new Error('Falta almacén origen para el retiro.')
+          // Bloquea las filas disponibles y valida stock.
+          const disponibles = await AlmacenModel._bloquearUnidadesPrenda(conn, alm, P, cantidad)
+          const stock = disponibles.stock
+          if (stock < cantidad) throw new Error(`Stock insuficiente de "${P.producto}" (${P.talla}/${P.condicion}): hay ${stock}, se pide ${cantidad}.`)
+          // Soft-delete de N unidades (estado=0). NO se toca id_kardcomp para preservar el ingreso de origen.
+          await conn.query(
+            `UPDATE tbl2_almacen_det SET estado = 0 WHERE idx IN (?)`, [disponibles.ids])
+          await AlmacenModel._insertMovDetPrenda(conn, movId, P.id_subprod_CAB, P, alm, cantidad, stock, stock - cantidad)
+
+        } else if (operacion === 'ENVI') {
+          const almO = art.almacen_origen ?? data.almacen_origen
+          const almD = art.almacen_destino ?? data.almacen_destino
+          if (!almO || !almD) throw new Error('Falta almacén origen o destino para el traslado.')
+          if (String(almO) === String(almD)) throw new Error('El almacén origen y destino no pueden ser el mismo.')
+          const disponibles = await AlmacenModel._bloquearUnidadesPrenda(conn, almO, P, cantidad)
+          const stockO = disponibles.stock
+          if (stockO < cantidad) throw new Error(`Stock insuficiente en origen de "${P.producto}" (${P.talla}/${P.condicion}): hay ${stockO}, se pide ${cantidad}.`)
+          const stockD = await AlmacenModel._contarStockPrenda(conn, almD, P.id_cabprod, P.id_color, P.id_talla, P.condicion)
+          // Mueve físicamente las N filas al almacén destino (sku sigue válido: depende de idx+cabprod, no del almacén).
+          await conn.query(
+            `UPDATE tbl2_almacen_det SET id_CAB_DET = ?, id_kardcomp = ? WHERE idx IN (?)`, [almD, movId, disponibles.ids])
+          // 2 filas de kardex: origen (−N) y destino (+N).
+          await AlmacenModel._insertMovDetPrenda(conn, movId, P.id_subprod_CAB, P, almO, -cantidad, stockO, stockO - cantidad)
+          await AlmacenModel._insertMovDetPrenda(conn, movId, P.id_subprod_CAB, P, almD, cantidad, stockD, stockD + cantidad)
+        }
+      }
+
+      // Actualiza el correlativo del comprobante una sola vez por operación.
+      await conn.execute(
+        `UPDATE tbl2_cptes_ordenes_tipo SET correlativo = ? WHERE codigo = ?`, [num_comprobante, operacion])
+
+      await conn.commit()
+      return { ok: true, message: 'Movimiento de prenda registrado con éxito.', id_movimiento: movId, num_comprobante }
+    } catch (error) {
+      console.log('[saveMovimientoPrenda] error:', error)
+      if (conn) await conn.rollback()
+      return { ok: false, message: error.message ?? error }
+    } finally {
+      if (conn) await conn.end()
+    }
+  }
+  /**
+   * [feat 2026-08-07] Resuelve una prenda a sus campos canónicos (id_cabprod/color/talla/condicion +
+   * nombres, barcode y subproducto) a partir de un artículo que trae O BIEN id_subprod_CAB O BIEN las
+   * claves desglosadas {id_cabprod, id_color, id_talla, condicion}. El id_subprod_CAB queda como
+   * referencia para el kardex (mov_det.idxsub); puede ser null si la variante no tiene subproducto.
+   */
+  static async _resolverPrenda(conn, art){
+    if (art.id_subprod_CAB) {
+      const [sp] = await conn.execute(
+        `SELECT sp.idx AS id_subprod_CAB, sp.idx_CAB_PROD AS id_cabprod, sp.idx_CAB_COLOR AS id_color,
+                sp.idx_talla AS id_talla, sp.talla AS talla, sp.estado AS condicion,
+                p.nom AS producto, COALESCE(p.codigo,'') AS barcode, COALESCE(c.nom,'') AS color_nom
+         FROM tbl2_subproductos sp
+         JOIN tbl2_productos p ON p.idx = sp.idx_CAB_PROD
+         LEFT JOIN tbl2_colores c ON c.idx = sp.idx_CAB_COLOR
+         WHERE sp.idx = ?`, [art.id_subprod_CAB])
+      if (sp.length === 0) throw new Error('Subproducto no encontrado: ' + art.id_subprod_CAB)
+      return sp[0]
+    }
+    // Claves desglosadas: identidad real de la fila en tbl2_almacen_det.
+    if (!art.id_cabprod || !art.id_color || !art.id_talla || !art.condicion)
+      throw new Error('Artículo sin identificación: falta id_subprod_CAB o las claves (id_cabprod, id_color, id_talla, condicion).')
+    const [pr] = await conn.execute(
+      `SELECT p.nom AS producto, COALESCE(p.codigo,'') AS barcode, COALESCE(c.nom,'') AS color_nom,
+              (SELECT tt.detalle FROM tbl2_tallas tt WHERE tt.idx = ?) AS talla_lookup,
+              (SELECT sp.idx FROM tbl2_subproductos sp
+                WHERE sp.idx_CAB_PROD = ? AND sp.idx_CAB_COLOR = ? AND sp.idx_talla = ? AND sp.estado = ?
+                LIMIT 1) AS id_subprod_CAB
+       FROM tbl2_productos p
+       LEFT JOIN tbl2_colores c ON c.idx = ?
+       WHERE p.idx = ?`,
+      [art.id_talla, art.id_cabprod, art.id_color, art.id_talla, art.condicion, art.id_color, art.id_cabprod])
+    if (pr.length === 0) throw new Error('Producto no encontrado: ' + art.id_cabprod)
+    return {
+      id_subprod_CAB: pr[0].id_subprod_CAB ?? null,
+      id_cabprod: art.id_cabprod, id_color: art.id_color, id_talla: art.id_talla,
+      talla: art.talla ?? pr[0].talla_lookup ?? null, condicion: art.condicion,
+      producto: pr[0].producto, barcode: pr[0].barcode, color_nom: pr[0].color_nom,
+    }
+  }
+  /** [feat 2026-08-07] Stock de una prenda en un almacén = nº de filas estado=1 (1 fila = 1 unidad). */
+  static async _contarStockPrenda(conn, almacen, id_cabprod, id_color, id_talla, condicion){
+    const [r] = await conn.execute(
+      `SELECT COUNT(*) AS stock FROM tbl2_almacen_det
+       WHERE id_CAB_DET = ? AND id_cabprod = ? AND id_color = ? AND id_talla = ? AND condicion = ?
+         AND estado = 1 AND tipo = 'P'`,
+      [almacen, id_cabprod, id_color, id_talla, condicion])
+    return parseInt(r[0].stock)
+  }
+  /** [feat 2026-08-07] Bloquea (FOR UPDATE) hasta `cantidad` unidades disponibles y devuelve sus idx + el stock total. */
+  static async _bloquearUnidadesPrenda(conn, almacen, P, cantidad){
+    // Se bloquea TODO el stock disponible de la variante para contar y elegir con consistencia.
+    const [rows] = await conn.execute(
+      `SELECT idx FROM tbl2_almacen_det
+       WHERE id_CAB_DET = ? AND id_cabprod = ? AND id_color = ? AND id_talla = ? AND condicion = ?
+         AND estado = 1 AND tipo = 'P'
+       ORDER BY idx FOR UPDATE`,
+      [almacen, P.id_cabprod, P.id_color, P.id_talla, P.condicion])
+    return { stock: rows.length, ids: rows.slice(0, cantidad).map(x => x.idx) }
+  }
+  /** [feat 2026-08-07] Inserta 1 fila de kardex (tbl2_almacen_mov_det) agregada para el artículo. */
+  static async _insertMovDetPrenda(conn, movId, id_subprod_CAB, P, almacen, cantidad, stock, saldo){
+    const mov_detalle = {
+      id_comprobante_CAB: movId,
+      cod_producto: P.barcode,
+      id_producto_CAB: P.id_cabprod,
+      producto: P.producto,
+      idxcl: P.id_color,
+      color: P.color_nom,
+      idxsub: id_subprod_CAB,
+      talla: P.talla,
+      condicion: P.condicion,
+      id_almacen_CAB: almacen,
+      cantidad: cantidad,
+      stock: stock,
+      saldo: saldo,
+      tipo: 'P',
+    }
+    await conn.execute(
+      `INSERT INTO tbl2_almacen_mov_det (${Object.keys(mov_detalle).join(',')}) VALUES (${Object.keys(mov_detalle).map(() => '?').join(',')})`,
+      Object.values(mov_detalle))
+  }
+  /** [feat 2026-08-07] Inserta 1 unidad de prenda (1 fila) en tbl2_almacen_det y le fija el sku (post-insert). */
+  static async _insertUnidadPrenda(conn, almacen, movId, P){
+    const data_det = {
+      id_CAB_DET: almacen,
+      idx_subproducto: null,          // VACÍO en prendas (a diferencia de materiales)
+      id_cabprod: P.id_cabprod,
+      id_kardcomp: movId,
+      codigo_cabprod: P.barcode,      // barcode del producto (columna NOT NULL)
+      nom: P.producto,
+      id_color: P.id_color,
+      id_talla: P.id_talla,
+      talla: P.talla,
+      cantidad: 1,
+      tipo: 'P',
+      condicion: P.condicion,
+      estado: 1,
+    }
+    const [res] = await conn.execute(
+      `INSERT INTO tbl2_almacen_det (${Object.keys(data_det).join(',')}) VALUES (${Object.keys(data_det).map(() => '?').join(',')})`,
+      Object.values(data_det))
+    // sku = <idx de la propia fila (sin zerofill)>-<id_cabprod LPAD 10>. Ej: 2984-0000209244.
+    await conn.execute(
+      `UPDATE tbl2_almacen_det SET sku = CONCAT(?, '-', LPAD(id_cabprod, 10, '0')) WHERE idx = ?`,
+      [res.insertId, res.insertId])
+    return res.insertId
   }
   static async getDisponibilidadRequerimiento(idreq){
     let conn = undefined
